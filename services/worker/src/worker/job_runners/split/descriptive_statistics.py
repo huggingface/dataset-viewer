@@ -4,7 +4,6 @@ import enum
 import io
 import logging
 from collections import Counter
-from functools import partial
 from pathlib import Path
 from typing import Any, Optional, TypedDict, Union
 
@@ -584,25 +583,12 @@ class MediaColumn(Column):
     transform_column: type[Column]
 
     @classmethod
-    def transform(cls, example: dict[str, Any], is_struct: bool = True) -> Any:
+    def transform(cls, example: Optional[Union[bytes, dict[str, Any]]]) -> Any:
         """
         Function to use to transform the original values to further pass these transformed values to statistics
         computation. Used inside ._compute_statistics() method.
         """
         raise NotImplementedError
-
-    @classmethod
-    def is_struct_type(cls, filename: Path, column_name: str) -> bool:
-        column_type = pq.read_schema(filename).field(column_name).type
-        if pa.types.is_struct(column_type):
-            return True
-        elif pa.types.is_binary(column_type) or pa.types.is_null(column_type):
-            return False
-        else:
-            raise ValueError(
-                f"Incorrect {cls.__name__} {column_name=} schema: {column_type=} "
-                f"but can be either bytes or struct. "
-            )
 
     @classmethod
     def _compute_statistics(
@@ -612,14 +598,12 @@ class MediaColumn(Column):
         n_samples: int,
     ) -> SupportedStatistics:
         parquet_files = list(parquet_directory.glob("*.parquet"))
-        is_struct = cls.is_struct_type(parquet_files[0], column_name)
         transformed_values = []
-        transform_func = partial(cls.transform, is_struct=is_struct)
         for filename in parquet_files:
             shard_items = pq.read_table(filename, columns=[column_name]).drop_null().to_pydict()[column_name]
             shard_transformed_values = (
                 thread_map(
-                    transform_func,
+                    cls.transform,
                     shard_items,
                     desc=f"Transforming values of {cls.__name__} {column_name} for {filename.name}",
                     leave=False,
@@ -672,38 +656,35 @@ class AudioColumn(MediaColumn):
     transform_column = FloatColumn
 
     @staticmethod
-    def get_duration(example: Optional[Union[bytes, dict[str, Any]]], is_struct: bool = True) -> Optional[float]:
+    def get_duration(example: Optional[Union[bytes, dict[str, Any]]]) -> Optional[float]:
         """Get audio durations"""
         if example is None:
             return None
-        elif isinstance(example, bytes):
-            example_bytes = example
-        else:
-            example_bytes = example["bytes"]
+        example_bytes = example["bytes"] if isinstance(example, dict) else example
         with io.BytesIO(example_bytes) as f:
             return librosa.get_duration(path=f)  # type: ignore   # expects PathLike but BytesIO also works
 
     @classmethod
-    def transform(cls, example: dict[str, Any], is_struct: bool = True) -> Optional[float]:
-        return cls.get_duration(example, is_struct)
+    def transform(cls, example: Optional[Union[bytes, dict[str, Any]]]) -> Optional[float]:
+        return cls.get_duration(example)
 
 
 class ImageColumn(MediaColumn):
     transform_column = IntColumn
 
     @staticmethod
-    def get_width(example: Optional[Union[bytes, dict[str, Any]]], is_struct: bool = True) -> Optional[int]:
+    def get_width(example: Optional[Union[bytes, dict[str, Any]]]) -> Optional[int]:
         """Get image widths."""
         if example is None:
             return None
-        example_bytes = example["bytes"] if is_struct else example  # type: ignore
+        example_bytes = example["bytes"] if isinstance(example, dict) else example
         with io.BytesIO(example_bytes) as f:
             image = Image.open(f)
             return image.size[0]
 
     @classmethod
-    def transform(cls, example: Optional[dict[str, Any]], is_struct: bool = True) -> Optional[int]:
-        return cls.get_width(example, is_struct)
+    def transform(cls, example: Optional[Union[bytes, dict[str, Any]]]) -> Optional[int]:
+        return cls.get_width(example)
 
 
 SupportedColumns = Union[
