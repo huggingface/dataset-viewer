@@ -8,6 +8,7 @@ from typing import Optional, Union
 import numpy as np
 import pandas as pd
 import polars as pl
+import pyarrow as pa
 import pyarrow.parquet as pq
 import pytest
 from datasets import ClassLabel, Dataset
@@ -799,6 +800,19 @@ def test_audio_statistics(
     )
     assert computed == expected
 
+    # write samples as bytes, not as struct {"bytes": b"", "path": ""}
+    audios = datasets["audio_statistics"][column_name][:]
+    pa_table_bytes = pa.Table.from_pydict(
+        {column_name: [open(audio["path"], "rb").read() if audio else None for audio in audios]}
+    )
+    pq.write_table(pa_table_bytes, parquet_filename)
+    computed = AudioColumn.compute_statistics(
+        parquet_directory=parquet_directory,
+        column_name=column_name,
+        n_samples=4,
+    )
+    assert computed == expected
+
 
 @pytest.mark.parametrize(
     "column_name",
@@ -822,6 +836,34 @@ def test_image_statistics(
         n_samples=4,
     )
     assert computed == expected
+
+    # write samples as bytes, not as struct {"bytes": b"", "path": ""}
+    images = datasets["image_statistics"][column_name][:]
+    pa_table_bytes = pa.Table.from_pydict(
+        {column_name: [open(image["path"], "rb").read() if image else None for image in images]}
+    )
+    pq.write_table(pa_table_bytes, parquet_filename)
+    computed = ImageColumn.compute_statistics(
+        parquet_directory=parquet_directory,
+        column_name=column_name,
+        n_samples=4,
+    )
+    assert computed == expected
+
+
+def test_bytes(tmp_path, datasets, tmp_path_factory):
+    import pyarrow as pa
+    parquet_directory = tmp_path_factory.mktemp("data")
+    parquet_filename = parquet_directory / "data.parquet"
+    # expected = image_statistics_expected["statistics"]["image"]["column_statistics"]
+    images = datasets["image_statistics"]["image"][:]
+    pa_table_bytes = pa.Table.from_pydict({"image": [open(image["path"], "rb").read() for image in images]})
+    pq.write_table(pa_table_bytes, parquet_filename)#, row_group_size=2)
+    computed = ImageColumn.compute_statistics(
+        parquet_directory=parquet_directory,
+        column_name="image",
+        n_samples=4,
+    )
 
 
 @pytest.mark.parametrize(
