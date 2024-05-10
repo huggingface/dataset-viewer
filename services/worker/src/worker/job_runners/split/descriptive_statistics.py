@@ -676,7 +676,10 @@ class AudioColumn(MediaColumn):
         """Get audio durations"""
         if example is None:
             return None
-        example_bytes = example["bytes"] if is_struct else example  # type: ignore
+        elif isinstance(example, bytes):
+            example_bytes = example
+        else:
+            example_bytes = example["bytes"]
         with io.BytesIO(example_bytes) as f:
             return librosa.get_duration(path=f)  # type: ignore   # expects PathLike but BytesIO also works
 
