@@ -547,6 +547,7 @@ def image_statistics_expected() -> dict:  # type: ignore
     [
         "float__column",
         "float__nan_column",
+        "float__with_nan_column",
         "float__all_nan_column",
         "float__negative_column",
         "float__cross_zero_column",

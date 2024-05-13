@@ -385,6 +385,7 @@ class FloatColumn(Column):
         column_name: str,
         n_samples: int,
     ) -> NumericalStatisticsItem:
+        data = data.fill_nan(None)
         nan_count, nan_proportion = nan_count_proportion(data, column_name, n_samples)
         if nan_count == n_samples:  # all values are None
             return all_nan_statistics_item(n_samples)
