@@ -19,6 +19,7 @@ from libcommon.orchestrator import DatasetBackfillPlan, SmartDatasetUpdatePlan
 from libcommon.processing_graph import Artifact, ProcessingGraph
 from libcommon.queue import JobTotalMetricDocument, Queue, WorkerSizeJobsCountDocument
 from libcommon.simple_cache import upsert_response
+from libcommon.storage_client import StorageClient
 from libcommon.viewer_utils.rows import GetRowsContent
 
 DATASET_NAME = "dataset"
@@ -265,6 +266,7 @@ def get_smart_dataset_update_plan(
     revision: str = REVISION_NAME,
     old_revision: str = OTHER_REVISION_NAME,
     hf_endpoint: str = HF_ENDPOINT,
+    storage_clients: Optional[list[StorageClient]] = None,
 ) -> SmartDatasetUpdatePlan:
     return SmartDatasetUpdatePlan(
         dataset=dataset,
@@ -272,6 +274,7 @@ def get_smart_dataset_update_plan(
         old_revision=old_revision,
         hf_endpoint=hf_endpoint,
         processing_graph=processing_graph,
+        storage_clients=storage_clients,
     )
 
 

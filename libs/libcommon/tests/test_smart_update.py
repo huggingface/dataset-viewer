@@ -15,6 +15,8 @@ from libcommon.orchestrator import (
 )
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import get_cache_entries_df
+from libcommon.storage_client import StorageClient
+from libcommon.viewer_utils.asset import generate_object_key
 
 from .utils import (
     DATASET_NAME,
@@ -212,6 +214,48 @@ def test_run() -> None:
     assert len(cache_entries_df) == 1
     cache_entry = cache_entries_df.to_dict(orient="records")[0]
     assert cache_entry["dataset_git_revision"] == REVISION_NAME
+
+
+def test_run_with_storage_clients(storage_client: StorageClient) -> None:
+    filename = "object.asset"
+    previous_key = generate_object_key(
+        dataset=DATASET_NAME,
+        revision=OTHER_REVISION_NAME,
+        config="default",
+        split="train",
+        row_idx=0,
+        column="image",
+        filename=filename,
+    )
+    storage_client._fs.touch(storage_client.get_full_path(previous_key))
+    assert storage_client.exists(previous_key)
+    put_cache(step=STEP_DA, dataset=DATASET_NAME, revision=OTHER_REVISION_NAME)
+    with put_diff(EMPTY_DIFF):
+        tasks_stats = get_smart_dataset_update_plan(
+            processing_graph=PROCESSING_GRAPH_TWO_STEPS, storage_clients=[storage_client]
+        ).run()
+    assert tasks_stats.num_created_jobs == 0
+    assert tasks_stats.num_updated_cache_entries == 1
+    assert tasks_stats.num_updated_storage_directories == 1
+    assert tasks_stats.num_deleted_cache_entries == 0
+    assert tasks_stats.num_deleted_storage_directories == 0
+    assert tasks_stats.num_deleted_waiting_jobs == 0
+
+    cache_entries_df = get_cache_entries_df(DATASET_NAME, cache_kinds=[STEP_DA])
+    assert len(cache_entries_df) == 1
+    cache_entry = cache_entries_df.to_dict(orient="records")[0]
+    assert cache_entry["dataset_git_revision"] == REVISION_NAME
+
+    updated_key = generate_object_key(
+        dataset=DATASET_NAME,
+        revision=REVISION_NAME,
+        config="default",
+        split="train",
+        row_idx=0,
+        column="image",
+        filename=filename,
+    )
+    assert storage_client.exists(updated_key)
 
 
 @pytest.mark.parametrize("out_of_order", [False, True])
