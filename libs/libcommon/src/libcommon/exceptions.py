@@ -78,6 +78,7 @@ CacheableErrorCode = Literal[
     "ConfigNamesError",
     "ConfigNotFoundError",
     "CreateCommitError",
+    "DatasetGenerationCastError",
     "DatasetInBlockListError",
     "DatasetManualDownloadError",
     "DatasetModuleNotInstalledError",
@@ -180,6 +181,13 @@ class CreateCommitError(CacheableError):
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "CreateCommitError", cause, False)
+
+
+class DatasetGenerationCastError(CacheableError):
+    """The dataset generation failed because of a cast error."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "DatasetGenerationCastError", cause, True)
 
 
 class DatasetManualDownloadError(CacheableError):

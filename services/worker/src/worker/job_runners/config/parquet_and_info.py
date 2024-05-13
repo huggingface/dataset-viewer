@@ -16,6 +16,7 @@ from urllib.parse import unquote
 
 import datasets
 import datasets.config
+import datasets.exceptions
 import datasets.info
 import numpy as np
 import pyarrow as pa
@@ -54,6 +55,7 @@ from libcommon.dtos import JobInfo, SplitHubFile
 from libcommon.exceptions import (
     ConfigNamesError,
     CreateCommitError,
+    DatasetGenerationCastError,
     DatasetManualDownloadError,
     DatasetNotFoundError,
     DatasetWithScriptNotSupportedError,
@@ -929,6 +931,7 @@ def convert_to_parquet(builder: DatasetBuilder) -> list[CommitOperationAdd]:
         builder._writer_batch_size is None or builder._writer_batch_size > writer_batch_size
     ):
         builder._writer_batch_size = writer_batch_size
+    # ANDREA-TODO: Catch error?
     builder.download_and_prepare(
         file_format="parquet"
     )  # the parquet files are stored in the cache dir and it fills the info
@@ -1263,57 +1266,62 @@ def compute_config_parquet_and_info_response(
         raise HfHubError(f"Couldn't load dataset builder for {dataset=} {config=}.") from err
 
     partial = False
-    if is_parquet_builder_with_hub_files(builder):
-        try:
-            logging.info(f"{dataset=} {config=} is already in parquet, validating and copying original parquet files.")
-            parquet_operations = copy_parquet_files(builder)
-            logging.info(f"{len(parquet_operations)} parquet files to copy for {dataset=} {config=}.")
-            validate = ParquetFileValidator(max_row_group_byte_size=max_row_group_byte_size_for_copy).validate
-            with patch("huggingface_hub.hf_file_system.http_backoff", http_backoff_with_timeout):
-                fill_builder_info(builder, hf_endpoint=hf_endpoint, hf_token=hf_token, validate=validate)
-        except TooBigRowGroupsError as err:
-            # aim for a writer_batch_size that is factor of 100
-            # and with a batch_byte_size that is smaller than max_row_group_byte_size_for_copy
-            logging.info(
-                f"Parquet files of {dataset=} {config=} has too big row groups, "
-                f"reconverting it with row groups size={max_row_group_byte_size_for_copy}"
-            )
-            writer_batch_size = get_writer_batch_size_from_row_group_size(
-                num_rows=err.num_rows,
-                row_group_byte_size=err.row_group_byte_size,
-                max_row_group_byte_size=max_row_group_byte_size_for_copy,
-            )
-            parquet_operations, partial = stream_convert_to_parquet(
-                builder,
-                max_dataset_size_bytes=max_dataset_size_bytes,
-                writer_batch_size=writer_batch_size,
-            )
-    else:
-        raise_if_requires_manual_download(
-            builder=builder,
-            hf_endpoint=hf_endpoint,
-            hf_token=hf_token,
-        )
-        dataset_info = hf_api.dataset_info(repo_id=dataset, revision=source_revision, files_metadata=True)
-        if is_dataset_too_big(
-            dataset_info=dataset_info,
-            builder=builder,
-            hf_endpoint=hf_endpoint,
-            hf_token=hf_token,
-            max_dataset_size_bytes=max_dataset_size_bytes,
-            max_external_data_files=max_external_data_files,
-        ):
-            logging.info(
-                f"{dataset=} {config=} is too big to be fully converted, "
-                f"converting first {max_dataset_size_bytes} bytes."
-            )
-            parquet_operations, partial = stream_convert_to_parquet(
-                builder, max_dataset_size_bytes=max_dataset_size_bytes
-            )
-
+    try:
+        if is_parquet_builder_with_hub_files(builder):
+            try:
+                logging.info(
+                    f"{dataset=} {config=} is already in parquet, validating and copying original parquet files."
+                )
+                parquet_operations = copy_parquet_files(builder)
+                logging.info(f"{len(parquet_operations)} parquet files to copy for {dataset=} {config=}.")
+                validate = ParquetFileValidator(max_row_group_byte_size=max_row_group_byte_size_for_copy).validate
+                with patch("huggingface_hub.hf_file_system.http_backoff", http_backoff_with_timeout):
+                    fill_builder_info(builder, hf_endpoint=hf_endpoint, hf_token=hf_token, validate=validate)
+            except TooBigRowGroupsError as err:
+                # aim for a writer_batch_size that is factor of 100
+                # and with a batch_byte_size that is smaller than max_row_group_byte_size_for_copy
+                logging.info(
+                    f"Parquet files of {dataset=} {config=} has too big row groups, "
+                    f"reconverting it with row groups size={max_row_group_byte_size_for_copy}"
+                )
+                writer_batch_size = get_writer_batch_size_from_row_group_size(
+                    num_rows=err.num_rows,
+                    row_group_byte_size=err.row_group_byte_size,
+                    max_row_group_byte_size=max_row_group_byte_size_for_copy,
+                )
+                parquet_operations, partial = stream_convert_to_parquet(
+                    builder,
+                    max_dataset_size_bytes=max_dataset_size_bytes,
+                    writer_batch_size=writer_batch_size,
+                )
         else:
-            parquet_operations = convert_to_parquet(builder)
-        logging.info(f"{len(parquet_operations)} parquet files are ready to be pushed for {dataset=} {config=}.")
+            raise_if_requires_manual_download(
+                builder=builder,
+                hf_endpoint=hf_endpoint,
+                hf_token=hf_token,
+            )
+            dataset_info = hf_api.dataset_info(repo_id=dataset, revision=source_revision, files_metadata=True)
+            if is_dataset_too_big(
+                dataset_info=dataset_info,
+                builder=builder,
+                hf_endpoint=hf_endpoint,
+                hf_token=hf_token,
+                max_dataset_size_bytes=max_dataset_size_bytes,
+                max_external_data_files=max_external_data_files,
+            ):
+                logging.info(
+                    f"{dataset=} {config=} is too big to be fully converted, "
+                    f"converting first {max_dataset_size_bytes} bytes."
+                )
+                parquet_operations, partial = stream_convert_to_parquet(
+                    builder, max_dataset_size_bytes=max_dataset_size_bytes
+                )
+
+            else:
+                parquet_operations = convert_to_parquet(builder)
+            logging.info(f"{len(parquet_operations)} parquet files are ready to be pushed for {dataset=} {config=}.")
+    except datasets.exceptions.DatasetGenerationCastError as err:
+        raise DatasetGenerationCastError("The dataset generation failed because of a cast error", cause=err) from err
 
     raise_if_long_column_name(builder.info.features)
 
