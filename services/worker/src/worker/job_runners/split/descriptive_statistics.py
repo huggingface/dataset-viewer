@@ -583,7 +583,7 @@ class MediaColumn(Column):
     transform_column: type[Column]
 
     @classmethod
-    def transform(cls, example: dict[str, Any]) -> Any:
+    def transform(cls, example: Optional[Union[bytes, dict[str, Any]]]) -> Any:
         """
         Function to use to transform the original values to further pass these transformed values to statistics
         computation. Used inside ._compute_statistics() method.
@@ -656,13 +656,16 @@ class AudioColumn(MediaColumn):
     transform_column = FloatColumn
 
     @staticmethod
-    def get_duration(example: dict[str, Any]) -> float:
+    def get_duration(example: Optional[Union[bytes, dict[str, Any]]]) -> Optional[float]:
         """Get audio durations"""
-        with io.BytesIO(example["bytes"]) as f:
+        if example is None:
+            return None
+        example_bytes = example["bytes"] if isinstance(example, dict) else example
+        with io.BytesIO(example_bytes) as f:
             return librosa.get_duration(path=f)  # type: ignore   # expects PathLike but BytesIO also works
 
     @classmethod
-    def transform(cls, example: dict[str, Any]) -> float:
+    def transform(cls, example: Optional[Union[bytes, dict[str, Any]]]) -> Optional[float]:
         return cls.get_duration(example)
 
 
@@ -670,14 +673,17 @@ class ImageColumn(MediaColumn):
     transform_column = IntColumn
 
     @staticmethod
-    def get_width(example: dict[str, Any]) -> int:
+    def get_width(example: Optional[Union[bytes, dict[str, Any]]]) -> Optional[int]:
         """Get image widths."""
-        with io.BytesIO(example["bytes"]) as f:
+        if example is None:
+            return None
+        example_bytes = example["bytes"] if isinstance(example, dict) else example
+        with io.BytesIO(example_bytes) as f:
             image = Image.open(f)
             return image.size[0]
 
     @classmethod
-    def transform(cls, example: dict[str, Any]) -> int:
+    def transform(cls, example: Optional[Union[bytes, dict[str, Any]]]) -> Optional[int]:
         return cls.get_width(example)
 
 

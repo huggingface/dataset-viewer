@@ -1640,9 +1640,9 @@ audio_dataset = Dataset.from_dict(
     },
     features=Features(
         {
-            "audio": Audio(sampling_rate=1600),
-            "audio_nan": Audio(sampling_rate=1600),
-            "audio_all_nan": Audio(sampling_rate=1600),
+            "audio": Audio(sampling_rate=1600, decode=False),
+            "audio_nan": Audio(sampling_rate=1600, decode=False),
+            "audio_all_nan": Audio(sampling_rate=1600, decode=False),
         }
     ),
 )
@@ -1666,9 +1666,9 @@ image_dataset = Dataset.from_dict(
     },
     features=Features(
         {
-            "image": Image(),
-            "image_nan": Image(),
-            "image_all_nan": Image(),
+            "image": Image(decode=False),
+            "image_nan": Image(decode=False),
+            "image_all_nan": Image(decode=False),
         }
     ),
 )
