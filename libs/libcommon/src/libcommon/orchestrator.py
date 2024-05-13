@@ -2,6 +2,7 @@
 # Copyright 2023 The HuggingFace Authors.
 
 import logging
+import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from functools import lru_cache
@@ -823,16 +824,21 @@ class SmartUpdateImpossibleBecauseOfUpdatedYAMLField(Exception):
     pass
 
 
+class SmartUpdateImpossibleBecauseCachedRevisionIsNotParentOfNewRevision(Exception):
+    pass
+
+
 @dataclass
 class SmartDatasetUpdatePlan(Plan):
     dataset: str
     revision: str
     hf_endpoint: str
+    old_revision: Optional[str] = None
     processing_graph: ProcessingGraph = field(default=processing_graph)
     storage_clients: Optional[list[StorageClient]] = None
     hf_token: Optional[str] = None
 
-    old_revision: str = field(init=False)
+    cached_revision: str = field(init=False)
     diff: str = field(init=False)
     files_impacted_by_commit: set[str] = field(init=False)
     updated_yaml_fields_in_dataset_card: list[str] = field(init=False)
@@ -842,15 +848,29 @@ class SmartDatasetUpdatePlan(Plan):
         cache_kinds = [
             processing_step.cache_kind for processing_step in self.processing_graph.get_first_processing_steps()
         ]
-        cache_entries_df = get_cache_entries_df(
-            dataset=self.dataset,
-            cache_kinds=cache_kinds,
-        )
-        if len(cache_entries_df) == 0:
-            raise SmartUpdateImpossibleBecauseCacheIsEmpty()
-        self.old_revision = cache_entries_df.sort_values("updated_at").iloc[-1]["dataset_git_revision"]
-        if self.old_revision == self.revision:
-            return
+        for retry in range(3):
+            cache_entries_df = get_cache_entries_df(
+                dataset=self.dataset,
+                cache_kinds=cache_kinds,
+            )
+            if len(cache_entries_df) == 0:
+                raise SmartUpdateImpossibleBecauseCacheIsEmpty(f"Failed to smart update to {self.revision[:7]}")
+            self.cached_revision = cache_entries_df.sort_values("updated_at").iloc[-1]["dataset_git_revision"]
+            if self.cached_revision == self.revision:
+                return
+            elif self.cached_revision == self.old_revision:
+                break
+            logging.warning(
+                f"[{retry + 1}/3] Retrying smart update of {self.dataset} in 1s (received {str(self.old_revision)[:7]}->{self.revision[:7]} but cache is {self.cached_revision[:7]})"
+            )
+            time.sleep(1)
+        else:
+            logging.warning(
+                f"Failed to smart update {self.dataset} to {self.revision[:7]} because the cached revision {self.cached_revision[:7]} is not its parent"
+            )
+            raise SmartUpdateImpossibleBecauseCachedRevisionIsNotParentOfNewRevision(
+                f"Failed to smart update {self.dataset} to {self.revision[:7]} because the cached revision {self.cached_revision[:7]} is not its parent"
+            )
         self.diff = self.get_diff()
         self.files_impacted_by_commit = self.get_impacted_files()
         if self.files_impacted_by_commit - {"README.md", ".gitattributes", ".gitignore"}:
@@ -1013,6 +1033,7 @@ def smart_set_revision(
     dataset: str,
     revision: str,
     hf_endpoint: str,
+    old_revision: Optional[str] = None,
     processing_graph: ProcessingGraph = processing_graph,
     storage_clients: Optional[list[StorageClient]] = None,
     hf_token: Optional[str] = None,
@@ -1038,6 +1059,7 @@ def smart_set_revision(
     plan = SmartDatasetUpdatePlan(
         dataset=dataset,
         revision=revision,
+        old_revision=old_revision,
         processing_graph=processing_graph,
         storage_clients=storage_clients,
         hf_endpoint=hf_endpoint,

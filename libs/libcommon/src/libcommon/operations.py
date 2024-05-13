@@ -216,7 +216,7 @@ def update_dataset(
     hf_timeout_seconds: Optional[float] = None,
     priority: Priority = Priority.LOW,
     storage_clients: Optional[list[StorageClient]] = None,
-) -> None:
+) -> TasksStatistics:
     """
       blocked_datasets (`list[str]`): The list of blocked datasets. Supports Unix shell-style wildcards in the dataset
     name, e.g. "open-llm-leaderboard/*" to block all the datasets in the `open-llm-leaderboard` namespace. They
@@ -235,21 +235,48 @@ def update_dataset(
         logging.warning(f"Dataset {dataset} is not supported ({type(e)}). Let's delete the dataset.")
         delete_dataset(dataset=dataset, storage_clients=storage_clients)
         raise
-    if dataset == "HuggingFaceFW/fineweb" or dataset.startswith("datasets-maintainers/"):
-        try:
-            smart_set_revision(
-                dataset=dataset,
-                revision=revision,
-                storage_clients=storage_clients,
-                hf_endpoint=hf_endpoint,
-                hf_token=hf_token,
-            )
-        except Exception as err:
-            logging.error(f"smart_set_revision failed with {type(err).__name__}: {err}")
-    set_revision(
+    return set_revision(
         dataset=dataset,
         revision=revision,
         priority=priority,
+    )
+
+
+def smart_update_dataset(
+    dataset: str,
+    revision: str,
+    hf_endpoint: str,
+    old_revision: Optional[str] = None,
+    blocked_datasets: Optional[list[str]] = None,
+    hf_token: Optional[str] = None,
+    hf_timeout_seconds: Optional[float] = None,
+    storage_clients: Optional[list[StorageClient]] = None,
+) -> TasksStatistics:
+    """
+      blocked_datasets (`list[str]`): The list of blocked datasets. Supports Unix shell-style wildcards in the dataset
+    name, e.g. "open-llm-leaderboard/*" to block all the datasets in the `open-llm-leaderboard` namespace. They
+    are not allowed in the namespace name.
+    """
+    # let's the exceptions bubble up if any
+    try:
+        get_latest_dataset_revision_if_supported_or_raise(
+            dataset=dataset,
+            hf_endpoint=hf_endpoint,
+            hf_token=hf_token,
+            hf_timeout_seconds=hf_timeout_seconds,
+            blocked_datasets=blocked_datasets,
+        )
+    except NotSupportedError as e:
+        logging.warning(f"Dataset {dataset} is not supported ({type(e)}). Let's delete the dataset.")
+        delete_dataset(dataset=dataset, storage_clients=storage_clients)
+        raise
+    return smart_set_revision(
+        dataset=dataset,
+        revision=revision,
+        old_revision=old_revision,
+        storage_clients=storage_clients,
+        hf_endpoint=hf_endpoint,
+        hf_token=hf_token,
     )
 
 

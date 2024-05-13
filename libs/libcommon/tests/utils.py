@@ -263,11 +263,13 @@ def get_smart_dataset_update_plan(
     processing_graph: ProcessingGraph,
     dataset: str = DATASET_NAME,
     revision: str = REVISION_NAME,
+    old_revision: str = OTHER_REVISION_NAME,
     hf_endpoint: str = HF_ENDPOINT,
 ) -> SmartDatasetUpdatePlan:
     return SmartDatasetUpdatePlan(
         dataset=dataset,
         revision=revision,
+        old_revision=old_revision,
         hf_endpoint=hf_endpoint,
         processing_graph=processing_graph,
     )

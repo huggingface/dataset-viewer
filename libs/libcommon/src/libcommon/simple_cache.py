@@ -323,8 +323,8 @@ def update_revision_of_dataset_responses(dataset: str, old_revision: str, new_re
     Returns:
         `int`: The number of updated documents.
     """
-    existing_cache = CachedResponseDocument.objects(dataset=dataset, revision=old_revision)
-    num_updated_cache_responses = existing_cache.update(revision=new_revision)
+    existing_cache = CachedResponseDocument.objects(dataset=dataset, dataset_git_revision=old_revision)
+    num_updated_cache_responses = existing_cache.update(dataset_git_revision=new_revision)
     return 0 if num_updated_cache_responses is None else num_updated_cache_responses
 
 

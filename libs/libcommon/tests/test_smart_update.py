@@ -1,14 +1,20 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2024 The HuggingFace Authors.
+import time
+
 import pytest
 from requests.exceptions import RequestException
+from tqdm.contrib.concurrent import thread_map
 
 from libcommon.orchestrator import (
+    SmartUpdateImpossibleBecauseCachedRevisionIsNotParentOfNewRevision,
     SmartUpdateImpossibleBecauseCacheIsEmpty,
     SmartUpdateImpossibleBecauseOfUpdatedFiles,
     SmartUpdateImpossibleBecauseOfUpdatedYAMLField,
+    TasksStatistics,
 )
 from libcommon.resources import CacheMongoResource, QueueMongoResource
+from libcommon.simple_cache import get_cache_entries_df
 
 from .utils import (
     DATASET_NAME,
@@ -116,6 +122,13 @@ def test_same_revision() -> None:
     assert_smart_dataset_update_plan(plan, tasks=[])
 
 
+def test_cache_revision_is_not_parent_revision_commit() -> None:
+    # If rewriting git history OR spamming commits OR out of order commits OR in case of concurrency issues: raise
+    put_cache(step=STEP_DA, dataset=DATASET_NAME, revision="not_parent_revision")
+    with pytest.raises(SmartUpdateImpossibleBecauseCachedRevisionIsNotParentOfNewRevision):
+        get_smart_dataset_update_plan(processing_graph=PROCESSING_GRAPH_TWO_STEPS)
+
+
 def test_empty_commit() -> None:
     # Empty commit: update the revision of the cache entries
     put_cache(step=STEP_DA, dataset=DATASET_NAME, revision=OTHER_REVISION_NAME)
@@ -182,3 +195,45 @@ def test_add_tag_commit() -> None:
             updated_yaml_fields_in_dataset_card=["tags"],
             tasks=["UpdateRevisionOfDatasetCacheEntriesTask,1"],
         )
+
+
+def test_run() -> None:
+    put_cache(step=STEP_DA, dataset=DATASET_NAME, revision=OTHER_REVISION_NAME)
+    with put_diff(EMPTY_DIFF):
+        tasks_stats = get_smart_dataset_update_plan(processing_graph=PROCESSING_GRAPH_TWO_STEPS).run()
+    assert tasks_stats.num_created_jobs == 0
+    assert tasks_stats.num_updated_cache_entries == 1
+    assert tasks_stats.num_updated_storage_directories == 0
+    assert tasks_stats.num_deleted_cache_entries == 0
+    assert tasks_stats.num_deleted_storage_directories == 0
+    assert tasks_stats.num_deleted_waiting_jobs == 0
+
+    cache_entries_df = get_cache_entries_df(DATASET_NAME, cache_kinds=[STEP_DA])
+    assert len(cache_entries_df) == 1
+    cache_entry = cache_entries_df.to_dict(orient="records")[0]
+    assert cache_entry["dataset_git_revision"] == REVISION_NAME
+
+
+@pytest.mark.parametrize("out_of_order", [False, True])
+def test_run_two_commits(out_of_order: bool) -> None:
+    put_cache(step=STEP_DA, dataset=DATASET_NAME, revision="initial_revision")
+    with put_diff(ADD_TAG_DIFF, revision=REVISION_NAME), put_diff(ADD_TAG_DIFF, revision=OTHER_REVISION_NAME):
+
+        def run_plan(revisions: tuple[str, str]) -> TasksStatistics:
+            old_revision, revision = revisions
+            if (revision == REVISION_NAME) ^ out_of_order:
+                time.sleep(0.5)
+            return get_smart_dataset_update_plan(
+                processing_graph=PROCESSING_GRAPH_TWO_STEPS, revision=revision, old_revision=old_revision
+            ).run()
+
+        stats: list[TasksStatistics] = thread_map(
+            run_plan, [("initial_revision", OTHER_REVISION_NAME), (OTHER_REVISION_NAME, REVISION_NAME)]
+        )
+    assert stats[0].num_updated_cache_entries == 1
+    assert stats[1].num_updated_cache_entries == 1
+
+    cache_entries_df = get_cache_entries_df(DATASET_NAME, cache_kinds=[STEP_DA])
+    assert len(cache_entries_df) == 1
+    cache_entry = cache_entries_df.to_dict(orient="records")[0]
+    assert cache_entry["dataset_git_revision"] == REVISION_NAME
