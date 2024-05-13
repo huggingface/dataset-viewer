@@ -4,6 +4,7 @@
 import os
 from collections.abc import Generator
 from pathlib import Path
+from typing import Union
 
 import duckdb
 import pyarrow as pa
@@ -108,7 +109,7 @@ def test_execute_filter_query(columns: list[str], where: str, orderby: str, inde
         expected_pa_table = expected_pa_table.filter(pc.field("gender") == "female")
     if orderby:
         if orderby.endswith(" DESC"):
-            sorting = [(orderby.removesuffix(" DESC").strip('"'), "descending")]
+            sorting: Union[str, list[tuple[str, str]]] = [(orderby.removesuffix(" DESC").strip('"'), "descending")]
         else:
             sorting = orderby.strip('"')
         expected_pa_table = expected_pa_table.sort_by(sorting)
