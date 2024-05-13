@@ -56,6 +56,7 @@ from libcommon.exceptions import (
     ConfigNamesError,
     CreateCommitError,
     DatasetGenerationCastError,
+    DatasetGenerationError,
     DatasetManualDownloadError,
     DatasetNotFoundError,
     DatasetWithScriptNotSupportedError,
@@ -1322,6 +1323,8 @@ def compute_config_parquet_and_info_response(
             logging.info(f"{len(parquet_operations)} parquet files are ready to be pushed for {dataset=} {config=}.")
     except datasets.exceptions.DatasetGenerationCastError as err:
         raise DatasetGenerationCastError("The dataset generation failed because of a cast error", cause=err) from err
+    except datasets.exceptions.DatasetGenerationError as err:
+        raise DatasetGenerationError("The dataset generation failed", cause=err) from err
 
     raise_if_long_column_name(builder.info.features)
 
