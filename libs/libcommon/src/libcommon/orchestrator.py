@@ -880,6 +880,8 @@ class SmartDatasetUpdatePlan(Plan):
             raise SmartUpdateImpossibleBecauseOfUpdatedYAMLField("dataset_info")
         if "configs" in self.updated_yaml_fields_in_dataset_card:
             raise SmartUpdateImpossibleBecauseOfUpdatedYAMLField("configs")
+        if "viewer" in self.updated_yaml_fields_in_dataset_card:
+            raise SmartUpdateImpossibleBecauseOfUpdatedYAMLField("viewer")
         self.add_task(
             UpdateRevisionOfDatasetCacheEntriesTask(
                 dataset=self.dataset, old_revision=self.old_revision, new_revision=self.revision
