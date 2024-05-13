@@ -56,6 +56,7 @@ class MoonWebhookV2Payload(TypedDict):
     movedTo: Optional[str]
     repo: MoonWebhookV2PayloadRepo
     scope: str
+    updatedRefs: Optional[list[dict[str, Any]]]
 
 
 def parse_payload(json: Any) -> MoonWebhookV2Payload:
@@ -74,10 +75,10 @@ def process_payload(
 ) -> Optional[TasksStatistics]:
     if payload["repo"]["type"] != "dataset" or payload["scope"] not in ("repo", "repo.content", "repo.config"):
         # ^ it filters out the webhook calls for non-dataset repos and discussions in dataset repos
-        return
+        return None
     dataset = payload["repo"]["name"]
     if dataset is None:
-        return
+        return None
     event = payload["event"]
     if event == "remove":
         delete_dataset(dataset=dataset, storage_clients=storage_clients)
@@ -91,10 +92,13 @@ def process_payload(
             logging.warning(
                 f"Webhook revision for {dataset} is the same as the current revision in the db - skipping update."
             )
-            return
+            return None
         revision = payload["repo"]["headSha"]
+        if not revision:
+            logging.warning(f"Webhook revision for {dataset} is missing (no headSha) - skipping update.")
+            return None
         old_revision: Optional[str] = None
-        for updated_ref in payload.get("updatedRefs", []):
+        for updated_ref in payload.get("updatedRefs") or []:
             ref = updated_ref.get("ref")
             ref_new_sha = updated_ref.get("newSha")
             ref_old_sha = updated_ref.get("oldSha")
@@ -127,6 +131,7 @@ def process_payload(
             hf_timeout_seconds=hf_timeout_seconds,
             storage_clients=storage_clients,
         )
+    return None
 
 
 def create_webhook_endpoint(
