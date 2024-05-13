@@ -93,10 +93,7 @@ def process_payload(
                 f"Webhook revision for {dataset} is the same as the current revision in the db - skipping update."
             )
             return None
-        revision = payload["repo"]["headSha"]
-        if not revision:
-            logging.warning(f"Webhook revision for {dataset} is missing (no headSha) - skipping update.")
-            return None
+        revision = payload["repo"].get("headSha")
         old_revision: Optional[str] = None
         for updated_ref in payload.get("updatedRefs") or []:
             ref = updated_ref.get("ref")
@@ -108,7 +105,7 @@ def process_payload(
         delete_dataset(dataset=dataset, storage_clients=storage_clients)
         # ^ delete the old contents (cache + jobs + assets) to avoid mixed content
         new_dataset = (event == "move" and payload["movedTo"]) or dataset
-        if dataset.startswith("datasets-maintainers/"):  # TODO(QL): enable smart updates on more datasets
+        if revision and dataset.startswith("datasets-maintainers/"):  # TODO(QL): enable smart updates on more datasets
             try:
                 return smart_update_dataset(
                     dataset=new_dataset,
