@@ -902,8 +902,9 @@ class SmartDatasetUpdatePlan(Plan):
             self.hf_endpoint + f"/datasets/{self.dataset}/commit/{self.revision}.diff", timeout=10, headers=headers
         )
         resp.raise_for_status()
-        assert isinstance(resp.text, str)
-        return resp.text
+        if not isinstance(resp.content, bytes):  # for mypy
+            raise RuntimeError(f"failed reading /datasets/{self.dataset}/commit/{self.revision}.diff")
+        return resp.content.decode("utf-8")
 
     def get_impacted_files(self) -> set[str]:
         return set(
