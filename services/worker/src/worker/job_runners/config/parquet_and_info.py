@@ -932,7 +932,6 @@ def convert_to_parquet(builder: DatasetBuilder) -> list[CommitOperationAdd]:
         builder._writer_batch_size is None or builder._writer_batch_size > writer_batch_size
     ):
         builder._writer_batch_size = writer_batch_size
-    # ANDREA-TODO: Catch error?
     builder.download_and_prepare(
         file_format="parquet"
     )  # the parquet files are stored in the cache dir and it fills the info
