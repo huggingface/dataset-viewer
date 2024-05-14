@@ -265,6 +265,7 @@ statistics_dataset = Dataset.from_dict(
             9.9,
         ],
         "float__all_null_column": null_column(),
+        "float__all_nan_column": [float("nan")] * 20,
         "class_label__column": [
             0,
             1,
@@ -1396,6 +1397,7 @@ statistics_dataset = Dataset.from_dict(
             "float__null_column": Value("float32"),
             "float__nan_column": Value("float32"),
             "float__all_null_column": Value("float32"),
+            "float__all_nan_column": Value("float32"),
             "float__negative_column": Value("float64"),
             "float__cross_zero_column": Value("float32"),
             "float__large_values_column": Value("float32"),
