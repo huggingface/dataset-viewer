@@ -1655,19 +1655,19 @@ audio_dataset = Dataset.from_dict(
             str(Path(__file__).resolve().parent / "data" / "audio" / "audio_3.wav"),
             str(Path(__file__).resolve().parent / "data" / "audio" / "audio_4.wav"),
         ],
-        "audio_nan": [
+        "audio_null": [
             str(Path(__file__).resolve().parent / "data" / "audio" / "audio_1.wav"),
             None,
             str(Path(__file__).resolve().parent / "data" / "audio" / "audio_3.wav"),
             None,
         ],
-        "audio_all_nan": [None, None, None, None],
+        "audio_all_null": [None, None, None, None],
     },
     features=Features(
         {
             "audio": Audio(sampling_rate=1600, decode=False),
-            "audio_nan": Audio(sampling_rate=1600, decode=False),
-            "audio_all_nan": Audio(sampling_rate=1600, decode=False),
+            "audio_null": Audio(sampling_rate=1600, decode=False),
+            "audio_all_null": Audio(sampling_rate=1600, decode=False),
         }
     ),
 )
@@ -1681,19 +1681,19 @@ image_dataset = Dataset.from_dict(
             str(Path(__file__).resolve().parent / "data" / "image" / "image_3.jpg"),
             str(Path(__file__).resolve().parent / "data" / "image" / "image_4.jpg"),
         ],
-        "image_nan": [
+        "image_null": [
             str(Path(__file__).resolve().parent / "data" / "image" / "image_1.jpg"),
             None,
             str(Path(__file__).resolve().parent / "data" / "image" / "image_3.jpg"),
             None,
         ],
-        "image_all_nan": [None, None, None, None],
+        "image_all_null": [None, None, None, None],
     },
     features=Features(
         {
             "image": Image(decode=False),
-            "image_nan": Image(decode=False),
-            "image_all_nan": Image(decode=False),
+            "image_null": Image(decode=False),
+            "image_all_null": Image(decode=False),
         }
     ),
 )

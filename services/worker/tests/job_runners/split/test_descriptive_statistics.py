@@ -468,12 +468,12 @@ def audio_statistics_expected() -> dict:  # type: ignore
         column=pd.Series(nan_audio_lengths), dtype=ColumnType.FLOAT
     )
     expected_nan_statistics = {
-        "column_name": "audio_nan",
+        "column_name": "audio_null",
         "column_type": ColumnType.AUDIO,
         "column_statistics": nan_audio_statistics,
     }
     expected_all_nan_statistics = {
-        "column_name": "audio_all_nan",
+        "column_name": "audio_all_null",
         "column_type": ColumnType.AUDIO,
         "column_statistics": {
             "nan_count": 4,
@@ -490,8 +490,8 @@ def audio_statistics_expected() -> dict:  # type: ignore
         "num_examples": 4,
         "statistics": {
             "audio": expected_statistics,
-            "audio_nan": expected_nan_statistics,
-            "audio_all_nan": expected_all_nan_statistics,
+            "audio_null": expected_nan_statistics,
+            "audio_all_null": expected_all_nan_statistics,
         },
         "partial": False,
     }
@@ -513,12 +513,12 @@ def image_statistics_expected() -> dict:  # type: ignore
         column=pd.Series(nan_image_lengths), dtype=ColumnType.INT
     )
     expected_nan_statistics = {
-        "column_name": "image_nan",
+        "column_name": "image_null",
         "column_type": ColumnType.IMAGE,
         "column_statistics": nan_image_statistics,
     }
     expected_all_nan_statistics = {
-        "column_name": "image_all_nan",
+        "column_name": "image_all_null",
         "column_type": ColumnType.IMAGE,
         "column_statistics": {
             "nan_count": 4,
@@ -535,8 +535,8 @@ def image_statistics_expected() -> dict:  # type: ignore
         "num_examples": 4,
         "statistics": {
             "image": expected_statistics,
-            "image_nan": expected_nan_statistics,
-            "image_all_nan": expected_all_nan_statistics,
+            "image_null": expected_nan_statistics,
+            "image_all_null": expected_all_nan_statistics,
         },
         "partial": False,
     }
@@ -546,14 +546,14 @@ def image_statistics_expected() -> dict:  # type: ignore
     "column_name",
     [
         "float__column",
+        "float__null_column",
         "float__nan_column",
-        "float__with_nan_column",
-        "float__all_nan_column",
+        "float__all_null_column",
         "float__negative_column",
         "float__cross_zero_column",
         "float__large_values_column",
         "float__only_one_value_column",
-        "float__only_one_value_nan_column",
+        "float__only_one_value_null_column",
     ],
 )
 def test_float_statistics(
@@ -580,13 +580,13 @@ def test_float_statistics(
     "column_name",
     [
         "int__column",
-        "int__nan_column",
-        "int__all_nan_column",
+        "int__null_column",
+        "int__all_null_column",
         "int__negative_column",
         "int__cross_zero_column",
         "int__large_values_column",
         "int__only_one_value_column",
-        "int__only_one_value_nan_column",
+        "int__only_one_value_null_column",
     ],
 )
 def test_int_statistics(
@@ -616,12 +616,12 @@ def test_int_statistics(
     "column_name",
     [
         "string_text__column",
-        "string_text__nan_column",
+        "string_text__null_column",
         "string_text__large_string_column",
-        "string_text__large_string_nan_column",
+        "string_text__large_string_null_column",
         "string_label__column",
-        "string_label__nan_column",
-        "string_label__all_nan_column",
+        "string_label__null_column",
+        "string_label__all_null_column",
     ],
 )
 def test_string_statistics(
@@ -654,12 +654,12 @@ def test_string_statistics(
     "column_name",
     [
         "class_label__column",
-        "class_label__nan_column",
-        "class_label__all_nan_column",
+        "class_label__null_column",
+        "class_label__all_null_column",
         "class_label__less_classes_column",
         "class_label__string_column",
-        "class_label__string_nan_column",
-        "class_label__string_all_nan_column",
+        "class_label__string_null_column",
+        "class_label__string_all_null_column",
     ],
 )
 def test_class_label_statistics(
@@ -683,8 +683,8 @@ def test_class_label_statistics(
     "column_name",
     [
         "bool__column",
-        "bool__nan_column",
-        "bool__all_nan_column",
+        "bool__null_column",
+        "bool__all_null_column",
     ],
 )
 def test_bool_statistics(
@@ -706,29 +706,29 @@ def test_bool_statistics(
     "column_name",
     [
         "list__int_column",
-        "list__int_nan_column",
-        "list__int_all_nan_column",
+        "list__int_null_column",
+        "list__int_all_null_column",
         "list__string_column",
-        "list__string_nan_column",
-        "list__string_all_nan_column",
+        "list__string_null_column",
+        "list__string_all_null_column",
         "list__dict_column",
-        "list__dict_nan_column",
-        "list__dict_all_nan_column",
+        "list__dict_null_column",
+        "list__dict_all_null_column",
         "list__sequence_int_column",
-        "list__sequence_int_nan_column",
-        "list__sequence_int_all_nan_column",
+        "list__sequence_int_null_column",
+        "list__sequence_int_all_null_column",
         "list__sequence_class_label_column",
-        "list__sequence_class_label_nan_column",
-        "list__sequence_class_label_all_nan_column",
+        "list__sequence_class_label_null_column",
+        "list__sequence_class_label_all_null_column",
         "list__sequence_of_sequence_bool_column",
-        "list__sequence_of_sequence_bool_nan_column",
-        "list__sequence_of_sequence_bool_all_nan_column",
+        "list__sequence_of_sequence_bool_null_column",
+        "list__sequence_of_sequence_bool_all_null_column",
         "list__sequence_of_sequence_dict_column",
-        "list__sequence_of_sequence_dict_nan_column",
-        "list__sequence_of_sequence_dict_all_nan_column",
+        "list__sequence_of_sequence_dict_null_column",
+        "list__sequence_of_sequence_dict_all_null_column",
         "list__sequence_of_list_dict_column",
-        "list__sequence_of_list_dict_nan_column",
-        "list__sequence_of_list_dict_all_nan_column",
+        "list__sequence_of_list_dict_null_column",
+        "list__sequence_of_list_dict_all_null_column",
     ],
 )
 def test_list_statistics(
@@ -780,7 +780,7 @@ def test_polars_struct_thread_panic_error(struct_thread_panic_error_parquet_file
 
 @pytest.mark.parametrize(
     "column_name",
-    ["audio", "audio_nan", "audio_all_nan"],
+    ["audio", "audio_null", "audio_all_null"],
 )
 def test_audio_statistics(
     column_name: str,
@@ -817,7 +817,7 @@ def test_audio_statistics(
 
 @pytest.mark.parametrize(
     "column_name",
-    ["image", "image_nan", "image_all_nan"],
+    ["image", "image_null", "image_all_null"],
 )
 def test_image_statistics(
     column_name: str,
