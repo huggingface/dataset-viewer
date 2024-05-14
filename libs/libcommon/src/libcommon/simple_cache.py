@@ -315,18 +315,15 @@ T = TypeVar("T")
 
 
 @overload
-def _clean_nested_mongo_object(obj: dict[str, T]) -> dict[str, T]:
-    ...
+def _clean_nested_mongo_object(obj: dict[str, T]) -> dict[str, T]: ...
 
 
 @overload
-def _clean_nested_mongo_object(obj: list[T]) -> list[T]:
-    ...
+def _clean_nested_mongo_object(obj: list[T]) -> list[T]: ...
 
 
 @overload
-def _clean_nested_mongo_object(obj: T) -> T:
-    ...
+def _clean_nested_mongo_object(obj: T) -> T: ...
 
 
 def _clean_nested_mongo_object(obj: Any) -> Any:
