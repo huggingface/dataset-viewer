@@ -158,9 +158,11 @@ def test_compute_from_parquet(
     )
 
     parquet_metadata = pq.read_metadata(ds_fs.open("config/train/0000.parquet"))
-    with patch("libcommon.parquet_utils.HTTPFile", return_value=parquet_file) as mock_http_file, patch(
-        "pyarrow.parquet.read_metadata", return_value=parquet_metadata
-    ) as mock_read_metadata, patch("pyarrow.parquet.read_schema", return_value=ds.data.schema) as mock_read_schema:
+    with (
+        patch("libcommon.parquet_utils.HTTPFile", return_value=parquet_file) as mock_http_file,
+        patch("pyarrow.parquet.read_metadata", return_value=parquet_metadata) as mock_read_metadata,
+        patch("pyarrow.parquet.read_schema", return_value=ds.data.schema) as mock_read_schema,
+    ):
         job_runner = get_job_runner(
             dataset,
             config,

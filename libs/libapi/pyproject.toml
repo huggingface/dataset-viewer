@@ -23,7 +23,7 @@ pillow = "^10.3.0"
 pip-audit = "^2.5.4"
 pytest = "^7.2.1"
 pytest-httpserver = "^1.0.6"
-ruff = "^0.2.1"
+ruff = "^0"
 
 [build-system]
 build-backend = "poetry.core.masonry.api"
