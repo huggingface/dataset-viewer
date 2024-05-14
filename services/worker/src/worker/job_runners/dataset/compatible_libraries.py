@@ -504,7 +504,9 @@ def get_compatible_libraries_for_csv(dataset: str, hf_token: Optional[str], logi
         for loading_code in loading_codes:
             if len(loading_code["arguments"]["splits"]) == 1:
                 pattern = next(iter(loading_code["arguments"]["splits"].values()))
-                loading_code["code"] = DASK_CODE.format(function=function, dataset=dataset, pattern=pattern)
+                loading_code["code"] = DASK_CODE.format(
+                    function=function, dataset=dataset, pattern=pattern, comment=comment
+                )
             else:
                 loading_code["code"] = DASK_CODE_SPLITS.format(
                     function=function,
