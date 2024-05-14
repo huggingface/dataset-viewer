@@ -4,6 +4,7 @@
 import os
 from collections.abc import Generator
 from pathlib import Path
+from typing import Union
 
 import duckdb
 import pyarrow as pa
@@ -62,7 +63,7 @@ def index_file_location(ds: Dataset) -> Generator[str, None, None]:
 
 
 @pytest.mark.parametrize(
-    "parameter_name, parameter_value", [("where", "col='A'"), ("orderby", "A"), ("orderby", "A DESC")]
+    "parameter_name, parameter_value", [("where", "\"col\"='A'"), ("orderby", '"A"'), ("orderby", '"A" DESC')]
 )
 def test_validate_query_parameter(parameter_name: str, parameter_value: str) -> None:
     validate_query_parameter(parameter_value, parameter_name)
@@ -71,15 +72,15 @@ def test_validate_query_parameter(parameter_name: str, parameter_value: str) -> 
 @pytest.mark.parametrize("sql_injection", ["; SELECT * from data", " /*", "--"])
 @pytest.mark.parametrize(
     "parameter_name, parameter_value",
-    [("where", "col='A'"), ("orderby", "A"), ("orderby", "A DESC")],
+    [("where", "\"col\"='A'"), ("orderby", '"A"'), ("orderby", '"A" DESC')],
 )
 def test_validate_query_parameter_raises(parameter_name: str, parameter_value: str, sql_injection: str) -> None:
     with pytest.raises(InvalidParameterError):
         validate_query_parameter(parameter_value + sql_injection, parameter_name)
 
 
-@pytest.mark.parametrize("orderby", ["", "age", "age DESC"])
-@pytest.mark.parametrize("where", ["", "gender='female'"])
+@pytest.mark.parametrize("orderby", ["", '"age"', '"age" DESC'])
+@pytest.mark.parametrize("where", ["", "\"gender\"='female'"])
 @pytest.mark.parametrize("columns", [["name", "age"], ["name"]])
 def test_execute_filter_query(columns: list[str], where: str, orderby: str, index_file_location: str) -> None:
     # in split-duckdb-index we always add the ROW_IDX_COLUMN column
@@ -108,15 +109,15 @@ def test_execute_filter_query(columns: list[str], where: str, orderby: str, inde
         expected_pa_table = expected_pa_table.filter(pc.field("gender") == "female")
     if orderby:
         if orderby.endswith(" DESC"):
-            sorting = [(orderby.removesuffix(" DESC"), "descending")]
-            expected_pa_table = expected_pa_table.sort_by(sorting)
+            sorting: Union[str, list[tuple[str, str]]] = [(orderby.removesuffix(" DESC").strip('"'), "descending")]
         else:
-            expected_pa_table = expected_pa_table.sort_by(orderby)
+            sorting = orderby.strip('"')
+        expected_pa_table = expected_pa_table.sort_by(sorting)
     expected_pa_table = expected_pa_table.slice(offset, limit).select(columns)
     assert pa_table == expected_pa_table
 
 
-@pytest.mark.parametrize("where", ["non-existing-column=30", "name=30", "name>30"])
+@pytest.mark.parametrize("where", ['"non-existing-column"=30', '"name"=30', '"name">30'])
 def test_execute_filter_query_raises(where: str, index_file_location: str) -> None:
     columns, limit, offset = ["name", "gender", "age"], 100, 0
     with pytest.raises(InvalidParameterError):
