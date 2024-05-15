@@ -23,15 +23,19 @@ spec:
           - path: /openapi.json
             pathType: Exact
             backend:
-              serviceName: openapi-redirect
-              servicePort: use-annotation
+              service:
+                name: openapi-redirect
+                port:
+                  name: use-annotation
           {{- end }}
           {{ if hasKey $annotations "alb.ingress.kubernetes.io/actions.metrics-unauthorized" -}}
           - path: /metrics
             pathType: Exact
             backend:
-              serviceName: metrics-unauthorized
-              servicePort: use-annotation
+              service:
+                name: metrics-unauthorized
+                port:
+                  name: use-annotation
           {{- end -}}
 {{- include "ingress.tls" (merge (dict "annotations" $annotations) $ ) | indent 2}}
 {{- end }}
