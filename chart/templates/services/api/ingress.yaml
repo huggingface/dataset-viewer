@@ -25,7 +25,7 @@ spec:
             backend:
               serviceName: openapi-redirect
               servicePort: use-annotation
-          {{- end -}}
+          {{- end }}
           {{ if hasKey $annotations "alb.ingress.kubernetes.io/actions.metrics-unauthorized" -}}
           - path: /metrics
             pathType: Exact
