@@ -55,11 +55,6 @@ images:
       useGlobalRegistry: false
       repository: datasets-server-services-sse-api
       tag: sha-fb3399a
-    storageAdmin:
-      registry: huggingface
-      useGlobalRegistry: false
-      repository: datasets-server-services-storage-admin
-      tag: sha-fb3399a
     worker:
       registry: huggingface
       useGlobalRegistry: false
@@ -183,18 +178,6 @@ queueMetricsCollector:
     limits:
       cpu: 1
       memory: "512Mi"
-
-# --- storage admin (to manually inspect the storage, in /data) ---
-
-storageAdmin:
-  replicas: 1
-  resources:
-    requests:
-      cpu: 50m
-      memory: "64Mi"
-    limits:
-      cpu: 1
-      memory: "256Mi"
 
 # --- reverse proxy ---
 
