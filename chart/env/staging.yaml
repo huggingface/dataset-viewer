@@ -13,11 +13,6 @@ global:
 images:
   pullPolicy: IfNotPresent
   pullSecrets: []
-  reverseProxy:
-    useGlobalRegistry: false
-    registry: docker.io
-    repository: nginx
-    tag: "1.25.3"
   jobs:
     mongodbMigration:
       registry: huggingface
@@ -179,19 +174,7 @@ queueMetricsCollector:
       cpu: 1
       memory: "512Mi"
 
-# --- reverse proxy ---
-
-reverseProxy:
-  replicas: 1
-  resources:
-    requests:
-      cpu: 100m
-      memory: "64Mi"
-    limits:
-      cpu: 1
-      memory: "256Mi"
-  service:
-    type: NodePort
+# --- ALB ---
 
 ingress:
   tls:
