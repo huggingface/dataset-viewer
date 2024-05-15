@@ -38,6 +38,24 @@
           title: ClickHouse
         - local: duckdb
           title: DuckDB
+          sections:
+            - local: duckdb_cli
+              title: DuckDB CLI
+              sections:
+                - local: duckdb_cli_auth
+                  title: Authenticate
+                - local: duckdb_cli_select
+                  title: Query datasets
+                - local: duckdb_cli_sql_operations
+                  title: Perform SQL operations
+                - local: duckdb_cli_process
+                  title: Process datasets
+                - local: duckdb_cli_vector_similarity_search
+                  title: Perform vector similarity search
+                - local: duckdb_cli_export
+                  title: Export to other formats
+                - local: duckdb_cli_fts
+                  title: Implement full-text search
         - local: pandas
           title: Pandas
         - local: polars
