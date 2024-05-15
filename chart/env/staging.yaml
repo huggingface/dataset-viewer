@@ -251,8 +251,6 @@ api:
     type: NodePort
   ingress:
     enabled: true
-    annotations:
-      alb.ingress.kubernetes.io/group.order: "2"
   resources:
     requests:
       cpu: 100m
@@ -269,7 +267,7 @@ rows:
   ingress:
     enabled: true
     annotations:
-      alb.ingress.kubernetes.io/group.order: "3"
+      alb.ingress.kubernetes.io/group.order: "2"
   resources:
     requests:
       cpu: 100m
@@ -286,7 +284,7 @@ search:
   ingress:
     enabled: true
     annotations:
-      alb.ingress.kubernetes.io/group.order: "4"
+      alb.ingress.kubernetes.io/group.order: "3"
   resources:
     requests:
       cpu: 100m

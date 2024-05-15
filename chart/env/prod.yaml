@@ -336,7 +336,6 @@ admin:
     annotations:
       alb.ingress.kubernetes.io/group.order: "1"
       alb.ingress.kubernetes.io/target-node-labels: role-datasets-server=true
-      alb.ingress.kubernetes.io/actions.openapi-redirect: '{"Type":"redirect","RedirectConfig":{"Host":"raw.githubusercontent.com","Path":"/huggingface/dataset-viewer/main/docs/source/openapi.json","Port":"443","Protocol":"HTTPS","Query":"#{query}","StatusCode":"HTTP_307"}}'
   resources:
     requests:
       cpu: 1
@@ -361,8 +360,8 @@ api:
   ingress:
     enabled: true
     annotations:
-      alb.ingress.kubernetes.io/group.order: "2"
       alb.ingress.kubernetes.io/target-node-labels: role-datasets-server-api=true
+      alb.ingress.kubernetes.io/actions.openapi-redirect: '{"Type":"redirect","RedirectConfig":{"Host":"raw.githubusercontent.com","Path":"/huggingface/dataset-viewer/main/docs/source/openapi.json","Port":"443","Protocol":"HTTPS","Query":"#{query}","StatusCode":"HTTP_307"}}'
   resources:
     requests:
       cpu: 4
@@ -385,7 +384,7 @@ rows:
   ingress:
     enabled: true
     annotations:
-      alb.ingress.kubernetes.io/group.order: "3"
+      alb.ingress.kubernetes.io/group.order: "2"
       alb.ingress.kubernetes.io/target-node-labels: role-datasets-server-rows=true
   resources:
     requests:
@@ -409,7 +408,7 @@ search:
   ingress:
     enabled: true
     annotations:
-      alb.ingress.kubernetes.io/group.order: "4"
+      alb.ingress.kubernetes.io/group.order: "3"
       alb.ingress.kubernetes.io/target-node-labels: role-datasets-server-search=true
       alb.ingress.kubernetes.io/target-group-attributes: stickiness.enabled=true,stickiness.lb_cookie.duration_seconds=300
       alb.ingress.kubernetes.io/target-type: ip
@@ -434,7 +433,7 @@ sseApi:
   ingress:
     enabled: true
     annotations:
-      alb.ingress.kubernetes.io/group.order: "5"
+      alb.ingress.kubernetes.io/group.order: "4"
       alb.ingress.kubernetes.io/target-node-labels: role-datasets-server=true
   resources:
     requests:

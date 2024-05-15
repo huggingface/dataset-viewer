@@ -20,12 +20,5 @@ spec:
                   name: http
 
             pathType: Prefix
-          {{ if hasKey $annotations "alb.ingress.kubernetes.io/actions.openapi-redirect" -}}
-          - path: /openapi.json
-            pathType: Exact
-            backend:
-              serviceName: openapi-redirect
-              servicePort: use-annotation
-          {{- end -}}
 {{- include "ingress.tls" (merge (dict "annotations" $annotations) $ ) | indent 2}}
 {{- end }}
