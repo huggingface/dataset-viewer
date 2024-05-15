@@ -26,8 +26,8 @@ from libcommon.simple_cache import (
     delete_dataset_responses,
     fetch_names,
     get_cache_entries_df,
+    get_response,
     get_response_metadata,
-    get_response_or_missing_error,
     upsert_response_params,
 )
 from libcommon.state import ArtifactState, DatasetState, FirstStepsDatasetState
@@ -274,7 +274,10 @@ class Plan:
 
 
 def get_num_bytes_from_config_infos(dataset: str, config: str, split: Optional[str] = None) -> Optional[int]:
-    resp = get_response_or_missing_error(kind=CONFIG_INFO_KIND, dataset=dataset, config=config)
+    try:
+        resp = get_response(kind=CONFIG_INFO_KIND, dataset=dataset, config=config)
+    except CachedArtifactNotFoundError:
+        return None
     if "dataset_info" in resp["content"] and isinstance(resp["content"]["dataset_info"], dict):
         dataset_info = resp["content"]["dataset_info"]
         if split is None:

@@ -514,28 +514,6 @@ CACHED_RESPONSE_NOT_FOUND = "CachedResponseNotFound"
 DATASET_GIT_REVISION_NOT_FOUND = "dataset-git-revision-not-found"
 
 
-def get_response_or_missing_error(
-    kind: str, dataset: str, config: Optional[str] = None, split: Optional[str] = None
-) -> CacheEntryWithDetails:
-    try:
-        response = get_response_with_details(kind=kind, dataset=dataset, config=config, split=split)
-    except CachedArtifactNotFoundError:
-        response = CacheEntryWithDetails(
-            content={
-                "error": (
-                    f"Cached response not found for kind {kind}, dataset {dataset}, config {config}, split {split}"
-                )
-            },
-            http_status=HTTPStatus.NOT_FOUND,
-            error_code=CACHED_RESPONSE_NOT_FOUND,
-            dataset_git_revision=DATASET_GIT_REVISION_NOT_FOUND,
-            job_runner_version=None,
-            progress=None,
-            details={},
-        )
-    return response
-
-
 def get_previous_step_or_raise(
     kind: str, dataset: str, config: Optional[str] = None, split: Optional[str] = None
 ) -> CacheEntryWithDetails:
@@ -548,13 +526,15 @@ def get_previous_step_or_raise(
         config (`str`, *optional*): The config name.
         split (`str`, *optional*): The split name.
 
+    Raises:
+        [~`CachedArtifactNotFoundError`]: If the response does not exist.
+        [~`CachedArtifactError`]: If the response is not successful.
+
     Returns:
         `CacheEntryWithDetails`: The response. It can be an error,
           including a cache miss (error code: `CachedResponseNotFound`)
     """
-    response = get_response_or_missing_error(kind=kind, dataset=dataset, config=config, split=split)
-    if "error_code" in response and response["error_code"] == CACHED_RESPONSE_NOT_FOUND:
-        raise CachedArtifactNotFoundError(kind=kind, dataset=dataset, config=config, split=split)
+    response = get_response_with_details(kind=kind, dataset=dataset, config=config, split=split)
     if response["http_status"] != HTTPStatus.OK:
         raise CachedArtifactError(
             message="The previous step failed.",
@@ -915,7 +895,7 @@ def fetch_names(dataset: str, config: Optional[str], cache_kind: str, names_fiel
     """
     try:
         names = []
-        response = get_response_or_missing_error(kind=cache_kind, dataset=dataset, config=config)
+        response = get_response_with_details(kind=cache_kind, dataset=dataset, config=config)
         for name_item in response["content"][names_field]:
             name = name_item[name_field]
             if not isinstance(name, str):

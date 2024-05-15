@@ -12,7 +12,12 @@ from libcommon.dtos import Priority, RowItem
 from libcommon.exceptions import CustomError
 from libcommon.operations import update_dataset
 from libcommon.orchestrator import has_pending_ancestor_jobs
-from libcommon.simple_cache import CACHED_RESPONSE_NOT_FOUND, CacheEntry, get_response_or_missing_error, has_some_cache
+from libcommon.simple_cache import (
+    CachedArtifactNotFoundError,
+    CacheEntry,
+    get_response,
+    has_some_cache,
+)
 from libcommon.storage_client import StorageClient
 from libcommon.utils import orjson_dumps
 from starlette.requests import Request
@@ -171,8 +176,9 @@ def get_cache_entry_from_step(
     Returns:
         `CacheEntry`: the cached record
     """
-    response = get_response_or_missing_error(kind=processing_step_name, dataset=dataset, config=config, split=split)
-    if "error_code" in response and response["error_code"] == CACHED_RESPONSE_NOT_FOUND:
+    try:
+        response = get_response(kind=processing_step_name, dataset=dataset, config=config, split=split)
+    except CachedArtifactNotFoundError:
         try_backfill_dataset_then_raise(
             processing_step_name=processing_step_name,
             dataset=dataset,
