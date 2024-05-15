@@ -6,7 +6,7 @@ from http import HTTPStatus
 
 from libcommon.exceptions import PreviousStepFormatError
 from libcommon.simple_cache import (
-    CacheEntryDoesNotExistError,
+    CachedArtifactNotFoundError,
     get_previous_step_or_raise,
     get_response,
 )
@@ -49,7 +49,7 @@ def compute_is_valid_response(dataset: str) -> tuple[IsValidResponse, float]:
             total += 1
             try:
                 response = get_response(kind="config-is-valid", dataset=dataset, config=config)
-            except CacheEntryDoesNotExistError:
+            except CachedArtifactNotFoundError:
                 logging.debug("No response found in previous step for this dataset: 'config-is-valid'.")
                 pending += 1
                 continue

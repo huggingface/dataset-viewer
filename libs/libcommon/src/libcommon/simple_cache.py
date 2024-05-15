@@ -195,8 +195,24 @@ CachedResponseDocument.config.required = False  # type: ignore
 CachedResponseDocument.split.required = False  # type: ignore
 
 
-class CacheEntryDoesNotExistError(DoesNotExist):
-    pass
+class CachedArtifactNotFoundError(Exception):
+    kind: str
+    dataset: str
+    config: Optional[str]
+    split: Optional[str]
+
+    def __init__(
+        self,
+        kind: str,
+        dataset: str,
+        config: Optional[str],
+        split: Optional[str],
+    ):
+        super().__init__(f"Cache entry does not exist: {kind=} {dataset=} {config=} {split=}")
+        self.kind = kind
+        self.dataset = dataset
+        self.config = config
+        self.split = split
 
 
 def _update_metrics(kind: str, http_status: HTTPStatus, increase_by: int, error_code: Optional[str] = None) -> None:
@@ -357,7 +373,7 @@ def get_response_without_content(
             .get()
         )
     except DoesNotExist as e:
-        raise CacheEntryDoesNotExistError(f"Cache entry does not exist: {kind=} {dataset=} {config=} {split=}") from e
+        raise CachedArtifactNotFoundError(kind=kind, dataset=dataset, config=config, split=split) from e
     return {
         "http_status": response.http_status,
         "error_code": response.error_code,
@@ -391,7 +407,7 @@ def get_response_metadata(
             .get()
         )
     except DoesNotExist as e:
-        raise CacheEntryDoesNotExistError(f"Cache entry does not exist: {kind=} {dataset=} {config=} {split=}") from e
+        raise CachedArtifactNotFoundError(kind=kind, dataset=dataset, config=config, split=split) from e
     return {
         "http_status": response.http_status,
         "error_code": response.error_code,
@@ -409,26 +425,6 @@ class CacheEntry(CacheEntryWithoutContent):
 
 class CacheEntryWithDetails(CacheEntry):
     details: Mapping[str, str]
-
-
-class CachedArtifactNotFoundError(Exception):
-    kind: str
-    dataset: str
-    config: Optional[str]
-    split: Optional[str]
-
-    def __init__(
-        self,
-        kind: str,
-        dataset: str,
-        config: Optional[str],
-        split: Optional[str],
-    ):
-        super().__init__("The cache entry has not been found.")
-        self.kind = kind
-        self.dataset = dataset
-        self.config = config
-        self.split = split
 
 
 class CachedArtifactError(Exception):
@@ -472,7 +468,7 @@ def get_response(kind: str, dataset: str, config: Optional[str] = None, split: O
             .get()
         )
     except DoesNotExist as e:
-        raise CacheEntryDoesNotExistError(f"Cache entry does not exist: {kind=} {dataset=} {config=} {split=}") from e
+        raise CachedArtifactNotFoundError(kind=kind, dataset=dataset, config=config, split=split) from e
     return {
         "content": _clean_nested_mongo_object(response.content),
         "http_status": response.http_status,
@@ -502,7 +498,7 @@ def get_response_with_details(
             .get()
         )
     except DoesNotExist as e:
-        raise CacheEntryDoesNotExistError(f"Cache entry does not exist: {kind=} {dataset=} {config=} {split=}") from e
+        raise CachedArtifactNotFoundError(kind=kind, dataset=dataset, config=config, split=split) from e
     return {
         "content": _clean_nested_mongo_object(response.content),
         "http_status": response.http_status,
@@ -523,7 +519,7 @@ def get_response_or_missing_error(
 ) -> CacheEntryWithDetails:
     try:
         response = get_response_with_details(kind=kind, dataset=dataset, config=config, split=split)
-    except CacheEntryDoesNotExistError:
+    except CachedArtifactNotFoundError:
         response = CacheEntryWithDetails(
             content={
                 "error": (

@@ -6,7 +6,7 @@ from http import HTTPStatus
 
 from libcommon.exceptions import PreviousStepFormatError
 from libcommon.simple_cache import (
-    CacheEntryDoesNotExistError,
+    CachedArtifactNotFoundError,
     get_response,
 )
 
@@ -53,7 +53,7 @@ def compute_config_duckdb_index_size_response(dataset: str, config: str) -> Conf
                     kind="split-duckdb-index", dataset=dataset, config=config, split=split
                 )
                 config_info_response = get_response(kind="config-info", dataset=dataset, config=config)
-            except CacheEntryDoesNotExistError:
+            except CachedArtifactNotFoundError:
                 logging.debug(
                     "No response found in previous step for this dataset: 'split-duckdb-index' or 'config-info'."
                 )

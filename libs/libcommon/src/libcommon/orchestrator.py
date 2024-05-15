@@ -22,7 +22,7 @@ from libcommon.processing_graph import ProcessingGraph, ProcessingStep, Processi
 from libcommon.prometheus import StepProfiler
 from libcommon.queue import Queue
 from libcommon.simple_cache import (
-    CacheEntryDoesNotExistError,
+    CachedArtifactNotFoundError,
     delete_dataset_responses,
     fetch_names,
     get_cache_entries_df,
@@ -892,7 +892,7 @@ def finish_job(
             and previous_response["dataset_git_revision"] == params["revision"]
             else 0
         )
-    except CacheEntryDoesNotExistError:
+    except CachedArtifactNotFoundError:
         failed_runs = 0
 
     upsert_response_params(
