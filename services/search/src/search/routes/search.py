@@ -24,7 +24,6 @@ from libapi.request import (
     get_request_parameter_length,
     get_request_parameter_offset,
 )
-from libapi.response import ROW_IDX_COLUMN
 from libapi.utils import (
     Endpoint,
     get_json_api_error_response,
@@ -32,7 +31,7 @@ from libapi.utils import (
     get_json_ok_response,
     to_rows_list,
 )
-from libcommon.constants import MAX_NUM_ROWS_PER_PAGE
+from libcommon.constants import MAX_NUM_ROWS_PER_PAGE,ROW_IDX_COLUMN, HF_FTS_SCORE
 from libcommon.dtos import PaginatedResponse
 from libcommon.duckdb_utils import duckdb_index_is_partial
 from libcommon.prometheus import StepProfiler
@@ -49,9 +48,9 @@ from search.duckdb_connection import duckdb_connect
 
 logger = logging.getLogger(__name__)
 
-FTS_STAGE_TABLE_COMMAND = "SELECT * FROM (SELECT __hf_index_id, fts_main_data.match_bm25(__hf_index_id, ?) AS __hf_fts_score FROM data) A WHERE __hf_fts_score IS NOT NULL;"
+FTS_STAGE_TABLE_COMMAND = "SELECT * FROM (SELECT {ROW_IDX_COLUMN}, fts_main_data.match_bm25({ROW_IDX_COLUMN}, ?) AS {HF_FTS_SCORE} FROM data) A WHERE {HF_FTS_SCORE} IS NOT NULL;"
 JOIN_STAGE_AND_DATA_COMMAND = (
-    "SELECT data.* FROM fts_stage_table JOIN data USING(__hf_index_id) ORDER BY fts_stage_table.__hf_fts_score DESC;"
+    "SELECT data.* FROM fts_stage_table JOIN data USING({ROW_IDX_COLUMN}) ORDER BY fts_stage_table.{HF_FTS_SCORE} DESC;"
 )
 
 
@@ -66,7 +65,7 @@ def full_text_search(
         fts_stage_table = con.execute(query=FTS_STAGE_TABLE_COMMAND, parameters=[query]).arrow()
         num_rows_total = fts_stage_table.num_rows
         logging.info(f"got {num_rows_total=} results for {query=} using {offset=} {length=}")
-        fts_stage_table = fts_stage_table.sort_by([("__hf_fts_score", "descending")]).slice(offset, length)
+        fts_stage_table = fts_stage_table.sort_by([(HF_FTS_SCORE, "descending")]).slice(offset, length)
         pa_table = con.execute(query=JOIN_STAGE_AND_DATA_COMMAND).arrow()
     return num_rows_total, pa_table
 

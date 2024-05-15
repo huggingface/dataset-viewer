@@ -3,15 +3,12 @@ from typing import Optional
 
 import pyarrow as pa
 from datasets import Features
-from libcommon.constants import MAX_NUM_ROWS_PER_PAGE
+from libcommon.constants import MAX_NUM_ROWS_PER_PAGE, ROW_IDX_COLUMN
 from libcommon.dtos import PaginatedResponse
 from libcommon.storage_client import StorageClient
 from libcommon.viewer_utils.features import to_features_list
 
 from libapi.utils import to_rows_list
-
-ROW_IDX_COLUMN = "__hf_index_id"
-
 
 async def create_response(
     dataset: str,

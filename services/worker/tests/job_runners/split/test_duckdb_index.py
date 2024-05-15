@@ -39,6 +39,7 @@ from worker.resources import LibrariesResource
 
 from ...fixtures.hub import HubDatasetTest
 from ..utils import REVISION_NAME
+from libcommon.constants import ROW_IDX_COLUMN, HF_FTS_SCORE 
 
 GetJobRunner = Callable[[str, str, str, AppConfig], SplitDuckDbIndexJobRunner]
 
@@ -378,7 +379,7 @@ def test_compute(
             # perform a search to validate fts feature
             query = "Lord Vader"
             result = con.execute(
-                "SELECT __hf_index_id, text FROM data WHERE fts_main_data.match_bm25(__hf_index_id, ?) IS NOT NULL;",
+                "SELECT {ROW_IDX_COLUMN}, text FROM data WHERE fts_main_data.match_bm25({ROW_IDX_COLUMN}, ?) IS NOT NULL;",
                 [query],
             )
             rows = result.df()
@@ -392,7 +393,7 @@ def test_compute(
                 )
             ).any()
             assert not (rows["text"].eq("There goes another one.")).any()
-            assert (rows["__hf_index_id"].isin([0, 2, 3, 4, 5, 7, 8, 9])).all()
+            assert (rows[ROW_IDX_COLUMN].isin([0, 2, 3, 4, 5, 7, 8, 9])).all()
 
         con.close()
         os.remove(file_name)
@@ -479,8 +480,8 @@ Back away ! I will deal with this Jedi slime myself"""
 
 
 FTS_COMMAND = (
-    "SELECT * EXCLUDE (__hf_fts_score) FROM (SELECT *, fts_main_data.match_bm25(__hf_index_id, ?) AS __hf_fts_score"
-    " FROM data) A WHERE __hf_fts_score IS NOT NULL ORDER BY __hf_index_id;"
+    "SELECT * EXCLUDE ({HF_FTS_SCORE}) FROM (SELECT *, fts_main_data.match_bm25({ROW_IDX_COLUMN}, ?) AS {HF_FTS_SCORE}"
+    " FROM data) A WHERE {HF_FTS_SCORE} IS NOT NULL ORDER BY {ROW_IDX_COLUMN};"
 )
 
 
@@ -523,5 +524,5 @@ def test_table_column_hf_index_id_is_monotonic_increasing(tmp_path: Path) -> Non
         con.sql(CREATE_TABLE_COMMANDS.format(columns=column_names, source=parquet_path))
     with duckdb.connect(db_path) as con:
         df = con.sql("SELECT * FROM data").to_df()
-    assert df["__hf_index_id"].is_monotonic_increasing
-    assert df["__hf_index_id"].is_unique
+    assert df[ROW_IDX_COLUMN].is_monotonic_increasing
+    assert df[ROW_IDX_COLUMN].is_unique
