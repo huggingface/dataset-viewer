@@ -15,8 +15,10 @@ from libcommon.orchestrator import has_pending_ancestor_jobs
 from libcommon.simple_cache import (
     CachedArtifactNotFoundError,
     CacheEntry,
-    get_response,
     has_some_cache,
+)
+from libcommon.simple_cache import (
+    get_response as get_cached_response,
 )
 from libcommon.storage_client import StorageClient
 from libcommon.utils import orjson_dumps
@@ -177,7 +179,7 @@ def get_cache_entry_from_step(
         `CacheEntry`: the cached record
     """
     try:
-        response = get_response(kind=processing_step_name, dataset=dataset, config=config, split=split)
+        response = get_cached_response(kind=processing_step_name, dataset=dataset, config=config, split=split)
     except CachedArtifactNotFoundError:
         try_backfill_dataset_then_raise(
             processing_step_name=processing_step_name,
