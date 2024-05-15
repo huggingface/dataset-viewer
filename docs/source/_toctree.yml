@@ -43,7 +43,7 @@
               title: DuckDB CLI
               sections:
                 - local: duckdb_cli_auth
-                  title: Authenticate
+                  title: Authentication for private and gated datasets
                 - local: duckdb_cli_select
                   title: Query datasets
                 - local: duckdb_cli_sql_operations

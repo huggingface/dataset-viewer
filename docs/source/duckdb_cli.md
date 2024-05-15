@@ -1,12 +1,12 @@
-# DuckDB
+# DuckDB CLI
 
 The [DuckDB CLI](https://duckdb.org/docs/api/cli/overview.html) (Command Line Interface) is a single, dependency-free executable. 
 
-<!-- <Tip>
+<Tip>
 
 For installation details, visit the [installation page](https://duckdb.org/docs/installation).
 
-</Tip> -->
+</Tip>
 
 Starting from version `v0.10.3-dev1012`, the DuckDB CLI includes native support for accessing datasets on Hugging Face via URLs. Here are some features you can leverage with this powerful tool:
 
@@ -18,12 +18,35 @@ Starting from version `v0.10.3-dev1012`, the DuckDB CLI includes native support 
 - Implement full-text search on datasets
 - And more! For a complete list of DuckDB features, visit the DuckDB documentation.
 
-Let's start with a quick demo to query the full rows of a dataset under the `refs/convert/parquet` revision:
+To start the CLI, execute the following command in the installation folder:
 
 ```bash
+./duckdb
+```
+
+## Forming the Hugging Face URL
+
+To access Hugging Face datasets, use the following URL format:
+
+```plaintext
+hf://datasets/{my-username}/{my-dataset}@~parquet/{path_to_parquet_file} 
+```
+
+Where:
+- **my-username**  The user or organization of the dataset, e.g. `ibm`
+- **my-dataset** Is the dataset name, e.g: `duorc`
+- **path_to_parquet_file** Is the parquet file path, it supports glob patterns, e.g `**/*.parquet` to query all parquet files
+
+
+Let's start with a quick demo to query the full rows of a dataset under the `refs/convert/parquet` revision:
+
+```sql
 FROM 'hf://datasets/ibm/duorc@~parquet/**/*.parquet';
 ```
 
-#TODO: Put an image of the output?
+Or using traditional SQL syntax:
 
+```sql
+SELECT * FROM 'hf://datasets/ibm/duorc@~parquet/**/*.parquet';
+```
 In the following sections, we will cover more complex operations you can perform with DuckDB on Hugging Face datasets.
