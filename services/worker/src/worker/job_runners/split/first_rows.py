@@ -27,7 +27,7 @@ from libcommon.viewer_utils.rows import create_first_rows_response
 from worker.config import AppConfig, FirstRowsConfig
 from worker.dtos import CompleteJobResult
 from worker.job_runners.split.split_job_runner import SplitJobRunnerWithDatasetsCache
-from worker.utils import get_rows_or_raise, resolve_trust_remote_code
+from worker.utils import get_rows_or_raise, raise_if_long_column_name, resolve_trust_remote_code
 
 
 def compute_first_rows_from_parquet_response(
@@ -205,6 +205,8 @@ def compute_first_rows_from_streaming_response(
           If the split rows could not be obtained using the datasets library in normal mode.
         [~`libcommon.exceptions.DatasetWithScriptNotSupportedError`]:
             If the dataset has a dataset script and is not in the allow list.
+        [~`libcommon.exceptions.TooLongColumnNameError`]:
+            If one of the columns' name is too long (> 500 characters)
 
     Returns:
         `SplitFirstRowsResponse`: The list of first rows of the split.
@@ -252,6 +254,7 @@ def compute_first_rows_from_streaming_response(
             ) from err
     else:
         features = info.features
+    raise_if_long_column_name(features)
 
     def get_rows_content(rows_max_number: int) -> RowsContent:
         return get_rows_or_raise(

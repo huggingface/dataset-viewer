@@ -298,8 +298,9 @@ def test_executor_start(
     # tmp_dataset_repo_factory(zombie.dataset)
     with patch.object(executor, "heartbeat", wraps=executor.heartbeat) as heartbeat_mock:
         with patch.object(executor, "kill_zombies", wraps=executor.kill_zombies) as kill_zombies_mock:
-            with patch("worker.executor.START_WORKER_LOOP_PATH", __file__), patch.dict(
-                os.environ, {"WORKER_TEST_TIME": str(_TIME)}
+            with (
+                patch("worker.executor.START_WORKER_LOOP_PATH", __file__),
+                patch.dict(os.environ, {"WORKER_TEST_TIME": str(_TIME)}),
             ):
                 executor.start()
     current_job = set_just_started_job_in_queue
@@ -316,8 +317,9 @@ def test_executor_start(
 )
 def test_executor_raises_on_bad_worker(executor: WorkerExecutor, bad_worker_loop_type: str) -> None:
     with patch.dict(os.environ, {"WORKER_LOOP_TYPE": bad_worker_loop_type}):
-        with patch("worker.executor.START_WORKER_LOOP_PATH", __file__), patch.dict(
-            os.environ, {"WORKER_TEST_TIME": str(_TIME)}
+        with (
+            patch("worker.executor.START_WORKER_LOOP_PATH", __file__),
+            patch.dict(os.environ, {"WORKER_TEST_TIME": str(_TIME)}),
         ):
             with pytest.raises((ProcessExitedWithError, TimeoutExpired)):
                 executor.start()
@@ -336,8 +338,9 @@ def test_executor_stops_on_long_job(
             with patch.object(
                 executor, "kill_long_job_interval_seconds", 0.1
             ):  # make sure it has the time to kill the job
-                with patch("worker.executor.START_WORKER_LOOP_PATH", __file__), patch.dict(
-                    os.environ, {"WORKER_TEST_TIME": str(_TIME)}
+                with (
+                    patch("worker.executor.START_WORKER_LOOP_PATH", __file__),
+                    patch.dict(os.environ, {"WORKER_TEST_TIME": str(_TIME)}),
                 ):
                     executor.start()
 

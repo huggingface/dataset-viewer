@@ -78,6 +78,8 @@ CacheableErrorCode = Literal[
     "ConfigNamesError",
     "ConfigNotFoundError",
     "CreateCommitError",
+    "DatasetGenerationError",
+    "DatasetGenerationCastError",
     "DatasetInBlockListError",
     "DatasetManualDownloadError",
     "DatasetModuleNotInstalledError",
@@ -87,6 +89,7 @@ CacheableErrorCode = Literal[
     "DatasetWithTooComplexDataFilesPatternsError",
     "DatasetWithTooManyConfigsError",
     "DatasetWithTooManyParquetFilesError",
+    "DatasetWithTooManySplitsError",
     "DiskError",
     "DuckDBIndexFileNotFoundError",
     "EmptyDatasetError",
@@ -124,6 +127,7 @@ CacheableErrorCode = Literal[
     "SplitWithTooBigParquetError",
     "StreamingRowsError",
     "TooBigContentError",
+    "TooLongColumnNameError",
     "TooManyColumnsError",
     "UnexpectedError",
     "UnsupportedExternalFilesError",
@@ -180,6 +184,20 @@ class CreateCommitError(CacheableError):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "CreateCommitError", cause, False)
 
 
+class DatasetGenerationError(CacheableError):
+    """The dataset generation failed."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "DatasetGenerationError", cause, True)
+
+
+class DatasetGenerationCastError(CacheableError):
+    """The dataset generation failed because of a cast error."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "DatasetGenerationCastError", cause, True)
+
+
 class DatasetManualDownloadError(CacheableError):
     """The dataset requires manual download."""
 
@@ -219,6 +237,13 @@ class DatasetWithTooManyConfigsError(CacheableError):
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "DatasetWithTooManyConfigsError", cause, True)
+
+
+class DatasetWithTooManySplitsError(CacheableError):
+    """The number of splits of a dataset exceeded the limit."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "DatasetWithTooManySplitsError", cause, True)
 
 
 class DatasetWithTooManyParquetFilesError(CacheableError):
@@ -506,6 +531,13 @@ class TooManyColumnsError(CacheableError):
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "TooManyColumnsError", cause, True)
+
+
+class TooLongColumnNameError(CacheableError):
+    """The column name is too long."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "TooLongColumnNameError", cause, True)
 
 
 class UnexpectedError(CacheableError):

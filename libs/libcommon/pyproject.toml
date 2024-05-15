@@ -9,10 +9,10 @@ license = "Apache-2.0"
 python = "3.9.18"
 appdirs = "^1.4.4"
 cryptography = "^42.0.4"
-datasets = {version = "^2.19.1", extras = ["audio", "vision"]}
+datasets = {git = "https://github.com/huggingface/datasets.git", rev = "3638183e2f7e0dce8924e46e7cc21bf6d5d7adfb", extras = ["audio", "vision"]}  # branch = "datasets-2.19.1-hotfix"
 environs = "^9.5.0"
 fsspec = {version = "2024.3.1", extras = ["s3"]}
-huggingface-hub = {extras = ["hf-transfer"], version = "^0.22.2"}
+huggingface-hub = {extras = ["hf-transfer"], git = "https://github.com/huggingface/huggingface_hub.git", rev = "657a1bdcc0545309463e8651f62010154e9b3792"}
 mongo-types = "0.15.1"
 mongoengine = "^0.27.0"
 networkx = "^3.0"
@@ -40,7 +40,7 @@ pandas-stubs = "^1.5.3"
 pip-audit = "^2.5.4"
 pytest = "^7.2.1"
 pytest-datadir = "^1.5.0"
-ruff = "^0.2.1"
+ruff = "^0"
 types-aiobotocore = {extras = ["signer"], version = "^2.9.0"}
 types-psutil = "^5.9.5"
 types-pytz = "^2022.1.1"

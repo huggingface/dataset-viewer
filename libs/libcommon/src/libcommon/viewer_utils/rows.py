@@ -47,8 +47,7 @@ def transform_rows(
 
 
 class GetRowsContent(Protocol):
-    def __call__(self, rows_max_number: int) -> RowsContent:
-        ...
+    def __call__(self, rows_max_number: int) -> RowsContent: ...
 
 
 def create_first_rows_response(
