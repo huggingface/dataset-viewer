@@ -390,6 +390,8 @@ reverseProxy:
     type: ""
     annotations: {}
   tolerations: []
+  ingress:
+    enabled: false
 
 ingress:
   enabled: true
@@ -431,6 +433,9 @@ admin:
   service:
     type: ""
     annotations: {}
+  ingress:
+    enabled: true
+    annotations: {}
   tolerations: []
 
 hf:
@@ -471,6 +476,9 @@ api:
   service:
     type: ""
     annotations: {}
+  ingress:
+    enabled: true
+    annotations: {}
   tolerations: []
 
 rows:
@@ -497,6 +505,9 @@ rows:
       cpu: 0
   service:
     type: ""
+    annotations: {}
+  ingress:
+    enabled: true
     annotations: {}
   tolerations: []
 
@@ -554,6 +565,9 @@ sseApi:
       cpu: 0
   service:
     type: ""
+    annotations: {}
+  ingress:
+    enabled: true
     annotations: {}
   tolerations: []
 

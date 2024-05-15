@@ -1,0 +1,37 @@
+{{- if and .Values.global.huggingface.ingress.enabled .Values.ingress.enabled .Values.api.ingress.enabled -}}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  {{- $annotations := fromYaml (include "datasetsServer.instance.ingress.annotations" (dict "instance" .Values.api "context" $ )) }}
+  annotations: {{ toYaml $annotations | nindent 4}}
+  labels: {{ include "labels.api" . | nindent 4 }}
+  name: "{{ include "name" . }}-api"
+  namespace: {{ .Release.Namespace }}
+spec:
+  rules:
+    - host: {{ include "datasetsServer.ingress.hostname" . }}
+      http:
+        paths:
+          - backend:
+              service:
+                name: "{{ include "name" . }}-api"
+                port:
+                  name: http
+            path: /
+            pathType: Prefix
+          {{ if hasKey $annotations "alb.ingress.kubernetes.io/actions.openapi-redirect" -}}
+          - path: /openapi.json
+            pathType: Exact
+            backend:
+              serviceName: openapi-redirect
+              servicePort: use-annotation
+          {{- end }}
+          {{ if hasKey $annotations "alb.ingress.kubernetes.io/actions.metrics-unauthorized" -}}
+          - path: /metrics
+            pathType: Exact
+            backend:
+              serviceName: metrics-unauthorized
+              servicePort: use-annotation
+          {{- end -}}
+{{- include "ingress.tls" (merge (dict "annotations" $annotations) $ ) | indent 2}}
+{{- end }}

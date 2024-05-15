@@ -1,23 +1,24 @@
-{{- if and .Values.global.huggingface.ingress.enabled .Values.ingress.enabled .Values.reverseProxy.ingress.enabled -}}
+{{- if and .Values.global.huggingface.ingress.enabled .Values.ingress.enabled .Values.admin.ingress.enabled -}}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  {{- $annotations := fromYaml (include "datasetsServer.ingress.annotations" .) }}
+  {{- $annotations := fromYaml (include "datasetsServer.instance.ingress.annotations" (dict "instance" .Values.admin "context" $ )) }}
   annotations: {{ toYaml $annotations | nindent 4 }}
-  labels: {{ include "labels.reverseProxy" . | nindent 4 }}
-  name: {{ include "name" . }}
+  labels: {{ include "labels.admin" . | nindent 4 }}
+  name: "{{ include "name" . }}-admin"
   namespace: {{ .Release.Namespace }}
 spec:
   rules:
     - host: {{ include "datasetsServer.ingress.hostname" . }}
       http:
         paths:
-          - backend:
+          - path: /admin
+            backend:
               service:
-                name: "{{ include "name" . }}-reverse-proxy"
+                name: "{{ include "name" . }}-admin"
                 port:
                   name: http
-            path: /
+
             pathType: Prefix
 {{- include "ingress.tls" (merge (dict "annotations" $annotations) $ ) | indent 2}}
 {{- end }}
