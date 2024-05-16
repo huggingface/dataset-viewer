@@ -21,7 +21,7 @@ def test_cors(client: TestClient) -> None:
     header = "X-Requested-With"
     response = client.request(
         "options",
-        "/pending-jobs",
+        "/admin/pending-jobs",
         headers={
             "Origin": origin,
             "Access-Control-Request-Method": method,
@@ -45,7 +45,7 @@ def test_cors(client: TestClient) -> None:
 
 
 def test_get_healthcheck(client: TestClient) -> None:
-    response = client.request("get", "/healthcheck")
+    response = client.request("get", "/admin/healthcheck")
     assert response.status_code == 200
     assert response.text == "ok"
 
@@ -64,7 +64,7 @@ def test_metrics(client: TestClient) -> None:
 
 
 def test_pending_jobs(client: TestClient) -> None:
-    response = client.request("get", "/pending-jobs")
+    response = client.request("get", "/admin/pending-jobs")
     assert response.status_code == 200
     json = response.json()
     for processing_step in processing_graph.get_processing_steps():
@@ -72,9 +72,9 @@ def test_pending_jobs(client: TestClient) -> None:
 
 
 def test_dataset_status(client: TestClient) -> None:
-    response = client.request("get", "/dataset-status")
+    response = client.request("get", "/admin/dataset-status")
     assert response.status_code == 422
-    response = client.request("get", "/dataset-status", params={"dataset": "test-dataset"})
+    response = client.request("get", "/admin/dataset-status", params={"dataset": "test-dataset"})
     assert response.status_code == 200
     json = response.json()
     for processing_step in processing_graph.get_processing_steps():
@@ -99,7 +99,7 @@ def test_cache_reports(
     first_step = processing_graph.get_processing_steps()[0]
     path = first_step.cache_kind
     cursor_str = f"?cursor={cursor}" if cursor else ""
-    response = client.request("get", f"/cache-reports/{path}{cursor_str}")
+    response = client.request("get", f"/admin/cache-reports/{path}{cursor_str}")
     assert response.status_code == http_status
     if error_code:
         assert isinstance(response.json()["error"], str)
@@ -126,7 +126,7 @@ def test_cache_reports_with_content(
     first_step = processing_graph.get_processing_steps()[0]
     path = first_step.cache_kind
     cursor_str = f"?cursor={cursor}" if cursor else ""
-    response = client.request("get", f"/cache-reports-with-content/{path}{cursor_str}")
+    response = client.request("get", f"/admin/cache-reports-with-content/{path}{cursor_str}")
     assert response.status_code == http_status
     if error_code:
         assert isinstance(response.json()["error"], str)

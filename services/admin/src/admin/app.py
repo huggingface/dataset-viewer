@@ -14,7 +14,7 @@ from starlette.applications import Starlette
 from starlette.middleware import Middleware
 from starlette.middleware.cors import CORSMiddleware
 from starlette.middleware.gzip import GZipMiddleware
-from starlette.routing import Route
+from starlette.routing import Mount, Route
 from starlette_prometheus import PrometheusMiddleware
 
 from admin.config import AppConfig, UvicornConfig
@@ -174,7 +174,11 @@ def create_app() -> Starlette:
             ]
         )
 
-    return Starlette(routes=routes, middleware=middleware, on_shutdown=[resource.release for resource in resources])
+    return Starlette(
+        routes=Mount("/admin", routes=routes),
+        middleware=middleware,
+        on_shutdown=[resource.release for resource in resources],
+    )
 
 
 def start() -> None:
