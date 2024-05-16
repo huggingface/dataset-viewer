@@ -262,6 +262,10 @@ search:
       cpu: 1
       memory: "4Gi"
 
+sseApi:
+  service:
+    type: NodePort
+
 workers:
   - deployName: "all"
     prometheusMultiprocDirectory: "/tmp"
