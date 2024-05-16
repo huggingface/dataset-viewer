@@ -9,10 +9,11 @@ import pandas as pd
 import pyarrow as pa
 import pytest
 from libapi.duckdb import get_download_folder
+from libcommon.constants import ROW_IDX_COLUMN
 from libcommon.storage import StrPath
 
 from search.routes.search import full_text_search
-from libcommon.constants import ROW_IDX_COLUMN 
+
 
 def test_get_download_folder(duckdb_index_cache_directory: StrPath) -> None:
     dataset, config, split, revision = "dataset", "config", "split", "revision"
@@ -79,7 +80,9 @@ def test_full_text_search(
         },
         dtype=pd.StringDtype(storage="python"),
     )
-    create_command_sql = "CREATE OR REPLACE TABLE data AS SELECT nextval('serial') AS {ROW_IDX_COLUMN}, * FROM sample_df"
+    create_command_sql = (
+        "CREATE OR REPLACE TABLE data AS SELECT nextval('serial') AS {ROW_IDX_COLUMN}, * FROM sample_df"
+    )
     con.sql(create_command_sql)
     con.execute(query="SELECT COUNT(*) FROM data;").fetchall()
     assert sample_df.size == con.execute(query="SELECT COUNT(*) FROM data;").fetchall()[0][0]

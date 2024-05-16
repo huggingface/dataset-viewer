@@ -31,7 +31,7 @@ from libapi.utils import (
     get_json_ok_response,
     to_rows_list,
 )
-from libcommon.constants import MAX_NUM_ROWS_PER_PAGE,ROW_IDX_COLUMN, HF_FTS_SCORE
+from libcommon.constants import HF_FTS_SCORE, MAX_NUM_ROWS_PER_PAGE, ROW_IDX_COLUMN
 from libcommon.dtos import PaginatedResponse
 from libcommon.duckdb_utils import duckdb_index_is_partial
 from libcommon.prometheus import StepProfiler
@@ -49,9 +49,7 @@ from search.duckdb_connection import duckdb_connect
 logger = logging.getLogger(__name__)
 
 FTS_STAGE_TABLE_COMMAND = f"SELECT * FROM (SELECT {ROW_IDX_COLUMN}, fts_main_data.match_bm25({ROW_IDX_COLUMN}, ?) AS {HF_FTS_SCORE} FROM data) A WHERE {HF_FTS_SCORE} IS NOT NULL;"
-JOIN_STAGE_AND_DATA_COMMAND = (
-    f"SELECT data.* FROM fts_stage_table JOIN data USING({ROW_IDX_COLUMN}) ORDER BY fts_stage_table.{HF_FTS_SCORE} DESC;"
-)
+JOIN_STAGE_AND_DATA_COMMAND = f"SELECT data.* FROM fts_stage_table JOIN data USING({ROW_IDX_COLUMN}) ORDER BY fts_stage_table.{HF_FTS_SCORE} DESC;"
 
 
 def full_text_search(

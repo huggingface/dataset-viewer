@@ -19,6 +19,7 @@ import pytest
 import requests
 from datasets import Features, Image, Sequence, Translation, TranslationVariableLanguages, Value
 from datasets.packaged_modules.csv.csv import CsvConfig
+from libcommon.constants import HF_FTS_SCORE, ROW_IDX_COLUMN
 from libcommon.dtos import Priority
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import upsert_response
@@ -39,7 +40,6 @@ from worker.resources import LibrariesResource
 
 from ...fixtures.hub import HubDatasetTest
 from ..utils import REVISION_NAME
-from libcommon.constants import ROW_IDX_COLUMN, HF_FTS_SCORE 
 
 GetJobRunner = Callable[[str, str, str, AppConfig], SplitDuckDbIndexJobRunner]
 
