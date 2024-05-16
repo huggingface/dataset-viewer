@@ -14,7 +14,7 @@ from huggingface_hub.hf_api import DatasetInfo, HfApi
 from huggingface_hub.utils import HfHubHTTPError
 from requests import Response  # type: ignore
 
-from libcommon.constants import CONFIG_SPLIT_NAMES_KIND, DATASET_CONFIG_NAMES_KIND, UNSUPPORTED_TAG_NFAA
+from libcommon.constants import CONFIG_SPLIT_NAMES_KIND, DATASET_CONFIG_NAMES_KIND, TAG_NFAA_SYNONYMS
 from libcommon.dtos import JobResult
 from libcommon.exceptions import (
     DatasetInBlockListError,
@@ -177,10 +177,12 @@ def test_update_non_existent_raises(
     [
         (None, False),
         ([], False),
-        (["not-" + UNSUPPORTED_TAG_NFAA], False),
-        (["not-" + UNSUPPORTED_TAG_NFAA, "not-at-all-" + UNSUPPORTED_TAG_NFAA], False),
-        ([UNSUPPORTED_TAG_NFAA], True),
-        (["not-" + UNSUPPORTED_TAG_NFAA, UNSUPPORTED_TAG_NFAA], True),
+        (["perfectly-fine-tag"], False),
+        (["perfectly-fine-tag", "another-fine-tag"], False),
+        ([TAG_NFAA_SYNONYMS[0]], True),
+        ([TAG_NFAA_SYNONYMS[1]], True),
+        (TAG_NFAA_SYNONYMS, True),
+        (["perfectly-fine-tag", TAG_NFAA_SYNONYMS[0]], True),
     ],
 )
 def test_update_dataset_with_nfaa_tag_raises(
