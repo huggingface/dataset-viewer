@@ -81,7 +81,7 @@ def test_full_text_search(
         dtype=pd.StringDtype(storage="python"),
     )
     create_command_sql = (
-        "CREATE OR REPLACE TABLE data AS SELECT nextval('serial') AS {ROW_IDX_COLUMN}, * FROM sample_df"
+        f"CREATE OR REPLACE TABLE data AS SELECT nextval('serial') AS {ROW_IDX_COLUMN}, * FROM sample_df"
     )
     con.sql(create_command_sql)
     con.execute(query="SELECT COUNT(*) FROM data;").fetchall()
