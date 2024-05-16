@@ -83,7 +83,7 @@ def test_full_text_search(
     con.sql(create_command_sql)
     con.execute(query="SELECT COUNT(*) FROM data;").fetchall()
     assert sample_df.size == con.execute(query="SELECT COUNT(*) FROM data;").fetchall()[0][0]
-    con.sql("PRAGMA create_fts_index('data', ROW_IDX_COLUMN, '*', overwrite=1);")
+    con.sql(f"PRAGMA create_fts_index('data', '{ROW_IDX_COLUMN}', '*', overwrite=1);")
     con.close()
 
     fields = [pa.field(ROW_IDX_COLUMN, pa.int64()), pa.field("text", pa.string())]
