@@ -58,10 +58,6 @@ Docker image management
 {{ include "hf.common.images.image" (dict "imageRoot" .Values.images.services.sseApi "global" .Values.global.huggingface) }}
 {{- end -}}
 
-{{- define "services.storageAdmin.image" -}}
-{{ include "hf.common.images.image" (dict "imageRoot" .Values.images.services.storageAdmin "global" .Values.global.huggingface) }}
-{{- end -}}
-
 {{- define "services.worker.image" -}}
 {{ include "hf.common.images.image" (dict "imageRoot" .Values.images.services.worker "global" .Values.global.huggingface) }}
 {{- end -}}
@@ -77,11 +73,6 @@ Common labels
 {{- define "labels.reverseProxy" -}}
 {{ include "hf.labels.commons" . }}
 app.kubernetes.io/component: "{{ include "name" . }}-reverse-proxy"
-{{- end -}}
-
-{{- define "labels.storageAdmin" -}}
-{{ include "hf.labels.commons" . }}
-app.kubernetes.io/component: "{{ include "name" . }}-storage-admin"
 {{- end -}}
 
 {{- define "labels.mongodbMigration" -}}

@@ -66,11 +66,6 @@ images:
       useGlobalRegistry: false
       repository: datasets-server-services-sse-api
       tag: sha-fb3399a
-    storageAdmin:
-      registry: huggingface
-      useGlobalRegistry: false
-      repository: datasets-server-services-storage-admin
-      tag: sha-fb3399a
     worker:
       registry: huggingface
       useGlobalRegistry: false
@@ -374,21 +369,6 @@ cacheMetricsCollector:
       cpu: 0
   tolerations: []
 
-# --- storage admin (to manually inspect the storage, in /data) ---
-
-storageAdmin:
-  nodeSelector: {}
-  replicas: 1
-  resources:
-    requests:
-      cpu: 0
-    limits:
-      cpu: 0
-  service:
-    type: ""
-    annotations: {}
-  tolerations: []
-
 # --- reverse proxy ---
 
 reverseProxy:
@@ -410,6 +390,8 @@ reverseProxy:
     type: ""
     annotations: {}
   tolerations: []
+  ingress:
+    enabled: false
 
 ingress:
   enabled: true
@@ -451,6 +433,9 @@ admin:
   service:
     type: ""
     annotations: {}
+  ingress:
+    enabled: true
+    annotations: {}
   tolerations: []
 
 hf:
@@ -491,6 +476,9 @@ api:
   service:
     type: ""
     annotations: {}
+  ingress:
+    enabled: true
+    annotations: {}
   tolerations: []
 
 rows:
@@ -517,6 +505,9 @@ rows:
       cpu: 0
   service:
     type: ""
+    annotations: {}
+  ingress:
+    enabled: true
     annotations: {}
   tolerations: []
 
@@ -574,6 +565,9 @@ sseApi:
       cpu: 0
   service:
     type: ""
+    annotations: {}
+  ingress:
+    enabled: true
     annotations: {}
   tolerations: []
 
