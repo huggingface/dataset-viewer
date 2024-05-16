@@ -16,7 +16,7 @@ from huggingface_hub._commit_api import (
 )
 from huggingface_hub.hf_api import HfApi
 from huggingface_hub.utils._errors import HfHubHTTPError, RepositoryNotFoundError
-from libcommon.constants import DUCKDB_INDEX_JOB_RUNNER_SUBDIRECTORY
+from libcommon.constants import DUCKDB_INDEX_JOB_RUNNER_SUBDIRECTORY, ROW_IDX_COLUMN
 from libcommon.dtos import JobInfo
 from libcommon.exceptions import (
     CacheDirectoryNotInitializedError,
@@ -50,10 +50,12 @@ from worker.utils import (
 DATASET_TYPE = "dataset"
 DUCKDB_DEFAULT_INDEX_FILENAME = "index.duckdb"
 DUCKDB_DEFAULT_PARTIAL_INDEX_FILENAME = "partial-index.duckdb"
-CREATE_INDEX_COMMAND = "PRAGMA create_fts_index('data', '__hf_index_id', {columns}, overwrite=1);"
+CREATE_INDEX_COMMAND = f"PRAGMA create_fts_index('data', '{ROW_IDX_COLUMN}', {{columns}}, overwrite=1);"
 CREATE_TABLE_COMMAND = "CREATE OR REPLACE TABLE data AS SELECT {columns} FROM '{source}';"
 CREATE_SEQUENCE_COMMAND = "CREATE OR REPLACE SEQUENCE serial START 0 MINVALUE 0;"
-ALTER_TABLE_BY_ADDING_SEQUENCE_COLUMN = "ALTER TABLE data ADD COLUMN __hf_index_id BIGINT DEFAULT nextval('serial');"
+ALTER_TABLE_BY_ADDING_SEQUENCE_COLUMN = (
+    f"ALTER TABLE data ADD COLUMN {ROW_IDX_COLUMN} BIGINT DEFAULT nextval('serial');"
+)
 CREATE_TABLE_COMMANDS = CREATE_TABLE_COMMAND + CREATE_SEQUENCE_COMMAND + ALTER_TABLE_BY_ADDING_SEQUENCE_COLUMN
 INSTALL_AND_LOAD_EXTENSION_COMMAND = "INSTALL 'fts'; LOAD 'fts';"
 SET_EXTENSIONS_DIRECTORY_COMMAND = "SET extension_directory='{directory}';"
@@ -290,7 +292,7 @@ def compute_split_duckdb_index_response(
         raise ValueError(f"Cannot get size of {repo_file.rfilename}")
 
     # we added the __hf_index_id column for the index
-    features["__hf_index_id"] = {"dtype": "int64", "_type": "Value"}
+    features[ROW_IDX_COLUMN] = {"dtype": "int64", "_type": "Value"}
 
     return SplitDuckdbIndex(
         dataset=dataset,
