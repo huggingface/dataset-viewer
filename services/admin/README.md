@@ -37,20 +37,20 @@ See [../../libs/libcommon/README.md](../../libs/libcommon/README.md) for more in
 
 The admin service provides endpoints:
 
-- `/healthcheck`: ensure the app is running
-- `/metrics`: give info about the cache and the queue
-- `/pending-jobs`: give the pending jobs, classed by queue and status (waiting or started)
-- `/dataset-status`: give the dataset status including cache records and pending jobs.
-- `/num-dataset-infos-by-builder-name`: give a report about number of datasets by builder name (parquet, csv, text, imagefolder, audiofolder, json, arrow and webdataset).
-- `/recreate-dataset`: deletes all the cache entries related to a specific dataset, then run all the steps in order. It's a POST endpoint. Pass the requested parameters:
+- `/admin/healthcheck`: ensure the app is running
+- `/admin/metrics`: give info about the cache and the queue
+- `/admin/pending-jobs`: give the pending jobs, classed by queue and status (waiting or started)
+- `/admin/dataset-status`: give the dataset status including cache records and pending jobs.
+- `/admin/num-dataset-infos-by-builder-name`: give a report about number of datasets by builder name (parquet, csv, text, imagefolder, audiofolder, json, arrow and webdataset).
+- `/admin/recreate-dataset`: deletes all the cache entries related to a specific dataset, then run all the steps in order. It's a POST endpoint. Pass the requested parameters:
   - `dataset`: the dataset name
   - `priority`: `low` (default), `normal` or `high`
 
 ### Endpoints by processing step
 
-- `/force-refresh{processing_step}`: force refresh cache entries for the processing step. It's a POST endpoint. Pass the requested parameters, depending on the processing step's input type:
+- `/admin/force-refresh{processing_step}`: force refresh cache entries for the processing step. It's a POST endpoint. Pass the requested parameters, depending on the processing step's input type:
   - `dataset`: `?dataset={dataset}`
   - `config`: `?dataset={dataset}&config={config}`
   - `split`: `?dataset={dataset}&config={config}&split={split}`
-- `/cache-reports{processing_step}`: give detailed reports on the content of the cache for a processing step
-- `/cache-reports-with-content{processing_step}`: give detailed reports on the content of the cache for a processing step, including the content itself, which can be heavy
+- `/admin/cache-reports{processing_step}`: give detailed reports on the content of the cache for a processing step
+- `/admin/cache-reports-with-content{processing_step}`: give detailed reports on the content of the cache for a processing step, including the content itself, which can be heavy
