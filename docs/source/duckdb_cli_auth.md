@@ -16,7 +16,31 @@ For more information about DuckDB Secrets visit https://duckdb.org/docs/configur
 To create a secret using the CONFIG provider, use the following command:
 
 ```bash
-CREATE SECRET hf_token (TYPE HUGGINGFACE, token 'your_hf_token');
+CREATE SECRET hf_token (TYPE HUGGINGFACE, TOKEN 'your_hf_token');
 ```
 
 Replace `your_hf_token` with your actual Hugging Face token.
+
+## Creating a secret with `CREDENTIAL_CHAIN` provider
+
+To create a secret using the CREDENTIAL_CHAIN provider, use the following command:
+
+```bash
+CREATE SECRET hf_token (TYPE HUGGINGFACE, PROVIDER credential_chain);
+```
+
+This command automatically retrieves the stored token from `~/.cache/huggingface/token`.
+
+If you haven't configured your token, execute the following command in the terminal:
+
+```bash
+huggingface-cli login
+```
+
+Alternatively, you can set your Hugging Face token as an environment variable:
+
+```bash
+export HF_TOKEN="HF_XXXXXXXXXXXXX"
+```
+
+For more information on authentication, see the [Hugging Face authentication](https://huggingface.co/docs/huggingface_hub/main/en/quick-start#authentication) documentation.
