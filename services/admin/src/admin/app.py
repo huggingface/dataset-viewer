@@ -175,7 +175,7 @@ def create_app() -> Starlette:
         )
 
     return Starlette(
-        routes=Mount("/admin", routes=routes),
+        routes=[Mount("/admin", routes=routes)],
         middleware=middleware,
         on_shutdown=[resource.release for resource in resources],
     )
