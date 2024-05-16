@@ -48,8 +48,10 @@ from search.duckdb_connection import duckdb_connect
 
 logger = logging.getLogger(__name__)
 
-FTS_STAGE_TABLE_COMMAND = f"SELECT * FROM (SELECT {ROW_IDX_COLUMN}, fts_main_data.match_bm25({ROW_IDX_COLUMN}, ?) AS {HF_FTS_SCORE} FROM data) A WHERE {HF_FTS_SCORE} IS NOT NULL;"
-JOIN_STAGE_AND_DATA_COMMAND = f"SELECT data.* FROM fts_stage_table JOIN data USING({ROW_IDX_COLUMN}) ORDER BY fts_stage_table.{HF_FTS_SCORE} DESC;"
+FTS_STAGE_TABLE_COMMAND = f"SELECT * FROM (SELECT {ROW_IDX_COLUMN}, fts_main_data.match_bm25({ROW_IDX_COLUMN}, ?) AS {HF_FTS_SCORE} FROM data) A WHERE {HF_FTS_SCORE} IS NOT NULL;"  # nosec
+JOIN_STAGE_AND_DATA_COMMAND = f"SELECT data.* FROM fts_stage_table JOIN data USING({ROW_IDX_COLUMN}) ORDER BY fts_stage_table.{HF_FTS_SCORE} DESC;"  # nosec
+# ^ "no sec" to remove https://bandit.readthedocs.io/en/1.7.5/plugins/b608_hardcoded_sql_expressions.html
+# the string substitutions here are constants, not user inputs
 
 
 def full_text_search(
