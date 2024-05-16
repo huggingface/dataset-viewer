@@ -8,7 +8,7 @@ from .utils import ADMIN_URL, get, has_metric
 
 def test_metrics() -> None:
     assert "PROMETHEUS_MULTIPROC_DIR" in os.environ
-    response = get("/metrics", url=ADMIN_URL)
+    response = get("/admin/metrics", url=ADMIN_URL)
     assert response.status_code == 200, f"{response.status_code} - {response.text}"
     content = response.text
     lines = content.split("\n")
@@ -17,7 +17,7 @@ def test_metrics() -> None:
     assert "process_start_time_seconds" not in metrics
 
     # the middleware should have recorded the request
-    name = 'starlette_requests_total{method="GET",path_template="/metrics"}'
+    name = 'starlette_requests_total{method="GET",path_template="/admin/metrics"}'
     assert name not in metrics, metrics
     # ^ starlette-prometheus does not support Mount! See https://github.com/perdy/starlette-prometheus/issues/40
     # we don't really need details for /admin, so let's not patch the middleware
