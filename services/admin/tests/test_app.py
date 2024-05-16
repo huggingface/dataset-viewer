@@ -51,14 +51,14 @@ def test_get_healthcheck(client: TestClient) -> None:
 
 
 def test_metrics(client: TestClient) -> None:
-    response = client.request("get", "/metrics")
+    response = client.request("get", "/admin/metrics")
     assert response.status_code == 200
     text = response.text
     lines = text.split("\n")
     metrics = {line.split(" ")[0]: float(line.split(" ")[1]) for line in lines if line and line[0] != "#"}
 
     # the middleware should have recorded the request
-    name = 'starlette_requests_total{method="GET",path_template="/metrics"}'
+    name = 'starlette_requests_total{method="GET",path_template="/admin/metrics"}'
     assert name in metrics, metrics
     assert metrics[name] > 0, metrics
 
