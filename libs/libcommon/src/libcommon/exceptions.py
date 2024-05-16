@@ -112,6 +112,7 @@ CacheableErrorCode = Literal[
     "NotSupportedDisabledViewerError",
     "NotSupportedPrivateRepositoryError",
     "NotSupportedRepositoryNotFoundError",
+    "NotSupportedTagNFAAError",
     "NormalRowsError",
     "ParameterMissingError",
     "ParquetResponseEmptyError",
@@ -603,6 +604,13 @@ class NotSupportedPrivateRepositoryError(NotSupportedError):
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "NotSupportedPrivateRepositoryError", cause, False)
+
+
+class NotSupportedTagNFAAError(NotSupportedError):
+    """The dataset viewer is disabled because the dataset has the NFAA tag."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "NotSupportedTagNFAAError", cause, False)
 
 
 class DatasetInBlockListError(NotSupportedError):
