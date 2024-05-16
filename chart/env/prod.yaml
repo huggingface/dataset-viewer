@@ -8,7 +8,6 @@ global:
     service:
       ports:
         datasetsServer:
-          proxy: 30931
           admin: 32702
           api: 31370
           rows: 31371
@@ -18,11 +17,6 @@ global:
 images:
   pullPolicy: IfNotPresent
   pullSecrets: []
-  reverseProxy:
-    useGlobalRegistry: false
-    registry: docker.io
-    repository: nginx
-    tag: "1.20"
   jobs:
     mongodbMigration:
       registry: huggingface
@@ -252,21 +246,7 @@ cacheMetricsCollector:
       cpu: 1
       memory: "512Mi"
 
-# --- reverse proxy ---
-
-reverseProxy:
-  nodeSelector:
-    role-datasets-server: "true"
-  replicas: 2
-  resources:
-    requests:
-      cpu: 1
-      memory: "64Mi"
-    limits:
-      cpu: 1
-      memory: "256Mi"
-  service:
-    type: NodePort
+# --- ALB ---
 
 ingress:
   tls:

@@ -14,7 +14,6 @@ global:
       type: ClusterIP
       ports:
         datasetsServer:
-          proxy: 30020
           admin: 30021
           api: 30022
           rows: 30023
@@ -369,29 +368,7 @@ cacheMetricsCollector:
       cpu: 0
   tolerations: []
 
-# --- reverse proxy ---
-
-reverseProxy:
-  nameOverride: datasets-server-mongodb
-  host: localhost
-  port: 8080
-  nginxTemplateFile: "nginx-templates/default.conf.template"
-  openapiFile: "docs/source/openapi.json"
-  error404File: "nginx-templates/404.html"
-
-  nodeSelector: {}
-  replicas: 1
-  resources:
-    requests:
-      cpu: 0
-    limits:
-      cpu: 0
-  service:
-    type: ""
-    annotations: {}
-  tolerations: []
-  ingress:
-    enabled: false
+# --- ALB ---
 
 ingress:
   enabled: true
