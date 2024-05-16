@@ -1,3 +1,4 @@
+import os.path
 from collections.abc import Mapping
 from pathlib import Path
 
@@ -42,9 +43,13 @@ def test_create_image_file(storage_client: StorageClient, datasets_fixtures: Map
     assert image is not None
 
 
-@pytest.mark.parametrize("audio_file_extension", [".wav", ""])  # also test audio files without extension
-def test_create_audio_file(audio_file_extension: str, shared_datadir: Path, storage_client: StorageClient) -> None:
-    audio_file_bytes = (shared_datadir / "test_audio_44100.wav").read_bytes()
+@pytest.mark.parametrize("audio_file_extension", ["WITH_EXTENSION", "WITHOUT_EXTENSION"])
+@pytest.mark.parametrize("audio_file_name", ["test_audio_44100.wav", "test_audio_opus.opus"])
+def test_create_audio_file(
+    audio_file_name: str, audio_file_extension: str, shared_datadir: Path, storage_client: StorageClient
+) -> None:
+    audio_file_extension = os.path.splitext(audio_file_name)[1] if audio_file_extension == "WITH_EXTENSION" else ""
+    audio_file_bytes = (shared_datadir / audio_file_name).read_bytes()
     value = create_audio_file(
         dataset="dataset",
         revision="revision",
@@ -57,7 +62,6 @@ def test_create_audio_file(audio_file_extension: str, shared_datadir: Path, stor
         filename="audio.wav",
         storage_client=storage_client,
     )
-
     audio_key = "dataset/--/revision/--/config/split/7/col/audio.wav"
     assert value == [
         {
@@ -65,7 +69,6 @@ def test_create_audio_file(audio_file_extension: str, shared_datadir: Path, stor
             "type": "audio/wav",
         },
     ]
-
     assert storage_client.exists(audio_key)
 
 

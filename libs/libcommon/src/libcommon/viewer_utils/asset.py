@@ -108,9 +108,7 @@ def create_audio_file(
             # might spawn a process to convert the audio file using ffmpeg
             with NamedTemporaryFile("wb", suffix=audio_file_extension) as tmpfile:
                 tmpfile.write(audio_file_bytes)
-                segment: AudioSegment = AudioSegment.from_file(
-                    tmpfile.name, audio_file_extension[1:] if audio_file_extension else None
-                )
+                segment: AudioSegment = AudioSegment.from_file(tmpfile.name)
                 buffer = BytesIO()
                 segment.export(buffer, format=suffix[1:])
                 buffer.seek(0)
