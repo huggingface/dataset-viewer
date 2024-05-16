@@ -58,7 +58,9 @@ def test_metrics(client: TestClient) -> None:
     metrics = {line.split(" ")[0]: float(line.split(" ")[1]) for line in lines if line and line[0] != "#"}
 
     # the middleware should have recorded the request
-    name = 'starlette_requests_total{method="GET",path_template="/admin/metrics"}'
+    name = 'starlette_requests_total{method="GET",path_template="/admin"}'
+    # ^ starlette-prometheus does not support Mount! See https://github.com/perdy/starlette-prometheus/issues/40
+    # we don't really need details for /admin, so let's not patch the middleware
     assert name in metrics, metrics
     assert metrics[name] > 0, metrics
 
