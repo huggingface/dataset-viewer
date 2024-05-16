@@ -51,7 +51,7 @@ from worker.utils import (
 DATASET_TYPE = "dataset"
 DUCKDB_DEFAULT_INDEX_FILENAME = "index.duckdb"
 DUCKDB_DEFAULT_PARTIAL_INDEX_FILENAME = "partial-index.duckdb"
-CREATE_INDEX_COMMAND = f"PRAGMA create_fts_index('data', {ROW_IDX_COLUMN}, {columns}, overwrite=1);"
+CREATE_INDEX_COMMAND = f"PRAGMA create_fts_index('data', '{ROW_IDX_COLUMN}', {columns}, overwrite=1);"
 CREATE_TABLE_COMMAND = "CREATE OR REPLACE TABLE data AS SELECT {columns} FROM '{source}';"
 CREATE_SEQUENCE_COMMAND = "CREATE OR REPLACE SEQUENCE serial START 0 MINVALUE 0;"
 ALTER_TABLE_BY_ADDING_SEQUENCE_COLUMN = f"ALTER TABLE data ADD COLUMN {ROW_IDX_COLUMN} BIGINT DEFAULT nextval('serial');"
