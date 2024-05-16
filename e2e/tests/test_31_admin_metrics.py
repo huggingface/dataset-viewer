@@ -8,7 +8,7 @@ from .utils import ADMIN_URL, get, has_metric
 
 def test_metrics() -> None:
     assert "PROMETHEUS_MULTIPROC_DIR" in os.environ
-    response = get("/admin/metrics", url=ADMIN_URL)
+    response = get("/metrics", url=ADMIN_URL)
     assert response.status_code == 200, f"{response.status_code} - {response.text}"
     content = response.text
     lines = content.split("\n")
