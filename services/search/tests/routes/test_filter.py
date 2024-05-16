@@ -53,10 +53,10 @@ def index_file_location(ds: Dataset) -> Generator[str, None, None]:
     con.execute("LOAD 'fts';")
     con.sql("CREATE OR REPLACE SEQUENCE serial START 0 MINVALUE 0;")
     sample_df = ds.to_pandas()  # noqa: F841
-    create_command_sql = "CREATE OR REPLACE TABLE data AS SELECT nextval('serial') AS {ROW_IDX_COLUMN}, * FROM sample_df"
+    create_command_sql = f"CREATE OR REPLACE TABLE data AS SELECT nextval('serial') AS {ROW_IDX_COLUMN}, * FROM sample_df"
     con.sql(create_command_sql)
     # assert sample_df.shape[0] == con.execute(query="SELECT COUNT(*) FROM data;").fetchall()[0][0]
-    con.sql("PRAGMA create_fts_index('data', ROW_IDX_COLUMN, 'name', 'gender', overwrite=1);")
+    con.sql(f"PRAGMA create_fts_index('data', ROW_IDX_COLUMN, 'name', 'gender', overwrite=1);")
     con.close()
     yield index_file_location
     os.remove(index_file_location)

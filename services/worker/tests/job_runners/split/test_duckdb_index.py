@@ -379,7 +379,7 @@ def test_compute(
             # perform a search to validate fts feature
             query = "Lord Vader"
             result = con.execute(
-                "SELECT {ROW_IDX_COLUMN}, text FROM data WHERE fts_main_data.match_bm25({ROW_IDX_COLUMN}, ?) IS NOT NULL;",
+                f"SELECT {ROW_IDX_COLUMN}, text FROM data WHERE fts_main_data.match_bm25({ROW_IDX_COLUMN}, ?) IS NOT NULL;",
                 [query],
             )
             rows = result.df()
@@ -480,8 +480,8 @@ Back away ! I will deal with this Jedi slime myself"""
 
 
 FTS_COMMAND = (
-    "SELECT * EXCLUDE ({HF_FTS_SCORE}) FROM (SELECT *, fts_main_data.match_bm25({ROW_IDX_COLUMN}, ?) AS {HF_FTS_SCORE}"
-    " FROM data) A WHERE {HF_FTS_SCORE} IS NOT NULL ORDER BY {ROW_IDX_COLUMN};"
+    f"SELECT * EXCLUDE ({HF_FTS_SCORE}) FROM (SELECT *, fts_main_data.match_bm25({ROW_IDX_COLUMN}, ?) AS {HF_FTS_SCORE}"
+    f" FROM data) A WHERE {HF_FTS_SCORE} IS NOT NULL ORDER BY {ROW_IDX_COLUMN};"
 )
 
 

@@ -48,9 +48,9 @@ from search.duckdb_connection import duckdb_connect
 
 logger = logging.getLogger(__name__)
 
-FTS_STAGE_TABLE_COMMAND = "SELECT * FROM (SELECT {ROW_IDX_COLUMN}, fts_main_data.match_bm25({ROW_IDX_COLUMN}, ?) AS {HF_FTS_SCORE} FROM data) A WHERE {HF_FTS_SCORE} IS NOT NULL;"
+FTS_STAGE_TABLE_COMMAND = f"SELECT * FROM (SELECT {ROW_IDX_COLUMN}, fts_main_data.match_bm25({ROW_IDX_COLUMN}, ?) AS {HF_FTS_SCORE} FROM data) A WHERE {HF_FTS_SCORE} IS NOT NULL;"
 JOIN_STAGE_AND_DATA_COMMAND = (
-    "SELECT data.* FROM fts_stage_table JOIN data USING({ROW_IDX_COLUMN}) ORDER BY fts_stage_table.{HF_FTS_SCORE} DESC;"
+    f"SELECT data.* FROM fts_stage_table JOIN data USING({ROW_IDX_COLUMN}) ORDER BY fts_stage_table.{HF_FTS_SCORE} DESC;"
 )
 
 
