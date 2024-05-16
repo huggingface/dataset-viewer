@@ -18,8 +18,9 @@ def test_metrics() -> None:
 
     # the middleware should have recorded the request
     name = 'starlette_requests_total{method="GET",path_template="/metrics"}'
-    assert name in metrics, metrics
-    assert metrics[name] > 0, metrics
+    assert name not in metrics, metrics
+    # ^ starlette-prometheus does not support Mount! See https://github.com/perdy/starlette-prometheus/issues/40
+    # we don't really need details for /admin, so let's not patch the middleware
 
     metric_names = set(metrics.keys())
 
