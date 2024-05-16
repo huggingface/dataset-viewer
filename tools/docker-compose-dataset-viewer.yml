@@ -2,7 +2,7 @@ services:
   reverse-proxy:
     image: docker.io/nginx:1.25.3
     volumes:
-      - ../tools/nginx-templates/:/etc/nginx/templates:ro
+      - ../services/reverse-proxy/nginx-templates/:/etc/nginx/templates:ro
       - storage:${STORAGE_DIRECTORY-/storage}:ro
     ports:
       - "${PORT_REVERSE_PROXY-8000}:80"

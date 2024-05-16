@@ -4,8 +4,6 @@
 
 See [docker-compose-dataset-viewer.yml](../../tools/docker-compose-dataset-viewer.yml) for usage.
 
-Note that the template configuration is located in [tools/nginx-templates/](../../tools/nginx-templates/) in order to be reachable by the Helm chart to deploy on Kubernetes.
-
 The reverse proxy uses nginx:
 
 - it serves the static assets directly (the API also serves them if required, but it's unnecessary to go through starlette for this, and it generates errors in Safari, see [1](https://github.com/encode/starlette/issues/950) and [2](https://developer.apple.com/library/archive/documentation/AppleApplications/Reference/SafariWebContent/CreatingVideoforSafarioniPhone/CreatingVideoforSafarioniPhone.html#//apple_ref/doc/uid/TP40006514-SW6))
@@ -28,4 +26,4 @@ It takes various environment variables, all of them are mandatory:
 The image requires three directories to be mounted (from volumes):
 
 - `$ASSETS_DIRECTORY` (read-only): the directory that contains the static assets.
-- `/etc/nginx/templates` (read-only): the directory that contains the nginx configuration template ([templates](./templates/))
+- `/etc/nginx/templates` (read-only): the directory that contains the nginx configuration template ([templates](./nginx-templates/))
