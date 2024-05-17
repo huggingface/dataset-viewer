@@ -169,8 +169,7 @@ def create_first_rows_response(
                 (
                     col in row
                     and isinstance(row[col], str)
-                    and row[col].startswith("http://")
-                    or row[col].startswith("https://")
+                    and (row[col].startswith("http://") or row[col].startswith("https://"))
                 )
                 for row in transformed_rows
             )
