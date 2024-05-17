@@ -9,7 +9,7 @@ license = "Apache-2.0"
 python = "3.9.18"
 appdirs = "^1.4.4"
 cryptography = "^42.0.4"
-datasets = {git = "https://github.com/huggingface/datasets.git", rev = "3638183e2f7e0dce8924e46e7cc21bf6d5d7adfb", extras = ["audio", "vision"]}  # branch = "datasets-2.19.1-hotfix"
+datasets = {git = "https://github.com/huggingface/datasets.git", rev = "b3f772468b2bbf77a7510e265f9d41e9eb77d53f", extras = ["audio", "vision"]}  # branch = "datasets-2.19.1-hotfix"
 environs = "^9.5.0"
 fsspec = {version = "2024.3.1", extras = ["s3"]}
 huggingface-hub = {extras = ["hf-transfer"], git = "https://github.com/huggingface/huggingface_hub.git", rev = "657a1bdcc0545309463e8651f62010154e9b3792"}
