@@ -28,7 +28,8 @@ sentencepiece = "^0.2.0"
 starlette = "^0.37.1"
 uvicorn = "^0.20.0"
 zstandard = "^0.22.0"
-presidio-analyzer = "^2.2.354"
+# to include fix for https://github.com/microsoft/presidio/pull/1377
+presidio-analyzer = { git = "https://github.com/microsoft/presidio.git", rev = "2348fff508f1a45af92945d5f597ec56bd4faae6", subdirectory = "presidio-analyzer" }
 
 [tool.poetry.group.dev.dependencies]
 bandit = "^1.7.4"

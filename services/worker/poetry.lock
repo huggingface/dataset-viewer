@@ -2998,14 +2998,13 @@ cymem = ">=2.0.2,<2.1.0"
 murmurhash = ">=0.28.0,<1.1.0"
 
 [[package]]
-name = "presidio-analyzer"
+name = "presidio_analyzer"
 version = "2.2.354"
 description = "Presidio analyzer package"
 optional = false
 python-versions = "*"
-files = [
-    {file = "presidio_analyzer-2.2.354-py3-none-any.whl", hash = "sha256:685cfbea9bfeb770e407c39723fc840624c0aab1dd79e7ff6fd070696f1738fd"},
-]
+files = []
+develop = false
 
 [package.dependencies]
 phonenumbers = ">=8.12,<9.0.0"
@@ -3018,6 +3017,13 @@ tldextract = "*"
 azure-ai-language = ["azure-ai-textanalytics", "azure-core"]
 stanza = ["spacy-stanza", "stanza"]
 transformers = ["spacy-huggingface-pipelines"]
+
+[package.source]
+type = "git"
+url = "https://github.com/microsoft/presidio.git"
+reference = "2348fff508f1a45af92945d5f597ec56bd4faae6"
+resolved_reference = "2348fff508f1a45af92945d5f597ec56bd4faae6"
+subdirectory = "presidio-analyzer"
 
 [[package]]
 name = "prometheus-client"
@@ -5326,4 +5332,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "3.9.18"
-content-hash = "0843e8f8f16975b9f4604fa6f55e99a4ca66e1c3d8607916e47c9e2729d20447"
+content-hash = "ab69422ff7febfef2bf64cbdc9dc6a029906397d7eab2a48cf3103dd46bf53a9"
