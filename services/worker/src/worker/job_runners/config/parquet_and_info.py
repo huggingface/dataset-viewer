@@ -746,6 +746,9 @@ def fill_builder_info(
             approx_num_bytes = int(compression_ratio * num_examples)
             builder.info.splits.add(SplitInfo(split, num_bytes=approx_num_bytes, num_examples=num_examples))
             builder.info.dataset_size += approx_num_bytes
+        else:
+            builder.info.splits.add(SplitInfo(split, num_bytes=0, num_examples=0))
+
         logging.info(
             f"{sum(len(split_files) for split_files in data_files.values())} parquet files are valid for copy."
         )

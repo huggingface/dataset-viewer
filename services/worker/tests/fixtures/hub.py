@@ -12,7 +12,7 @@ from typing import Any, Literal, Optional, TypedDict, Union
 
 import pytest
 import requests
-from datasets import Dataset, DatasetBuilder, load_dataset_builder
+from datasets import Dataset, DatasetBuilder, Features, Value, load_dataset_builder
 from huggingface_hub.constants import REPO_TYPES, REPO_TYPES_URL_PREFIXES
 from huggingface_hub.hf_api import HfApi
 from huggingface_hub.utils._errors import hf_raise_for_status
@@ -436,6 +436,25 @@ def three_parquet_splits_paths(
         data3.to_parquet(f)
 
     return {"train": path1, "test": path2, "validation": path3}
+
+
+@pytest.fixture(scope="session")
+def hub_public_parquet_splits_empty_rows(tmp_path_factory: pytest.TempPathFactory) -> Iterator[str]:
+    path = str(tmp_path_factory.mktemp("data") / "train.parquet")
+    with open(path, "wb") as f:
+        Dataset.from_dict(
+            {"col": []},
+            features=Features(
+                {
+                    "col": Value("string"),
+                }
+            ),
+        ).to_parquet(f)
+
+    repo_id = create_hub_dataset_repo(prefix="hub_public_parquet_splits_empty_rows", file_paths=[path])
+
+    yield repo_id
+    delete_hub_dataset_repo(repo_id=repo_id)
 
 
 @pytest.fixture(scope="session")
