@@ -245,7 +245,13 @@ def compute_presidio_entities_scan_response(
     Returns:
         `PresidioEntitiesScanResponse`: An object with the lists of opt-in/opt-out urls
     """
-    if not ("email" in dataset or "pii" in dataset or dataset in top_2k_most_liked_datasets):
+    if not (
+        "email" in dataset
+        or "pii" in dataset
+        or "presidio" in dataset
+        or "ssn" in dataset
+        or dataset in top_2k_most_liked_datasets
+    ):
         raise PresidioScanNotEnabledForThisDataset(dataset)
     logging.info(f"compute 'split-presidio-scan' for {dataset=} {config=} {split=}")
     trust_remote_code = resolve_trust_remote_code(dataset=dataset, allow_list=dataset_scripts_allow_list)

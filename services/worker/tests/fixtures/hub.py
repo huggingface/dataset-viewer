@@ -302,6 +302,13 @@ def hub_public_spawning_opt_in_out(datasets: Mapping[str, Dataset]) -> Iterator[
 
 
 @pytest.fixture(scope="session")
+def hub_public_presidio_scan(datasets: Mapping[str, Dataset]) -> Iterator[str]:
+    repo_id = create_hub_dataset_repo(prefix="presidio_scan", dataset=datasets["presidio_scan"])
+    yield repo_id
+    delete_hub_dataset_repo(repo_id=repo_id)
+
+
+@pytest.fixture(scope="session")
 def hub_public_duckdb_index(datasets: Mapping[str, Dataset]) -> Iterator[str]:
     repo_id = create_hub_dataset_repo(prefix="duckdb_index", dataset=datasets["duckdb_index"])
     yield repo_id
@@ -812,6 +819,22 @@ SPAWNING_OPT_IN_OUT_cols = {
 
 SPAWNING_OPT_IN_OUT_rows = ["http://testurl.test/test_image.jpg", "http://testurl.test/test_image2.jpg", "other"]
 
+PRESIDIO_SCAN_cols = {
+    "col": [{"_type": "Value", "dtype": "string"}],
+}
+
+PRESIDIO_SCAN_rows = [
+    {"col": text}
+    for text in [
+        "My name is Giovanni Giorgio",
+        "but everyone calls me Giorgio",
+        "My IP address is 192.168.0.1",
+        "My SSN is 345-67-8901",
+        "My email is giovanni.giorgio@daftpunk.com",
+        None,
+    ]
+]
+
 
 @pytest.fixture
 def hub_responses_does_not_exist() -> HubDatasetTest:
@@ -996,6 +1019,19 @@ def hub_responses_spawning_opt_in_out(hub_public_spawning_opt_in_out: str) -> Hu
         "splits_response": create_splits_response(hub_public_spawning_opt_in_out),
         "first_rows_response": create_first_rows_response(
             hub_public_spawning_opt_in_out, SPAWNING_OPT_IN_OUT_cols, SPAWNING_OPT_IN_OUT_rows
+        ),
+        "parquet_and_info_response": None,
+    }
+
+
+@pytest.fixture
+def hub_responses_presidio_scan(hub_public_presidio_scan: str) -> HubDatasetTest:
+    return {
+        "name": hub_public_presidio_scan,
+        "config_names_response": create_config_names_response(hub_public_presidio_scan),
+        "splits_response": create_splits_response(hub_public_presidio_scan),
+        "first_rows_response": create_first_rows_response(
+            hub_public_presidio_scan, PRESIDIO_SCAN_cols, PRESIDIO_SCAN_rows
         ),
         "parquet_and_info_response": None,
     }
