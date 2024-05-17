@@ -105,7 +105,7 @@ def analyze(
     ]
     return [
         PresidioEntity(
-            text=mask(texts[i * len(scanned_columns) + j][recognizer_result.start : recognizer_result.end]),
+            text=texts[i * len(scanned_columns) + j][recognizer_result.start : recognizer_result.end],
             type=recognizer_result.entity_type,
             row_idx=row_idx,
             column_name=column_name,
@@ -124,7 +124,7 @@ def analyze(
 
 
 def presidio_scan_entities(
-    rows: list[Row], scanned_columns: list[str], columns_descriptions: list[str]
+    rows: list[Row], scanned_columns: list[str], columns_descriptions: list[str], max_text_length: int,
 ) -> list[PresidioEntity]:
     global batch_analyzer
     cache: dict[str, list[RecognizerResult]] = {}
@@ -132,7 +132,7 @@ def presidio_scan_entities(
         batch_analyser = BatchAnalyzerEngine(AnalyzerEngine())
     presidio_entities: list[PresidioEntity] = []
     rows_with_scanned_columns_only = (
-        {column_name: get_strings(row[column_name]) for column_name in scanned_columns} for row in rows
+        {column_name: get_strings(row[column_name])[:max_text_length] for column_name in scanned_columns} for row in rows
     )
     for indices, batch in batched(rows_with_scanned_columns_only, BATCH_SIZE, with_indices=True):
         for presidio_entitiy in analyze(
@@ -184,6 +184,7 @@ def compute_presidio_entities_scan_response(
     hf_token: Optional[str],
     rows_max_number: int,
     columns_max_number: int,
+    max_text_length: int,
     dataset_scripts_allow_list: list[str],
 ) -> PresidioEntitiesScanResponse:
     """
@@ -204,6 +205,8 @@ def compute_presidio_entities_scan_response(
             The maximum number of rows of the response.
         columns_max_number (`int`):
             The maximum number of supported columns.
+        max_text_length (`int`):
+            The maximum text length considered by the scanner.
         dataset_scripts_allow_list (`list[str]`):
             List of datasets for which we support dataset scripts.
             Unix shell-style wildcards also work in the dataset name for namespaced datasets,
@@ -319,7 +322,7 @@ def compute_presidio_entities_scan_response(
     # scan the texts for presidio entities
     num_scanned_rows = len(rows)
     presidio_entities = presidio_scan_entities(
-        rows, scanned_columns=scanned_columns, columns_descriptions=columns_descriptions
+        rows, scanned_columns=scanned_columns, columns_descriptions=columns_descriptions, max_text_length=max_text_length
     )
     counter = Counter(presidio_entity["type"] for presidio_entity in presidio_entities)
 
@@ -392,6 +395,7 @@ class SplitPresidioEntitiesScanJobRunner(SplitJobRunnerWithDatasetsCache):
                 hf_token=self.app_config.common.hf_token,
                 rows_max_number=self.presidio_entities_scan_config.rows_max_number,
                 columns_max_number=self.presidio_entities_scan_config.columns_max_number,
+                max_text_length=self.presidio_entities_scan_config.max_text_length,
                 dataset_scripts_allow_list=self.app_config.common.dataset_scripts_allow_list,
             )
         )

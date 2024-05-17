@@ -187,13 +187,14 @@ class OptInOutUrlsScanConfig:
 
 
 PRESIDIO_ENTITIES_SCAN_COLUMNS_MAX_NUMBER = 10
+PRESIDIO_ENTITIES_SCAN_MAX_TEXT_LENGTH = 1000
 PRESIDIO_ENTITIES_SCAN_ROWS_MAX_NUMBER = 10_000
-PRESIDIO_ENTITIES_SCAN_STRING_CHUNK_MAX_LENGTH = 2000
 
 
 @dataclass(frozen=True)
 class PresidioEntitiesScanConfig:
     columns_max_number: int = PRESIDIO_ENTITIES_SCAN_COLUMNS_MAX_NUMBER
+    max_text_length: int = PRESIDIO_ENTITIES_SCAN_MAX_TEXT_LENGTH
     rows_max_number: int = PRESIDIO_ENTITIES_SCAN_ROWS_MAX_NUMBER
 
     @classmethod
@@ -204,6 +205,7 @@ class PresidioEntitiesScanConfig:
                 columns_max_number=env.int(
                     name="COLUMNS_MAX_NUMBER", default=PRESIDIO_ENTITIES_SCAN_COLUMNS_MAX_NUMBER
                 ),
+                max_text_length=env.int(name="MAX_TEXT_LENGTH", default=PRESIDIO_ENTITIES_SCAN_MAX_TEXT_LENGTH),
                 rows_max_number=env.int(name="ROWS_MAX_NUMBER", default=PRESIDIO_ENTITIES_SCAN_ROWS_MAX_NUMBER),
             )
 
