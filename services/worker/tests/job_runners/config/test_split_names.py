@@ -12,7 +12,6 @@ from libcommon.exceptions import (
     CustomError,
     DatasetManualDownloadError,
     PreviousStepFormatError,
-    SplitsEmptyError,
 )
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import (
@@ -124,13 +123,6 @@ def get_job_runner(
             HTTPStatus.OK,
             {"dataset_info": {"config_name": "wrong_format"}},
             PreviousStepFormatError.__name__,
-            None,
-        ),
-        (
-            "empty_splits",
-            HTTPStatus.OK,
-            {"dataset_info": {"splits": []}},
-            SplitsEmptyError.__name__,
             None,
         ),
     ],

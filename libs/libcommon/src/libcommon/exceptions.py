@@ -121,7 +121,6 @@ CacheableErrorCode = Literal[
     "PreviousStepStillProcessingError",
     "PolarsParquetReadError",
     "RowsPostProcessingError",
-    "SplitsEmptyError",
     "SplitsNamesError",
     "SplitNamesFromStreamingError",
     "SplitNotFoundError",
@@ -459,13 +458,6 @@ class RowsPostProcessingError(CacheableError):
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "RowsPostProcessingError", cause, False)
-
-
-class SplitsEmptyError(CacheableError):
-    """No splits were found for the config."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.NOT_FOUND, "SplitsEmptyError", cause, True)
 
 
 class SplitsNamesError(CacheableError):
