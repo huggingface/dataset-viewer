@@ -7,7 +7,12 @@ import validators  # type: ignore
 from PIL import Image as PILImage
 
 from libcommon.storage_client import StorageClient
-from libcommon.viewer_utils.asset import create_audio_file, create_image_file, generate_object_key
+from libcommon.viewer_utils.asset import (
+    SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE,
+    create_audio_file,
+    create_image_file,
+    generate_object_key,
+)
 
 from ..constants import (
     ASSETS_BASE_URL,
@@ -45,11 +50,18 @@ def test_create_image_file(storage_client: StorageClient, datasets_fixtures: Map
 
 @pytest.mark.parametrize("audio_file_extension", ["WITH_EXTENSION", "WITHOUT_EXTENSION"])
 @pytest.mark.parametrize("audio_file_name", ["test_audio_44100.wav", "test_audio_opus.opus"])
+@pytest.mark.parametrize("filename_extension", [".wav", ".opus"])
 def test_create_audio_file(
-    audio_file_name: str, audio_file_extension: str, shared_datadir: Path, storage_client: StorageClient
+    audio_file_name: str,
+    audio_file_extension: str,
+    filename_extension: str,
+    shared_datadir: Path,
+    storage_client: StorageClient,
 ) -> None:
     audio_file_extension = os.path.splitext(audio_file_name)[1] if audio_file_extension == "WITH_EXTENSION" else ""
     audio_file_bytes = (shared_datadir / audio_file_name).read_bytes()
+    filename = "audio" + filename_extension
+    mime_type = SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE[filename_extension]
     value = create_audio_file(
         dataset="dataset",
         revision="revision",
@@ -59,14 +71,14 @@ def test_create_audio_file(
         audio_file_extension=audio_file_extension,
         audio_file_bytes=audio_file_bytes,
         column="col",
-        filename="audio.wav",
+        filename=filename,
         storage_client=storage_client,
     )
-    audio_key = "dataset/--/revision/--/config/split/7/col/audio.wav"
+    audio_key = "dataset/--/revision/--/config/split/7/col/" + filename
     assert value == [
         {
             "src": f"{ASSETS_BASE_URL}/{audio_key}",
-            "type": "audio/wav",
+            "type": mime_type,
         },
     ]
     assert storage_client.exists(audio_key)
