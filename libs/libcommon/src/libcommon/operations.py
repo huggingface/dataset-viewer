@@ -158,10 +158,11 @@ def get_latest_dataset_revision_if_supported_or_raise(
             raise NotSupportedPrivateRepositoryError(
                 f"Not supported: dataset repository {dataset} is private. Private datasets are only supported for PRO users and Enterprise Hub organizations."
             )
+    elif dataset_info.tags and any(tag in TAG_NFAA_SYNONYMS for tag in dataset_info.tags):
+        # ^ the public NFAA datasets are disabled
+        raise NotSupportedTagNFAAError("Not supported: dataset viewer is disabled.")
     if dataset_info.cardData and not dataset_info.cardData.get("viewer", True):
         raise NotSupportedDisabledViewerError(f"Not supported: dataset viewer is disabled in {dataset} configuration.")
-    if dataset_info.tags and any(tag in TAG_NFAA_SYNONYMS for tag in dataset_info.tags):
-        raise NotSupportedTagNFAAError("Not supported: dataset viewer is disabled.")
     if blocked_datasets:
         raise_if_blocked(dataset=dataset, blocked_datasets=blocked_datasets)
     return str(revision)
