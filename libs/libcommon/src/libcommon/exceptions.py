@@ -116,6 +116,7 @@ CacheableErrorCode = Literal[
     "NormalRowsError",
     "ParameterMissingError",
     "ParquetResponseEmptyError",
+    "PresidioScanNotEnabledForThisDataset",
     "PreviousStepFormatError",
     "PreviousStepStatusError",
     "PreviousStepStillProcessingError",
@@ -627,3 +628,9 @@ class DatasetWithTooComplexDataFilesPatternsError(CacheableError):
         super().__init__(
             message, HTTPStatus.INTERNAL_SERVER_ERROR, "DatasetWithTooComplexDataFilesPatternsError", cause, True
         )
+
+class PresidioScanNotEnabledForThisDataset(CacheableError):
+    """We've only enabled some datasets for presidio scans."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "PresidioScanNotEnabledForThisDataset", cause, False)
