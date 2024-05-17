@@ -15,6 +15,7 @@ from libcommon.exceptions import (
     EmptyDatasetError,
     PreviousStepFormatError,
     SplitNamesFromStreamingError,
+    SplitsEmptyError,
 )
 from libcommon.simple_cache import CachedArtifactError, CachedArtifactNotFoundError, get_previous_step_or_raise
 
@@ -61,6 +62,12 @@ def compute_split_names_from_streaming_response(
           If the list of splits could not be obtained using the datasets library.
         [~`libcommon.exceptions.DatasetWithScriptNotSupportedError`]:
             If the dataset has a dataset script and is not in the allow list.
+        [~`libcommon.exceptions.SplitNamesFromStreamingError`]:
+            If the split names could not be obtained using the datasets library.
+        [~`libcommon.exceptions.SplitsEmptyError`]:
+            If the config has no splits.
+        [~`libcommon.exceptions.DatasetWithTooManySplitsError`]:
+            If the config has too many splits.
 
     Returns:
         `SplitsList`: An object with the list of split names for the dataset and config.
@@ -87,6 +94,10 @@ def compute_split_names_from_streaming_response(
             f"Cannot get the split names for the config '{config}' of the dataset.",
             cause=err,
         ) from err
+
+    if not split_name_items:
+        raise SplitsEmptyError("The config has no splits.")
+
     if len(split_name_items) > max_number:
         split_examples = ", ".join([split_name_item["split"] for split_name_item in split_name_items[:5]])
         raise DatasetWithTooManySplitsError(
@@ -118,7 +129,10 @@ def compute_split_names_from_info_response(dataset: str, config: str, max_number
           If the previous step has not been computed yet.
         [~`libcommon.exceptions.PreviousStepFormatError`]:
           If the content of the previous step has not the expected format
-
+        [~`libcommon.exceptions.SplitsEmptyError`]:
+            If the config has no splits.
+        [~`libcommon.exceptions.DatasetWithTooManySplitsError`]:
+            If the config has too many splits.
     Returns:
         `SplitsList`: An object with the list of split names for the dataset and config.
     """
@@ -133,6 +147,10 @@ def compute_split_names_from_info_response(dataset: str, config: str, max_number
     split_name_items: list[FullSplitItem] = [
         {"dataset": dataset, "config": config, "split": str(split)} for split in splits_content
     ]
+
+    if not split_name_items:
+        raise SplitsEmptyError("The config has no splits.")
+
     if len(split_name_items) > max_number:
         split_examples = ", ".join([split_name_item["split"] for split_name_item in split_name_items[:5]])
         raise DatasetWithTooManySplitsError(
