@@ -13,6 +13,13 @@ Feel free to also try it out with [ReDoc](https://redocly.github.io/redoc/?url=h
 
 The text is searched in the columns of type `string`, even if the values are nested in a dictionary.
 
+<Tip>
+
+We use [DuckDB](https://duckdb.org/docs/) for [full text search](https://duckdb.org/docs/extensions/full_text_search.html) with the `BM25` (Best Match 25) algorithm. `BM25` is a ranking algorithm for information retrieval and search engines that determines a document’s relevance to a given query and ranks documents based on their relevance scores.
+[`Porter` stemmer](https://tartarus.org/martin/PorterStemmer/) (which assumes English text) is used to reduce words to their root or base form, known as the stem. This process, called stemming, involves removing suffixes and prefixes from words to identify their core meaning. The purpose of a stemmer is to improve search accuracy and efficiency by ensuring that different forms of a word are recognized as the same term.
+
+</Tip>
+
 The `/search` endpoint accepts five query parameters:
 
 - `dataset`: the dataset name, for example `nyu-mll/glue` or `mozilla-foundation/common_voice_10_0`
