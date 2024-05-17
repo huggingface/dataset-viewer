@@ -31,18 +31,15 @@ batch_analyzer: Optional[BatchAnalyzerEngine] = None
 
 
 @overload
-def batched(it: Iterable[T], n: int) -> Iterable[list[T]]:
-    ...
+def batched(it: Iterable[T], n: int) -> Iterable[list[T]]: ...
 
 
 @overload
-def batched(it: Iterable[T], n: int, with_indices: Literal[False]) -> Iterable[list[T]]:
-    ...
+def batched(it: Iterable[T], n: int, with_indices: Literal[False]) -> Iterable[list[T]]: ...
 
 
 @overload
-def batched(it: Iterable[T], n: int, with_indices: Literal[True]) -> Iterable[tuple[list[int], list[T]]]:
-    ...
+def batched(it: Iterable[T], n: int, with_indices: Literal[True]) -> Iterable[tuple[list[int], list[T]]]: ...
 
 
 def batched(
