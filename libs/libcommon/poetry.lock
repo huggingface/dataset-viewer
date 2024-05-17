@@ -616,8 +616,8 @@ vision = ["Pillow (>=6.2.1)"]
 [package.source]
 type = "git"
 url = "https://github.com/huggingface/datasets.git"
-reference = "b3f772468b2bbf77a7510e265f9d41e9eb77d53f"
-resolved_reference = "b3f772468b2bbf77a7510e265f9d41e9eb77d53f"
+reference = "11a27e9a7484a17c6d08d6a838364f9913f7bfd3"
+resolved_reference = "11a27e9a7484a17c6d08d6a838364f9913f7bfd3"
 
 [[package]]
 name = "decorator"
@@ -3709,4 +3709,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "3.9.18"
-content-hash = "649d548e64bd3d67a4ede8d3064a34eaafb9886dd131db1f13114730b374cbc5"
+content-hash = "eee1a4f54e1b5c9ddc6694382232b8a2d4554f74e6b79136a7a65b73a4d548e0"
