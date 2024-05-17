@@ -423,7 +423,7 @@ class SplitPresidioEntitiesScanJobRunner(SplitJobRunnerWithDatasetsCache):
 
 
 # fmt: off
-top_2k_most_liked_datasets = set(
+top_2k_most_liked_datasets = {
     "fka/awesome-chatgpt-prompts", "Open-Orca/OpenOrca", "OpenAssistant/oasst1", "HuggingFaceFW/fineweb", "gsdf/EasyNegative", "Anthropic/hh-rlhf", "togethercomputer/RedPajama-Data-1T", "Nerfgun3/bad_prompt", "tiiuae/falcon-refinedweb", "allenai/dolma",
     "anon8231489123/ShareGPT_Vicuna_unfiltered", "bigcode/the-stack", "QingyiSi/Alpaca-CoT", "databricks/databricks-dolly-15k", "tatsu-lab/alpaca", "teknium/OpenHermes-2.5", "JosephusCheung/GuanacoDataset", "wikipedia", "HuggingFaceTB/cosmopedia", "m-a-p/COIG-CQIA",
     "lmsys/lmsys-chat-1m", "poloclub/diffusiondb", "liwu/MNBVC", "Gustavosta/Stable-Diffusion-Prompts", "BAAI/COIG", "uonlp/CulturaX", "yahma/alpaca-cleaned", "roneneldan/TinyStories", "stingning/ultrachat", "wikimedia/wikipedia",
@@ -624,4 +624,4 @@ top_2k_most_liked_datasets = set(
     "thomwolf/github-python", "Adapting/empathetic_dialogues_v2", "Bingsu/Human_Action_Recognition", "mustapha/QuranExe", "ceyda/fashion-products-small", "frgfm/imagenette", "naver-clova-ix/synthdog-en", "bigscience/evaluation-results", "pcuenq/oxford-pets", "SLPL/syntran-fa",
     "RUCAIBox/Story-Generation", "jonathanli/law-stack-exchange", "ai-forever/school_notebooks_RU", "ashraq/esc50", "waifu-research-department/regularization", "sbx/superlim-2", "ashraq/financial-news", "AluminiumOxide/personal_latent_diffusion", "elenanereiss/german-ler", "Nerfgun3/flower_style",
     "lmqg/qa_harvesting_from_wikipedia", "Nerfgun3/land_style", "NeelNanda/counterfact-tracing", "VietAI/vi_pubmed", "andyyang/stable_diffusion_prompts_2m", "its5Q/yandex-q", "wanng/laion-high-resolution-chinese", "Salesforce/rose", "Jean-Baptiste/financial_news_sentiment", "diltdicker/romance_novel_data-2022",
-)
+}

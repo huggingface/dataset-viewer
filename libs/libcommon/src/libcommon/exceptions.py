@@ -629,6 +629,7 @@ class DatasetWithTooComplexDataFilesPatternsError(CacheableError):
             message, HTTPStatus.INTERNAL_SERVER_ERROR, "DatasetWithTooComplexDataFilesPatternsError", cause, True
         )
 
+
 class PresidioScanNotEnabledForThisDataset(CacheableError):
     """We've only enabled some datasets for presidio scans."""
 
