@@ -4,17 +4,20 @@
 import os
 from collections.abc import Generator
 from pathlib import Path
+from typing import Union
 
 import duckdb
 import pyarrow as pa
+import pyarrow.compute as pc
 import pytest
 from datasets import Dataset
 from libapi.exceptions import InvalidParameterError
-from libapi.response import ROW_IDX_COLUMN, create_response
+from libapi.response import create_response
+from libcommon.constants import ROW_IDX_COLUMN
 from libcommon.storage_client import StorageClient
 
 from search.config import AppConfig
-from search.routes.filter import execute_filter_query, validate_where_parameter
+from search.routes.filter import execute_filter_query, validate_query_parameter
 
 CACHED_ASSETS_FOLDER = "cached-assets"
 
@@ -51,48 +54,83 @@ def index_file_location(ds: Dataset) -> Generator[str, None, None]:
     con.execute("LOAD 'fts';")
     con.sql("CREATE OR REPLACE SEQUENCE serial START 0 MINVALUE 0;")
     sample_df = ds.to_pandas()  # noqa: F841
-    create_command_sql = "CREATE OR REPLACE TABLE data AS SELECT nextval('serial') AS __hf_index_id, * FROM sample_df"
+    create_command_sql = (
+        f"CREATE OR REPLACE TABLE data AS SELECT nextval('serial') AS {ROW_IDX_COLUMN}, * FROM sample_df"
+    )
     con.sql(create_command_sql)
     # assert sample_df.shape[0] == con.execute(query="SELECT COUNT(*) FROM data;").fetchall()[0][0]
-    con.sql("PRAGMA create_fts_index('data', '__hf_index_id', 'name', 'gender', overwrite=1);")
+    con.sql(f"PRAGMA create_fts_index('data', '{ROW_IDX_COLUMN}', 'name', 'gender', overwrite=1);")
     con.close()
     yield index_file_location
     os.remove(index_file_location)
 
 
-@pytest.mark.parametrize("where", ["col='A'"])
-def test_validate_where_parameter(where: str) -> None:
-    validate_where_parameter(where)
+@pytest.mark.parametrize(
+    "parameter_name, parameter_value", [("where", "\"col\"='A'"), ("orderby", '"A"'), ("orderby", '"A" DESC')]
+)
+def test_validate_query_parameter(parameter_name: str, parameter_value: str) -> None:
+    validate_query_parameter(parameter_value, parameter_name)
 
 
-@pytest.mark.parametrize("where", ["col='A'; SELECT * from data", "col='A' /*", "col='A'--"])
-def test_validate_where_parameter_raises(where: str) -> None:
+@pytest.mark.parametrize("sql_injection", ["; SELECT * from data", " /*", "--"])
+@pytest.mark.parametrize(
+    "parameter_name, parameter_value",
+    [("where", "\"col\"='A'"), ("orderby", '"A"'), ("orderby", '"A" DESC')],
+)
+def test_validate_query_parameter_raises(parameter_name: str, parameter_value: str, sql_injection: str) -> None:
     with pytest.raises(InvalidParameterError):
-        validate_where_parameter(where)
+        validate_query_parameter(parameter_value + sql_injection, parameter_name)
 
 
+@pytest.mark.parametrize("orderby", ["", '"age"', '"age" DESC'])
+@pytest.mark.parametrize("where", ["", "\"gender\"='female'"])
 @pytest.mark.parametrize("columns", [["name", "age"], ["name"]])
-def test_execute_filter_query(index_file_location: str, columns: list[str]) -> None:
+def test_execute_filter_query(columns: list[str], where: str, orderby: str, index_file_location: str) -> None:
     # in split-duckdb-index we always add the ROW_IDX_COLUMN column
     # see https://github.com/huggingface/dataset-viewer/blob/main/services/worker/src/worker/job_runners/split/duckdb_index.py#L305
-    columns.append(ROW_IDX_COLUMN)
-    where, limit, offset = "gender='female'", 1, 1
+    columns = columns + [ROW_IDX_COLUMN]
+    limit, offset = 1, 1
     num_rows_total, pa_table = execute_filter_query(
-        index_file_location=index_file_location, columns=columns, where=where, limit=limit, offset=offset
+        index_file_location=index_file_location,
+        columns=columns,
+        where=where,
+        orderby=orderby,
+        limit=limit,
+        offset=offset,
     )
-    assert num_rows_total == 2
-    expected = pa.Table.from_pydict(
-        {"__hf_index_id": [3], "name": ["Simone"], "gender": ["female"], "age": [30]}
-    ).select(columns)
-    assert pa_table == expected
+    expected_num_rows_total = 2 if where else 4
+    assert num_rows_total == expected_num_rows_total
+    expected_pa_table = pa.Table.from_pydict(
+        {
+            ROW_IDX_COLUMN: [0, 1, 2, 3],
+            "name": ["Marie", "Paul", "Leo", "Simone"],
+            "gender": ["female", "male", "male", "female"],
+            "age": [35, 30, 25, 30],
+        }
+    )
+    if where:
+        expected_pa_table = expected_pa_table.filter(pc.field("gender") == "female")
+    if orderby:
+        if orderby.endswith(" DESC"):
+            sorting: Union[str, list[tuple[str, str]]] = [(orderby.removesuffix(" DESC").strip('"'), "descending")]
+        else:
+            sorting = orderby.strip('"')
+        expected_pa_table = expected_pa_table.sort_by(sorting)
+    expected_pa_table = expected_pa_table.slice(offset, limit).select(columns)
+    assert pa_table == expected_pa_table
 
 
-@pytest.mark.parametrize("where", ["non-existing-column=30", "name=30", "name>30"])
+@pytest.mark.parametrize("where", ['"non-existing-column"=30', '"name"=30', '"name">30'])
 def test_execute_filter_query_raises(where: str, index_file_location: str) -> None:
     columns, limit, offset = ["name", "gender", "age"], 100, 0
     with pytest.raises(InvalidParameterError):
         _ = execute_filter_query(
-            index_file_location=index_file_location, columns=columns, where=where, limit=limit, offset=offset
+            index_file_location=index_file_location,
+            columns=columns,
+            where=where,
+            orderby="",
+            limit=limit,
+            offset=offset,
         )
 
 
@@ -100,7 +138,7 @@ async def test_create_response(ds: Dataset, app_config: AppConfig, storage_clien
     dataset, config, split = "ds", "default", "train"
     pa_table = pa.Table.from_pydict(
         {
-            "__hf_index_id": [2, 3, 4, 5],
+            ROW_IDX_COLUMN: [2, 3, 4, 5],
             "name": ["Marie", "Paul", "Leo", "Simone"],
             "gender": ["female", "male", "male", "female"],
             "age": [35, 30, 25, 30],

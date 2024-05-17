@@ -178,11 +178,11 @@ class retry:
                 try:
                     """always sleep before calling the function. It will prevent rate limiting in the first place"""
                     duration = self.sleeps[attempt]
-                    logging.info(f"Sleep during {duration} seconds to preventively mitigate rate limiting.")
+                    logging.debug(f"Sleep during {duration} seconds to preventively mitigate rate limiting.")
                     time.sleep(duration)
                     return func(*args, **kwargs)
                 except tuple(self.on) as err:
-                    logging.info(f"Got a {type(err)}. Let's retry.")
+                    logging.info(f"Got a {type(err).__name__}. Let's retry.")
                     last_err = err
                     attempt += 1
             raise RuntimeError(f"Give up after {attempt} attempts. The last one raised {type(last_err)}") from last_err

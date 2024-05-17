@@ -8,7 +8,6 @@ global:
     service:
       ports:
         datasetsServer:
-          proxy: 30931
           admin: 32702
           api: 31370
           rows: 31371
@@ -18,11 +17,6 @@ global:
 images:
   pullPolicy: IfNotPresent
   pullSecrets: []
-  reverseProxy:
-    useGlobalRegistry: false
-    registry: docker.io
-    repository: nginx
-    tag: "1.20"
   jobs:
     mongodbMigration:
       registry: huggingface
@@ -59,11 +53,6 @@ images:
       registry: huggingface
       useGlobalRegistry: false
       repository: datasets-server-services-sse-api
-      tag: sha-fb3399a
-    storageAdmin:
-      registry: huggingface
-      useGlobalRegistry: false
-      repository: datasets-server-services-storage-admin
       tag: sha-fb3399a
     worker:
       registry: huggingface
@@ -257,35 +246,7 @@ cacheMetricsCollector:
       cpu: 1
       memory: "512Mi"
 
-# --- storage admin (to manually inspect the storage, in /data) ---
-
-storageAdmin:
-  nodeSelector:
-    role-datasets-server: "true"
-  replicas: 1
-  resources:
-    requests:
-      cpu: 4
-      memory: "4Gi"
-    limits:
-      cpu: 4
-      memory: "4Gi"
-
-# --- reverse proxy ---
-
-reverseProxy:
-  nodeSelector:
-    role-datasets-server: "true"
-  replicas: 2
-  resources:
-    requests:
-      cpu: 1
-      memory: "64Mi"
-    limits:
-      cpu: 1
-      memory: "256Mi"
-  service:
-    type: NodePort
+# --- ALB ---
 
 ingress:
   tls:
@@ -321,6 +282,11 @@ admin:
   replicas: 2
   service:
     type: NodePort
+  ingress:
+    enabled: true
+    annotations:
+      alb.ingress.kubernetes.io/group.order: "1"
+      alb.ingress.kubernetes.io/target-node-labels: role-datasets-server=true
   resources:
     requests:
       cpu: 1
@@ -342,6 +308,12 @@ api:
   replicas: 12
   service:
     type: NodePort
+  ingress:
+    enabled: true
+    annotations:
+      alb.ingress.kubernetes.io/target-node-labels: role-datasets-server-api=true
+      alb.ingress.kubernetes.io/actions.openapi-redirect: '{"Type":"redirect","RedirectConfig":{"Host":"raw.githubusercontent.com","Path":"/huggingface/dataset-viewer/main/docs/source/openapi.json","Port":"443","Protocol":"HTTPS","Query":"#{query}","StatusCode":"HTTP_302"}}'
+      alb.ingress.kubernetes.io/actions.metrics-unauthorized: '{"type":"fixed-response","fixedResponseConfig":{"contentType":"text/plain","statusCode":"401","messageBody":"401 Unauthorized"}}'
   resources:
     requests:
       cpu: 4
@@ -361,6 +333,11 @@ rows:
   replicas: 12
   service:
     type: NodePort
+  ingress:
+    enabled: true
+    annotations:
+      alb.ingress.kubernetes.io/group.order: "2"
+      alb.ingress.kubernetes.io/target-node-labels: role-datasets-server-rows=true
   resources:
     requests:
       cpu: 1
@@ -383,7 +360,7 @@ search:
   ingress:
     enabled: true
     annotations:
-      alb.ingress.kubernetes.io/group.order: "1"
+      alb.ingress.kubernetes.io/group.order: "3"
       alb.ingress.kubernetes.io/target-node-labels: role-datasets-server-search=true
       alb.ingress.kubernetes.io/target-group-attributes: stickiness.enabled=true,stickiness.lb_cookie.duration_seconds=300
       alb.ingress.kubernetes.io/target-type: ip
@@ -405,6 +382,11 @@ sseApi:
   replicas: 2
   service:
     type: NodePort
+  ingress:
+    enabled: true
+    annotations:
+      alb.ingress.kubernetes.io/group.order: "4"
+      alb.ingress.kubernetes.io/target-node-labels: role-datasets-server=true
   resources:
     requests:
       cpu: 1

@@ -5,14 +5,17 @@ from http import HTTPStatus
 
 import pytest
 
-from libcommon.processing_graph import processing_graph
+from libcommon.constants import CONFIG_SPLIT_NAMES_KIND, DATASET_CONFIG_NAMES_KIND
+from libcommon.processing_graph import processing_graph, specification
 from libcommon.queue import Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import upsert_response
+from libcommon.state import UnexceptedConfigNamesError, UnexceptedSplitNamesError
 
 from .utils import (
     CONFIG_NAMES,
     CONFIG_NAMES_CONTENT,
+    DATASET_NAME,
     REVISION_NAME,
     assert_dataset_backfill_plan,
     get_dataset_backfill_plan,
@@ -200,3 +203,70 @@ def test_plan_job_creation_and_termination() -> None:
         },
         tasks=["CreateJobs,18"],
     )
+
+
+def test_backfill_should_delete_inexistent_configs() -> None:
+    # see https://github.com/huggingface/dataset-viewer/issues/2767
+
+    # the list of configs is set to ["config1", "config2"]
+    upsert_response(
+        kind=DATASET_CONFIG_NAMES_KIND,
+        dataset=DATASET_NAME,
+        content=CONFIG_NAMES_CONTENT,
+        http_status=HTTPStatus.OK,
+        job_runner_version=specification[DATASET_CONFIG_NAMES_KIND]["job_runner_version"],
+        dataset_git_revision=REVISION_NAME,
+    )
+    # let's add a child artifact for an inexistent config name
+    upsert_response(
+        kind=CONFIG_SPLIT_NAMES_KIND,
+        dataset=DATASET_NAME,
+        config="does-not-exist",
+        content={},
+        http_status=HTTPStatus.OK,
+        job_runner_version=specification[CONFIG_SPLIT_NAMES_KIND]["job_runner_version"],
+        dataset_git_revision=REVISION_NAME,
+    )
+
+    # creating the backfill plan should raise UnexceptedConfigNamesError (which means we should recreate the dataset)
+    with pytest.raises(UnexceptedConfigNamesError):
+        get_dataset_backfill_plan(processing_graph=processing_graph)
+
+
+def test_backfill_should_delete_inexistent_splits() -> None:
+    # see https://github.com/huggingface/dataset-viewer/issues/2767
+
+    config = "config"
+    upsert_response(
+        kind=DATASET_CONFIG_NAMES_KIND,
+        dataset=DATASET_NAME,
+        content={"config_names": [{"dataset": DATASET_NAME, "config": config}]},
+        http_status=HTTPStatus.OK,
+        job_runner_version=specification[DATASET_CONFIG_NAMES_KIND]["job_runner_version"],
+        dataset_git_revision=REVISION_NAME,
+    )
+    # the list of splits is set to ["split_ok"]
+    upsert_response(
+        kind=CONFIG_SPLIT_NAMES_KIND,
+        dataset=DATASET_NAME,
+        config=config,
+        content={"splits": [{"dataset": DATASET_NAME, "config": config, "split": "split_ok"}]},
+        http_status=HTTPStatus.OK,
+        job_runner_version=specification[CONFIG_SPLIT_NAMES_KIND]["job_runner_version"],
+        dataset_git_revision=REVISION_NAME,
+    )
+    # let's add a child artifact for an inexistent config name
+    upsert_response(
+        kind="split-first-rows",
+        dataset=DATASET_NAME,
+        config=config,
+        split="does-not-exist",
+        content={},
+        http_status=HTTPStatus.OK,
+        job_runner_version=specification["split-first-rows"]["job_runner_version"],
+        dataset_git_revision=REVISION_NAME,
+    )
+
+    # creating the backfill plan should raise UnexceptedSplitNamesError (which means we should recreate the dataset)
+    with pytest.raises(UnexceptedSplitNamesError):
+        get_dataset_backfill_plan(processing_graph=processing_graph)

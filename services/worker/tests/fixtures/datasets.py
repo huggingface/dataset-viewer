@@ -34,6 +34,14 @@ from .descriptive_statistics_dataset import (
     statistics_string_text_dataset,
 )
 
+SEARCH_TEXT_CONTENT = [
+    ("Grand Moff Tarkin and Lord Vader are interrupted in their discussion by the buzz of the" " comlink"),
+    "There goes another one.",
+    "Vader turns round and round in circles as his ship spins into space.",
+    "We count thirty Rebel ships, Lord Vader.",
+    "The wingman spots the pirateship coming at him and warns the Dark Lord",
+]
+
 
 def value(content: Any, dtype: Any) -> Dataset:
     return Dataset.from_pandas(pd.DataFrame({"col": [content]}, dtype=dtype))
@@ -156,16 +164,7 @@ def datasets() -> Mapping[str, Dataset]:
         "duckdb_index": Dataset.from_pandas(
             pd.DataFrame(
                 {
-                    "text": [
-                        (
-                            "Grand Moff Tarkin and Lord Vader are interrupted in their discussion by the buzz of the"
-                            " comlink"
-                        ),
-                        "There goes another one.",
-                        "Vader turns round and round in circles as his ship spins into space.",
-                        "We count thirty Rebel ships, Lord Vader.",
-                        "The wingman spots the pirateship coming at him and warns the Dark Lord",
-                    ],
+                    "text": SEARCH_TEXT_CONTENT,
                     "column with spaces": [
                         "a",
                         "b",

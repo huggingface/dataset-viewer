@@ -78,6 +78,8 @@ CacheableErrorCode = Literal[
     "ConfigNamesError",
     "ConfigNotFoundError",
     "CreateCommitError",
+    "DatasetGenerationError",
+    "DatasetGenerationCastError",
     "DatasetInBlockListError",
     "DatasetManualDownloadError",
     "DatasetModuleNotInstalledError",
@@ -87,6 +89,7 @@ CacheableErrorCode = Literal[
     "DatasetWithTooComplexDataFilesPatternsError",
     "DatasetWithTooManyConfigsError",
     "DatasetWithTooManyParquetFilesError",
+    "DatasetWithTooManySplitsError",
     "DiskError",
     "DuckDBIndexFileNotFoundError",
     "EmptyDatasetError",
@@ -109,6 +112,7 @@ CacheableErrorCode = Literal[
     "NotSupportedDisabledViewerError",
     "NotSupportedPrivateRepositoryError",
     "NotSupportedRepositoryNotFoundError",
+    "NotSupportedTagNFAAError",
     "NormalRowsError",
     "ParameterMissingError",
     "ParquetResponseEmptyError",
@@ -124,6 +128,7 @@ CacheableErrorCode = Literal[
     "SplitWithTooBigParquetError",
     "StreamingRowsError",
     "TooBigContentError",
+    "TooLongColumnNameError",
     "TooManyColumnsError",
     "UnexpectedError",
     "UnsupportedExternalFilesError",
@@ -180,6 +185,20 @@ class CreateCommitError(CacheableError):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "CreateCommitError", cause, False)
 
 
+class DatasetGenerationError(CacheableError):
+    """The dataset generation failed."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "DatasetGenerationError", cause, True)
+
+
+class DatasetGenerationCastError(CacheableError):
+    """The dataset generation failed because of a cast error."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "DatasetGenerationCastError", cause, True)
+
+
 class DatasetManualDownloadError(CacheableError):
     """The dataset requires manual download."""
 
@@ -219,6 +238,13 @@ class DatasetWithTooManyConfigsError(CacheableError):
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "DatasetWithTooManyConfigsError", cause, True)
+
+
+class DatasetWithTooManySplitsError(CacheableError):
+    """The number of splits of a dataset exceeded the limit."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "DatasetWithTooManySplitsError", cause, True)
 
 
 class DatasetWithTooManyParquetFilesError(CacheableError):
@@ -508,6 +534,13 @@ class TooManyColumnsError(CacheableError):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "TooManyColumnsError", cause, True)
 
 
+class TooLongColumnNameError(CacheableError):
+    """The column name is too long."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "TooLongColumnNameError", cause, True)
+
+
 class UnexpectedError(CacheableError):
     """The job runner raised an unexpected error."""
 
@@ -532,7 +565,12 @@ class UnsupportedExternalFilesError(CacheableError):
 class DatasetWithScriptNotSupportedError(CacheableError):
     """We don't support some datasets because they have a dataset script."""
 
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
+    def __init__(self, message: str = "", cause: Optional[BaseException] = None):
+        message = message or (
+            "The dataset viewer doesn't support this dataset because it runs arbitrary Python code. "
+            "You can convert it to a Parquet data-only dataset by using the convert_to_parquet CLI from the datasets "
+            "library. See: https://huggingface.co/docs/datasets/main/en/cli#convert-to-parquet"
+        )  # TODO: Change URL after next datasets release
         super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "DatasetWithScriptNotSupportedError", cause, True)
 
 
@@ -566,6 +604,13 @@ class NotSupportedPrivateRepositoryError(NotSupportedError):
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "NotSupportedPrivateRepositoryError", cause, False)
+
+
+class NotSupportedTagNFAAError(NotSupportedError):
+    """The dataset viewer is disabled because the dataset has the NFAA tag."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "NotSupportedTagNFAAError", cause, False)
 
 
 class DatasetInBlockListError(NotSupportedError):

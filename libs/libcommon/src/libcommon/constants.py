@@ -19,7 +19,6 @@ LOCK_TTL_SECONDS_NO_OWNER = 600  # 10 minutes
 LOCK_TTL_SECONDS_TO_START_JOB = 600  # 10 minutes
 LOCK_TTL_SECONDS_TO_WRITE_ON_GIT_BRANCH = 3600  # 1 hour
 
-MAX_FAILED_RUNS = 3
 DATASET_SEPARATOR = "--"
 DEFAULT_DIFFICULTY = 50
 DEFAULT_DIFFICULTY_MAX = 100
@@ -34,16 +33,25 @@ PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_ROW_GROUP_SIZE_FOR_IMAGE_DATASETS = 100
 PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_ROW_GROUP_SIZE_FOR_BINARY_DATASETS = 100
 PARQUET_REVISION = "refs/convert/parquet"
 
-ERROR_CODES_TO_RETRY = {
-    "ConnectionError",
-    "CreateCommitError",
-    "ExternalServerError",
-    "HfHubError",
-    "JobManagerCrashedError",
-    "LockedDatasetTimeoutError",
-    "PreviousStepStillProcessingError",
-    "StreamingRowsError",
+TAG_NFAA_CONTENT = "not-for-all-audiences"
+TAG_NFAA_SYNONYMS = [TAG_NFAA_CONTENT, "nsfw", "porn", "hentai", "inappropriate"]
+
+
+DEFAULT_MAX_FAILED_RUNS = 3
+LARGE_MAX_FAILED_RUNS = 30  # for errors that should not be permanent
+MAX_FAILED_RUNS_PER_ERROR_CODE = {
+    # default
+    "ConnectionError": DEFAULT_MAX_FAILED_RUNS,
+    "ExternalServerError": DEFAULT_MAX_FAILED_RUNS,
+    "JobManagerCrashedError": DEFAULT_MAX_FAILED_RUNS,
+    "StreamingRowsError": DEFAULT_MAX_FAILED_RUNS,
+    # "always" retry
+    "CreateCommitError": LARGE_MAX_FAILED_RUNS,
+    "HfHubError": LARGE_MAX_FAILED_RUNS,
+    "LockedDatasetTimeoutError": LARGE_MAX_FAILED_RUNS,
+    "PreviousStepStillProcessingError": LARGE_MAX_FAILED_RUNS,
 }
+ERROR_CODES_TO_RETRY = list(MAX_FAILED_RUNS_PER_ERROR_CODE.keys())
 
 EXTERNAL_DATASET_SCRIPT_PATTERN = "datasets_modules/datasets"
 
@@ -59,10 +67,12 @@ SPLIT_DUCKDB_INDEX_KIND = "split-duckdb-index"
 SPLIT_HAS_PREVIEW_KIND = "split-first-rows"
 SPLIT_HAS_SEARCH_KIND = "split-duckdb-index"
 SPLIT_HAS_STATISTICS_KIND = "split-descriptive-statistics"
-
+ROW_IDX_COLUMN = "__hf_index_id"
+HF_FTS_SCORE = "__hf_fts_score"
 CROISSANT_MAX_CONFIGS = 100
 LOADING_METHODS_MAX_CONFIGS = 100
 MAX_NUM_ROWS_PER_PAGE = 100
+MAX_COLUMN_NAME_LENGTH = 500
 
 LONG_DURATION_PROMETHEUS_HISTOGRAM_BUCKETS = (
     0.005,

@@ -538,13 +538,13 @@ def create_dataset_info_response_for_csv(dataset: str, config: str) -> Any:
         "splits": {"train": {"name": "train", "num_bytes": 96, "num_examples": 4, "dataset_name": dataset_name}},
         "download_checksums": {
             f"https://hub-ci.huggingface.co/datasets/{dataset}/resolve/__COMMIT__/dataset.csv": {
-                "num_bytes": 50,
+                "num_bytes": 55,
                 "checksum": None,
             }
         },
-        "download_size": 50,
+        "download_size": 55,
         "dataset_size": 96,
-        "size_in_bytes": 146,
+        "size_in_bytes": 151,
     }
 
 
@@ -788,6 +788,10 @@ def big_csv_path(tmp_path_factory: pytest.TempPathFactory) -> str:
 
 TEXT_cols = {
     "text": {"_type": "Value", "dtype": "string"},
+}
+
+LARGE_TEXT_cols = {
+    "text": {"_type": "Value", "dtype": "large_string"},
 }
 
 TEXT_rows = [

@@ -17,8 +17,9 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 import pytest
 import requests
-from datasets import Features, Image, Sequence, Value
+from datasets import Features, Image, Sequence, Translation, TranslationVariableLanguages, Value
 from datasets.packaged_modules.csv.csv import CsvConfig
+from libcommon.constants import HF_FTS_SCORE, ROW_IDX_COLUMN
 from libcommon.dtos import Priority
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import upsert_response
@@ -378,7 +379,7 @@ def test_compute(
             # perform a search to validate fts feature
             query = "Lord Vader"
             result = con.execute(
-                "SELECT __hf_index_id, text FROM data WHERE fts_main_data.match_bm25(__hf_index_id, ?) IS NOT NULL;",
+                f"SELECT {ROW_IDX_COLUMN}, text FROM data WHERE fts_main_data.match_bm25({ROW_IDX_COLUMN}, ?) IS NOT NULL;",
                 [query],
             )
             rows = result.df()
@@ -392,7 +393,7 @@ def test_compute(
                 )
             ).any()
             assert not (rows["text"].eq("There goes another one.")).any()
-            assert (rows["__hf_index_id"].isin([0, 2, 3, 4, 5, 7, 8, 9])).all()
+            assert (rows[ROW_IDX_COLUMN].isin([0, 2, 3, 4, 5, 7, 8, 9])).all()
 
         con.close()
         os.remove(file_name)
@@ -437,7 +438,10 @@ def test_get_delete_operations(split_names: set[str], config: str, deleted_files
 @pytest.mark.parametrize(
     "features, expected",
     [
-        (Features({"col_1": Value("string"), "col_2": Value("int64")}), ["col_1"]),
+        (
+            Features({"col_1": Value("string"), "col_2": Value("int64"), "col_3": Value("large_string")}),
+            ["col_1", "col_3"],
+        ),
         (
             Features(
                 {
@@ -451,6 +455,15 @@ def test_get_delete_operations(split_names: set[str], config: str, deleted_files
             ["nested_1", "nested_2", "nested_3", "nested_4"],
         ),
         (Features({"col_1": Image()}), []),
+        (
+            Features(
+                {
+                    "col_1": Translation(languages=["en", "fr"]),
+                    "col_2": TranslationVariableLanguages(languages=["fr", "en"]),
+                }
+            ),
+            ["col_1", "col_2"],
+        ),
     ],
 )
 def test_get_indexable_columns(features: Features, expected: list[str]) -> None:
@@ -467,8 +480,8 @@ Back away ! I will deal with this Jedi slime myself"""
 
 
 FTS_COMMAND = (
-    "SELECT * EXCLUDE (__hf_fts_score) FROM (SELECT *, fts_main_data.match_bm25(__hf_index_id, ?) AS __hf_fts_score"
-    " FROM data) A WHERE __hf_fts_score IS NOT NULL ORDER BY __hf_index_id;"
+    f"SELECT * EXCLUDE ({HF_FTS_SCORE}) FROM (SELECT *, fts_main_data.match_bm25({ROW_IDX_COLUMN}, ?) AS {HF_FTS_SCORE}"
+    f" FROM data) A WHERE {HF_FTS_SCORE} IS NOT NULL ORDER BY {ROW_IDX_COLUMN};"
 )
 
 
@@ -480,6 +493,17 @@ FTS_COMMAND = (
         (pd.DataFrame([{"nested": {"foo": line}} for line in DATA.split("\n")]), "bold", [2]),
         (pd.DataFrame([{"nested": [{"foo": line}]} for line in DATA.split("\n")]), "bold", [2]),
         (pd.DataFrame([{"nested": [{"foo": line, "bar": 0}]} for line in DATA.split("\n")]), "bold", [2]),
+        (
+            pd.DataFrame(
+                [
+                    {"translation": {"en": "favorite music", "es": "música favorita"}},
+                    {"translation": {"en": "time to sleep", "es": "hora de dormir"}},
+                    {"translation": {"en": "i like rock music", "es": "me gusta la música rock"}},
+                ]
+            ),
+            "music",
+            [0, 2],
+        ),
     ],
 )
 def test_index_command(df: pd.DataFrame, query: str, expected_ids: list[int]) -> None:
@@ -500,5 +524,5 @@ def test_table_column_hf_index_id_is_monotonic_increasing(tmp_path: Path) -> Non
         con.sql(CREATE_TABLE_COMMANDS.format(columns=column_names, source=parquet_path))
     with duckdb.connect(db_path) as con:
         df = con.sql("SELECT * FROM data").to_df()
-    assert df["__hf_index_id"].is_monotonic_increasing
-    assert df["__hf_index_id"].is_unique
+    assert df[ROW_IDX_COLUMN].is_monotonic_increasing
+    assert df[ROW_IDX_COLUMN].is_unique

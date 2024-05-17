@@ -107,16 +107,20 @@ def get_job_runner(
 
 def assert_content_is_equal(content: Any, expected: Any) -> None:
     print(content)
-    assert set(content) == {"parquet_files", "dataset_info", "partial"}, content
-    assert content["parquet_files"] == expected["parquet_files"], content
-    assert len(content["dataset_info"]) == len(expected["dataset_info"]), content
+    assert set(content) == {"parquet_files", "dataset_info", "partial"}, f"keys: {set(content)}"
+    assert content["parquet_files"] == expected["parquet_files"], f"parquet files: {content['parquet_files']}"
+    assert len(content["dataset_info"]) == len(
+        expected["dataset_info"]
+    ), f"length of dataset_info: {content['dataset_info']}"
     content_value = content["dataset_info"]
     expected_value = expected["dataset_info"]
-    assert set(content_value.keys()) == set(expected_value.keys()), content
+    assert set(content_value.keys()) == set(
+        expected_value.keys()
+    ), f"keys of dataset_info: {set(content_value.keys())}"
     for key in content_value.keys():
         if key != "download_checksums":
-            assert content_value[key] == expected_value[key], content
-    assert content["partial"] == expected["partial"], content
+            assert content_value[key] == expected_value[key], f"content of dataset_info['{key}']: {content_value[key]}"
+    assert content["partial"] == expected["partial"], f"partial: {content['partial']}"
 
 
 def test_compute(

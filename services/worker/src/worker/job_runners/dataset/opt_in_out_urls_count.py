@@ -6,7 +6,7 @@ from http import HTTPStatus
 
 from libcommon.exceptions import PreviousStepFormatError
 from libcommon.simple_cache import (
-    CacheEntryDoesNotExistError,
+    CachedArtifactNotFoundError,
     get_previous_step_or_raise,
     get_response,
 )
@@ -37,7 +37,7 @@ def compute_opt_in_out_urls_count_response(dataset: str) -> tuple[OptInOutUrlsCo
             total += 1
             try:
                 response = get_response(kind="config-opt-in-out-urls-count", dataset=dataset, config=config)
-            except CacheEntryDoesNotExistError:
+            except CachedArtifactNotFoundError:
                 logging.debug("No response found in previous step for this dataset: 'config-opt-in-out-urls-count'.")
                 pending += 1
                 continue

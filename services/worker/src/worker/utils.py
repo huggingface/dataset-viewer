@@ -12,12 +12,12 @@ from urllib.parse import quote
 
 import PIL
 import requests
-from datasets import Dataset, DatasetInfo, DownloadConfig, IterableDataset, load_dataset
+from datasets import Dataset, DatasetInfo, DownloadConfig, Features, IterableDataset, load_dataset
 from datasets.utils.file_utils import get_authentication_headers_for_url
 from fsspec.implementations.http import HTTPFileSystem
 from huggingface_hub.hf_api import HfApi
 from huggingface_hub.utils._errors import RepositoryNotFoundError
-from libcommon.constants import CONFIG_SPLIT_NAMES_KIND, EXTERNAL_DATASET_SCRIPT_PATTERN
+from libcommon.constants import CONFIG_SPLIT_NAMES_KIND, EXTERNAL_DATASET_SCRIPT_PATTERN, MAX_COLUMN_NAME_LENGTH
 from libcommon.dtos import RowsContent
 from libcommon.exceptions import (
     ConfigNotFoundError,
@@ -27,6 +27,7 @@ from libcommon.exceptions import (
     PreviousStepFormatError,
     SplitNotFoundError,
     StreamingRowsError,
+    TooLongColumnNameError,
 )
 from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.utils import retry
@@ -100,11 +101,7 @@ def get_rows_or_raise(
         )
     except Exception as err:
         if isinstance(err, ValueError) and "trust_remote_code" in str(err):
-            raise DatasetWithScriptNotSupportedError(
-                "The dataset viewer doesn't support this dataset because it runs "
-                "arbitrary python code. Please open a discussion in the discussion tab "
-                "if you think this is an error and tag @lhoestq and @severo."
-            ) from err
+            raise DatasetWithScriptNotSupportedError from err
         MAX_SIZE_FALLBACK = 100_000_000
         if max_size_fallback:
             warnings.warn(
@@ -130,11 +127,7 @@ def get_rows_or_raise(
             )
         except Exception as err:
             if isinstance(err, ValueError) and "trust_remote_code" in str(err):
-                raise DatasetWithScriptNotSupportedError(
-                    "The dataset viewer doesn't support this dataset because it runs "
-                    "arbitrary python code. Please open a discussion in the discussion tab "
-                    "if you think this is an error and tag @lhoestq and @severo."
-                ) from err
+                raise DatasetWithScriptNotSupportedError from err
             raise NormalRowsError(
                 "Cannot load the dataset split (in normal download mode) to extract the first rows.",
                 cause=err,
@@ -236,3 +229,14 @@ def resolve_trust_remote_code(dataset: str, allow_list: list[str]) -> bool:
         ):
             return True
     return False
+
+
+def raise_if_long_column_name(features: Optional[Features]) -> None:
+    if features is None:
+        return
+    for feature_name in features:
+        if len(feature_name) > MAX_COLUMN_NAME_LENGTH:
+            short_name = feature_name[: MAX_COLUMN_NAME_LENGTH - 3] + "..."
+            raise TooLongColumnNameError(
+                f"Column name '{short_name}' is too long. It should be less than {MAX_COLUMN_NAME_LENGTH} characters."
+            )

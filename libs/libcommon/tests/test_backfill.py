@@ -12,6 +12,7 @@ from libcommon.dtos import Priority, Status
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
+from libcommon.state import UnexceptedConfigNamesError
 
 from .utils import (
     ARTIFACT_CA_1,
@@ -365,9 +366,9 @@ def test_plan_compute_all(processing_graph: ProcessingGraph, up_to_date: list[st
     ],
 )
 def test_plan_retry_error_max_failed_runs(failed_runs: int, max_failed_runs: int, should_create: bool) -> None:
-    with patch("libcommon.state.MAX_FAILED_RUNS", max_failed_runs):
+    error_code = "SomeErrorCode"
+    with patch("libcommon.state.MAX_FAILED_RUNS_PER_ERROR_CODE", {error_code: max_failed_runs}):
         processing_graph = PROCESSING_GRAPH_GENEALOGY
-        error_code = list(ERROR_CODES_TO_RETRY)[0]
         compute_all(processing_graph=processing_graph)
 
         put_cache(
@@ -402,10 +403,13 @@ def test_plan_retry_error_and_outdated_by_parent(
     compute_all(processing_graph=processing_graph)
 
     put_cache(step=STEP_DA, dataset=DATASET_NAME, revision=REVISION_NAME, error_code=error_code)
-    # in the case of PROCESSING_GRAPH_FAN_IN_OUT: the config names do not exist anymore:
-    # the cache entries (also the jobs, if any - not here) should be deleted.
-    # they are still here, and haunting the database
-    # TODO: Not supported yet
+    if processing_graph == PROCESSING_GRAPH_FAN_IN_OUT:
+        # in the case of PROCESSING_GRAPH_FAN_IN_OUT: the config names do not exist anymore:
+        # the cache entries (also the jobs, if any - not here) should be deleted.
+        # UnexceptedConfigNamesError is raised
+        with pytest.raises(UnexceptedConfigNamesError):
+            get_dataset_backfill_plan(processing_graph=processing_graph)
+        return
 
     dataset_backfill_plan = get_dataset_backfill_plan(processing_graph=processing_graph)
     assert_dataset_backfill_plan(
@@ -676,6 +680,14 @@ def test_plan_incoherent_state(
             put_cache(step=STEP_DI, dataset=DATASET_NAME, revision=REVISION_NAME)
         else:
             raise NotImplementedError()
+
+    if processing_graph == PROCESSING_GRAPH_FAN_IN_OUT:
+        # in the case of PROCESSING_GRAPH_FAN_IN_OUT: the config names do not exist anymore:
+        # the cache entries (also the jobs, if any - not here) should be deleted.
+        # UnexceptedConfigNamesError is raised
+        with pytest.raises(UnexceptedConfigNamesError):
+            get_dataset_backfill_plan(processing_graph=processing_graph)
+        return
 
     dataset_backfill_plan = get_dataset_backfill_plan(processing_graph=processing_graph)
     assert_dataset_backfill_plan(

@@ -14,12 +14,14 @@ from huggingface_hub.hf_api import DatasetInfo, HfApi
 from huggingface_hub.utils import HfHubHTTPError
 from requests import Response  # type: ignore
 
+from libcommon.constants import CONFIG_SPLIT_NAMES_KIND, DATASET_CONFIG_NAMES_KIND, TAG_NFAA_SYNONYMS
 from libcommon.dtos import JobResult
 from libcommon.exceptions import (
     DatasetInBlockListError,
     NotSupportedDisabledRepositoryError,
     NotSupportedPrivateRepositoryError,
     NotSupportedRepositoryNotFoundError,
+    NotSupportedTagNFAAError,
 )
 from libcommon.operations import (
     CustomHfApi,
@@ -29,6 +31,7 @@ from libcommon.operations import (
     update_dataset,
 )
 from libcommon.orchestrator import finish_job
+from libcommon.processing_graph import specification
 from libcommon.queue import Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import get_cache_entries_df, has_some_cache, upsert_response
@@ -83,7 +86,7 @@ def test_whoisthis(name: str, expected_pro: Optional[bool], expected_enterprise:
 
 
 @contextmanager
-def tmp_dataset(namespace: str, token: str, private: bool) -> Iterator[str]:
+def tmp_dataset(namespace: str, token: str, private: bool, tags: Optional[list[str]] = None) -> Iterator[str]:
     # create a test dataset in hub-ci, then delete it
     hf_api = HfApi(endpoint=CI_HUB_ENDPOINT, token=token)
     prefix = "private" if private else "public"
@@ -93,6 +96,15 @@ def tmp_dataset(namespace: str, token: str, private: bool) -> Iterator[str]:
         private=private,
         repo_type="dataset",
     )
+    if tags:
+        README = "---\n" + "tags:\n" + "".join(f"- {tag}\n" for tag in tags) + "---"
+        hf_api.upload_file(
+            path_or_fileobj=README.encode(),
+            path_in_repo="README.md",
+            repo_id=dataset,
+            token=token,
+            repo_type="dataset",
+        )
     try:
         yield dataset
     finally:
@@ -158,6 +170,33 @@ def test_update_non_existent_raises(
 ) -> None:
     with pytest.raises(NotSupportedRepositoryNotFoundError):
         update_dataset(dataset="this-dataset-does-not-exists", hf_endpoint=CI_HUB_ENDPOINT, hf_token=CI_APP_TOKEN)
+
+
+@pytest.mark.parametrize(
+    "tags,raises",
+    [
+        (None, False),
+        ([], False),
+        (["perfectly-fine-tag"], False),
+        (["perfectly-fine-tag", "another-fine-tag"], False),
+        ([TAG_NFAA_SYNONYMS[0]], True),
+        ([TAG_NFAA_SYNONYMS[1]], True),
+        (TAG_NFAA_SYNONYMS, True),
+        (["perfectly-fine-tag", TAG_NFAA_SYNONYMS[0]], True),
+    ],
+)
+def test_update_dataset_with_nfaa_tag_raises(
+    queue_mongo_resource: QueueMongoResource,
+    cache_mongo_resource: CacheMongoResource,
+    tags: Optional[list[str]],
+    raises: bool,
+) -> None:
+    with tmp_dataset(namespace=NORMAL_USER, token=NORMAL_USER_TOKEN, private=False, tags=tags) as dataset:
+        if raises:
+            with pytest.raises(NotSupportedTagNFAAError):
+                update_dataset(dataset=dataset, hf_endpoint=CI_HUB_ENDPOINT, hf_token=CI_APP_TOKEN)
+        else:
+            update_dataset(dataset=dataset, hf_endpoint=CI_HUB_ENDPOINT, hf_token=CI_APP_TOKEN)
 
 
 def test_update_disabled_dataset_raises_way_1(
@@ -367,3 +406,108 @@ def test_2274_only_one_entry(
 
         assert not queue.get_pending_jobs_df(dataset=dataset).empty
         assert len(get_cache_entries_df(dataset=dataset)) == 1
+
+
+@pytest.mark.parametrize(
+    "config_names,should_be_recreated",
+    [(["config_ok"], False), (["config_nok"], True), (["config_ok", "config_nok"], True)],
+)
+def test_2767_delete_inexistent_configs(
+    queue_mongo_resource: QueueMongoResource,
+    cache_mongo_resource: CacheMongoResource,
+    config_names: list[str],
+    should_be_recreated: bool,
+) -> None:
+    # see https://github.com/huggingface/dataset-viewer/issues/2767
+    with tmp_dataset(namespace=NORMAL_USER, token=NORMAL_USER_TOKEN, private=False) as dataset:
+        revision = get_latest_dataset_revision_if_supported_or_raise(
+            dataset=dataset,
+            hf_endpoint=CI_HUB_ENDPOINT,
+            hf_token=NORMAL_USER_TOKEN,
+        )
+        upsert_response(
+            kind=DATASET_CONFIG_NAMES_KIND,
+            dataset=dataset,
+            content={"config_names": [{"dataset": dataset, "config": "config_ok"}]},
+            http_status=HTTPStatus.OK,
+            job_runner_version=specification[DATASET_CONFIG_NAMES_KIND]["job_runner_version"],
+            dataset_git_revision=revision,
+        )
+        for config_name in config_names:
+            upsert_response(
+                kind=CONFIG_SPLIT_NAMES_KIND,
+                dataset=dataset,
+                config=config_name,
+                content={"not": "important"},
+                http_status=HTTPStatus.OK,
+                job_runner_version=specification[CONFIG_SPLIT_NAMES_KIND]["job_runner_version"],
+                dataset_git_revision=revision,
+            )
+        operation_statistics = backfill_dataset(dataset=dataset, hf_endpoint=CI_HUB_ENDPOINT, hf_token=CI_APP_TOKEN)
+        assert operation_statistics.num_backfilled_datasets == 1
+        # ^ when the config names contain something else than "config_ok", the dataset should have been deleted in the cache,
+        # and the first job should have been created again
+        if should_be_recreated:
+            assert Queue().has_pending_jobs(dataset=dataset, job_types=[DATASET_CONFIG_NAMES_KIND])
+            assert get_cache_entries_df(dataset=dataset).empty
+        else:
+            assert not Queue().has_pending_jobs(dataset=dataset, job_types=[DATASET_CONFIG_NAMES_KIND])
+            assert len(get_cache_entries_df(dataset=dataset)) == len(config_names) + 1
+
+
+@pytest.mark.parametrize(
+    "split_names,should_be_recreated",
+    [(["split_ok"], False), (["split_nok"], True), (["split_ok", "split_nok"], True)],
+)
+def test_2767_delete_inexistent_splits(
+    queue_mongo_resource: QueueMongoResource,
+    cache_mongo_resource: CacheMongoResource,
+    split_names: list[str],
+    should_be_recreated: bool,
+) -> None:
+    # see https://github.com/huggingface/dataset-viewer/issues/2767
+    with tmp_dataset(namespace=NORMAL_USER, token=NORMAL_USER_TOKEN, private=False) as dataset:
+        config = "config"
+        revision = get_latest_dataset_revision_if_supported_or_raise(
+            dataset=dataset,
+            hf_endpoint=CI_HUB_ENDPOINT,
+            hf_token=NORMAL_USER_TOKEN,
+        )
+        upsert_response(
+            kind=DATASET_CONFIG_NAMES_KIND,
+            dataset=dataset,
+            content={"config_names": [{"dataset": dataset, "config": config}]},
+            http_status=HTTPStatus.OK,
+            job_runner_version=specification[DATASET_CONFIG_NAMES_KIND]["job_runner_version"],
+            dataset_git_revision=revision,
+        )
+        upsert_response(
+            kind=CONFIG_SPLIT_NAMES_KIND,
+            dataset=dataset,
+            config=config,
+            content={"splits": [{"dataset": dataset, "config": config, "split": "split_ok"}]},
+            http_status=HTTPStatus.OK,
+            job_runner_version=specification[CONFIG_SPLIT_NAMES_KIND]["job_runner_version"],
+            dataset_git_revision=revision,
+        )
+        for split_name in split_names:
+            upsert_response(
+                kind="split-first-rows",
+                dataset=dataset,
+                config=config,
+                split=split_name,
+                content={"not": "important"},
+                http_status=HTTPStatus.OK,
+                job_runner_version=specification["split-first-rows"]["job_runner_version"],
+                dataset_git_revision=revision,
+            )
+        operation_statistics = backfill_dataset(dataset=dataset, hf_endpoint=CI_HUB_ENDPOINT, hf_token=CI_APP_TOKEN)
+        assert operation_statistics.num_backfilled_datasets == 1
+        # ^ when the split names contain something else than "split_ok", the dataset should have been deleted in the cache,
+        # and the first job should have been created again
+        if should_be_recreated:
+            assert Queue().has_pending_jobs(dataset=dataset, job_types=[DATASET_CONFIG_NAMES_KIND])
+            assert get_cache_entries_df(dataset=dataset).empty
+        else:
+            assert not Queue().has_pending_jobs(dataset=dataset, job_types=[DATASET_CONFIG_NAMES_KIND])
+            assert len(get_cache_entries_df(dataset=dataset)) == len(split_names) + 2

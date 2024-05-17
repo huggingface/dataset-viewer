@@ -3878,12 +3878,6 @@
                       "error": "Parameter 'split' is required"
                     }
                   },
-                  "missing-where": {
-                    "summary": "The where parameter is missing.",
-                    "value": {
-                      "error": "Parameter 'where' is required"
-                    }
-                  },
                   "empty-dataset": {
                     "summary": "The dataset parameter is empty.",
                     "value": {
@@ -3900,12 +3894,6 @@
                     "summary": "The split parameter is empty.",
                     "value": {
                       "error": "Parameter 'split' is required"
-                    }
-                  },
-                  "empty-where": {
-                    "summary": "The where parameter is empty.",
-                    "value": {
-                      "error": "Parameter 'where' is required"
                     }
                   },
                   "non-integer-offset": {
@@ -3944,10 +3932,16 @@
                       "error": "Parameter 'where' contains invalid symbols"
                     }
                   },
-                  "invalid-where": {
-                    "summary": "The where parameter is invalid.",
+                  "orderby-with-invalid-symbols": {
+                    "summary": "The orderby parameter contains invalid symbols.",
                     "value": {
-                      "error": "Parameter 'where' is invalid"
+                      "error": "Parameter 'orderby' contains invalid symbols"
+                    }
+                  },
+                  "invalid-parameter": {
+                    "summary": "A query parameter is invalid.",
+                    "value": {
+                      "error": "A query parameter is invalid"
                     }
                   }
                 }

@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Optional
 
 import duckdb
-from datasets.features.features import Features, FeatureType, Value, _visit
+from datasets.features.features import Features, FeatureType, Translation, TranslationVariableLanguages, Value, _visit
 from huggingface_hub._commit_api import (
     CommitOperation,
     CommitOperationAdd,
@@ -16,7 +16,7 @@ from huggingface_hub._commit_api import (
 )
 from huggingface_hub.hf_api import HfApi
 from huggingface_hub.utils._errors import HfHubHTTPError, RepositoryNotFoundError
-from libcommon.constants import DUCKDB_INDEX_JOB_RUNNER_SUBDIRECTORY
+from libcommon.constants import DUCKDB_INDEX_JOB_RUNNER_SUBDIRECTORY, ROW_IDX_COLUMN
 from libcommon.dtos import JobInfo
 from libcommon.exceptions import (
     CacheDirectoryNotInitializedError,
@@ -50,10 +50,12 @@ from worker.utils import (
 DATASET_TYPE = "dataset"
 DUCKDB_DEFAULT_INDEX_FILENAME = "index.duckdb"
 DUCKDB_DEFAULT_PARTIAL_INDEX_FILENAME = "partial-index.duckdb"
-CREATE_INDEX_COMMAND = "PRAGMA create_fts_index('data', '__hf_index_id', {columns}, overwrite=1);"
+CREATE_INDEX_COMMAND = f"PRAGMA create_fts_index('data', '{ROW_IDX_COLUMN}', {{columns}}, overwrite=1);"
 CREATE_TABLE_COMMAND = "CREATE OR REPLACE TABLE data AS SELECT {columns} FROM '{source}';"
 CREATE_SEQUENCE_COMMAND = "CREATE OR REPLACE SEQUENCE serial START 0 MINVALUE 0;"
-ALTER_TABLE_BY_ADDING_SEQUENCE_COLUMN = "ALTER TABLE data ADD COLUMN __hf_index_id BIGINT DEFAULT nextval('serial');"
+ALTER_TABLE_BY_ADDING_SEQUENCE_COLUMN = (
+    f"ALTER TABLE data ADD COLUMN {ROW_IDX_COLUMN} BIGINT DEFAULT nextval('serial');"
+)
 CREATE_TABLE_COMMANDS = CREATE_TABLE_COMMAND + CREATE_SEQUENCE_COMMAND + ALTER_TABLE_BY_ADDING_SEQUENCE_COLUMN
 INSTALL_AND_LOAD_EXTENSION_COMMAND = "INSTALL 'fts'; LOAD 'fts';"
 SET_EXTENSIONS_DIRECTORY_COMMAND = "SET extension_directory='{directory}';"
@@ -67,7 +69,9 @@ def get_indexable_columns(features: Features) -> list[str]:
 
         def check_indexable(feature: FeatureType) -> None:
             nonlocal indexable
-            if isinstance(feature, Value) and feature.dtype == "string":
+            if isinstance(feature, Value) and feature.dtype in ("string", "large_string"):
+                indexable = True
+            elif isinstance(feature, (Translation, TranslationVariableLanguages)):
                 indexable = True
 
         _visit(feature, check_indexable)
@@ -190,17 +194,14 @@ def compute_split_duckdb_index_response(
     con = duckdb.connect(str(db_path.resolve()))
 
     try:
-        # configure duckdb extensions
-        if extensions_directory is not None:
-            con.execute(SET_EXTENSIONS_DIRECTORY_COMMAND.format(directory=extensions_directory))
-
-        con.execute(INSTALL_AND_LOAD_EXTENSION_COMMAND)
-
         logging.info(create_command_sql)
         con.sql(create_command_sql)
 
-        is_indexable = len(indexable_columns) > 0
-        if is_indexable:
+        if is_indexable := len(indexable_columns) > 0:
+            # configure duckdb extensions
+            if extensions_directory is not None:
+                con.execute(SET_EXTENSIONS_DIRECTORY_COMMAND.format(directory=extensions_directory))
+            con.execute(INSTALL_AND_LOAD_EXTENSION_COMMAND)
             # TODO: by default, 'porter' stemmer is being used, use a specific one by dataset language in the future
             # see https://duckdb.org/docs/extensions/full_text_search.html for more details about 'stemmer' parameter
             create_index_sql = CREATE_INDEX_COMMAND.format(columns=indexable_columns)
@@ -291,7 +292,7 @@ def compute_split_duckdb_index_response(
         raise ValueError(f"Cannot get size of {repo_file.rfilename}")
 
     # we added the __hf_index_id column for the index
-    features["__hf_index_id"] = {"dtype": "int64", "_type": "Value"}
+    features[ROW_IDX_COLUMN] = {"dtype": "int64", "_type": "Value"}
 
     return SplitDuckdbIndex(
         dataset=dataset,

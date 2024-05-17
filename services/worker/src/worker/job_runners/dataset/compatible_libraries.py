@@ -43,7 +43,7 @@ from worker.dtos import (
 )
 from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunnerWithDatasetsCache
 
-BASE_PATTENS_WITH_SEPARATOR = [
+BASE_PATTERNS_WITH_SEPARATOR = [
     pattern
     for pattern in datasets.data_files.KEYWORDS_IN_FILENAME_BASE_PATTERNS
     + datasets.data_files.KEYWORDS_IN_DIR_NAME_BASE_PATTERNS
@@ -55,9 +55,9 @@ NON_WORD_REGEX_SEPARATOR = NON_WORD_GLOB_SEPARATOR.replace(".", "\.")
 if (
     any(
         NON_WORD_GLOB_SEPARATOR not in pattern.format(keyword="train", sep=NON_WORDS_CHARS)
-        for pattern in BASE_PATTENS_WITH_SEPARATOR
+        for pattern in BASE_PATTERNS_WITH_SEPARATOR
     )
-    or not BASE_PATTENS_WITH_SEPARATOR
+    or not BASE_PATTERNS_WITH_SEPARATOR
 ):
     raise ImportError(
         f"Current `datasets` version is not compatible with simplify_data_files_patterns() which expects as keyword separator {NON_WORD_GLOB_SEPARATOR} for glob patterns. "
@@ -504,7 +504,9 @@ def get_compatible_libraries_for_csv(dataset: str, hf_token: Optional[str], logi
         for loading_code in loading_codes:
             if len(loading_code["arguments"]["splits"]) == 1:
                 pattern = next(iter(loading_code["arguments"]["splits"].values()))
-                loading_code["code"] = DASK_CODE.format(function=function, dataset=dataset, pattern=pattern)
+                loading_code["code"] = DASK_CODE.format(
+                    function=function, dataset=dataset, pattern=pattern, comment=comment
+                )
             else:
                 loading_code["code"] = DASK_CODE_SPLITS.format(
                     function=function,

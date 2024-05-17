@@ -6,7 +6,7 @@ from http import HTTPStatus
 
 from libcommon.exceptions import PreviousStepFormatError
 from libcommon.simple_cache import (
-    CacheEntryDoesNotExistError,
+    CachedArtifactNotFoundError,
     get_response,
 )
 
@@ -48,7 +48,7 @@ def compute_is_valid_response(dataset: str, config: str) -> tuple[IsValidRespons
             total += 1
             try:
                 response = get_response(kind="split-is-valid", dataset=dataset, config=config, split=split)
-            except CacheEntryDoesNotExistError:
+            except CachedArtifactNotFoundError:
                 logging.debug("No response found in previous step for this dataset: 'split-is-valid'.")
                 pending += 1
                 continue

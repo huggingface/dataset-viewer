@@ -110,11 +110,7 @@ def compute_config_names_response(
         raise EmptyDatasetError("The dataset is empty.", cause=err) from err
     except ValueError as err:
         if "trust_remote_code" in str(err):
-            raise DatasetWithScriptNotSupportedError(
-                "The dataset viewer doesn't support this dataset because it runs "
-                "arbitrary python code. Please open a discussion in the discussion tab "
-                "if you think this is an error and tag @lhoestq and @severo."
-            ) from err
+            raise DatasetWithScriptNotSupportedError from err
         raise ConfigNamesError("Cannot get the config names for the dataset.", cause=err) from err
     except ImportError as err:
         # this should only happen if the dataset is in the allow list, which should soon disappear
