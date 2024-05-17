@@ -124,7 +124,7 @@ def analyze(
 
 
 def presidio_scan_entities(
-    rows: list[Row], scanned_columns: list[str], columns_descriptions: list[str], max_text_length: int,
+    rows: list[Row], scanned_columns: list[str], columns_descriptions: list[str], max_text_length: int, disable_masks: bool = False
 ) -> list[PresidioEntity]:
     global batch_analyzer
     cache: dict[str, list[RecognizerResult]] = {}
@@ -143,7 +143,12 @@ def presidio_scan_entities(
             columns_descriptions=columns_descriptions,
             cache=cache,
         ):
-            presidio_entities.append(presidio_entitiy)
+            presidio_entities.append(PresidioEntity(
+                text=presidio_entitiy["text"] if disable_masks else mask(presidio_entitiy["text"]),
+                type=presidio_entitiy["type"],
+                row_idx=presidio_entitiy["row_idx"],
+                column_name=presidio_entitiy["column_name"],
+            ))
     return presidio_entities
 
 
