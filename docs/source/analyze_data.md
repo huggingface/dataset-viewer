@@ -8,7 +8,7 @@ To demonstrate, this guide will show you an end-to-end example of how to retriev
 
 ## Get a dataset
 
-The [Hub](https://huggingface.co/datasets) is home to more than 40,000 datasets across a wide variety of tasks, sizes, and languages. For this example, you'll use the [`codeparrot/codecomplex`](https://huggingface.co/datasets/codeparrot/codecomplex) dataset, but feel free to explore and find another dataset that interests you! The dataset contains Java code from programming competitions, and the time complexity of the code is labeled by a group of algorithm experts. 
+The [Hub](https://huggingface.co/datasets) is home to more than 100,000 datasets across a wide variety of tasks, sizes, and languages. For this example, you'll use the [`codeparrot/codecomplex`](https://huggingface.co/datasets/codeparrot/codecomplex) dataset, but feel free to explore and find another dataset that interests you! The dataset contains Java code from programming competitions, and the time complexity of the code is labeled by a group of algorithm experts. 
 
 Let's say you're interested in the average length of the submitted code as it relates to the time complexity. Here's how you can get started. 
 
