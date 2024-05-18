@@ -272,6 +272,17 @@ def test_graph() -> None:
             ],
         ),
         (
+            "split-presidio-scan",
+            [],
+            ["config-parquet-metadata"],
+            [
+                "config-parquet",
+                "config-parquet-and-info",
+                "config-parquet-metadata",
+                "dataset-config-names",
+            ],
+        ),
+        (
             "split-duckdb-index",
             ["config-duckdb-index-size", "split-is-valid"],
             ["config-parquet-metadata"],
