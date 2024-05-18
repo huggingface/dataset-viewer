@@ -110,6 +110,36 @@ class PresidioEntitiesCountResponse(TypedDict):
     num_uk_nhs_entities: int
     num_email_entities: int
     num_au_abn_entities: int
+    num_rows_with_in_vehicle_registration_entities: int
+    num_rows_with_organization_entities: int
+    num_rows_with_sg_nric_fin_entities: int
+    num_rows_with_person_entities: int
+    num_rows_with_credit_card_entities: int
+    num_rows_with_medical_license_entities: int
+    num_rows_with_nrp_entities: int
+    num_rows_with_us_ssn_entities: int
+    num_rows_with_crypto_entities: int
+    num_rows_with_date_time_entities: int
+    num_rows_with_location_entities: int
+    num_rows_with_us_driver_license_entities: int
+    num_rows_with_phone_number_entities: int
+    num_rows_with_url_entities: int
+    num_rows_with_us_passport_entities: int
+    num_rows_with_age_entities: int
+    num_rows_with_au_acn_entities: int
+    num_rows_with_email_address_entities: int
+    num_rows_with_in_pan_entities: int
+    num_rows_with_ip_address_entities: int
+    num_rows_with_id_entities: int
+    num_rows_with_us_bank_number_entities: int
+    num_rows_with_in_aadhaar_entities: int
+    num_rows_with_us_itin_entities: int
+    num_rows_with_au_medicare_entities: int
+    num_rows_with_iban_code_entities: int
+    num_rows_with_au_tfn_entities: int
+    num_rows_with_uk_nhs_entities: int
+    num_rows_with_email_entities: int
+    num_rows_with_au_abn_entities: int
     num_scanned_rows: int
     has_scanned_columns: bool
     full_scan: Union[bool, None]
