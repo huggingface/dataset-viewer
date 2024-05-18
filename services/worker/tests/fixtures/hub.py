@@ -302,6 +302,13 @@ def hub_public_spawning_opt_in_out(datasets: Mapping[str, Dataset]) -> Iterator[
 
 
 @pytest.fixture(scope="session")
+def hub_public_presidio_scan(datasets: Mapping[str, Dataset]) -> Iterator[str]:
+    repo_id = create_hub_dataset_repo(prefix="presidio_scan", dataset=datasets["presidio_scan"])
+    yield repo_id
+    delete_hub_dataset_repo(repo_id=repo_id)
+
+
+@pytest.fixture(scope="session")
 def hub_public_duckdb_index(datasets: Mapping[str, Dataset]) -> Iterator[str]:
     repo_id = create_hub_dataset_repo(prefix="duckdb_index", dataset=datasets["duckdb_index"])
     yield repo_id
@@ -640,9 +647,27 @@ def create_dataset_info_response_for_audio(dataset: str, config: str) -> Any:
     }
 
 
+def create_dataset_info_response_for_presidio_scan(dataset: str, config: str) -> Any:
+    dataset_name = dataset.split("/")[-1]
+    return {
+        "description": "",
+        "citation": "",
+        "homepage": "",
+        "license": "",
+        "features": PRESIDIO_SCAN_cols,
+        "builder_name": "parquet",
+        "config_name": config,
+        "dataset_name": dataset_name,
+        "version": {"version_str": "0.0.0", "major": 0, "minor": 0, "patch": 0},
+        "splits": {"train": {"name": "train", "num_bytes": 12345, "num_examples": 6, "dataset_name": None}},
+        "download_size": 12345,
+        "dataset_size": 12345,
+    }
+
+
 def create_parquet_and_info_response(
     dataset: str,
-    data_type: Literal["csv", "big-csv", "audio", "big_parquet", "big_parquet_no_info"],
+    data_type: Literal["csv", "big-csv", "audio", "big_parquet", "big_parquet_no_info", "presidio-scan"],
     partial: bool = False,
 ) -> Any:
     config, split = get_default_config_split()
@@ -665,6 +690,8 @@ def create_parquet_and_info_response(
         if data_type == "audio"
         else create_dataset_info_response_for_big_parquet(dataset, config)
         if data_type == "big_parquet"
+        else create_dataset_info_response_for_presidio_scan(dataset, config)
+        if data_type == "presidio-scan"
         else create_dataset_info_response_for_big_parquet_no_info()
     )
     partial_prefix = "partial-" if partial else ""
@@ -830,6 +857,22 @@ SPAWNING_OPT_IN_OUT_cols = {
 }
 
 SPAWNING_OPT_IN_OUT_rows = ["http://testurl.test/test_image.jpg", "http://testurl.test/test_image2.jpg", "other"]
+
+PRESIDIO_SCAN_cols = {
+    "col": [{"_type": "Value", "dtype": "string"}],
+}
+
+PRESIDIO_SCAN_rows = [
+    {"col": text}
+    for text in [
+        "My name is Giovanni Giorgio",
+        "but everyone calls me Giorgio",
+        "My IP address is 192.168.0.1",
+        "My SSN is 345-67-8901",
+        "My email is giovanni.giorgio@daftpunk.com",
+        None,
+    ]
+]
 
 
 @pytest.fixture
@@ -1017,6 +1060,21 @@ def hub_responses_spawning_opt_in_out(hub_public_spawning_opt_in_out: str) -> Hu
             hub_public_spawning_opt_in_out, SPAWNING_OPT_IN_OUT_cols, SPAWNING_OPT_IN_OUT_rows
         ),
         "parquet_and_info_response": None,
+    }
+
+
+@pytest.fixture
+def hub_responses_presidio_scan(hub_public_presidio_scan: str) -> HubDatasetTest:
+    return {
+        "name": hub_public_presidio_scan,
+        "config_names_response": create_config_names_response(hub_public_presidio_scan),
+        "splits_response": create_splits_response(hub_public_presidio_scan),
+        "first_rows_response": create_first_rows_response(
+            hub_public_presidio_scan, PRESIDIO_SCAN_cols, PRESIDIO_SCAN_rows
+        ),
+        "parquet_and_info_response": create_parquet_and_info_response(
+            dataset=hub_public_presidio_scan, data_type="presidio-scan"
+        ),
     }
 
 
