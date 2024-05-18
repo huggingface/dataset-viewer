@@ -628,9 +628,27 @@ def create_dataset_info_response_for_audio(dataset: str, config: str) -> Any:
     }
 
 
+def create_dataset_info_response_for_presidio_scan(dataset: str, config: str) -> Any:
+    dataset_name = dataset.split("/")[-1]
+    return {
+        "description": "",
+        "citation": "",
+        "homepage": "",
+        "license": "",
+        "features": PRESIDIO_SCAN_cols,
+        "builder_name": "parquet",
+        "config_name": config,
+        "dataset_name": dataset_name,
+        "version": {"version_str": "0.0.0", "major": 0, "minor": 0, "patch": 0},
+        "splits": {"train": {"name": "train", "num_bytes": 12345, "num_examples": 6, "dataset_name": None}},
+        "download_size": 12345,
+        "dataset_size": 12345,
+    }
+
+
 def create_parquet_and_info_response(
     dataset: str,
-    data_type: Literal["csv", "big-csv", "audio", "big_parquet", "big_parquet_no_info"],
+    data_type: Literal["csv", "big-csv", "audio", "big_parquet", "big_parquet_no_info", "presidio-scan"],
     partial: bool = False,
 ) -> Any:
     config, split = get_default_config_split()
@@ -653,6 +671,8 @@ def create_parquet_and_info_response(
         if data_type == "audio"
         else create_dataset_info_response_for_big_parquet(dataset, config)
         if data_type == "big_parquet"
+        else create_dataset_info_response_for_presidio_scan(dataset, config)
+        if data_type == "presidio-scan"
         else create_dataset_info_response_for_big_parquet_no_info()
     )
     partial_prefix = "partial-" if partial else ""
@@ -1033,7 +1053,9 @@ def hub_responses_presidio_scan(hub_public_presidio_scan: str) -> HubDatasetTest
         "first_rows_response": create_first_rows_response(
             hub_public_presidio_scan, PRESIDIO_SCAN_cols, PRESIDIO_SCAN_rows
         ),
-        "parquet_and_info_response": None,
+        "parquet_and_info_response": create_parquet_and_info_response(
+            dataset=hub_public_presidio_scan, data_type="presidio-scan"
+        ),
     }
 
 

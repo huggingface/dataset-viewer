@@ -9,19 +9,19 @@ from itertools import count, islice
 from pathlib import Path
 from typing import Any, Literal, Optional, TypeVar, Union, overload
 
-from datasets import Features, Value, get_dataset_config_info
+from datasets import DatasetInfo, Features, Value
 from datasets.features.features import FeatureType, _visit
 from libcommon.dtos import JobInfo, Row
 from libcommon.exceptions import (
-    DatasetWithScriptNotSupportedError,
-    InfoError,
     PresidioScanNotEnabledForThisDataset,
+    PreviousStepFormatError,
     TooManyColumnsError,
 )
+from libcommon.simple_cache import get_previous_step_or_raise
 from presidio_analyzer import AnalyzerEngine, BatchAnalyzerEngine, RecognizerResult
 
 from worker.config import AppConfig, PresidioEntitiesScanConfig
-from worker.dtos import CompleteJobResult, PresidioEntitiesScanResponse, PresidioEntity
+from worker.dtos import CompleteJobResult, ConfigParquetAndInfoResponse, PresidioEntitiesScanResponse, PresidioEntity
 from worker.job_runners.split.split_job_runner import SplitJobRunnerWithDatasetsCache
 from worker.utils import get_rows_or_raise, resolve_trust_remote_code
 
@@ -250,33 +250,31 @@ def compute_presidio_entities_scan_response(
         or "pii" in dataset
         or "presidio" in dataset
         or "ssn" in dataset
+        or "DVUser/" in dataset
         or dataset in top_2k_most_liked_datasets
     ):
         raise PresidioScanNotEnabledForThisDataset(dataset)
     logging.info(f"compute 'split-presidio-scan' for {dataset=} {config=} {split=}")
     trust_remote_code = resolve_trust_remote_code(dataset=dataset, allow_list=dataset_scripts_allow_list)
 
-    # get the info
+    # get the first rows from previous job
+    parquet_and_info_response = get_previous_step_or_raise(
+        kind="config-parquet-and-info",
+        dataset=dataset,
+        config=config,
+    )
     try:
-        info = get_dataset_config_info(
-            path=dataset, config_name=config, token=hf_token, trust_remote_code=trust_remote_code
+        upstream_response_content = ConfigParquetAndInfoResponse(
+            parquet_files=parquet_and_info_response["content"]["parquet_files"],
+            dataset_info=parquet_and_info_response["content"]["dataset_info"],
+            partial=parquet_and_info_response["content"]["partial"],
         )
+        info = DatasetInfo.from_dict(upstream_response_content["dataset_info"])
+        if info.features is None:
+            raise PreviousStepFormatError("Previous step did not return the expected content (missing features).")
         features = info.features
-    except Exception as err:
-        if isinstance(err, ValueError) and "trust_remote_code" in str(err):
-            raise DatasetWithScriptNotSupportedError(
-                "The dataset viewer doesn't support this dataset because it runs "
-                "arbitrary python code. Please open a discussion in the discussion tab "
-                "if you think this is an error and tag @lhoestq and @severo."
-            ) from err
-        raise InfoError(
-            f"The info cannot be fetched for the config '{config}' of the dataset.",
-            cause=err,
-        ) from err
-    if features is None:
-        raise InfoError(
-            f"The feature types from the info cannot be fetched for the config '{config}' of the dataset.",
-        )
+    except KeyError as e:
+        raise PreviousStepFormatError("Previous step did not return the expected content.", e) from e
 
     scanned_columns = get_columns_with_strings(features)
     columns_descriptions = [

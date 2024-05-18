@@ -157,7 +157,18 @@ DEFAULT_EMPTY_RESPONSE = {
                 "num_scanned_rows": 6,
                 "has_scanned_columns": True,
                 "full_scan": True,
-                "entities": [],  # TODO fill this
+                "entities": [
+                    {"column_name": "col", "row_idx": 0, "text": "Gi****** Gi*****", "type": "PERSON"},
+                    {"column_name": "col", "row_idx": 1, "text": "Gi*****", "type": "PERSON"},
+                    {"column_name": "col", "row_idx": 2, "text": "19*.***.*.*", "type": "IP_ADDRESS"},
+                    {"column_name": "col", "row_idx": 3, "text": "34*-**-****", "type": "US_SSN"},
+                    {
+                        "column_name": "col",
+                        "row_idx": 4,
+                        "text": "gi******.*******@********.***",
+                        "type": "EMAIL_ADDRESS",
+                    },
+                ],
             },
         ),
         (
@@ -195,10 +206,14 @@ DEFAULT_EMPTY_RESPONSE = {
                 "num_uk_nhs_entities": 0,
                 "num_email_entities": 0,
                 "num_au_abn_entities": 0,
-                "num_scanned_rows": 6,
+                "num_scanned_rows": 3,
                 "has_scanned_columns": True,
-                "full_scan": True,
-                "entities": [],  # TODO fill this
+                "full_scan": False,
+                "entities": [
+                    {"column_name": "col", "row_idx": 0, "text": "Gi****** Gi*****", "type": "PERSON"},
+                    {"column_name": "col", "row_idx": 1, "text": "Gi*****", "type": "PERSON"},
+                    {"column_name": "col", "row_idx": 2, "text": "19*.***.*.*", "type": "IP_ADDRESS"},
+                ],
             },
         ),
         (
@@ -239,7 +254,18 @@ DEFAULT_EMPTY_RESPONSE = {
                 "num_scanned_rows": 6,
                 "has_scanned_columns": True,
                 "full_scan": True,
-                "entities": [],  # TODO fill this
+                "entities": [
+                    {"column_name": "col", "row_idx": 0, "text": "Gi****** Gi*****", "type": "PERSON"},
+                    {"column_name": "col", "row_idx": 1, "text": "Gi*****", "type": "PERSON"},
+                    {"column_name": "col", "row_idx": 2, "text": "19*.***.*.*", "type": "IP_ADDRESS"},
+                    {"column_name": "col", "row_idx": 3, "text": "34*-**-****", "type": "US_SSN"},
+                    {
+                        "column_name": "col",
+                        "row_idx": 4,
+                        "text": "gi******.*******@********.***",
+                        "type": "EMAIL_ADDRESS",
+                    },
+                ],
             },
         ),
     ],
@@ -255,12 +281,23 @@ def test_compute(
 ) -> None:
     hub_datasets = {"public": hub_responses_public, "presidio_scan": hub_responses_presidio_scan}
     dataset = hub_datasets[name]["name"]
+    upstream_content = hub_datasets[name]["parquet_and_info_response"]
     config, split = get_default_config_split()
     job_runner = get_job_runner(
         dataset,
         config,
         split,
         replace(app_config, presidio_scan=replace(app_config.presidio_scan, rows_max_number=rows_max_number)),
+    )
+    upsert_response(
+        kind="config-parquet-and-info",
+        dataset=dataset,
+        dataset_git_revision=REVISION_NAME,
+        config=config,
+        content=upstream_content,
+        job_runner_version=1,
+        progress=1.0,
+        http_status=HTTPStatus.OK,
     )
     response = job_runner.compute()
     assert response
@@ -270,10 +307,10 @@ def test_compute(
 @pytest.mark.parametrize(
     "dataset,columns_max_number,upstream_content,upstream_status,exception_name",
     [
-        ("doesnotexist", 10, {}, HTTPStatus.OK, "CachedArtifactNotFoundError"),
-        ("wrong_format", 10, {}, HTTPStatus.OK, "PreviousStepFormatError"),
+        ("DVUser/doesnotexist", 10, {}, HTTPStatus.OK, "CachedArtifactNotFoundError"),
+        ("DVUser/wrong_format", 10, {}, HTTPStatus.OK, "PreviousStepFormatError"),
         (
-            "upstream_failed",
+            "DVUser/upstream_failed",
             10,
             {},
             HTTPStatus.INTERNAL_SERVER_ERROR,
@@ -297,12 +334,11 @@ def test_compute_failed(
         split,
         replace(app_config, urls_scan=replace(app_config.urls_scan, columns_max_number=columns_max_number)),
     )
-    if dataset != "doesnotexist":
+    if dataset != "DVUser/doesnotexist":
         upsert_response(
-            kind="split-image-url-columns",
+            kind="config-parquet-and-info",
             dataset=dataset,
             config=config,
-            split=split,
             content=upstream_content,
             dataset_git_revision=REVISION_NAME,
             job_runner_version=1,
