@@ -38,6 +38,7 @@ WORKDIR /src/services/worker/
 RUN --mount=type=cache,target=/home/.cache/pypoetry/cache \
     --mount=type=cache,target=/home/.cache/pypoetry/artifacts \
     poetry install --no-root
+RUN poetry run python -m spacy download en_core_web_sm
 
 # FOR LOCAL DEVELOPMENT ENVIRONMENT
 # Install the worker package.
