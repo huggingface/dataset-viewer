@@ -14,6 +14,7 @@ from huggingface_hub.utils import (
     validate_hf_hub_args,
 )
 
+from libcommon.constants import TAG_NFAA_SYNONYMS
 from libcommon.dtos import Priority
 from libcommon.exceptions import (
     NotSupportedDisabledRepositoryError,
@@ -21,6 +22,7 @@ from libcommon.exceptions import (
     NotSupportedError,
     NotSupportedPrivateRepositoryError,
     NotSupportedRepositoryNotFoundError,
+    NotSupportedTagNFAAError,
 )
 from libcommon.orchestrator import TasksStatistics, backfill, get_revision, remove_dataset, set_revision
 from libcommon.state import IncoherentCacheError
@@ -158,6 +160,8 @@ def get_latest_dataset_revision_if_supported_or_raise(
             )
     if dataset_info.cardData and not dataset_info.cardData.get("viewer", True):
         raise NotSupportedDisabledViewerError(f"Not supported: dataset viewer is disabled in {dataset} configuration.")
+    if dataset_info.tags and any(tag in TAG_NFAA_SYNONYMS for tag in dataset_info.tags):
+        raise NotSupportedTagNFAAError("Not supported: dataset viewer is disabled.")
     if blocked_datasets:
         raise_if_blocked(dataset=dataset, blocked_datasets=blocked_datasets)
     return str(revision)

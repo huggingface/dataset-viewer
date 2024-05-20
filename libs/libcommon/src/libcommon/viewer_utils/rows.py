@@ -4,7 +4,7 @@
 
 from typing import Protocol
 
-from datasets import Audio, Features, Image
+from datasets import Audio, Features, Image, Value
 
 from libcommon.dtos import Row, RowsContent, SplitFirstRowsResponse
 from libcommon.exceptions import (
@@ -16,6 +16,8 @@ from libcommon.storage_client import StorageClient
 from libcommon.utils import get_json_size
 from libcommon.viewer_utils.features import get_cell_value, to_features_list
 from libcommon.viewer_utils.truncate_rows import create_truncated_row_items
+
+URL_COLUMN_RATIO = 0.3
 
 
 def transform_rows(
@@ -155,7 +157,26 @@ def create_first_rows_response(
         ) from err
 
     # truncate the rows to fit within the restrictions, and prepare them as RowItems
-    columns_to_keep_untruncated = [col for col, feature in features.items() if isinstance(feature, (Image, Audio))]
+    columns_to_keep_untruncated = [
+        col
+        for col, feature in features.items()
+        if isinstance(feature, (Image, Audio))
+        or (  # column of URLs
+            isinstance(feature, Value)
+            and feature.dtype == "string"
+            and len(transformed_rows) > 0
+            and sum(
+                (
+                    col in row
+                    and isinstance(row[col], str)
+                    and (row[col].startswith("http://") or row[col].startswith("https://"))
+                )
+                for row in transformed_rows
+            )
+            / len(transformed_rows)
+            > URL_COLUMN_RATIO
+        )
+    ]
     row_items, truncated = create_truncated_row_items(
         rows=transformed_rows,
         min_cell_bytes=min_cell_bytes,

@@ -13,11 +13,6 @@ global:
 images:
   pullPolicy: IfNotPresent
   pullSecrets: []
-  reverseProxy:
-    useGlobalRegistry: false
-    registry: docker.io
-    repository: nginx
-    tag: "1.25.3"
   jobs:
     mongodbMigration:
       registry: huggingface
@@ -179,19 +174,7 @@ queueMetricsCollector:
       cpu: 1
       memory: "512Mi"
 
-# --- reverse proxy ---
-
-reverseProxy:
-  replicas: 1
-  resources:
-    requests:
-      cpu: 100m
-      memory: "64Mi"
-    limits:
-      cpu: 1
-      memory: "256Mi"
-  service:
-    type: NodePort
+# --- ALB ---
 
 ingress:
   tls:
@@ -235,7 +218,7 @@ api:
   ingress:
     enabled: true
     annotations:
-      alb.ingress.kubernetes.io/actions.openapi-redirect: '{"Type":"redirect","RedirectConfig":{"Host":"raw.githubusercontent.com","Path":"/huggingface/dataset-viewer/main/docs/source/openapi.json","Port":"443","Protocol":"HTTPS","Query":"#{query}","StatusCode":"HTTP_307"}}'
+      alb.ingress.kubernetes.io/actions.openapi-redirect: '{"Type":"redirect","RedirectConfig":{"Host":"raw.githubusercontent.com","Path":"/huggingface/dataset-viewer/main/docs/source/openapi.json","Port":"443","Protocol":"HTTPS","Query":"#{query}","StatusCode":"HTTP_302"}}'
       alb.ingress.kubernetes.io/actions.metrics-unauthorized: '{"type":"fixed-response","fixedResponseConfig":{"contentType":"text/plain","statusCode":"401","messageBody":"401 Unauthorized"}}'
   resources:
     requests:
@@ -278,6 +261,10 @@ search:
     limits:
       cpu: 1
       memory: "4Gi"
+
+sseApi:
+  service:
+    type: NodePort
 
 workers:
   - deployName: "all"

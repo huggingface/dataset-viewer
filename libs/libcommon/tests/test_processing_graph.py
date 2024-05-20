@@ -123,7 +123,7 @@ def test_graph() -> None:
         ),
         (
             "config-parquet-metadata",
-            ["split-first-rows", "split-duckdb-index", "split-descriptive-statistics"],
+            ["split-first-rows", "split-duckdb-index", "split-descriptive-statistics", "split-presidio-scan"],
             ["config-parquet"],
             ["dataset-config-names", "config-parquet-and-info", "config-parquet"],
         ),
@@ -269,6 +269,17 @@ def test_graph() -> None:
                 "split-opt-in-out-urls-scan",
                 "config-parquet",
                 "split-image-url-columns",
+            ],
+        ),
+        (
+            "split-presidio-scan",
+            [],
+            ["config-parquet-metadata"],
+            [
+                "config-parquet",
+                "config-parquet-and-info",
+                "config-parquet-metadata",
+                "dataset-config-names",
             ],
         ),
         (

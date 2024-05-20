@@ -31,5 +31,6 @@ WORKDIR /src/services/worker/
 RUN poetry install --no-cache
 COPY services/worker/src ./src
 RUN poetry install --no-cache
+RUN poetry run python -m spacy download en_core_web_lg
 
 ENTRYPOINT ["poetry", "run", "python", "src/worker/main.py"]

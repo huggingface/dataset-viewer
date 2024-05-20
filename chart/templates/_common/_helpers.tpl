@@ -26,10 +26,6 @@ Create chart name and version as used by the chart label.
 {{/*
 Docker image management
 */}}
-{{- define "reverseproxy.image" -}}
-{{ include "hf.common.images.image" (dict "imageRoot" .Values.images.reverseProxy "global" .Values.global.huggingface) }}
-{{- end -}}
-
 {{- define "jobs.mongodbMigration.image" -}}
 {{ include "hf.common.images.image" (dict "imageRoot" .Values.images.jobs.mongodbMigration "global" .Values.global.huggingface) }}
 {{- end -}}
@@ -70,11 +66,6 @@ Docker image management
 {{/*
 Common labels
 */}}
-{{- define "labels.reverseProxy" -}}
-{{ include "hf.labels.commons" . }}
-app.kubernetes.io/component: "{{ include "name" . }}-reverse-proxy"
-{{- end -}}
-
 {{- define "labels.mongodbMigration" -}}
 {{ include "hf.labels.commons" . }}
 app.kubernetes.io/component: "{{ include "name" . }}-mongodb-migration"
@@ -136,13 +127,6 @@ app.kubernetes.io/component: "{{ include "name" . }}-worker-{{ .workerValues.dep
 {{- end -}}
 
 {{/*
-Return the api ingress anotation
-*/}}
-{{- define "datasetsServer.ingress.annotations" -}}
-{{ .Values.ingress.annotations | toYaml }}
-{{- end -}}
-
-{{/*
 The dataset viewer API base url
 */}}
 {{- define "datasetsServer.ingress.hostname" -}}
@@ -181,71 +165,6 @@ The parquet-metadata/ subpath in the EFS
 */}}
 {{- define "parquetMetadata.subpath" -}}
 {{- printf "%s/%s/%s/" .Chart.Name .Release.Name "parquet-metadata" }}
-{{- end }}
-
-{{/*
-The duckdb-index/ subpath in EFS
-- in a subdirectory named as the chart (dataset-viewer/), and below it,
-- in a subdirectory named as the Release, so that Releases will not share the same dir
-*/}}
-{{- define "duckDBIndex.subpath" -}}
-{{- printf "%s/%s/%s/" .Chart.Name .Release.Name "duckdb-index" }}
-{{- end }}
-
-{{/*
-The URL to access the mongodb instance created if mongodb.enable is true
-It's named using the Release name
-*/}}
-{{- define "mongodb.url" -}}
-{{- printf "mongodb://%s-mongodb" .Release.Name }}
-{{- end }}
-
-{{/*
-The URL to access the admin service from another container
-See https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#a-aaaa-records
-*/}}
-{{- define "admin.url" -}}
-{{- printf "http://%s-admin.%s.svc.cluster.local:80" ( include "name" . ) ( .Release.Namespace ) }}
-{{- end }}
-
-{{/*
-The URL to access the API service from another container
-See https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#a-aaaa-records
-*/}}
-{{- define "api.url" -}}
-{{- printf "http://%s-api.%s.svc.cluster.local:80" ( include "name" . ) ( .Release.Namespace ) }}
-{{- end }}
-
-{{/*
-The URL to access the rows service from another container
-See https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#a-aaaa-records
-*/}}
-{{- define "rows.url" -}}
-{{- printf "http://%s-rows.%s.svc.cluster.local:80" ( include "name" . ) ( .Release.Namespace ) }}
-{{- end }}
-
-{{/*
-The URL to access the search service from another container
-See https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#a-aaaa-records
-*/}}
-{{- define "search.url" -}}
-{{- printf "http://%s-search.%s.svc.cluster.local:80" ( include "name" . ) ( .Release.Namespace ) }}
-{{- end }}
-
-{{/*
-The URL to access the SSE API service from another container
-See https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#a-aaaa-records
-*/}}
-{{- define "sseApi.url" -}}
-{{- printf "http://%s-sse-api.%s.svc.cluster.local:80" ( include "name" . ) ( .Release.Namespace ) }}
-{{- end }}
-
-{{/*
-The URL to access the worker service from another container
-See https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#a-aaaa-records
-*/}}
-{{- define "worker.url" -}}
-{{- printf "http://%s-worker.%s.svc.cluster.local:80" ( include "name" . ) ( .Release.Namespace ) }}
 {{- end }}
 
 {{/*

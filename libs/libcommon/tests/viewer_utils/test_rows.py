@@ -105,16 +105,18 @@ def test_create_first_rows_response_truncated(
         # with rows_max_bytes > response size, the response is not truncated
         ("audio", 337 + SOME_BYTES, "complete"),
         ("image", 319 + SOME_BYTES, "complete"),
+        ("urls", 268 + SOME_BYTES, "complete"),
         ("images_list", 455 + SOME_BYTES, "complete"),
         ("audios_list", 447 + SOME_BYTES, "complete"),
         ("images_sequence", 484 + SOME_BYTES, "complete"),
         ("audios_sequence", 476 + SOME_BYTES, "complete"),
         ("dict_of_audios_and_images", 797 + SOME_BYTES, "complete"),
         # with rows_max_bytes < response size, the response is:
-        # - not truncated for top-level Audio and Image features
+        # - not truncated for top-level Audio and Image features and urls
         # - truncated for nested Audio and Image features
         ("audio", 337 - SOME_BYTES, "complete"),
         ("image", 319 - SOME_BYTES, "complete"),
+        ("urls", 268 - SOME_BYTES, "complete"),
         ("images_list", 455 - SOME_BYTES, "truncated_cells"),
         ("audios_list", 447 - SOME_BYTES, "truncated_cells"),
         ("images_sequence", 484 - SOME_BYTES, "truncated_cells"),
@@ -124,6 +126,7 @@ def test_create_first_rows_response_truncated(
         # (note that it should never happen if the correct set of parameters is chosen)
         ("audio", 10, "error"),
         ("image", 10, "error"),
+        ("urls", 10, "error"),
         ("images_list", 10, "error"),
         ("audios_list", 10, "error"),
         ("images_sequence", 10, "error"),

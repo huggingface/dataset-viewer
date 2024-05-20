@@ -12,7 +12,8 @@ import pyarrow.compute as pc
 import pytest
 from datasets import Dataset
 from libapi.exceptions import InvalidParameterError
-from libapi.response import ROW_IDX_COLUMN, create_response
+from libapi.response import create_response
+from libcommon.constants import ROW_IDX_COLUMN
 from libcommon.storage_client import StorageClient
 
 from search.config import AppConfig
@@ -53,10 +54,12 @@ def index_file_location(ds: Dataset) -> Generator[str, None, None]:
     con.execute("LOAD 'fts';")
     con.sql("CREATE OR REPLACE SEQUENCE serial START 0 MINVALUE 0;")
     sample_df = ds.to_pandas()  # noqa: F841
-    create_command_sql = "CREATE OR REPLACE TABLE data AS SELECT nextval('serial') AS __hf_index_id, * FROM sample_df"
+    create_command_sql = (
+        f"CREATE OR REPLACE TABLE data AS SELECT nextval('serial') AS {ROW_IDX_COLUMN}, * FROM sample_df"
+    )
     con.sql(create_command_sql)
     # assert sample_df.shape[0] == con.execute(query="SELECT COUNT(*) FROM data;").fetchall()[0][0]
-    con.sql("PRAGMA create_fts_index('data', '__hf_index_id', 'name', 'gender', overwrite=1);")
+    con.sql(f"PRAGMA create_fts_index('data', '{ROW_IDX_COLUMN}', 'name', 'gender', overwrite=1);")
     con.close()
     yield index_file_location
     os.remove(index_file_location)
@@ -99,7 +102,7 @@ def test_execute_filter_query(columns: list[str], where: str, orderby: str, inde
     assert num_rows_total == expected_num_rows_total
     expected_pa_table = pa.Table.from_pydict(
         {
-            "__hf_index_id": [0, 1, 2, 3],
+            ROW_IDX_COLUMN: [0, 1, 2, 3],
             "name": ["Marie", "Paul", "Leo", "Simone"],
             "gender": ["female", "male", "male", "female"],
             "age": [35, 30, 25, 30],
@@ -135,7 +138,7 @@ async def test_create_response(ds: Dataset, app_config: AppConfig, storage_clien
     dataset, config, split = "ds", "default", "train"
     pa_table = pa.Table.from_pydict(
         {
-            "__hf_index_id": [2, 3, 4, 5],
+            ROW_IDX_COLUMN: [2, 3, 4, 5],
             "name": ["Marie", "Paul", "Leo", "Simone"],
             "gender": ["female", "male", "male", "female"],
             "age": [35, 30, 25, 30],
