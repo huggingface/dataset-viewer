@@ -14,7 +14,6 @@ global:
       type: ClusterIP
       ports:
         datasetsServer:
-          proxy: 30020
           admin: 30021
           api: 30022
           rows: 30023
@@ -65,11 +64,6 @@ images:
       registry: huggingface
       useGlobalRegistry: false
       repository: datasets-server-services-sse-api
-      tag: sha-fb3399a
-    storageAdmin:
-      registry: huggingface
-      useGlobalRegistry: false
-      repository: datasets-server-services-storage-admin
       tag: sha-fb3399a
     worker:
       registry: huggingface
@@ -374,42 +368,7 @@ cacheMetricsCollector:
       cpu: 0
   tolerations: []
 
-# --- storage admin (to manually inspect the storage, in /data) ---
-
-storageAdmin:
-  nodeSelector: {}
-  replicas: 1
-  resources:
-    requests:
-      cpu: 0
-    limits:
-      cpu: 0
-  service:
-    type: ""
-    annotations: {}
-  tolerations: []
-
-# --- reverse proxy ---
-
-reverseProxy:
-  nameOverride: datasets-server-mongodb
-  host: localhost
-  port: 8080
-  nginxTemplateFile: "nginx-templates/default.conf.template"
-  openapiFile: "docs/source/openapi.json"
-  error404File: "nginx-templates/404.html"
-
-  nodeSelector: {}
-  replicas: 1
-  resources:
-    requests:
-      cpu: 0
-    limits:
-      cpu: 0
-  service:
-    type: ""
-    annotations: {}
-  tolerations: []
+# --- ALB ---
 
 ingress:
   enabled: true
@@ -451,6 +410,9 @@ admin:
   service:
     type: ""
     annotations: {}
+  ingress:
+    enabled: true
+    annotations: {}
   tolerations: []
 
 hf:
@@ -491,6 +453,9 @@ api:
   service:
     type: ""
     annotations: {}
+  ingress:
+    enabled: true
+    annotations: {}
   tolerations: []
 
 rows:
@@ -517,6 +482,9 @@ rows:
       cpu: 0
   service:
     type: ""
+    annotations: {}
+  ingress:
+    enabled: true
     annotations: {}
   tolerations: []
 
@@ -574,6 +542,9 @@ sseApi:
       cpu: 0
   service:
     type: ""
+    annotations: {}
+  ingress:
+    enabled: true
     annotations: {}
   tolerations: []
 

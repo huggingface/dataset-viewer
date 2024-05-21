@@ -649,6 +649,12 @@ specification: ProcessingGraphSpecification = {
         "job_runner_version": 2,
         "difficulty": 20,
     },
+    "split-presidio-scan": {
+        "input_type": "split",
+        "triggered_by": "config-parquet-metadata",
+        "job_runner_version": 1,
+        "difficulty": 70,
+    },
     "split-duckdb-index": {
         "input_type": "split",
         "triggered_by": "config-parquet-metadata",

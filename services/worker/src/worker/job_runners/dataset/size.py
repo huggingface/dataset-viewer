@@ -7,7 +7,7 @@ from typing import Optional
 
 from libcommon.exceptions import PreviousStepFormatError
 from libcommon.simple_cache import (
-    CacheEntryDoesNotExistError,
+    CachedArtifactNotFoundError,
     get_previous_step_or_raise,
     get_response,
 )
@@ -60,7 +60,7 @@ def compute_sizes_response(dataset: str) -> tuple[DatasetSizeResponse, float]:
             total += 1
             try:
                 response = get_response(kind="config-size", dataset=dataset, config=config)
-            except CacheEntryDoesNotExistError:
+            except CachedArtifactNotFoundError:
                 logging.debug("No response found in previous step for this dataset: 'config-size' endpoint.")
                 pending.append(
                     PreviousJob(

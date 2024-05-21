@@ -162,6 +162,21 @@ def datasets() -> Mapping[str, Dataset]:
                 dtype=pd.StringDtype(storage="python"),
             )
         ),
+        "presidio_scan": Dataset.from_pandas(
+            pd.DataFrame(
+                {
+                    "col": [
+                        "My name is Giovanni Giorgio",
+                        "but everyone calls me Giorgio",
+                        "My IP address is 192.168.0.1",
+                        "My SSN is 345-67-8901",
+                        "My email is giovanni.giorgio@daftpunk.com",
+                        None,
+                    ]
+                },
+                dtype=pd.StringDtype(storage="python"),
+            )
+        ),
         "duckdb_index": Dataset.from_dict(
             {
                 "text": SEARCH_TEXT_CONTENT,

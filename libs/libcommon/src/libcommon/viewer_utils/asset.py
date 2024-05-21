@@ -14,7 +14,8 @@ from libcommon.constants import DATASET_SEPARATOR
 from libcommon.storage import StrPath, remove_dir
 from libcommon.storage_client import StorageClient
 
-SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE = {".wav": "audio/wav", ".mp3": "audio/mpeg"}
+SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE = {".wav": "audio/wav", ".mp3": "audio/mpeg", ".opus": "audio/opus"}
+SUPPORTED_AUDIO_EXTENSIONS = SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE.keys()
 
 
 def delete_asset_dir(dataset: str, directory: StrPath) -> None:
@@ -108,9 +109,7 @@ def create_audio_file(
             # might spawn a process to convert the audio file using ffmpeg
             with NamedTemporaryFile("wb", suffix=audio_file_extension) as tmpfile:
                 tmpfile.write(audio_file_bytes)
-                segment: AudioSegment = AudioSegment.from_file(
-                    tmpfile.name, audio_file_extension[1:] if audio_file_extension else None
-                )
+                segment: AudioSegment = AudioSegment.from_file(tmpfile.name)
                 buffer = BytesIO()
                 segment.export(buffer, format=suffix[1:])
                 buffer.seek(0)

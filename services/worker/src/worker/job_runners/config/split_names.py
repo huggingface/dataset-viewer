@@ -61,6 +61,10 @@ def compute_split_names_from_streaming_response(
           If the list of splits could not be obtained using the datasets library.
         [~`libcommon.exceptions.DatasetWithScriptNotSupportedError`]:
             If the dataset has a dataset script and is not in the allow list.
+        [~`libcommon.exceptions.SplitNamesFromStreamingError`]:
+            If the split names could not be obtained using the datasets library.
+        [~`libcommon.exceptions.DatasetWithTooManySplitsError`]:
+            If the config has too many splits.
 
     Returns:
         `SplitsList`: An object with the list of split names for the dataset and config.
@@ -118,6 +122,8 @@ def compute_split_names_from_info_response(dataset: str, config: str, max_number
           If the previous step has not been computed yet.
         [~`libcommon.exceptions.PreviousStepFormatError`]:
           If the content of the previous step has not the expected format
+        [~`libcommon.exceptions.DatasetWithTooManySplitsError`]:
+            If the config has too many splits.
 
     Returns:
         `SplitsList`: An object with the list of split names for the dataset and config.

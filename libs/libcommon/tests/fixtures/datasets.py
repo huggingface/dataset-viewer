@@ -188,6 +188,13 @@ def datasets_fixtures() -> Mapping[str, DatasetFixture]:
             [],
             0,
         ),
+        "urls": DatasetFixture(
+            value("https://foo.bar", pd.StringDtype(storage="python")),
+            {"_type": "Value", "dtype": "string"},
+            "https://foo.bar",
+            [],
+            0,
+        ),
         # other types of features
         "class_label": DatasetFixture(
             other("positive", ClassLabel(names=["negative", "positive"])),

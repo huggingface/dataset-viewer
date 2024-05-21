@@ -14,13 +14,14 @@ from huggingface_hub.hf_api import DatasetInfo, HfApi
 from huggingface_hub.utils import HfHubHTTPError
 from requests import Response  # type: ignore
 
-from libcommon.constants import CONFIG_SPLIT_NAMES_KIND, DATASET_CONFIG_NAMES_KIND
+from libcommon.constants import CONFIG_SPLIT_NAMES_KIND, DATASET_CONFIG_NAMES_KIND, TAG_NFAA_SYNONYMS
 from libcommon.dtos import JobResult
 from libcommon.exceptions import (
     DatasetInBlockListError,
     NotSupportedDisabledRepositoryError,
     NotSupportedPrivateRepositoryError,
     NotSupportedRepositoryNotFoundError,
+    NotSupportedTagNFAAError,
 )
 from libcommon.operations import (
     CustomHfApi,
@@ -85,7 +86,7 @@ def test_whoisthis(name: str, expected_pro: Optional[bool], expected_enterprise:
 
 
 @contextmanager
-def tmp_dataset(namespace: str, token: str, private: bool) -> Iterator[str]:
+def tmp_dataset(namespace: str, token: str, private: bool, tags: Optional[list[str]] = None) -> Iterator[str]:
     # create a test dataset in hub-ci, then delete it
     hf_api = HfApi(endpoint=CI_HUB_ENDPOINT, token=token)
     prefix = "private" if private else "public"
@@ -95,6 +96,15 @@ def tmp_dataset(namespace: str, token: str, private: bool) -> Iterator[str]:
         private=private,
         repo_type="dataset",
     )
+    if tags:
+        README = "---\n" + "tags:\n" + "".join(f"- {tag}\n" for tag in tags) + "---"
+        hf_api.upload_file(
+            path_or_fileobj=README.encode(),
+            path_in_repo="README.md",
+            repo_id=dataset,
+            token=token,
+            repo_type="dataset",
+        )
     try:
         yield dataset
     finally:
@@ -160,6 +170,33 @@ def test_update_non_existent_raises(
 ) -> None:
     with pytest.raises(NotSupportedRepositoryNotFoundError):
         update_dataset(dataset="this-dataset-does-not-exists", hf_endpoint=CI_HUB_ENDPOINT, hf_token=CI_APP_TOKEN)
+
+
+@pytest.mark.parametrize(
+    "tags,raises",
+    [
+        (None, False),
+        ([], False),
+        (["perfectly-fine-tag"], False),
+        (["perfectly-fine-tag", "another-fine-tag"], False),
+        ([TAG_NFAA_SYNONYMS[0]], True),
+        ([TAG_NFAA_SYNONYMS[1]], True),
+        (TAG_NFAA_SYNONYMS, True),
+        (["perfectly-fine-tag", TAG_NFAA_SYNONYMS[0]], True),
+    ],
+)
+def test_update_dataset_with_nfaa_tag_raises(
+    queue_mongo_resource: QueueMongoResource,
+    cache_mongo_resource: CacheMongoResource,
+    tags: Optional[list[str]],
+    raises: bool,
+) -> None:
+    with tmp_dataset(namespace=NORMAL_USER, token=NORMAL_USER_TOKEN, private=False, tags=tags) as dataset:
+        if raises:
+            with pytest.raises(NotSupportedTagNFAAError):
+                update_dataset(dataset=dataset, hf_endpoint=CI_HUB_ENDPOINT, hf_token=CI_APP_TOKEN)
+        else:
+            update_dataset(dataset=dataset, hf_endpoint=CI_HUB_ENDPOINT, hf_token=CI_APP_TOKEN)
 
 
 def test_update_disabled_dataset_raises_way_1(
