@@ -164,6 +164,10 @@ descriptiveStatistics:
 mongodbMigration:
   nodeSelector:
     role-datasets-server: "true"
+  tolerations:
+    - key: "huggingface.co/datasets-server"
+      operator: "Exists"
+      effect: "NoSchedule"
   resources:
     requests:
       cpu: 1
@@ -175,6 +179,10 @@ mongodbMigration:
 deleteDuckdbIndexes:
   nodeSelector:
     role-datasets-server: "true"
+  tolerations:
+    - key: "huggingface.co/datasets-server"
+      operator: "Exists"
+      effect: "NoSchedule"
   resources:
     requests:
       cpu: 1
@@ -191,6 +199,10 @@ backfill:
   # every day
   nodeSelector:
     role-datasets-server: "true"
+  tolerations:
+    - key: "huggingface.co/datasets-server"
+      operator: "Exists"
+      effect: "NoSchedule"
   resources:
     requests:
       cpu: 1
@@ -208,6 +220,10 @@ backfillRetryableErrors:
   # every 30 minutes
   nodeSelector:
     role-datasets-server: "true"
+  tolerations:
+    - key: "huggingface.co/datasets-server"
+      operator: "Exists"
+      effect: "NoSchedule"
   resources:
     requests:
       cpu: 1
@@ -219,6 +235,10 @@ backfillRetryableErrors:
 postMessages:
   nodeSelector:
     role-datasets-server: "true"
+  tolerations:
+    - key: "huggingface.co/datasets-server"
+      operator: "Exists"
+      effect: "NoSchedule"
 
 queueMetricsCollector:
   action: "collect-queue-metrics"
@@ -226,6 +246,10 @@ queueMetricsCollector:
   # every ten minutes
   nodeSelector:
     role-datasets-server: "true"
+  tolerations:
+    - key: "huggingface.co/datasets-server"
+      operator: "Exists"
+      effect: "NoSchedule"
   resources:
     requests:
       cpu: 1
@@ -239,6 +263,10 @@ cacheMetricsCollector:
   schedule: "50 */3 * * *"
   nodeSelector:
     role-datasets-server: "true"
+  tolerations:
+    - key: "huggingface.co/datasets-server"
+      operator: "Exists"
+      effect: "NoSchedule"
   resources:
     requests:
       cpu: 1
@@ -279,6 +307,10 @@ admin:
   uvicornNumWorkers: "9"
   nodeSelector:
     role-datasets-server: "true"
+  tolerations:
+    - key: "huggingface.co/datasets-server"
+      operator: "Exists"
+      effect: "NoSchedule"
   replicas: 2
   service:
     type: NodePort
@@ -305,6 +337,10 @@ api:
   uvicornNumWorkers: "9"
   nodeSelector:
     role-datasets-server-api: "true"
+  tolerations:
+    - key: "huggingface.co/datasets-server-api"
+      operator: "Exists"
+      effect: "NoSchedule"
   replicas: 20
   service:
     type: NodePort
@@ -330,6 +366,10 @@ rows:
   uvicornNumWorkers: "2"
   nodeSelector:
     role-datasets-server-rows: "true"
+  tolerations:
+    - key: "huggingface.co/datasets-server-rows"
+      operator: "Exists"
+      effect: "NoSchedule"
   replicas: 12
   service:
     type: NodePort
@@ -354,6 +394,10 @@ search:
   uvicornNumWorkers: "2"
   nodeSelector:
     role-datasets-server-search: "true"
+  tolerations:
+    - key: "huggingface.co/datasets-server-search"
+      operator: "Exists"
+      effect: "NoSchedule"
   replicas: 3
   service:
     type: NodePort
@@ -379,6 +423,10 @@ sseApi:
   uvicornNumWorkers: "1"
   nodeSelector:
     role-datasets-server: "true"
+  tolerations:
+    - key: "huggingface.co/datasets-server"
+      operator: "Exists"
+      effect: "NoSchedule"
   replicas: 2
   service:
     type: NodePort
@@ -407,6 +455,10 @@ workers:
     workerJobTypesOnly: ""
     nodeSelector:
       role-datasets-server-worker: "true"
+    tolerations:
+      - key: "huggingface.co/datasets-server-worker"
+        operator: "Exists"
+        effect: "NoSchedule"
     replicas: 4
     autoscaling:
       enabled: true
@@ -423,7 +475,6 @@ workers:
       limits:
         cpu: 8
         memory: "44Gi"
-    tolerations: []
   - deployName: "medium"
     prometheusMultiprocDirectory: "/tmp"
     uvicornHostname: "0.0.0.0"
@@ -435,6 +486,10 @@ workers:
     workerJobTypesOnly: ""
     nodeSelector:
       role-datasets-server-worker: "true"
+    tolerations:
+      - key: "huggingface.co/datasets-server-worker"
+        operator: "Exists"
+        effect: "NoSchedule"
     replicas: 10
     autoscaling:
       enabled: true
@@ -451,7 +506,6 @@ workers:
       limits:
         cpu: 2
         memory: "14Gi"
-    tolerations: []
   - deployName: "light"
     prometheusMultiprocDirectory: "/tmp"
     uvicornHostname: "0.0.0.0"
@@ -463,6 +517,10 @@ workers:
     workerJobTypesOnly: ""
     nodeSelector:
       role-datasets-server-worker-light: "true"
+    tolerations:
+      - key: "huggingface.co/datasets-server-worker-light"
+        operator: "Exists"
+        effect: "NoSchedule"
     replicas: 4
     autoscaling:
       enabled: true
@@ -479,4 +537,3 @@ workers:
       limits:
         cpu: 2
         memory: "1Gi"
-    tolerations: []
