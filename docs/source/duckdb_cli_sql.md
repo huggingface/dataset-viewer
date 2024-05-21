@@ -70,6 +70,23 @@ GROUP BY
     subject 
 ORDER BY 
     counts DESC;
+
+┌──────────────────────────────┬────────┬────────────────────────────────────────────────────────────────────────────────┐
+│           subject            │ counts │                                   percentage                                   │
+│           varchar            │ int64  │                                    varchar                                     │
+├──────────────────────────────┼────────┼────────────────────────────────────────────────────────────────────────────────┤
+│ professional_law             │   1534 │ ████████▋                                                                      │
+│ moral_scenarios              │    895 │ █████                                                                          │
+│ miscellaneous                │    783 │ ████▍                                                                          │
+│ professional_psychology      │    612 │ ███▍                                                                           │
+│ high_school_psychology       │    545 │ ███                                                                            │
+│ high_school_macroeconomics   │    390 │ ██▏                                                                            │
+│ elementary_mathematics       │    378 │ ██▏                                                                            │
+│ moral_disputes               │    346 │ █▉                                                                             │
+├──────────────────────────────┴────────┴────────────────────────────────────────────────────────────────────────────────┤
+│ 57 rows (8 shown)                                                                                           3 columns  │
+└────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
 ```
 
 Now, let's prepare a subset of the dataset containing questions related to **nutrition** and create a mapping of questions to correct answers:
@@ -128,10 +145,10 @@ WHERE  subject = 'nutrition' AND LENGTH(correct_answer) > 0 LIMIT 3;
 ```
 Finally, lets hightlight some of the DuckDB functions used in this section:
 - `DESCRIBE`, returns the table schema
-- `USING SAMPLE`, 
-- `BAR`, Draw a band whose width is proportional to (x - min) and equal to width characters when x = max. width defaults to 80.
-- `string[begin:end]`, Extract a string using slice conventions. Missing begin or end arguments are interpreted as the beginning or end of the list respectively. Negative values are accepted.
-- `regexp_replace`, If string contains the regexp pattern, replaces the matching part with replacement
+- `USING SAMPLE`, samples are used to randomly select a subset of a dataset.
+- `BAR`, draws a band whose width is proportional to (x - min) and equal to width characters when x = max. width defaults to 80.
+- `string[begin:end]`, extracts a string using slice conventions. Missing begin or end arguments are interpreted as the beginning or end of the list respectively. Negative values are accepted.
+- `regexp_replace`, if string contains the regexp pattern, replaces the matching part with replacement
 - `LENGTH`, gets the number of characters in string
 
 <Tip>
