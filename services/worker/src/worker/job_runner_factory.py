@@ -38,6 +38,7 @@ from worker.job_runners.dataset.opt_in_out_urls_count import (
     DatasetOptInOutUrlsCountJobRunner,
 )
 from worker.job_runners.dataset.parquet import DatasetParquetJobRunner
+from worker.job_runners.dataset.presidio_entities_count import DatasetPresidioEntitiesCountJobRunner
 from worker.job_runners.dataset.size import DatasetSizeJobRunner
 from worker.job_runners.dataset.split_names import DatasetSplitNamesJobRunner
 from worker.job_runners.split.descriptive_statistics import (
@@ -199,6 +200,11 @@ class JobRunnerFactory(BaseJobRunnerFactory):
                 app_config=self.app_config,
                 hf_datasets_cache=self.hf_datasets_cache,
             )
+        if job_type == DatasetPresidioEntitiesCountJobRunner.get_job_type():
+            return DatasetPresidioEntitiesCountJobRunner(
+                job_info=job_info,
+                app_config=self.app_config,
+            )
         if job_type == SplitDescriptiveStatisticsJobRunner.get_job_type():
             return SplitDescriptiveStatisticsJobRunner(
                 job_info=job_info,
@@ -264,6 +270,7 @@ class JobRunnerFactory(BaseJobRunnerFactory):
             ConfigOptInOutUrlsCountJobRunner.get_job_type(),
             DatasetOptInOutUrlsCountJobRunner.get_job_type(),
             SplitPresidioEntitiesScanJobRunner.get_job_type(),
+            DatasetPresidioEntitiesCountJobRunner.get_job_type(),
             SplitDuckDbIndexJobRunner.get_job_type(),
             SplitDescriptiveStatisticsJobRunner.get_job_type(),
             ConfigDuckdbIndexSizeJobRunner.get_job_type(),
