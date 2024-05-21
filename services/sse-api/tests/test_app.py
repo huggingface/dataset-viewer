@@ -63,14 +63,14 @@ async def test_provided_loop_is_running_loop(event_loop: asyncio.events.Abstract
 
 @pytest.mark.asyncio
 async def test_get_healthcheck(client: httpx.AsyncClient) -> None:
-    response = await client.get("/healthcheck")
+    response = await client.get("/sse/healthcheck")
     assert response.status_code == 200
     assert response.text == "ok"
 
 
 @pytest.mark.asyncio
 async def test_metrics(client: httpx.AsyncClient) -> None:
-    response = await client.get("/metrics")
+    response = await client.get("/sse/metrics")
     assert response.status_code == 200
     text = response.text
     lines = text.split("\n")
@@ -82,7 +82,7 @@ async def test_metrics(client: httpx.AsyncClient) -> None:
     }
 
     # the metrics should contain at least the following
-    starlette_requests_metric = 'starlette_requests_total{method="GET",path_template="/metrics"}'
+    starlette_requests_metric = 'starlette_requests_total{method="GET",path_template="/sse/metrics"}'
     steps_processing_time_metric = (
         'method_steps_processing_time_seconds_sum{context="None",method="healthcheck_endpoint",step="all"}'
     )
@@ -370,7 +370,7 @@ async def test_hub_cache_only_updates(
     update_task = event_loop.create_task(update_hub_cache())
 
     try:
-        await check(client, f"{APP_HOST}/hub-cache", UPDATE_ONLY_EVENTS)
+        await check(client, f"{APP_HOST}/sse/hub-cache", UPDATE_ONLY_EVENTS)
     except Exception as err:
         update_task.cancel()
         raise err
@@ -395,7 +395,7 @@ async def test_hub_cache_only_initialization(
     expected_events: EventsList,
 ) -> None:
     init_hub_cache()
-    await check(client, f"{APP_HOST}/hub-cache{all}", expected_events)
+    await check(client, f"{APP_HOST}/sse/hub-cache{all}", expected_events)
 
 
 @pytest.mark.parametrize(
@@ -418,7 +418,7 @@ async def test_hub_cache_initialization_and_updates(
     update_task = event_loop.create_task(update_hub_cache())
     # ^ We are not testing concurrency between the loop on the initial content and the loop on the updates
     try:
-        await check(client, f"{APP_HOST}/hub-cache{all}", expected_events)
+        await check(client, f"{APP_HOST}/sse/hub-cache{all}", expected_events)
     except Exception as err:
         update_task.cancel()
         raise err
