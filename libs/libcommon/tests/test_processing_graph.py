@@ -59,7 +59,6 @@ def test_graph() -> None:
                 "dataset-opt-in-out-urls-count",
                 "dataset-split-names",
                 "dataset-parquet",
-                "dataset-presidio-entities-count",
                 "dataset-info",
                 "dataset-size",
                 "dataset-is-valid",
@@ -91,7 +90,9 @@ def test_graph() -> None:
         ),
         (
             "dataset-split-names",
-            [],
+            [
+                "dataset-presidio-entities-count",
+            ],
             [
                 "dataset-config-names",
                 "config-split-names",
@@ -286,12 +287,15 @@ def test_graph() -> None:
         (
             "dataset-presidio-entities-count",
             [],
-            ["dataset-config-names", "split-presidio-scan"],
+            ["dataset-split-names", "split-presidio-scan"],
             [
+                "config-info",
                 "config-parquet",
                 "config-parquet-and-info",
                 "config-parquet-metadata",
+                "config-split-names",
                 "dataset-config-names",
+                "dataset-split-names",
                 "split-presidio-scan",
             ],
         ),

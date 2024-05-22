@@ -658,7 +658,7 @@ specification: ProcessingGraphSpecification = {
     "dataset-presidio-entities-count": {
         "input_type": "dataset",
         "triggered_by": [
-            "dataset-config-names",  # required in case the dataset has no configs (error in previous step)
+            "dataset-split-names",  # required in case the dataset has no configs (error in previous step)
             "split-presidio-scan",
         ],
         "job_runner_version": 1,
