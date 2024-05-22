@@ -7,6 +7,7 @@ Used by the following services:
 - [rows](https://github.com/huggingface/dataset-viewer/tree/main/services/rows)
 - [search](https://github.com/huggingface/dataset-viewer/tree/main/services/search)
 - [sse-api](https://github.com/huggingface/dataset-viewer/tree/main/services/sse-api)
+- [webhook](https://github.com/huggingface/dataset-viewer/tree/main/services/webhook)
 
 ## Configuration
 
