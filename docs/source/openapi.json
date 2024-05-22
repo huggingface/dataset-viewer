@@ -5526,7 +5526,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/OptInOutUrlsCountResponse"
+                  "$ref": "#/components/schemas/PresidioEntitiesCountResponse"
                 },
                 "examples": {
                   "number of URLS for a dataset": {
