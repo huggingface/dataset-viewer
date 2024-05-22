@@ -46,14 +46,12 @@
                   title: Authentication for private and gated datasets
                 - local: duckdb_cli_select
                   title: Query datasets
-                - local: duckdb_cli_sql_operations
+                - local: duckdb_cli_sql
                   title: Perform SQL operations
-                - local: duckdb_cli_process
-                  title: Process datasets
+                - local: duckdb_cli_combine_and_export
+                  title: Combine datasets and export
                 - local: duckdb_cli_vector_similarity_search
                   title: Perform vector similarity search
-                - local: duckdb_cli_export
-                  title: Export to other formats
                 - local: duckdb_cli_fts
                   title: Implement full-text search
         - local: pandas
