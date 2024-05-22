@@ -17,7 +17,7 @@ services:
       URL_ROWS: http://rows:${ROWS_UVICORN_PORT-8082}
       URL_SEARCH: http://search:${SEARCH_UVICORN_PORT-8083}
       URL_SSE_API: http://sse-api:${SSE_API_UVICORN_PORT-8085}
-      URL_WEBHOOK: http://webhook:${WEBHOOK_UVICORN_PORT-8086}
+      URL_WEBHOOK: http://webhook:${WEBHOOK_UVICORN_PORT-8087}
     depends_on:
       admin:
         condition: service_started
@@ -238,10 +238,10 @@ services:
       # uvicorn
       API_UVICORN_HOSTNAME: 0.0.0.0 # required for docker compose
       API_UVICORN_NUM_WORKERS: ${WEBHOOK_UVICORN_NUM_WORKERS-2}
-      API_UVICORN_PORT: ${WEBHOOK_UVICORN_PORT-8086}
+      API_UVICORN_PORT: ${WEBHOOK_UVICORN_PORT-8087}
     ports:
       # for debug
-      - ${WEBHOOK_UVICORN_PORT-8086}:${WEBHOOK_UVICORN_PORT-8086}
+      - ${WEBHOOK_UVICORN_PORT-8087}:${WEBHOOK_UVICORN_PORT-8087}
     depends_on:
       mongodb:
         condition: service_healthy
