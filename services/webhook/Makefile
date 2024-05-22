@@ -1,6 +1,6 @@
 # environment variables for the commands (docker compose, poetry)
 export COMPOSE_PROJECT_NAME := webhook
-export MONGO_PORT := 27031
+export MONGO_PORT := 27036
 export CACHE_MONGO_URL := mongodb://localhost:${MONGO_PORT}
 export QUEUE_MONGO_URL := mongodb://localhost:${MONGO_PORT}
 # makefile variables

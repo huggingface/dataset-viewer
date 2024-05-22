@@ -1,6 +1,6 @@
 [tool.poetry]
 authors = ["Sylvain Lesage <sylvain.lesage@huggingface.co>"]
-description = "REST API app"
+description = "webhook app"
 name = "webhook"
 version = "0.1.3"
 license = "Apache-2.0"

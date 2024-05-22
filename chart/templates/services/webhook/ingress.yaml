@@ -17,7 +17,7 @@ spec:
                 name: "{{ include "name" . }}-webhook"
                 port:
                   name: http
-            path: /
+            path: /webhook
             pathType: Prefix
           {{ if hasKey $annotations "alb.ingress.kubernetes.io/actions.openapi-redirect" -}}
           - path: /openwebhook.json
