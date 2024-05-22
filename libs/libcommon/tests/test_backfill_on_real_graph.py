@@ -57,6 +57,7 @@ def test_plan_job_creation_and_termination() -> None:
                 "dataset-modalities,dataset,revision",
                 "dataset-opt-in-out-urls-count,dataset,revision",
                 "dataset-parquet,dataset,revision",
+                "dataset-presidio-entities-count,dataset,revision",
                 "dataset-size,dataset,revision",
                 "dataset-split-names,dataset,revision",
                 "dataset-croissant-crumbs,dataset,revision",
@@ -68,7 +69,7 @@ def test_plan_job_creation_and_termination() -> None:
         # The queue is empty, so no step is in process.
         queue_status={"in_process": []},
         # The root dataset-level steps, as well as the "fan-in" steps, are ready to be backfilled.
-        tasks=["CreateJobs,12"],
+        tasks=["CreateJobs,13"],
     )
 
     dataset_backfill_plan.run()
@@ -94,6 +95,7 @@ def test_plan_job_creation_and_termination() -> None:
                 "dataset-modalities,dataset,revision",
                 "dataset-opt-in-out-urls-count,dataset,revision",
                 "dataset-parquet,dataset,revision",
+                "dataset-presidio-entities-count,dataset,revision",
                 "dataset-size,dataset,revision",
                 "dataset-split-names,dataset,revision",
                 "dataset-croissant-crumbs,dataset,revision",
@@ -112,6 +114,7 @@ def test_plan_job_creation_and_termination() -> None:
                 "dataset-is-valid,dataset,revision",
                 "dataset-opt-in-out-urls-count,dataset,revision",
                 "dataset-parquet,dataset,revision",
+                "dataset-presidio-entities-count,dataset,revision",
                 "dataset-size,dataset,revision",
                 "dataset-compatible-libraries,dataset,revision",
                 "dataset-modalities,dataset,revision",
@@ -177,6 +180,7 @@ def test_plan_job_creation_and_termination() -> None:
                 "dataset-modalities,dataset,revision",
                 "dataset-opt-in-out-urls-count,dataset,revision",
                 "dataset-parquet,dataset,revision",
+                "dataset-presidio-entities-count,dataset,revision",
                 "dataset-size,dataset,revision",
                 "dataset-split-names,dataset,revision",
                 "dataset-croissant-crumbs,dataset,revision",
@@ -194,6 +198,7 @@ def test_plan_job_creation_and_termination() -> None:
                 "dataset-is-valid,dataset,revision",
                 "dataset-opt-in-out-urls-count,dataset,revision",
                 "dataset-parquet,dataset,revision",
+                "dataset-presidio-entities-count,dataset,revision",
                 "dataset-size,dataset,revision",
                 "dataset-compatible-libraries,dataset,revision",
                 "dataset-modalities,dataset,revision",
