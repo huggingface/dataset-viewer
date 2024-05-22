@@ -1,5 +1,5 @@
 [tool.poetry]
-authors = ["Sylvain Lesage <sylvain.lesage@huggingface.co>"]
+authors = ["The HuggingFace Authors."]
 description = "webhook app"
 name = "webhook"
 version = "0.1.3"

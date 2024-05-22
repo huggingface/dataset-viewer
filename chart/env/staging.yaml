@@ -334,7 +334,7 @@ webhook:
   ingress:
     enabled: true
     annotations:
-      alb.ingress.kubernetes.io/actions.metrics-unauthorized: '{"type":"fixed-response","fixedResponseConfig":{"contentType":"text/plain","statusCode":"401","messageBody":"401 Unauthorized"}}'
+      alb.ingress.kubernetes.io/group.order: "4"
   resources:
     requests:
       cpu: 100m
