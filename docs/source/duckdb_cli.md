@@ -8,7 +8,7 @@ For installation details, visit the [installation page](https://duckdb.org/docs/
 
 </Tip>
 
-Starting from version `v0.10.3-dev1012`, the DuckDB CLI includes native support for accessing datasets on Hugging Face via URLs. Here are some features you can leverage with this powerful tool:
+Starting from version `v0.10.3`, the DuckDB CLI includes native support for accessing datasets on Hugging Face via URLs. Here are some features you can leverage with this powerful tool:
 
 - Query public, gated and private datasets
 - Analyze datasets and perform SQL operations
