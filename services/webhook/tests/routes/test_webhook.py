@@ -7,7 +7,7 @@ from unittest.mock import patch
 
 import pytest
 
-from api.routes.webhook import MoonWebhookV2Payload, parse_payload, process_payload
+from webhook.routes.webhook import MoonWebhookV2Payload, parse_payload, process_payload
 
 
 @pytest.mark.parametrize(

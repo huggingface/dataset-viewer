@@ -55,6 +55,11 @@ images:
       useGlobalRegistry: false
       repository: datasets-server-services-worker
       tag: sha-fb3399a
+    webhook:
+      registry: huggingface
+      useGlobalRegistry: false
+      repository: datasets-server-services-webhook
+      tag: sha-fb3399a
 
 secrets:
   externalSecret:
@@ -320,3 +325,21 @@ workers:
       limits:
         cpu: 1
         memory: "4Gi"
+
+webhook:
+  uvicornNumWorkers: "1"
+  replicas: 1
+  service:
+    type: NodePort
+  ingress:
+    enabled: true
+    annotations:
+      alb.ingress.kubernetes.io/actions.openapi-redirect: '{"Type":"redirect","RedirectConfig":{"Host":"raw.githubusercontent.com","Path":"/huggingface/dataset-viewer/main/docs/source/openapi.json","Port":"443","Protocol":"HTTPS","Query":"#{query}","StatusCode":"HTTP_302"}}'
+      alb.ingress.kubernetes.io/actions.metrics-unauthorized: '{"type":"fixed-response","fixedResponseConfig":{"contentType":"text/plain","statusCode":"401","messageBody":"401 Unauthorized"}}'
+  resources:
+    requests:
+      cpu: 100m
+      memory: "512Mi"
+    limits:
+      cpu: 1
+      memory: "4Gi"

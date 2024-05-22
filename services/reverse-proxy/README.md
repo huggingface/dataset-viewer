@@ -22,6 +22,7 @@ It takes various environment variables, all of them are mandatory:
 - `URL_ROWS`: URL of the rows service, eg `http://rows:8082`
 - `URL_SEARCH`: URL of the search service, eg `http://search:8083`
 - `URL_SSE_API`: URL of the SSE API service, eg `http://sse-api:8085`
+- `URL_WEBHOOK`: URL of the webhook service, eg `http://webhook:8086`
 
 The image requires three directories to be mounted (from volumes):
 

@@ -40,6 +40,8 @@ jobs:
           SEARCH_UVICORN_PORT: "8083"
           SSE_API_UVICORN_NUM_WORKERS: "2"
           SSE_API_UVICORN_PORT: "8085"
+          WEBHOOK_UVICORN_NUM_WORKERS: "2"
+          WEBHOOK_UVICORN_PORT: "8086"
           COMMON_HF_ENDPOINT: "https://hub-ci.huggingface.co"
           COMMON_HF_TOKEN: "hf_app_datasets-server_token"
           # ^ hard coded, see e2e/tests/fixtures/hub.py
@@ -99,6 +101,8 @@ jobs:
           SEARCH_UVICORN_PORT: "8083"
           SSE_API_UVICORN_NUM_WORKERS: "2"
           SSE_API_UVICORN_PORT: "8085"
+          WEBHOOK_UVICORN_NUM_WORKERS: "2"
+          WEBHOOK_UVICORN_PORT: "8086"
           COMMON_HF_ENDPOINT: "https://hub-ci.huggingface.co"
           COMMON_HF_TOKEN: "hf_app_datasets-server_token"
           # ^ hard coded, see e2e/tests/fixtures/hub.py

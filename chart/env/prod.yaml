@@ -59,7 +59,11 @@ images:
       useGlobalRegistry: false
       repository: datasets-server-services-worker
       tag: sha-fb3399a
-
+    webhook:
+      registry: huggingface
+      useGlobalRegistry: false
+      repository: datasets-server-services-webhook
+      tag: sha-fb3399a
 secrets:
   externalSecret:
     enabled: true
@@ -537,3 +541,31 @@ workers:
       limits:
         cpu: 2
         memory: "1Gi"
+
+webhook:
+  # Number of uvicorn workers for running the application
+  # (2 x $num_cores) + 1
+  # https://docs.gunicorn.org/en/stable/design.html#how-many-workers
+  uvicornNumWorkers: "9"
+  nodeSelector:
+    role-datasets-server-webhook: "true"
+  tolerations:
+    - key: "huggingface.co/datasets-server-webhook"
+      operator: "Exists"
+      effect: "NoSchedule"
+  replicas: 20
+  service:
+    type: NodePort
+  ingress:
+    enabled: true
+    annotations:
+      alb.ingress.kubernetes.io/target-node-labels: role-datasets-server-webhook=true
+      alb.ingress.kubernetes.io/actions.openapi-redirect: '{"Type":"redirect","RedirectConfig":{"Host":"raw.githubusercontent.com","Path":"/huggingface/dataset-viewer/main/docs/source/openapi.json","Port":"443","Protocol":"HTTPS","Query":"#{query}","StatusCode":"HTTP_302"}}'
+      alb.ingress.kubernetes.io/actions.metrics-unauthorized: '{"type":"fixed-response","fixedResponseConfig":{"contentType":"text/plain","statusCode":"401","messageBody":"401 Unauthorized"}}'
+  resources:
+    requests:
+      cpu: 4
+      memory: "14Gi"
+    limits:
+      cpu: 4
+      memory: "14Gi"
