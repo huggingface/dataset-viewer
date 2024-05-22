@@ -29,7 +29,7 @@ To start the CLI, execute the following command in the installation folder:
 To access Hugging Face datasets, use the following URL format:
 
 ```plaintext
-hf://datasets/{my-username}/{my-dataset}@~parquet/{path_to_parquet_file} 
+hf://datasets/{my-username}/{my-dataset}/{path_to_parquet_file} 
 ```
 
 Where:
@@ -38,15 +38,21 @@ Where:
 - **path_to_parquet_file** Is the parquet file path, it supports glob patterns, e.g `**/*.parquet` to query all parquet files
 
 
-Let's start with a quick demo to query the full rows of a dataset under the `refs/convert/parquet` revision:
+<Tip>
+
+You can query auto-converted Parquet files using the @~parquet branch, which corresponds to the refs/convert/parquet revision. For more details, refer to the documentation at https://huggingface.co/docs/datasets-server/en/parquet#conversion-to-parquet.
+
+</Tip>
+
+Let's start with a quick demo to query all the rows of a dataset:
 
 ```sql
-FROM 'hf://datasets/ibm/duorc@~parquet/**/*.parquet';
+FROM 'hf://datasets/ibm/duorc/ParaphraseRC/*.parquet' LIMIT 3;
 ```
 
 Or using traditional SQL syntax:
 
 ```sql
-SELECT * FROM 'hf://datasets/ibm/duorc@~parquet/**/*.parquet';
+SELECT * FROM 'hf://datasets/ibm/duorc/ParaphraseRC/*.parquet' LIMIT 3;
 ```
 In the following sections, we will cover more complex operations you can perform with DuckDB on Hugging Face datasets.

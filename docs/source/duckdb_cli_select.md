@@ -2,18 +2,11 @@
 
 Querying datasets is a fundamental step in data analysis. Here, we'll guide you through querying datasets using various methods.
 
-You can query Hugging Face [autoconverted parquet files](https://huggingface.co/docs/datasets-server/en/parquet#conversion-to-parquet) in the `refs/converts/parquet` branch by using the following syntax:
-
-
-```plaintext
-hf://datasets/{my-username}/{my-dataset}@~parquet/{path_to_parquet_file} 
-```
-
 There are [different ways](https://duckdb.org/docs/data/parquet/overview.html) to select your data.
 
 Using `FROM` syntax:
 ```bash
-FROM 'hf://datasets/jamescalam/world-cities-geo@~parquet/default/train/0000.parquet' SELECT city, country, region LIMIT 3;
+FROM 'hf://datasets/jamescalam/world-cities-geo/train.jsonl' SELECT city, country, region LIMIT 3;
 
 ┌────────────────┬─────────────┬───────────────┐
 │      city      │   country   │    region     │
@@ -29,7 +22,7 @@ FROM 'hf://datasets/jamescalam/world-cities-geo@~parquet/default/train/0000.parq
 Using `SELECT` `FROM` sytax:
 
 ```bash
-SELECT city, country, region FROM 'hf://datasets/jamescalam/world-cities-geo@~parquet/default/train/0000.parquet' USING SAMPLE 3;
+SELECT city, country, region FROM 'hf://datasets/jamescalam/world-cities-geo/train.jsonl' USING SAMPLE 3;
 
 ┌──────────┬─────────┬────────────────┐
 │   city   │ country │     region     │
@@ -45,7 +38,7 @@ SELECT city, country, region FROM 'hf://datasets/jamescalam/world-cities-geo@~pa
 Count all parquet files matching a glob pattern:
 
 ```bash
-SELECT COUNT(*) FROM 'hf://datasets/jamescalam/world-cities-geo@~parquet/**/*.parquet';
+SELECT COUNT(*) FROM 'hf://datasets/jamescalam/world-cities-geo/*.jsonl';
 
 ┌──────────────┐
 │ count_star() │
@@ -55,6 +48,8 @@ SELECT COUNT(*) FROM 'hf://datasets/jamescalam/world-cities-geo@~parquet/**/*.pa
 └──────────────┘
 
 ```
+
+You can also query Parquet files using the read_parquet and parquet_scan functions. Let's explore these functions using the auto-converted Parquet files for the same dataset.
 
 Select using [read_parquet](https://duckdb.org/docs/guides/file_formats/query_parquet.html) function:
 
