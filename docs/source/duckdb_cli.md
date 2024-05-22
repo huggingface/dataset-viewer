@@ -12,9 +12,8 @@ Starting from version `v0.10.3`, the DuckDB CLI includes native support for acce
 
 - Query public, gated and private datasets
 - Analyze datasets and perform SQL operations
-- Process and transform datasets
+- Combine datasets and export it different formats
 - Conduct vector similarity search on embedding datasets
-- Export datasets to other formats
 - Implement full-text search on datasets
 - And more! For a complete list of DuckDB features, visit the DuckDB documentation.
 
