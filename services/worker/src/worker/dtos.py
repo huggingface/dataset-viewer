@@ -78,7 +78,7 @@ class PresidioEntity(TypedDict):
     column_name: str
 
 
-class PresidioEntitiesCountResponse(TypedDict):
+class PresidioAllEntitiesCountResponse(TypedDict):
     scanned_columns: list[str]
     num_in_vehicle_registration_entities: int
     num_organization_entities: int
@@ -145,8 +145,19 @@ class PresidioEntitiesCountResponse(TypedDict):
     full_scan: Union[bool, None]
 
 
-class PresidioEntitiesScanResponse(PresidioEntitiesCountResponse):
+class PresidioEntitiesScanResponse(PresidioAllEntitiesCountResponse):
     entities: list[PresidioEntity]
+
+
+class PresidioEntitiesCountResponse(TypedDict):
+    scanned_columns: list[str]
+    num_rows_with_person_entities: int
+    num_rows_with_phone_number_entities: int
+    num_rows_with_email_address_entities: int
+    num_rows_with_sensitive_pii: int
+    num_scanned_rows: int
+    has_scanned_columns: bool
+    full_scan: Union[bool, None]
 
 
 class ImageUrlColumnsResponse(TypedDict):
