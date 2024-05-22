@@ -5531,7 +5531,7 @@
                 "examples": {
                   "number of URLS for a dataset": {
                     "summary": "number of entities for a dataset.",
-                    "description": "Try with https://datasets-server.huggingface.co/opt-in-out-urls?dataset=lhoestq/fake_name_and_ssn",
+                    "description": "Try with https://datasets-server.huggingface.co/presidio-entities?dataset=lhoestq/fake_name_and_ssn",
                     "value": {
                       "scanned_columns": ["fake_name", "fake_ssn"],
                       "num_rows_with_person_entities": 3,
@@ -5545,7 +5545,7 @@
                   },
                   "dataset that has no image URLs columns": {
                     "summary": "no scanned columns: values are zero.",
-                    "description": "Try with https://datasets-server.huggingface.co/opt-in-out-urls?dataset=mnist",
+                    "description": "Try with https://datasets-server.huggingface.co/presidio-entities?dataset=mnist",
                     "value": {
                       "scanned_columns": [],
                       "num_rows_with_person_entities": 0,
