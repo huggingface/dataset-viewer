@@ -1,0 +1,10 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  labels: {{ include "labels.webhook" . | nindent 4 }}
+  name: "{{ include "name" . }}-webhook"
+  namespace: {{ .Release.Namespace }}
+spec:
+  maxUnavailable: 1
+  selector:
+    matchLabels: {{ include "labels.webhook" . | nindent 6 }}

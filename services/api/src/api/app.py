@@ -21,7 +21,6 @@ from starlette_prometheus import PrometheusMiddleware
 
 from api.config import AppConfig, EndpointConfig
 from api.routes.endpoint import EndpointsDefinition, create_endpoint
-from api.routes.webhook import create_webhook_endpoint
 
 
 def create_app() -> Starlette:
@@ -105,19 +104,6 @@ def create_app_with_config(app_config: AppConfig, endpoint_config: EndpointConfi
         Route("/healthcheck", endpoint=healthcheck_endpoint),
         Route("/metrics", endpoint=create_metrics_endpoint()),
         # ^ called by Prometheus
-        Route(
-            "/webhook",
-            endpoint=create_webhook_endpoint(
-                hf_webhook_secret=app_config.api.hf_webhook_secret,
-                blocked_datasets=app_config.common.blocked_datasets,
-                hf_endpoint=app_config.common.hf_endpoint,
-                hf_token=app_config.common.hf_token,
-                hf_timeout_seconds=app_config.api.hf_timeout_seconds,
-                storage_clients=storage_clients,
-            ),
-            methods=["POST"],
-        ),
-        # ^ called by the Hub webhooks
     ]
 
     return Starlette(routes=routes, middleware=middleware, on_shutdown=[resource.release for resource in resources])

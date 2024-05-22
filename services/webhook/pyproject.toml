@@ -1,0 +1,65 @@
+[tool.poetry]
+authors = ["The HuggingFace Authors."]
+description = "webhook app"
+name = "webhook"
+version = "0.1.3"
+license = "Apache-2.0"
+
+[tool.poetry.dependencies]
+python = "3.9.18"
+environs = "^9.5.0"
+jsonschema = "^4.17.0"
+libapi = {path = "../../libs/libapi", develop = true}
+uvicorn = "^0.20.0"
+watchdog = { extras = ["watchmedo"], version = "^2.2.1" }
+
+[tool.poetry.group.dev.dependencies]
+bandit = "^1.7.4"
+mypy = "^1.8.0"
+pandas-stubs = "^1.5.3"
+pip-audit = "^2.5.4"
+pytest = "^7.2.1"
+ruff = "^0"
+types-jsonschema = "^4.17.0.4"
+types-psutil = "^5.9.5"
+
+[build-system]
+build-backend = "poetry.core.masonry.api"
+requires = ["poetry-core>=1.0.0"]
+
+[tool.pytest.ini_options]
+filterwarnings = ["ignore::DeprecationWarning"]
+markers = [
+    "real_dataset: tests on the Hub"
+]
+
+[tool.mypy]
+strict = true
+disallow_untyped_calls = false
+# ^ call to expected_algorithm.from_jwk forces to set this to false
+
+[[tool.mypy.overrides]]
+module = [
+    "datasets.*",
+    "huggingface_hub.*",
+    "prometheus_client.*",
+    "pyarrow.*",
+    "tqdm.*",
+    "fsspec.*"
+]
+# ^ prometheus_client is now typed, but starlette-prometheus requires an old version
+ignore_missing_imports = true
+
+[tool.ruff]
+line-length = 119
+src = ["src"]
+target-version = "py39"
+
+[tool.ruff.lint]
+extend-select = [
+    "ARG",  # flake8-unused-arguments
+    "I",  # isort
+    # flake8-pep585:
+    "UP006",  # non-pep585-annotation
+    "UP035",  # deprecated-import
+]

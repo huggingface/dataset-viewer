@@ -58,6 +58,10 @@ Docker image management
 {{ include "hf.common.images.image" (dict "imageRoot" .Values.images.services.worker "global" .Values.global.huggingface) }}
 {{- end -}}
 
+{{- define "services.webhook.image" -}}
+{{ include "hf.common.images.image" (dict "imageRoot" .Values.images.services.webhook "global" .Values.global.huggingface) }}
+{{- end -}}
+
 {{- define "image.imagePullSecrets" -}}
 {{- include "hf.common.images.renderPullSecrets" (dict "images" (list .Values.images) "context" $) -}}
 {{- end -}}
@@ -124,6 +128,11 @@ app.kubernetes.io/component: "{{ include "name" . }}-sse-api"
 {{- define "labels.worker" -}}
 {{ include "hf.labels.commons" . }}
 app.kubernetes.io/component: "{{ include "name" . }}-worker-{{ .workerValues.deployName }}"
+{{- end -}}
+
+{{- define "labels.webhook" -}}
+{{ include "hf.labels.commons" . }}
+app.kubernetes.io/component: "{{ include "name" . }}-webhook"
 {{- end -}}
 
 {{/*

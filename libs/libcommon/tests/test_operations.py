@@ -236,6 +236,16 @@ def test_update_disabled_dataset_raises_way_2(
 
 
 @pytest.mark.parametrize(
+    "tags",
+    [
+        None,
+        [],
+        ["perfectly-fine-tag"],
+        TAG_NFAA_SYNONYMS,
+    ],
+    # ^ for Pro and Enterprise Hub, *private* NFAA datasets are allowed
+)
+@pytest.mark.parametrize(
     "token,namespace",
     [
         (PRO_USER_TOKEN, PRO_USER),
@@ -245,11 +255,45 @@ def test_update_disabled_dataset_raises_way_2(
 def test_update_private(
     queue_mongo_resource: QueueMongoResource,
     cache_mongo_resource: CacheMongoResource,
+    tags: Optional[list[str]],
     token: str,
     namespace: str,
 ) -> None:
-    with tmp_dataset(namespace=namespace, token=token, private=True) as dataset:
+    with tmp_dataset(namespace=namespace, token=token, private=True, tags=tags) as dataset:
         update_dataset(dataset=dataset, hf_endpoint=CI_HUB_ENDPOINT, hf_token=CI_APP_TOKEN)
+
+
+@pytest.mark.parametrize(
+    "tags,raises",
+    [
+        (None, False),
+        ([], False),
+        (["perfectly-fine-tag"], False),
+        (TAG_NFAA_SYNONYMS, True),
+    ],
+    # ^ for Pro and Enterprise Hub, *public* NFAA datasets are disallowed
+)
+@pytest.mark.parametrize(
+    "token,namespace",
+    [
+        (PRO_USER_TOKEN, PRO_USER),
+        (ENTERPRISE_USER_TOKEN, ENTERPRISE_ORG),
+    ],
+)
+def test_update_public_nfaa(
+    queue_mongo_resource: QueueMongoResource,
+    cache_mongo_resource: CacheMongoResource,
+    tags: Optional[list[str]],
+    raises: bool,
+    token: str,
+    namespace: str,
+) -> None:
+    with tmp_dataset(namespace=namespace, token=token, private=False, tags=tags) as dataset:
+        if raises:
+            with pytest.raises(NotSupportedTagNFAAError):
+                update_dataset(dataset=dataset, hf_endpoint=CI_HUB_ENDPOINT, hf_token=CI_APP_TOKEN)
+        else:
+            update_dataset(dataset=dataset, hf_endpoint=CI_HUB_ENDPOINT, hf_token=CI_APP_TOKEN)
 
 
 @pytest.mark.parametrize(

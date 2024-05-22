@@ -14,7 +14,8 @@ from libcommon.constants import DATASET_SEPARATOR
 from libcommon.storage import StrPath, remove_dir
 from libcommon.storage_client import StorageClient
 
-SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE = {".wav": "audio/wav", ".mp3": "audio/mpeg"}
+SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE = {".wav": "audio/wav", ".mp3": "audio/mpeg", ".opus": "audio/opus"}
+SUPPORTED_AUDIO_EXTENSIONS = SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE.keys()
 
 
 def delete_asset_dir(dataset: str, directory: StrPath) -> None:

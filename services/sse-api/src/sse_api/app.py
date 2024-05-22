@@ -61,9 +61,9 @@ def create_app_with_config(app_config: AppConfig) -> Starlette:
     ]
 
     routes = [
-        Route("/hub-cache", endpoint=create_hub_cache_endpoint(hub_cache_watcher=hub_cache_watcher)),
-        Route("/healthcheck", endpoint=healthcheck_endpoint),
-        Route("/metrics", endpoint=create_metrics_endpoint()),
+        Route("/sse/hub-cache", endpoint=create_hub_cache_endpoint(hub_cache_watcher=hub_cache_watcher)),
+        Route("/sse/healthcheck", endpoint=healthcheck_endpoint),
+        Route("/sse/metrics", endpoint=create_metrics_endpoint()),
         # ^ called by Prometheus
     ]
 

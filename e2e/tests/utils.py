@@ -23,6 +23,7 @@ ADMIN_UVICORN_PORT = os.environ.get("ADMIN_UVICORN_PORT", "8081")
 ROWS_UVICORN_PORT = os.environ.get("ROWS_UVICORN_PORT", "8082")
 SEARCH_UVICORN_PORT = os.environ.get("SEARCH_UVICORN_PORT", "8083")
 WORKER_UVICORN_PORT = os.environ.get("WORKER_UVICORN_PORT", "8086")
+WEBHOOK_UVICORN_PORT = os.environ.get("WORKER_UVICORN_PORT", "8087")
 E2E_ADMIN_USER_TOKEN = os.environ.get("E2E_ADMIN_USER_TOKEN", "")
 INTERVAL = 1
 MAX_DURATION = 10 * 60
@@ -32,6 +33,7 @@ API_URL = f"http://localhost:{API_UVICORN_PORT}"
 ROWS_URL = f"http://localhost:{ROWS_UVICORN_PORT}"
 SEARCH_URL = f"http://localhost:{SEARCH_UVICORN_PORT}"
 WORKER_URL = f"http://localhost:{WORKER_UVICORN_PORT}"
+WEBHOOK_URL = f"http://localhost:{WEBHOOK_UVICORN_PORT}"
 
 Headers = Mapping[str, str]
 

@@ -55,6 +55,11 @@ images:
       useGlobalRegistry: false
       repository: datasets-server-services-worker
       tag: sha-fb3399a
+    webhook:
+      registry: huggingface
+      useGlobalRegistry: false
+      repository: datasets-server-services-webhook
+      tag: sha-fb3399a
 
 secrets:
   externalSecret:
@@ -320,3 +325,20 @@ workers:
       limits:
         cpu: 1
         memory: "4Gi"
+
+webhook:
+  uvicornNumWorkers: "1"
+  replicas: 1
+  service:
+    type: NodePort
+  ingress:
+    enabled: true
+    annotations:
+      alb.ingress.kubernetes.io/group.order: "4"
+  resources:
+    requests:
+      cpu: 100m
+      memory: "512Mi"
+    limits:
+      cpu: 1
+      memory: "4Gi"
