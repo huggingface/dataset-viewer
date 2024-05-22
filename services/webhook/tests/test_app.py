@@ -1,7 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-from typing import Optional
 
 import pytest
 from starlette.testclient import TestClient
@@ -15,12 +14,12 @@ def client(monkeypatch_session: pytest.MonkeyPatch, app_config: AppConfig) -> Te
     return TestClient(create_app_with_config(app_config=app_config))
 
 
-def test_cors(client: TestClient, first_dataset_endpoint: str) -> None:
+def test_cors(client: TestClient) -> None:
     origin = "http://localhost:3000"
     method = "GET"
     header = "X-Requested-With"
     response = client.options(
-        f"{first_dataset_endpoint}?dataset=dataset1",
+        "/webhook",
         headers={
             "Origin": origin,
             "Access-Control-Request-Method": method,
@@ -47,46 +46,6 @@ def test_get_healthcheck(client: TestClient) -> None:
     response = client.get("/healthcheck")
     assert response.status_code == 200
     assert response.text == "ok"
-
-
-def test_get_endpoint(client: TestClient, first_dataset_endpoint: str) -> None:
-    # missing parameter
-    response = client.get(first_dataset_endpoint)
-    assert response.status_code == 422
-    # empty parameter
-    response = client.get(f"{first_dataset_endpoint}?dataset=")
-    assert response.status_code == 422
-
-
-@pytest.mark.parametrize("dataset", (None, ""))
-def test_get_dataset_missing_parameter(
-    client: TestClient,
-    dataset: Optional[str],
-    first_dataset_endpoint: str,
-) -> None:
-    response = client.get(first_dataset_endpoint, params={"dataset": dataset, "config": None, "split": None})
-    assert response.status_code == 422
-
-
-# this test might fail someday, if `first_split_endpoint` fixture appears to be not an only-split-level endpoint
-@pytest.mark.parametrize(
-    "dataset,config,split",
-    [
-        (None, None, None),
-        ("a", None, None),
-        ("a", "b", None),
-        ("a", "b", ""),
-    ],
-)
-def test_get_split_missing_parameter(
-    client: TestClient,
-    dataset: Optional[str],
-    config: Optional[str],
-    split: Optional[str],
-    first_split_endpoint: str,
-) -> None:
-    response = client.get(first_split_endpoint, params={"dataset": dataset, "config": config, "split": split})
-    assert response.status_code == 422
 
 
 def test_metrics(client: TestClient) -> None:

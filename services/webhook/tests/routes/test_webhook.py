@@ -181,8 +181,8 @@ def test_process_payload(
     payload: MoonWebhookV2Payload,
     does_update: bool,
 ) -> None:
-    with patch("api.routes.webhook.delete_dataset") as mock_delete_dataset:
-        with patch("api.routes.webhook.update_dataset") as mock_update_dataset:
+    with patch("webhook.routes.webhook.delete_dataset") as mock_delete_dataset:
+        with patch("webhook.routes.webhook.update_dataset") as mock_update_dataset:
             process_payload(payload, blocked_datasets=[], hf_endpoint="https://huggingface.co")
             assert mock_delete_dataset.call_count == int(does_update)
             assert mock_update_dataset.call_count == int(does_update)
