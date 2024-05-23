@@ -63,7 +63,7 @@ Read all files that match a glob pattern and include a filename column specifyin
 SELECT * FROM read_parquet('hf://datasets/jamescalam/world-cities-geo@~parquet/default/**/*.parquet', filename = true) LIMIT 3;
 ```
 
-Using `parquet_scan` function:
+Using [`parquet_scan`](https://duckdb.org/docs/data/parquet/overview) function:
 
 ```bash
 SELECT * FROM parquet_scan('hf://datasets/jamescalam/world-cities-geo@~parquet/default/**/*.parquet') LIMIT 3;
