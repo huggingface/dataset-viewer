@@ -52,8 +52,6 @@
               title: Combine datasets and export
             - local: duckdb_cli_vector_similarity_search
               title: Perform vector similarity search
-            - local: duckdb_cli_fts
-              title: Implement full-text search
           title: DuckDB
         - local: pandas
           title: Pandas
