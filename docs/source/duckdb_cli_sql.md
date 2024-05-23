@@ -1,8 +1,8 @@
-# Performing SQL operations
+# Perform SQL operations
 
 Performing SQL operations with DuckDB opens up a world of possibilities for querying datasets efficiently. Let's dive into some examples showcasing the power of DuckDB functions.
 
-For our demonstration, we'll explore a fascinating dataset: A the multitask test containing multiple-choice questions spanning various domains of knowledge. You can access the dataset [here](https://huggingface.co/datasets/cais/mmlu).
+For our demonstration, we'll explore a fascinating dataset. The [MMLU](https://huggingface.co/datasets/cais/mmlu) dataset is a multitask test containing multiple-choice questions spanning various knowledge domains.
 
 To preview the dataset, let's select a sample of 3 rows:
 
@@ -57,7 +57,7 @@ HAVING   counts > 2;
 
 Fortunately, our dataset doesn't contain any duplicate records.
 
-Lets see the proportion of questions based on the subject in a bar representation:
+Let's see the proportion of questions based on the subject in a bar representation:
 
 ```bash
 SELECT 
@@ -89,8 +89,8 @@ ORDER BY
 
 ```
 
-Now, let's prepare a subset of the dataset containing questions related to **nutrition** and create a mapping of questions to correct answers:
-Notice that we have the column **choices** from wich we can get the correct aswer using the **answer** column as an index.
+Now, let's prepare a subset of the dataset containing questions related to **nutrition** and create a mapping of questions to correct answers.
+Notice that we have the column **choices** from which we can get the correct answer using the **answer** column as an index.
 
 ```bash
 SELECT *
@@ -144,15 +144,15 @@ WHERE  subject = 'nutrition' AND LENGTH(correct_answer) > 0 LIMIT 3;
 
 ```
 Finally, lets hightlight some of the DuckDB functions used in this section:
-- `DESCRIBE`, returns the table schema
+- `DESCRIBE`, returns the table schema.
 - `USING SAMPLE`, samples are used to randomly select a subset of a dataset.
-- `BAR`, draws a band whose width is proportional to (x - min) and equal to width characters when x = max. width defaults to 80.
+- `BAR`, draws a band whose width is proportional to (x - min) and equal to width characters when x = max. Width defaults to 80.
 - `string[begin:end]`, extracts a string using slice conventions. Missing begin or end arguments are interpreted as the beginning or end of the list respectively. Negative values are accepted.
-- `regexp_replace`, if string contains the regexp pattern, replaces the matching part with replacement
-- `LENGTH`, gets the number of characters in string
+- `regexp_replace`, if the string contains the regexp pattern, replaces the matching part with replacement.
+- `LENGTH`, gets the number of characters in the string.
 
 <Tip>
 
-There are plenty of useful functions available at https://duckdb.org/docs/sql/functions/overview. The best part is that you can now directly use them on Hugging Face datasets.
+There are plenty of useful functions available in DuckDB's [SQL functions overview](https://duckdb.org/docs/sql/functions/overview). The best part is that you can use them directly on Hugging Face datasets.
 
 </Tip>
