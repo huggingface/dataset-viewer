@@ -36,9 +36,10 @@
           title: Overview
         - local: clickhouse
           title: ClickHouse
-        - local: duckdb
-          title: DuckDB
+        - isExpanded: false
           sections:
+            - local: duckdb
+              title: General Usage
             - local: duckdb_cli
               title: DuckDB CLI
             - local: duckdb_cli_auth
@@ -53,6 +54,7 @@
               title: Perform vector similarity search
             - local: duckdb_cli_fts
               title: Implement full-text search
+          title: DuckDB
         - local: pandas
           title: Pandas
         - local: polars
