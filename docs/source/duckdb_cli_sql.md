@@ -7,7 +7,7 @@ For our demonstration, we'll explore a fascinating dataset. The [MMLU](https://h
 To preview the dataset, let's select a sample of 3 rows:
 
 ```bash
-FROM 'hf://datasets/cais/mmlu@~parquet/all/test/*.parquet' USING SAMPLE 3;
+FROM 'hf://datasets/cais/mmlu/all/test-*.parquet' USING SAMPLE 3;
 
 ┌──────────────────────┬──────────────────┬──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┬────────┐
 │       question       │     subject      │                                                                           choices                                                                            │ answer │
@@ -25,7 +25,7 @@ This command retrieves a random sample of 3 rows from the dataset for us to exam
 Let's start by examining the schema of our dataset. The following table outlines the structure of our dataset:
 
 ```bash
-DESCRIBE FROM 'hf://datasets/cais/mmlu@~parquet/all/test/*.parquet' USING SAMPLE 3;
+DESCRIBE FROM 'hf://datasets/cais/mmlu/all/test-*.parquet' USING SAMPLE 3;
 ┌─────────────┬─────────────┬─────────┬─────────┬─────────┬─────────┐
 │ column_name │ column_type │  null   │   key   │ default │  extra  │
 │   varchar   │   varchar   │ varchar │ varchar │ varchar │ varchar │
@@ -42,7 +42,7 @@ Next, let's analyze if there are any duplicated records in our dataset:
 ```bash
 SELECT   *,
          COUNT(*) AS counts
-FROM     'hf://datasets/cais/mmlu@~parquet/all/test/*.parquet'
+FROM     'hf://datasets/cais/mmlu/all/test-*.parquet'
 GROUP BY ALL
 HAVING   counts > 2; 
 
@@ -63,9 +63,9 @@ Let's see the proportion of questions based on the subject in a bar representati
 SELECT 
     subject, 
     COUNT(*) AS counts, 
-    BAR(COUNT(*), 0, (SELECT COUNT(*) FROM 'hf://datasets/cais/mmlu@~parquet/all/test/*.parquet')) AS percentage 
+    BAR(COUNT(*), 0, (SELECT COUNT(*) FROM 'hf://datasets/cais/mmlu/all/test-*.parquet')) AS percentage 
 FROM 
-    'hf://datasets/cais/mmlu@~parquet/all/test/*.parquet' 
+    'hf://datasets/cais/mmlu/all/test-*.parquet' 
 GROUP BY 
     subject 
 ORDER BY 
@@ -94,7 +94,7 @@ Notice that we have the column **choices** from which we can get the correct ans
 
 ```bash
 SELECT *
-FROM   'hf://datasets/cais/mmlu@~parquet/all/test/*.parquet'
+FROM   'hf://datasets/cais/mmlu/all/test-*.parquet'
 WHERE  subject = 'nutrition' LIMIT 3;
 
 ┌──────────────────────┬───────────┬─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┬────────┐
@@ -111,7 +111,7 @@ WHERE  subject = 'nutrition' LIMIT 3;
 ```bash
 SELECT question,
        choices[answer] AS correct_answer
-FROM   'hf://datasets/cais/mmlu@~parquet/all/test/*.parquet'
+FROM   'hf://datasets/cais/mmlu/all/test-*.parquet'
 WHERE  subject = 'nutrition' LIMIT 3;
 
 ┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┬─────────────────────────────────────────────┐
@@ -130,7 +130,7 @@ To ensure data cleanliness, let's remove any newline characters at the end of th
 ```bash
 SELECT regexp_replace(question, '\n', '') AS question,
        choices[answer] AS correct_answer
-FROM   'hf://datasets/cais/mmlu@~parquet/all/test/*.parquet'
+FROM   'hf://datasets/cais/mmlu/all/test-*.parquet'
 WHERE  subject = 'nutrition' AND LENGTH(correct_answer) > 0 LIMIT 3;
 
 ┌───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┬─────────────────────────────────────────────┐
