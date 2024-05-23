@@ -37,6 +37,8 @@ jobs:
             project: sse-api
           - directory: services
             project: worker
+          - directory: services
+            project: webhook
     runs-on: "ubuntu-latest"
     steps:
       - name: Checkout repository
@@ -121,6 +123,8 @@ jobs:
                 sseApi:
                   tag: sha-${{ steps.vars.outputs.sha_short }}
                 worker:
+                  tag: sha-${{ steps.vars.outputs.sha_short }}
+                webhook:
                   tag: sha-${{ steps.vars.outputs.sha_short }}
           END
           )

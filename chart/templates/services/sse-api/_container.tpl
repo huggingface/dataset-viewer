@@ -26,13 +26,13 @@
     failureThreshold: 30
     periodSeconds: 5
     httpGet:
-      path: /healthcheck
+      path: /sse/healthcheck
       port: {{ .Values.sseApi.uvicornPort }}
   livenessProbe:
     failureThreshold: 30
     periodSeconds: 5
     httpGet:
-      path: /healthcheck
+      path: /sse/healthcheck
       port: {{ .Values.sseApi.uvicornPort }}
   ports:
   - containerPort: {{ .Values.sseApi.uvicornPort }}

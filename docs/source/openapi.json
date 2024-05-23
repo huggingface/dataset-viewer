@@ -1061,7 +1061,8 @@
           "num_opt_out_urls",
           "num_urls",
           "num_scanned_rows",
-          "has_urls_columns"
+          "has_urls_columns",
+          "full_scan"
         ],
         "properties": {
           "urls_columns": {
@@ -1083,6 +1084,45 @@
             "type": "integer"
           },
           "has_urls_columns": {
+            "type": "boolean"
+          },
+          "full_scan": { "anyOf": [{ "type": "boolean" }, { "type": "null" }] }
+        }
+      },
+      "PresidioEntitiesCountResponse": {
+        "type": "object",
+        "required": [
+          "scanned_columns",
+          "num_rows_with_person_entities",
+          "num_rows_with_phone_number_entities",
+          "num_rows_with_email_address_entities",
+          "num_rows_with_sensitive_pii",
+          "num_scanned_rows",
+          "has_scanned_columns"
+        ],
+        "properties": {
+          "scanned_columns": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "num_rows_with_person_entities": {
+            "type": "integer"
+          },
+          "num_rows_with_phone_number_entities": {
+            "type": "integer"
+          },
+          "num_rows_with_email_address_entities": {
+            "type": "integer"
+          },
+          "num_rows_with_sensitive_pii": {
+            "type": "integer"
+          },
+          "num_scanned_rows": {
+            "type": "integer"
+          },
+          "has_scanned_columns": {
             "type": "boolean"
           },
           "full_scan": { "anyOf": [{ "type": "boolean" }, { "type": "null" }] }
@@ -5426,6 +5466,151 @@
           },
           "501": {
             "description": "The server does not implement the feature.",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/Cache-Control"
+              },
+              "Access-Control-Allow-Origin": {
+                "$ref": "#/components/headers/Access-Control-Allow-Origin"
+              },
+              "X-Error-Code": {
+                "$ref": "#/components/headers/X-Error-Code-501"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                },
+                "examples": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/presidio-entities": {
+      "get": {
+        "summary": "Get the number of rows containing Presidio entities in a dataset.",
+        "description": "Based on Presidio, returns the number of rows containing names, emails, phone numbers of sensitive PII. Only a sample of the rows is scanned, the first 10K rows at the moment.",
+        "externalDocs": {
+          "description": "See https://microsoft.github.io/presidio/. The Hub docs are still missing for the endpoint, see https://github.com/huggingface/dataset-viewer/issues/1664.",
+          "url": "https://huggingface.co/docs/datasets-server/"
+        },
+        "operationId": "getPresidioEntities",
+        "security": [
+          {},
+          {
+            "AuthorizationHuggingFaceApiToken": []
+          },
+          {
+            "AuthorizationHuggingFaceJWT": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequiredDataset"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The number of Presidio entities in the dataset.",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/Cache-Control"
+              },
+              "Access-Control-Allow-Origin": {
+                "$ref": "#/components/headers/Access-Control-Allow-Origin"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PresidioEntitiesCountResponse"
+                },
+                "examples": {
+                  "number of URLS for a dataset": {
+                    "summary": "number of entities for a dataset.",
+                    "description": "Try with https://datasets-server.huggingface.co/presidio-entities?dataset=lhoestq/fake_name_and_ssn",
+                    "value": {
+                      "scanned_columns": ["fake_name", "fake_ssn"],
+                      "num_rows_with_person_entities": 3,
+                      "num_rows_with_phone_number_entities": 0,
+                      "num_rows_with_email_address_entities": 0,
+                      "num_rows_with_sensitive_pii": 2,
+                      "num_scanned_rows": 3,
+                      "has_scanned_columns": false,
+                      "full_scan": true
+                    }
+                  },
+                  "dataset that has no image URLs columns": {
+                    "summary": "no scanned columns: values are zero.",
+                    "description": "Try with https://datasets-server.huggingface.co/presidio-entities?dataset=mnist",
+                    "value": {
+                      "scanned_columns": [],
+                      "num_rows_with_person_entities": 0,
+                      "num_rows_with_phone_number_entities": 0,
+                      "num_rows_with_email_address_entities": 0,
+                      "num_rows_with_sensitive_pii": 0,
+                      "num_scanned_rows": 0,
+                      "has_scanned_columns": false,
+                      "full_scan": false
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Common401"
+          },
+          "404": {
+            "$ref": "#/components/responses/DatasetConfigSplit404"
+          },
+          "422": {
+            "$ref": "#/components/responses/Dataset422"
+          },
+          "500": {
+            "description": "The server crashed, the response still hasn't been generated (the process is asynchronous), or the response couldn't be generated successfully due to an error in the dataset itself. The client can retry after a time, in particular in the case of the response still being processed. If the error does not vanish, it's possibly due to a bug in the API software or in the dataset, and should be reported.",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/Cache-Control"
+              },
+              "Access-Control-Allow-Origin": {
+                "$ref": "#/components/headers/Access-Control-Allow-Origin"
+              },
+              "X-Error-Code": {
+                "$ref": "#/components/headers/X-Error-Code-500"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                },
+                "examples": {
+                  "response not ready": {
+                    "$ref": "#/components/examples/ResponseNotReadyError"
+                  },
+                  "unexpected error": {
+                    "$ref": "#/components/examples/UnexpectedJsonError"
+                  }
+                }
+              },
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServerErrorResponse"
+                },
+                "examples": {
+                  "internal server error": {
+                    "$ref": "#/components/examples/UnexpectedTextError"
+                  }
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "The server does not implement the feature or Presidio is not enabled on this dataset.",
             "headers": {
               "Cache-Control": {
                 "$ref": "#/components/headers/Cache-Control"

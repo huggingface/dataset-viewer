@@ -19,6 +19,7 @@ global:
           rows: 30023
           search: 30024
           sseApi: 30025
+          webhook: 30026
 
 images:
   pullPolicy: IfNotPresent
@@ -69,6 +70,11 @@ images:
       registry: huggingface
       useGlobalRegistry: false
       repository: datasets-server-services-worker
+      tag: sha-fb3399a
+    webhook:
+      registry: huggingface
+      useGlobalRegistry: false
+      repository: datasets-server-services-webhook
       tag: sha-fb3399a
 
 common:
@@ -578,3 +584,33 @@ workers:
       limits:
         cpu: 0
     tolerations: []
+
+webhook:
+  # Number of seconds to set in the `max-age` header on data endpoints
+  maxAgeLong: "120"
+  # Number of seconds to set in the `max-age` header on technical endpoints
+  maxAgeShort: "10"
+  # Directory where the uvicorn workers will write the prometheus metrics
+  # see https://github.com/prometheus/client_python#multiprocess-mode-eg-gunicorn
+  prometheusMultiprocDirectory: "/tmp"
+  # Hostname - it must not be set to localhost to work in Kube!
+  uvicornHostname: "0.0.0.0"
+  # Number of uvicorn workers for running the application
+  uvicornNumWorkers: "1"
+  # Application endpoint port
+  uvicornPort: 8080
+
+  nodeSelector: {}
+  replicas: 1
+  resources:
+    requests:
+      cpu: 0
+    limits:
+      cpu: 0
+  service:
+    type: ""
+    annotations: {}
+  ingress:
+    enabled: true
+    annotations: {}
+  tolerations: []

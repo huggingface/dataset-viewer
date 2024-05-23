@@ -60,6 +60,10 @@
     {
       "name": "services/worker",
       "path": "../services/worker"
+    },
+    {
+      "name": "services/webhook",
+      "path": "../services/webhook"
     }
   ],
   "settings": {

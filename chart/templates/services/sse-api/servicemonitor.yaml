@@ -10,7 +10,7 @@ metadata:
   namespace: {{ .Release.Namespace }}
 spec:
   endpoints:
-    - path: /metrics
+    - path: /sse/metrics
       port: http
   namespaceSelector:
     matchNames:
