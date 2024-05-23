@@ -36,7 +36,8 @@
           title: Overview
         - local: clickhouse
           title: ClickHouse
-        - title: DuckDB
+        - local: duckdb
+          title: DuckDB
           sections:
             - local: duckdb_cli
               title: DuckDB CLI
