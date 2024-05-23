@@ -9,14 +9,14 @@ To preview the dataset, let's select a sample of 3 rows:
 ```bash
 FROM 'hf://datasets/cais/mmlu/all/test-*.parquet' USING SAMPLE 3;
 
-┌──────────────────────┬──────────────────┬──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┬────────┐
-│       question       │     subject      │                                                                           choices                                                                            │ answer │
-│       varchar        │     varchar      │                                                                          varchar[]                                                                           │ int64  │
-├──────────────────────┼──────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┼────────┤
-│ Which of the follo…  │ miscellaneous    │ [A campaign manager's introduction of a mayoral candidate, A professor's lecture on the structure of the heart, A company president's yearly sales report,…  │      0 │
-│ Are strategies of …  │ security_studies │ [No, arms control does not serve any purpose outside the realm of traditional military weapons., Yes, successful policies of arms control and deterrence h…  │      2 │
-│ Find all c in Z_3 …  │ abstract_algebra │ [0, 2, 1, 3]                                                                                                                                                 │      1 │
-└──────────────────────┴──────────────────┴──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┴────────┘
+┌──────────────────────┬──────────────────────┬──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┬────────┐
+│       question       │       subject        │                                                                         choices                                                                          │ answer │
+│       varchar        │       varchar        │                                                                        varchar[]                                                                         │ int64  │
+├──────────────────────┼──────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┼────────┤
+│ Dr. Harry Holliday…  │ professional_psych…  │ [discuss his vacation plans with his current clients ahead of time so that they know he’ll be unavailable during that time., give his clients a phone …  │      2 │
+│ A resident of a st…  │ professional_law     │ [The resident would succeed, because the logging company's selling of the timber would entitle the resident to re-enter and terminate the grant to the…  │      2 │
+│ Moderate and frequ…  │ miscellaneous        │ [dispersed alluvial fan soil, heavy-textured soil, such as silty clay, light-textured soil, such as loamy sand, region of low humidity]                  │      2 │
+└──────────────────────┴──────────────────────┴──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┴────────┘
 
 ```
 
@@ -143,6 +143,7 @@ WHERE  subject = 'nutrition' AND LENGTH(correct_answer) > 0 LIMIT 3;
 └───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┴─────────────────────────────────────────────┘
 
 ```
+
 Finally, lets hightlight some of the DuckDB functions used in this section:
 - `DESCRIBE`, returns the table schema.
 - `USING SAMPLE`, samples are used to randomly select a subset of a dataset.
