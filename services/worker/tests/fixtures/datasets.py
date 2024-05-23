@@ -25,12 +25,11 @@ from datasets import (
     Value,
 )
 from datasets.features.features import FeatureType
+from libs.libcommon.tests.statistics_dataset import all_nan_column, statistics_dataset
 
 from .descriptive_statistics_dataset import (
-    all_nan_column,
     audio_dataset,
     image_dataset,
-    statistics_dataset,
     statistics_not_supported_dataset,
     statistics_string_text_dataset,
 )
