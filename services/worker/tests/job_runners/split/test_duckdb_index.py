@@ -25,7 +25,6 @@ from libcommon.dtos import Priority
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import upsert_response
 from libcommon.storage import StrPath
-from libs.libcommon.tests.statistics_dataset import all_nan_column
 
 from worker.config import AppConfig
 from worker.job_runners.config.parquet import ConfigParquetJobRunner
@@ -41,6 +40,7 @@ from worker.job_runners.split.duckdb_index import (
 )
 from worker.resources import LibrariesResource
 
+from ...fixtures.descriptive_statistics_dataset import all_nan_column
 from ...fixtures.hub import HubDatasetTest
 from ..utils import REVISION_NAME
 

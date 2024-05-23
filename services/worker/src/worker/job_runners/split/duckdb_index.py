@@ -36,12 +36,18 @@ from libcommon.parquet_utils import (
 )
 from libcommon.queue import lock
 from libcommon.simple_cache import get_previous_step_or_raise
-from libcommon.statistics import STRING_DTYPES, AudioColumn, ImageColumn, ListColumn, StringColumn
 from libcommon.storage import StrPath
 from libcommon.utils import HF_HUB_HTTP_ERROR_RETRY_SLEEPS, download_file_from_hub, retry
 
 from worker.config import AppConfig, DuckDbIndexConfig
 from worker.dtos import CompleteJobResult, SplitDuckdbIndex
+from worker.job_runners.split.descriptive_statistics import (
+    STRING_DTYPES,
+    AudioColumn,
+    ImageColumn,
+    ListColumn,
+    StringColumn,
+)
 from worker.job_runners.split.split_job_runner import SplitJobRunnerWithCache
 from worker.utils import (
     LOCK_GIT_BRANCH_RETRY_SLEEPS,
