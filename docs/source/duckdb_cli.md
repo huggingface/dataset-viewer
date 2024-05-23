@@ -8,14 +8,15 @@ For installation details, visit the [installation page](https://duckdb.org/docs/
 
 </Tip>
 
-Starting from version `v0.10.3`, the DuckDB CLI includes native support for accessing datasets on Hugging Face via URLs. Here are some features you can leverage with this powerful tool:
+Starting from version `v0.10.3`, the DuckDB CLI includes native support for accessing datasets on the Hugging Face Hub via URLs. Here are some features you can leverage with this powerful tool:
 
-- Query public, gated and private datasets
+- Query public datasets and your own gated and private datasets
 - Analyze datasets and perform SQL operations
-- Combine datasets and export it different formats
+- Combine datasets and export it to different formats
 - Conduct vector similarity search on embedding datasets
 - Implement full-text search on datasets
-- And more! For a complete list of DuckDB features, visit the DuckDB documentation.
+
+For a complete list of DuckDB features, visit the DuckDB [documentation](https://duckdb.org/docs/).
 
 To start the CLI, execute the following command in the installation folder:
 
@@ -31,10 +32,9 @@ To access Hugging Face datasets, use the following URL format:
 hf://datasets/{my-username}/{my-dataset}/{path_to_parquet_file} 
 ```
 
-Where:
-- **my-username**  The user or organization of the dataset, e.g. `ibm`
-- **my-dataset** Is the dataset name, e.g: `duorc`
-- **path_to_parquet_file** Is the parquet file path, it supports glob patterns, e.g `**/*.parquet` to query all parquet files
+- **my-username**, the user or organization of the dataset, e.g. `ibm`
+- **my-dataset**, the dataset name, e.g: `duorc`
+- **path_to_parquet_file**, the parquet file path which supports glob patterns, e.g `**/*.parquet`, to query all parquet files
 
 
 <Tip>

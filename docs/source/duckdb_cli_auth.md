@@ -7,9 +7,9 @@ Visit [Hugging Face Settings - Tokens](https://huggingface.co/settings/tokens) t
 DuckDB supports two providers for managing secrets:
 
 - `CONFIG`: Requires the user to pass all configuration information into the CREATE SECRET statement.
-- `CREDENTIAL_CHAIN`: Automatically tries to fetch credentials. For Hugging Face token it will try to get it from  `~/.cache/huggingface/token`
+- `CREDENTIAL_CHAIN`: Automatically tries to fetch credentials. For the Hugging Face token, it will try to get it from  `~/.cache/huggingface/token`.
 
-For more information about DuckDB Secrets visit https://duckdb.org/docs/configuration/secrets_manager.html
+For more information about DuckDB Secrets visit the [Secrets Manager](https://duckdb.org/docs/configuration/secrets_manager.html) guide.
 
 ## Creating a secret with `CONFIG` provider
 

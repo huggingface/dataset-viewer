@@ -33,7 +33,7 @@ FROM 'hf://datasets/wanghaofan/pokemon-wiki-captions/data/*.parquet' LIMIT 3;
 
 ```
 
-Now, let's try to combine these two datasets joining by the `name` column:
+Now, let's try to combine these two datasets by joining on the `name` column:
 
 ```bash
 SELECT a.image_url
@@ -93,7 +93,7 @@ You can also export to [CSV](https://duckdb.org/docs/guides/file_formats/csv_exp
 
 </Tip>
 
-Finally, let's push the resulting dataset to the Hub using the `datasets` library in Python:
+Finally, let's push the resulting dataset to the Hub using the [Datasets](https://huggingface.co/docs/datasets/index) library in Python:
 
 ```python
 from datasets import load_dataset

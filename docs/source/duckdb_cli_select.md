@@ -1,10 +1,10 @@
-# Query public, gated and private datasets
+# Query datasets
 
 Querying datasets is a fundamental step in data analysis. Here, we'll guide you through querying datasets using various methods.
 
-There are [different ways](https://duckdb.org/docs/data/parquet/overview.html) to select your data.
+There are several [different ways](https://duckdb.org/docs/data/parquet/overview.html) to select your data.
 
-Using `FROM` syntax:
+Using the `FROM` syntax:
 ```bash
 FROM 'hf://datasets/jamescalam/world-cities-geo/train.jsonl' SELECT city, country, region LIMIT 3;
 
@@ -19,7 +19,7 @@ FROM 'hf://datasets/jamescalam/world-cities-geo/train.jsonl' SELECT city, countr
 
 ```
 
-Using `SELECT` `FROM` sytax:
+Using the `SELECT` and `FROM` syntax:
 
 ```bash
 SELECT city, country, region FROM 'hf://datasets/jamescalam/world-cities-geo/train.jsonl' USING SAMPLE 3;
@@ -49,7 +49,7 @@ SELECT COUNT(*) FROM 'hf://datasets/jamescalam/world-cities-geo/*.jsonl';
 
 ```
 
-You can also query Parquet files using the read_parquet and parquet_scan functions. Let's explore these functions using the auto-converted Parquet files for the same dataset.
+You can also query Parquet files using the read_parquet and parquet_scan functions. Let's explore these functions using the auto-converted Parquet files from the same dataset.
 
 Select using [read_parquet](https://duckdb.org/docs/guides/file_formats/query_parquet.html) function:
 
@@ -71,7 +71,7 @@ SELECT * FROM parquet_scan('hf://datasets/jamescalam/world-cities-geo@~parquet/d
 
 ## Get metadata and schema
 
-The [parquet_metadata]((https://duckdb.org/docs/data/parquet/metadata.html)) function can be used to query the metadata contained within a Parquet file.
+The [parquet_metadata](https://duckdb.org/docs/data/parquet/metadata.html) function can be used to query the metadata contained within a Parquet file.
 
 ```bash
 SELECT * FROM parquet_metadata('hf://datasets/jamescalam/world-cities-geo@~parquet/default/train/0000.parquet');
@@ -109,7 +109,7 @@ DESCRIBE SELECT * FROM 'hf://datasets/jamescalam/world-cities-geo@~parquet/defau
 
 ```
 
-Fetch the internal schema (Exclusing file name):
+Fetch the internal schema (excluding the file name):
 
 ```bash
 SELECT * EXCLUDE (file_name) FROM parquet_schema('hf://datasets/jamescalam/world-cities-geo@~parquet/default/train/0000.parquet');
@@ -134,7 +134,7 @@ SELECT * EXCLUDE (file_name) FROM parquet_schema('hf://datasets/jamescalam/world
 
 ## Get statistics
 
-The `SUMMARIZE` command can be used to get various aggregates over a query (min, max, approx_unique, avg, std, q25, q50, q75, count). It returns these along with the column name, column type, and the percentage of NULL values.
+The `SUMMARIZE` command can be used to get various aggregates over a query (min, max, approx_unique, avg, std, q25, q50, q75, count). It returns these statistics along with the column name, column type, and the percentage of NULL values.
 
 ```bash
 SUMMARIZE SELECT latitude, longitude FROM 'hf://datasets/jamescalam/world-cities-geo@~parquet/default/train/0000.parquet';

@@ -1,12 +1,12 @@
-# Vector Similarity Search
+# Perform vector similarity search
 
-In the latest release of DuckDB (version 0.10.0), a cool feature called Fixed-Length Arrays was added. This lets you use vector embeddings in DuckDB tables, making your data analysis even more powerful.
+The Fixed-Length Arrays feature was added in DuckDB version 0.10.0. This lets you use vector embeddings in DuckDB tables, making your data analysis even more powerful.
 
 Additionally, the array_cosine_similarity function was introduced. This function measures the cosine of the angle between two vectors, indicating their similarity. A value of 1 means they’re perfectly aligned, 0 means they’re perpendicular, and -1 means they’re completely opposite.
 
 Let's explore how to use this function for similarity searches. In this section, we’ll show you how to perform similarity searches using DuckDB.
 
-We will use the dataset [asoria/awesome-chatgpt-prompts-embeddings](https://huggingface.co/datasets/asoria/awesome-chatgpt-prompts-embeddings).
+We will use the [asoria/awesome-chatgpt-prompts-embeddings](https://huggingface.co/datasets/asoria/awesome-chatgpt-prompts-embeddings) dataset.
 
 First, let's preview a few records from the dataset:
 
