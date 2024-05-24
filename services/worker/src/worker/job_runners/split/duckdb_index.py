@@ -129,7 +129,7 @@ def compute_audio_duration_column(
     return target_df
 
 
-def compute_image_width_length_column(
+def compute_image_width_height_column(
     parquet_directory: Path,
     column_name: str,
     target_df: Optional[pl.DataFrame],
