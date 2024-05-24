@@ -40,7 +40,7 @@ from worker.job_runners.split.duckdb_index import (
 )
 from worker.resources import LibrariesResource
 
-from ...fixtures.descriptive_statistics_dataset import all_nan_column
+from ...fixtures.statistics_dataset import all_nan_column
 from ...fixtures.hub import HubDatasetTest
 from ..utils import REVISION_NAME
 

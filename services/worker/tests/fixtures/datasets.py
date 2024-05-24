@@ -26,7 +26,7 @@ from datasets import (
 )
 from datasets.features.features import FeatureType
 
-from .descriptive_statistics_dataset import (
+from .statistics_dataset import (
     all_nan_column,
     audio_dataset,
     image_dataset,
