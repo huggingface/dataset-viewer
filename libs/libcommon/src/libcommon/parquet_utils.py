@@ -4,6 +4,7 @@ import os
 from collections.abc import Iterable
 from dataclasses import dataclass, field
 from functools import lru_cache
+from pathlib import Path
 from typing import Literal, Optional, TypedDict, Union
 
 import numpy as np
@@ -128,6 +129,14 @@ def get_num_parquet_files_to_process(
         if num_bytes > max_size_bytes:
             break
     return num_parquet_files_to_process, num_bytes, num_rows
+
+
+def is_list_pa_type(parquet_file_path: Path, feature_name: str) -> bool:
+    # Check if (Sequence) feature is internally a List, because it can also be Struct, see
+    # https://huggingface.co/docs/datasets/v2.18.0/en/package_reference/main_classes#datasets.Features
+    feature_arrow_type = pq.read_schema(parquet_file_path).field(feature_name).type
+    is_list: bool = pa.types.is_list(feature_arrow_type) or pa.types.is_large_list(feature_arrow_type)
+    return is_list
 
 
 @dataclass

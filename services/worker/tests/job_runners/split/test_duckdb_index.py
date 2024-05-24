@@ -2,12 +2,12 @@
 # Copyright 2023 The HuggingFace Authors.
 
 import os
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from contextlib import ExitStack
 from dataclasses import replace
 from http import HTTPStatus
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 from unittest.mock import patch
 
 import datasets.config
@@ -17,8 +17,9 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 import pytest
 import requests
-from datasets import Features, Image, Sequence, Translation, TranslationVariableLanguages, Value
+from datasets import Audio, Dataset, Features, Image, Sequence, Translation, TranslationVariableLanguages, Value
 from datasets.packaged_modules.csv.csv import CsvConfig
+from datasets.table import embed_table_storage
 from libcommon.constants import HF_FTS_SCORE, ROW_IDX_COLUMN
 from libcommon.dtos import Priority
 from libcommon.resources import CacheMongoResource, QueueMongoResource
@@ -31,7 +32,8 @@ from worker.job_runners.config.parquet_and_info import ConfigParquetAndInfoJobRu
 from worker.job_runners.config.parquet_metadata import ConfigParquetMetadataJobRunner
 from worker.job_runners.split.duckdb_index import (
     CREATE_INDEX_COMMAND,
-    CREATE_TABLE_COMMANDS,
+    CREATE_INDEX_ID_COLUMN_COMMANDS,
+    CREATE_TABLE_COMMAND,
     SplitDuckDbIndexJobRunner,
     get_delete_operations,
     get_indexable_columns,
@@ -39,6 +41,7 @@ from worker.job_runners.split.duckdb_index import (
 from worker.resources import LibrariesResource
 
 from ...fixtures.hub import HubDatasetTest
+from ...fixtures.statistics_dataset import all_nan_column
 from ..utils import REVISION_NAME
 
 GetJobRunner = Callable[[str, str, str, AppConfig], SplitDuckDbIndexJobRunner]
@@ -216,6 +219,32 @@ def get_parquet_metadata_job_runner(
     return _get_job_runner
 
 
+@pytest.fixture
+def expected_data(datasets: Mapping[str, Dataset]) -> dict[str, list[Any]]:
+    ds = datasets["duckdb_index"]
+    ds = Dataset(embed_table_storage(ds.data))
+    expected: dict[str, list[Any]] = ds[:]
+    for feature_name, feature in ds.features.items():
+        is_string = isinstance(feature, Value) and feature.dtype == "string"
+        is_list = (isinstance(feature, list) or isinstance(feature, Sequence)) and feature_name != "sequence_struct"
+        if is_string or is_list:
+            expected[f"{feature_name}.length"] = [len(row) if row is not None else None for row in ds[feature_name]]
+        elif isinstance(feature, Audio):
+            if "all_nan" in feature_name:
+                expected[f"{feature_name}.duration"] = all_nan_column(5)
+            else:
+                expected[f"{feature_name}.duration"] = [1.0, 2.0, 3.0, 4.0, None]
+        elif isinstance(feature, Image):
+            if "all_nan" in feature_name:
+                expected[f"{feature_name}.width"] = all_nan_column(5)
+                expected[f"{feature_name}.height"] = all_nan_column(5)
+            else:
+                expected[f"{feature_name}.width"] = [640, 1440, 520, 1240, None]
+                expected[f"{feature_name}.height"] = [480, 1058, 400, 930, None]
+    expected["__hf_index_id"] = list(range(ds.num_rows))
+    return expected
+
+
 @pytest.mark.parametrize(
     "hub_dataset_name,max_split_size_bytes,expected_rows_count,expected_has_fts,expected_partial,expected_error_code",
     [
@@ -240,6 +269,7 @@ def test_compute(
     expected_rows_count: int,
     expected_partial: bool,
     expected_error_code: str,
+    expected_data: dict[str, list[Any]],
 ) -> None:
     hub_datasets = {
         "duckdb_index": hub_responses_duckdb_index,
@@ -375,6 +405,17 @@ def test_compute(
         assert isinstance(record_count, list)
         assert record_count[0] == (expected_rows_count,)
 
+        columns = [row[0] for row in con.sql("SELECT column_name FROM (DESCRIBE data);").fetchall()]
+        if not multiple_parquet_files:
+            expected_columns = expected_data.keys()
+            assert sorted(columns) == sorted(expected_columns)
+            data = con.sql("SELECT * FROM data;").fetchall()
+            data = {column_name: list(values) for column_name, values in zip(columns, zip(*data))}  # type: ignore
+            assert data == expected_data  # type: ignore
+        else:
+            expected_columns = list(config_parquet_and_info["dataset_info"]["features"]) + ["__hf_index_id"]  # type: ignore
+            assert sorted(columns) == sorted(expected_columns)
+
         if has_fts:
             # perform a search to validate fts feature
             query = "Lord Vader"
@@ -508,7 +549,8 @@ FTS_COMMAND = (
 )
 def test_index_command(df: pd.DataFrame, query: str, expected_ids: list[int]) -> None:
     columns = ",".join('"' + str(column) + '"' for column in df.columns)
-    duckdb.sql(CREATE_TABLE_COMMANDS.format(columns=columns, source="df"))
+    duckdb.sql(CREATE_TABLE_COMMAND.format(columns=columns, source="df"))
+    duckdb.sql(CREATE_INDEX_ID_COLUMN_COMMANDS)
     duckdb.sql(CREATE_INDEX_COMMAND.format(columns=columns))
     result = duckdb.execute(FTS_COMMAND, parameters=[query]).df()
     assert list(result.__hf_index_id) == expected_ids
@@ -521,7 +563,8 @@ def test_table_column_hf_index_id_is_monotonic_increasing(tmp_path: Path) -> Non
     db_path = str(tmp_path / "index.duckdb")
     column_names = ",".join(f'"{column}"' for column in pa_table.column_names)
     with duckdb.connect(db_path) as con:
-        con.sql(CREATE_TABLE_COMMANDS.format(columns=column_names, source=parquet_path))
+        con.sql(CREATE_TABLE_COMMAND.format(columns=column_names, source=parquet_path))
+        con.sql(CREATE_INDEX_ID_COLUMN_COMMANDS)
     with duckdb.connect(db_path) as con:
         df = con.sql("SELECT * FROM data").to_df()
     assert df[ROW_IDX_COLUMN].is_monotonic_increasing
