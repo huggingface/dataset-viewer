@@ -380,7 +380,7 @@ def test_bool_statistics(
     data = datasets["descriptive_statistics"].to_pandas()
     expected = count_expected_statistics_for_bool_column(data[column_name])
     computed = BoolColumn.compute_statistics(
-        data=pl.from_dict(data),
+        data=pl.from_pandas(data),
         column_name=column_name,
         n_samples=len(data[column_name]),
     )

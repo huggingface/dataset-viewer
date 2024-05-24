@@ -40,8 +40,8 @@ from worker.job_runners.split.duckdb_index import (
 )
 from worker.resources import LibrariesResource
 
-from ...fixtures.statistics_dataset import all_nan_column
 from ...fixtures.hub import HubDatasetTest
+from ...fixtures.statistics_dataset import all_nan_column
 from ..utils import REVISION_NAME
 
 GetJobRunner = Callable[[str, str, str, AppConfig], SplitDuckDbIndexJobRunner]
