@@ -161,7 +161,7 @@ def compute_transformed_data(parquet_directory: Path, features: dict[str, Any]) 
                 transformed_df = compute_audio_duration_column(parquet_directory, feature_name, transformed_df)
 
             elif feature.get("_type") == "Image":
-                transformed_df = compute_image_width_length_column(parquet_directory, feature_name, transformed_df)
+                transformed_df = compute_image_width_height_column(parquet_directory, feature_name, transformed_df)
 
     return transformed_df
 
