@@ -240,6 +240,17 @@ toml = ["tomli (>=1.1.0)"]
 yaml = ["PyYAML"]
 
 [[package]]
+name = "boolean-py"
+version = "4.0"
+description = "Define boolean algebras, create and parse boolean expressions and create custom boolean DSL."
+optional = false
+python-versions = "*"
+files = [
+    {file = "boolean.py-4.0-py3-none-any.whl", hash = "sha256:2876f2051d7d6394a531d82dc6eb407faa0b01a0a0b3083817ccd7323b8d96bd"},
+    {file = "boolean.py-4.0.tar.gz", hash = "sha256:17b9a181630e43dde1851d42bef546d616d5d9b4480357514597e78b203d06e4"},
+]
+
+[[package]]
 name = "botocore"
 version = "1.34.106"
 description = "Low-level, data-driven core of boto 3."
@@ -517,20 +528,25 @@ test-randomorder = ["pytest-randomly"]
 
 [[package]]
 name = "cyclonedx-python-lib"
-version = "2.7.1"
-description = "A library for producing CycloneDX SBOM (Software Bill of Materials) files."
+version = "7.4.0"
+description = "Python library for CycloneDX"
 optional = false
-python-versions = ">=3.6,<4.0"
+python-versions = "<4.0,>=3.8"
 files = [
-    {file = "cyclonedx-python-lib-2.7.1.tar.gz", hash = "sha256:493bf2f30e26c48f305f745ed8580ce10d05a8d68d62a598fe95f05a0d9007dc"},
-    {file = "cyclonedx_python_lib-2.7.1-py3-none-any.whl", hash = "sha256:fabc4c8baf722faeea01c3bbca83730e3489dfb37d85c6036baa67a9a7519d40"},
+    {file = "cyclonedx_python_lib-7.4.0-py3-none-any.whl", hash = "sha256:fc423e7f46d772e5ded29a48cb0743233e692e5853c49b829efc0f59014efde1"},
+    {file = "cyclonedx_python_lib-7.4.0.tar.gz", hash = "sha256:09b10736a7f440262578fa40f470b448de1ebf3c7a71e2ff0a4af0781d3a3b42"},
 ]
 
 [package.dependencies]
-packageurl-python = ">=0.9"
-setuptools = ">=47.0.0"
+license-expression = ">=30,<31"
+packageurl-python = ">=0.11,<2"
+py-serializable = ">=1.0.3,<2"
 sortedcontainers = ">=2.4.0,<3.0.0"
-toml = ">=0.10.0,<0.11.0"
+
+[package.extras]
+json-validation = ["jsonschema[format] (>=4.18,<5.0)"]
+validation = ["jsonschema[format] (>=4.18,<5.0)", "lxml (>=4,<6)"]
+xml-validation = ["lxml (>=4,<6)"]
 
 [[package]]
 name = "datasets"
@@ -592,6 +608,17 @@ python-versions = ">=3.5"
 files = [
     {file = "decorator-5.1.1-py3-none-any.whl", hash = "sha256:b8c3f85900b9dc423225913c5aace94729fe1fa9763b38939a95226f02d37186"},
     {file = "decorator-5.1.1.tar.gz", hash = "sha256:637996211036b6385ef91435e4fae22989472f9d571faba8927ba8253acbc330"},
+]
+
+[[package]]
+name = "defusedxml"
+version = "0.7.1"
+description = "XML bomb protection for Python stdlib modules"
+optional = false
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
+files = [
+    {file = "defusedxml-0.7.1-py2.py3-none-any.whl", hash = "sha256:a352e7e428770286cc899e2542b6cdaedb2b4953ff269a210103ec58f6198a61"},
+    {file = "defusedxml-0.7.1.tar.gz", hash = "sha256:1bb3032db185915b62d7c6209c5a8792be6a32ab2fedacc84e01b52c51aa3e69"},
 ]
 
 [[package]]
@@ -1089,6 +1116,24 @@ typing-extensions = ">=4.1.1"
 display = ["matplotlib (>=3.3.0)"]
 docs = ["ipython (>=7.0)", "matplotlib (>=3.3.0)", "mir-eval (>=0.5)", "numba (>=0.51)", "numpydoc", "presets", "sphinx (!=1.3.1,<6)", "sphinx-gallery (>=0.7)", "sphinx-multiversion (>=0.2.3)", "sphinx-rtd-theme (==1.*)", "sphinxcontrib-svg2pdfconverter"]
 tests = ["matplotlib (>=3.3.0)", "packaging (>=20.0)", "pytest", "pytest-cov", "pytest-mpl", "resampy (>=0.2.2)", "samplerate", "types-decorator"]
+
+[[package]]
+name = "license-expression"
+version = "30.3.0"
+description = "license-expression is a comprehensive utility library to parse, compare, simplify and normalize license expressions (such as SPDX license expressions) using boolean logic."
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "license-expression-30.3.0.tar.gz", hash = "sha256:1295406f736b4f395ff069aec1cebfad53c0fcb3cf57df0f5ec58fc7b905aea5"},
+    {file = "license_expression-30.3.0-py3-none-any.whl", hash = "sha256:ae0ba9a829d6909c785dc2f0131f13d10d68318e4a5f28af5ef152d6b52f9b41"},
+]
+
+[package.dependencies]
+"boolean.py" = ">=4.0"
+
+[package.extras]
+docs = ["Sphinx (>=5.0.2)", "doc8 (>=0.11.2)", "sphinx-autobuild", "sphinx-copybutton", "sphinx-reredirects (>=0.1.2)", "sphinx-rtd-dark-mode (>=1.3.0)", "sphinx-rtd-theme (>=1.0.0)", "sphinxcontrib-apidoc (>=0.4.0)"]
+testing = ["black", "isort", "pytest (>=6,!=7.0.0)", "pytest-xdist (>=2)", "twine"]
 
 [[package]]
 name = "llvmlite"
@@ -1812,18 +1857,18 @@ pip = "*"
 
 [[package]]
 name = "pip-audit"
-version = "2.5.6"
+version = "2.7.3"
 description = "A tool for scanning Python environments for known vulnerabilities"
 optional = false
-python-versions = ">=3.7"
+python-versions = ">=3.8"
 files = [
-    {file = "pip_audit-2.5.6-py3-none-any.whl", hash = "sha256:7673bea690470024f1aec9be26055334cb987a530c6a431a31c347f66064e475"},
-    {file = "pip_audit-2.5.6.tar.gz", hash = "sha256:04fc0ad1727674181bda243a457af5a73038ee691dd9b8afc71f7e9292ce3912"},
+    {file = "pip_audit-2.7.3-py3-none-any.whl", hash = "sha256:46a11faee3323f76adf7987de8171daeb660e8f57d8088cc27fb1c1e5c7747b0"},
+    {file = "pip_audit-2.7.3.tar.gz", hash = "sha256:08891bbf179bffe478521f150818112bae998424f58bf9285c0078965aef38bc"},
 ]
 
 [package.dependencies]
-CacheControl = {version = ">=0.12.0", extras = ["filecache"]}
-cyclonedx-python-lib = ">=2.0,<2.5.0 || >2.5.0,<3.0"
+CacheControl = {version = ">=0.13.0", extras = ["filecache"]}
+cyclonedx-python-lib = ">=5,<8"
 html5lib = ">=1.1"
 packaging = ">=23.0.0"
 pip-api = ">=0.0.28"
@@ -1831,13 +1876,12 @@ pip-requirements-parser = ">=32.0.0"
 requests = ">=2.31.0"
 rich = ">=12.4"
 toml = ">=0.10"
-urllib3 = ">=1.26,<2.0"
 
 [package.extras]
 dev = ["build", "bump (>=1.3.2)", "pip-audit[doc,lint,test]"]
 doc = ["pdoc"]
-lint = ["black (>=22.3.0)", "interrogate", "isort", "mypy", "ruff (<0.0.270)", "types-html5lib", "types-requests", "types-toml"]
-test = ["coverage[toml]", "pretend", "pytest", "pytest-cov"]
+lint = ["interrogate", "mypy", "ruff (<0.4.3)", "setuptools", "types-html5lib", "types-requests", "types-toml"]
+test = ["coverage[toml] (>=7.0,!=7.3.3,<8.0)", "pretend", "pytest", "pytest-cov"]
 
 [[package]]
 name = "pip-requirements-parser"
@@ -1933,6 +1977,20 @@ files = [
 
 [package.extras]
 test = ["enum34", "ipaddress", "mock", "pywin32", "wmi"]
+
+[[package]]
+name = "py-serializable"
+version = "1.0.3"
+description = "Library for serializing and deserializing Python Objects to and from JSON and XML."
+optional = false
+python-versions = "<4.0,>=3.8"
+files = [
+    {file = "py_serializable-1.0.3-py3-none-any.whl", hash = "sha256:afba815f465b9fe7ab1c1a56d1aa8880c8a9e67a6e28b7ed62d4696fa369caf8"},
+    {file = "py_serializable-1.0.3.tar.gz", hash = "sha256:da3cb4b1f3cc5cc5ebecdd3dadbabd5f65d764357366fa64ee9cbaf0d4b70dcf"},
+]
+
+[package.dependencies]
+defusedxml = ">=0.7.1,<0.8.0"
 
 [[package]]
 name = "pyarrow"
@@ -2418,22 +2476,6 @@ numpy = ">=1.21.6,<1.28.0"
 dev = ["click", "cython-lint (>=0.12.2)", "doit (>=0.36.0)", "mypy", "pycodestyle", "pydevtool", "rich-click", "ruff", "types-psutil", "typing_extensions"]
 doc = ["jupytext", "matplotlib (>2)", "myst-nb", "numpydoc", "pooch", "pydata-sphinx-theme (==0.9.0)", "sphinx (!=4.1.0)", "sphinx-design (>=0.2.0)"]
 test = ["asv", "gmpy2", "mpmath", "pooch", "pytest", "pytest-cov", "pytest-timeout", "pytest-xdist", "scikit-umfpack", "threadpoolctl"]
-
-[[package]]
-name = "setuptools"
-version = "67.8.0"
-description = "Easily download, build, install, upgrade, and uninstall Python packages"
-optional = false
-python-versions = ">=3.7"
-files = [
-    {file = "setuptools-67.8.0-py3-none-any.whl", hash = "sha256:5df61bf30bb10c6f756eb19e7c9f3b473051f48db77fddbe06ff2ca307df9a6f"},
-    {file = "setuptools-67.8.0.tar.gz", hash = "sha256:62642358adc77ffa87233bc4d2354c4b2682d214048f500964dbe760ccedf102"},
-]
-
-[package.extras]
-docs = ["furo", "jaraco.packaging (>=9)", "jaraco.tidelift (>=1.4)", "pygments-github-lexers (==0.0.5)", "rst.linker (>=1.9)", "sphinx (>=3.5)", "sphinx-favicon", "sphinx-hoverxref (<2)", "sphinx-inline-tabs", "sphinx-lint", "sphinx-notfound-page (==0.8.3)", "sphinx-reredirects", "sphinxcontrib-towncrier"]
-testing = ["build[virtualenv]", "filelock (>=3.4.0)", "flake8-2020", "ini2toml[lite] (>=0.9)", "jaraco.envs (>=2.2)", "jaraco.path (>=3.2.0)", "pip (>=19.1)", "pip-run (>=8.8)", "pytest (>=6)", "pytest-black (>=0.3.7)", "pytest-checkdocs (>=2.4)", "pytest-cov", "pytest-enabler (>=1.3)", "pytest-mypy (>=0.9.1)", "pytest-perf", "pytest-ruff", "pytest-timeout", "pytest-xdist", "tomli-w (>=1.0.0)", "virtualenv (>=13.0.0)", "wheel"]
-testing-integration = ["build[virtualenv]", "filelock (>=3.4.0)", "jaraco.envs (>=2.2)", "jaraco.path (>=3.2.0)", "pytest", "pytest-enabler", "pytest-xdist", "tomli", "virtualenv (>=13.0.0)", "wheel"]
 
 [[package]]
 name = "six"
@@ -2996,4 +3038,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "3.9.18"
-content-hash = "7446a1f2177795bc1e79c10cc34a2a2c35a2028eaa0237cded6d18c2a5dcdd04"
+content-hash = "d7b80b843a88ef834ba0ee44043d1d27c7d0c54a9ae63b5402765be02b875f17"
