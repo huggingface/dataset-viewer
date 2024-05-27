@@ -178,21 +178,6 @@ mongodbMigration:
     limits:
       cpu: 1
 
-# --- jobs (post-install/upgrade hooks) ---
-
-deleteDuckdbIndexes:
-  nodeSelector:
-    role-datasets-server: "true"
-  tolerations:
-    - key: "huggingface.co/datasets-server"
-      operator: "Exists"
-      effect: "NoSchedule"
-  resources:
-    requests:
-      cpu: 1
-    limits:
-      cpu: 1
-
 # --- cron jobs  ---
 backfill:
   enabled: true
@@ -210,10 +195,10 @@ backfill:
   resources:
     requests:
       cpu: 1
-      memory: "10Gi"
+      memory: "16Gi"
     limits:
       cpu: 2
-      memory: "10Gi"
+      memory: "16Gi"
 
 backfillRetryableErrors:
   enabled: true
@@ -231,7 +216,7 @@ backfillRetryableErrors:
   resources:
     requests:
       cpu: 1
-      memory: "1Gi"
+      memory: "8Gi"
     limits:
       cpu: 2
       memory: "8Gi"
