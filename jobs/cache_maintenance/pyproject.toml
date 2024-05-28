@@ -17,6 +17,7 @@ pip-audit = "^2.7.3"
 pytest = "^7.2.1"
 ruff = "^0"
 types-requests = "^2.31.0.3"
+pytest-memray = "^1.6.0"
 
 [build-system]
 build-backend = "poetry.core.masonry.api"

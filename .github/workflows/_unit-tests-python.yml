@@ -59,4 +59,4 @@ jobs:
           S3_SECRET_ACCESS_KEY: ${{ secrets.S3_SECRET_ACCESS_KEY }}
           CLOUDFRONT_KEY_PAIR_ID: "K3814DK2QUJ71H"
           CLOUDFRONT_PRIVATE_KEY: ${{ secrets.CLOUDFRONT_PRIVATE_KEY }}
-        run: poetry run python -m pytest -s
+        run: poetry run python -m pytest --memray -s

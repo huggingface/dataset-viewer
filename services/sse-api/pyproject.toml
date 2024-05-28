@@ -27,6 +27,7 @@ pytest-asyncio = "^0.20.3"
 ruff = "^0"
 types-jsonschema = "^4.17.0.4"
 types-psutil = "^5.9.5"
+pytest-memray = "^1.6.0"
 
 [build-system]
 build-backend = "poetry.core.masonry.api"
