@@ -7,7 +7,7 @@ license = "Apache-2.0"
 
 [tool.poetry.dependencies]
 python = "3.9.18"
-duckdb = "^0.10.0"
+duckdb = "^0.10.3"
 environs = "^9.5.0"
 jsonschema = "^4.17.0"
 libapi = {path = "../../libs/libapi", develop = true}
