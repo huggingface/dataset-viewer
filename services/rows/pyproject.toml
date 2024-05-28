@@ -22,10 +22,10 @@ mypy = "^1.10.0"
 pandas-stubs = "^1.5.3"
 pip-audit = "^2.7.3"
 pytest = "^7.2.1"
+pytest-memray = "^1.6.0"
 ruff = "^0"
 types-jsonschema = "^4.17.0.4"
 types-psutil = "^5.9.5"
-pytest-memray = "^1.6.0"
 
 [build-system]
 build-backend = "poetry.core.masonry.api"
