@@ -79,7 +79,7 @@ images:
 
 common:
   # Comma-separated list of blocked datasets. No jobs will be processed for those datasets.
-  blockedDatasets: "open-llm-leaderboard/*,lunaluan/*,atom-in-the-universe/*,cot-leaderboard/cot-eval-traces,mitermix/yt-links,mcding-org/*"
+  blockedDatasets: "huggingface-leaderboard/*,open-llm-leaderboard/*,lunaluan/*,atom-in-the-universe/*,cot-leaderboard/cot-eval-traces,mitermix/yt-links,mcding-org/*"
   # Comma-separated list of the datasets for which we support dataset scripts.
   # Unix shell-style wildcards also work in the dataset name for namespaced datasets, for example `some_namespace/*` to refer to all the datasets in the `some_namespace` namespace.
   # The keyword `{{ALL_DATASETS_WITH_NO_NAMESPACE}}` refers to all the datasets without namespace.
