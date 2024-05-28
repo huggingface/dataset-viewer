@@ -110,20 +110,21 @@ def backfill_datasets(
 
     statistics = BackfillStatistics(num_total_datasets=len(dataset_names))
 
+    def _backfill_dataset(dataset: str) -> BackfillStatistics:
+        # all the parameters are common, but the dataset is different
+        return try_backfill_dataset(dataset, hf_endpoint, blocked_datasets, hf_token, storage_clients)
+
     with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_BACKFILL_WORKERS) as executor:
-        futures_to_dataset = {
-            executor.submit(
-                try_backfill_dataset, dataset, hf_endpoint, blocked_datasets, hf_token, storage_clients
-            ): dataset
-            for dataset in dataset_names
-        }
+        def get_futures():
+            for dataset in dataset_names:
+                yield executor.submit(_backfill_dataset, dataset)
+
         # Start the load operations and gives stats on the progress
-        for future in concurrent.futures.as_completed(futures_to_dataset):
-            dataset = futures_to_dataset[future]
+        for future in concurrent.futures.as_completed(get_futures()):
             try:
                 dataset_statistics = future.result()
             except Exception as e:
-                logging.warning(f"{dataset} generated an exception: {e}")
+                logging.warning(f"Unexpected error: {e}")
                 dataset_statistics = BackfillStatistics(
                     num_total_datasets=1, num_analyzed_datasets=1, num_error_datasets=1
                 )
