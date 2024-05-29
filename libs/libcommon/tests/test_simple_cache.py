@@ -664,14 +664,13 @@ def test_stress_get_cache_reports(num_entries: int) -> None:
     kind = CACHE_KIND
     content = {"key": "value"}
     http_status = HTTPStatus.OK
-    splits = [f"split{i}" for i in range(num_entries)]
-    for split in splits:
+    for i in range(num_entries):
         upsert_response(
             kind=kind,
             dataset="dataset",
             dataset_git_revision=REVISION_NAME,
             config="config",
-            split=split,
+            split=f"split{i}",
             content=content,
             http_status=http_status,
         )

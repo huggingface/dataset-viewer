@@ -24,9 +24,9 @@ watch:
 test:
 	$(MAKE) down
 	$(MAKE) up
-	$(POETRY) run python -m pytest -vv -x ${ADDOPTS} $(TEST_PATH)
+	$(POETRY) run python -m pytest --memray -vv -x ${ADDOPTS} $(TEST_PATH)
 	rm -rf /tmp/api.prometheus
 	mkdir /tmp/api.prometheus
-	PROMETHEUS_MULTIPROC_DIR=/tmp/api.prometheus $(POETRY) run python -m pytest -vv -x -k "test_metrics" ${ADDOPTS} $(TEST_PATH)
+	PROMETHEUS_MULTIPROC_DIR=/tmp/api.prometheus $(POETRY) run python -m pytest --memray -vv -x -k "test_metrics" ${ADDOPTS} $(TEST_PATH)
 	rm -rf /tmp/api.prometheus
 	$(MAKE) down
