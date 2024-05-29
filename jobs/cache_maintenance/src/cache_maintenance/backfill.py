@@ -3,6 +3,7 @@
 
 import concurrent.futures
 import logging
+from collections.abc import Iterator
 from dataclasses import dataclass, field
 from typing import Optional
 
@@ -116,7 +117,7 @@ def backfill_datasets(
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_BACKFILL_WORKERS) as executor:
 
-        def get_futures():
+        def get_futures() -> Iterator[concurrent.futures.Future[BackfillStatistics]]:
             for dataset in dataset_names:
                 yield executor.submit(_backfill_dataset, dataset)
 
