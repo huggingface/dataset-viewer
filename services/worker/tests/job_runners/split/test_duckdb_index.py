@@ -395,9 +395,9 @@ def test_compute(
         with open(file_name, "wb") as f:
             f.write(duckdb_file.content)
 
-        duckdb.execute("INSTALL 'fts';")
-        duckdb.execute("LOAD 'fts';")
         con = duckdb.connect(file_name)
+        con.execute("INSTALL 'fts';")
+        con.execute("LOAD 'fts';")
 
         # validate number of inserted records
         record_count = con.sql("SELECT COUNT(*) FROM data;").fetchall()
@@ -549,10 +549,11 @@ FTS_COMMAND = (
 )
 def test_index_command(df: pd.DataFrame, query: str, expected_ids: list[int]) -> None:
     columns = ",".join('"' + str(column) + '"' for column in df.columns)
-    duckdb.sql(CREATE_TABLE_COMMAND.format(columns=columns, source="df"))
-    duckdb.sql(CREATE_INDEX_ID_COLUMN_COMMANDS)
-    duckdb.sql(CREATE_INDEX_COMMAND.format(columns=columns))
-    result = duckdb.execute(FTS_COMMAND, parameters=[query]).df()
+    con = duckdb.connect()
+    con.sql(CREATE_TABLE_COMMAND.format(columns=columns, source="df"))
+    con.sql(CREATE_INDEX_ID_COLUMN_COMMANDS)
+    con.sql(CREATE_INDEX_COMMAND.format(columns=columns))
+    result = con.execute(FTS_COMMAND, parameters=[query]).df()
     assert list(result.__hf_index_id) == expected_ids
 
 

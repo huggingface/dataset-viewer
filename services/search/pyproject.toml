@@ -7,7 +7,7 @@ license = "Apache-2.0"
 
 [tool.poetry.dependencies]
 python = "3.9.18"
-duckdb = "^0.10.0"
+duckdb = "^0.10.3"
 environs = "^9.5.0"
 jsonschema = "^4.17.0"
 libapi = {path = "../../libs/libapi", develop = true}
@@ -17,7 +17,7 @@ watchdog = { extras = ["watchmedo"], version = "^2.2.1" }
 
 [tool.poetry.group.dev.dependencies]
 bandit = "^1.7.4"
-mypy = "^1.8.0"
+mypy = "^1.10.0"
 pandas-stubs = "^1.5.3"
 pip-audit = "^2.7.3"
 pytest = "^7.2.1"
