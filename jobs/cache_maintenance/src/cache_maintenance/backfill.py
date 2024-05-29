@@ -115,11 +115,12 @@ def backfill_datasets(
         return try_backfill_dataset(dataset, hf_endpoint, blocked_datasets, hf_token, storage_clients)
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_BACKFILL_WORKERS) as executor:
+
         def get_futures():
             for dataset in dataset_names:
                 yield executor.submit(_backfill_dataset, dataset)
 
-        # Start the load operations and gives stats on the progress
+        # Start the backfill operations and gives stats on the progress
         for future in concurrent.futures.as_completed(get_futures()):
             try:
                 dataset_statistics = future.result()
