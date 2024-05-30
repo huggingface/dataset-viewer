@@ -610,8 +610,8 @@ vision = ["Pillow (>=6.2.1)"]
 [package.source]
 type = "git"
 url = "https://github.com/huggingface/datasets.git"
-reference = "08ae5373f3bbcae9d7390476f358cd5fc7d76fcd"
-resolved_reference = "08ae5373f3bbcae9d7390476f358cd5fc7d76fcd"
+reference = "0036a5ea9b10719b735084038d7d98402d1fadfe"
+resolved_reference = "0036a5ea9b10719b735084038d7d98402d1fadfe"
 
 [[package]]
 name = "decorator"
@@ -1169,7 +1169,7 @@ develop = true
 [package.dependencies]
 appdirs = "^1.4.4"
 cryptography = "^42.0.4"
-datasets = {git = "https://github.com/huggingface/datasets.git", rev = "08ae5373f3bbcae9d7390476f358cd5fc7d76fcd", extras = ["audio", "vision"]}
+datasets = {git = "https://github.com/huggingface/datasets.git", rev = "0036a5ea9b10719b735084038d7d98402d1fadfe", extras = ["audio", "vision"]}
 environs = "^9.5.0"
 fsspec = {version = "2024.3.1", extras = ["s3"]}
 huggingface-hub = {git = "https://github.com/huggingface/huggingface_hub.git", rev = "657a1bdcc0545309463e8651f62010154e9b3792", extras = ["hf-transfer"]}
