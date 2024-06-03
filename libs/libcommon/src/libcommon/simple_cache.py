@@ -9,6 +9,7 @@ from http import HTTPStatus
 from typing import Any, Generic, NamedTuple, Optional, TypedDict, TypeVar, overload
 
 import pandas as pd
+import pyarrow as pa
 from bson import CodecOptions, ObjectId
 from bson.codec_options import TypeEncoder, TypeRegistry  # type: ignore[attr-defined]
 from bson.errors import InvalidId
@@ -24,6 +25,7 @@ from mongoengine.fields import (
     StringField,
 )
 from mongoengine.queryset.queryset import QuerySet
+from pymongoarrow.api import find_arrow_all
 
 from libcommon.constants import (
     CACHE_COLLECTION_RESPONSES,
@@ -150,6 +152,18 @@ class CachedResponseDocument(Document):
         ],
     }
     objects = QuerySetManager["CachedResponseDocument"]()
+
+    @classmethod
+    def fetch_arrow_table(
+        cls, query: Optional[Mapping[str, Any]] = None, projection: Optional[Mapping[str, Any]] = None
+    ) -> pa.Table:
+        """
+        Fetch documents matching the query as an Apache Arrow Table.
+        """
+        query = query if query is not None else {}
+        collection = cls._get_collection()
+        arrow_table = find_arrow_all(collection, query, projection=projection)
+        return arrow_table
 
 
 DEFAULT_INCREASE_AMOUNT = 1
@@ -831,6 +845,28 @@ def _get_df(entries: list[CacheEntryFullMetadata]) -> pd.DataFrame:
         }
     )
     # ^ does not seem optimal at all, but I get the types right
+
+
+PA_PROJECTION = {
+    "kind": 1,
+    "dataset": 1,
+    "config": 1,
+    "split": 1,
+    "http_status": 1,
+    "error_code": 1,
+    "dataset_git_revision": 1,
+    "job_runner_version": 1,
+    "progress": 1,
+    "updated_at": 1,
+    "failed_runs": 1,
+}
+
+
+def get_cache_entries_pa_table(dataset: str, cache_kinds: Optional[list[str]] = None) -> pa.Table:
+    filters = {"dataset": dataset}
+    if cache_kinds:
+        filters["kind"] = {"$in": cache_kinds}  # type: ignore
+    return CachedResponseDocument.fetch_arrow_table(query=filters, projection=PA_PROJECTION)
 
 
 def get_cache_entries_df(dataset: str, cache_kinds: Optional[list[str]] = None) -> pd.DataFrame:

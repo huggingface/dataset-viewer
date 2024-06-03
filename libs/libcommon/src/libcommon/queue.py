@@ -13,16 +13,18 @@ from enum import IntEnum
 from itertools import groupby
 from operator import itemgetter
 from types import TracebackType
-from typing import Generic, Literal, Optional, TypedDict, TypeVar
+from typing import Any, Generic, Literal, Optional, TypedDict, TypeVar
 from uuid import uuid4
 
 import pandas as pd
+import pyarrow as pa
 import pytz
 from bson import ObjectId
 from mongoengine import Document
 from mongoengine.errors import DoesNotExist, NotUniqueError
 from mongoengine.fields import DateTimeField, EnumField, IntField, ObjectIdField, StringField
 from mongoengine.queryset.queryset import QuerySet
+from pymongoarrow.api import find_arrow_all
 
 from libcommon.constants import (
     DEFAULT_DIFFICULTY_MAX,
@@ -186,6 +188,18 @@ class JobDocument(Document):
         }
 
     objects = QuerySetManager["JobDocument"]()
+
+    @classmethod
+    def fetch_arrow_table(
+        cls, query: Optional[Mapping[str, Any]] = None, projection: Optional[Mapping[str, Any]] = None
+    ) -> pa.Table:
+        """
+        Fetch documents matching the query as an Apache Arrow Table.
+        """
+        query = query if query is not None else {}
+        collection = cls._get_collection()
+        arrow_table = find_arrow_all(collection, query, projection=projection)
+        return arrow_table
 
     def info(self) -> JobInfo:
         return JobInfo(
@@ -485,6 +499,19 @@ def release_lock(key: str) -> None:
         owner=None,
         updated_at=get_datetime(),
     )
+
+
+PA_PROJECTION = {
+    "job_id": 1,
+    "type": 1,
+    "priority": 1,
+    "status": 1,
+    "created_at": 1,
+    "revision": 1,
+    "dataset": 1,
+    "config": 1,
+    "split": 1,
+}
 
 
 class Queue:
@@ -1023,6 +1050,15 @@ class Queue:
         if job_types:
             filters["type__in"] = job_types
         return self._get_df([job.flat_info() for job in JobDocument.objects(**filters, dataset=dataset)])
+
+    def get_pending_jobs_pa_table(self, dataset: str, job_types: Optional[list[str]] = None) -> pa.Table:
+        filters = {"dataset": dataset}
+        if job_types:
+            filters["type"] = {"$in": job_types}  # type: ignore
+        return JobDocument.fetch_arrow_table(
+            query=filters,
+            projection=PA_PROJECTION,
+        )
 
     def has_pending_jobs(self, dataset: str, job_types: Optional[list[str]] = None) -> bool:
         filters = {}

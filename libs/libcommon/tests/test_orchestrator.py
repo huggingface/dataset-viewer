@@ -6,7 +6,13 @@ from http import HTTPStatus
 import pytest
 
 from libcommon.dtos import JobOutput, JobResult, Priority, Status
-from libcommon.orchestrator import AfterJobPlan, finish_job, has_pending_ancestor_jobs, remove_dataset, set_revision
+from libcommon.orchestrator import (
+    AfterJobPlan,
+    finish_job,
+    has_pending_ancestor_jobs,
+    remove_dataset,
+    set_revision,
+)
 from libcommon.processing_graph import Artifact, ProcessingGraph
 from libcommon.queue import JobDocument, Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
@@ -27,6 +33,8 @@ from .utils import (
     ARTIFACT_DE,
     ARTIFACT_DG,
     ARTIFACT_DH,
+    ARTIFACT_SA_1_1,
+    ARTIFACT_SA_1_2,
     CONFIG_NAMES_CONTENT,
     DATASET_NAME,
     DIFFICULTY,
@@ -192,6 +200,33 @@ def test_finish_job(
     assert cached_response.progress == 1.0
     assert cached_response.job_runner_version == JOB_RUNNER_VERSION
     assert cached_response.dataset_git_revision == REVISION_NAME
+
+
+def populate_queue() -> None:
+    Queue().create_jobs(
+        [
+            artifact_id_to_job_info(ARTIFACT_CA_1),
+            artifact_id_to_job_info(ARTIFACT_CA_2),
+            artifact_id_to_job_info(ARTIFACT_DH),
+            artifact_id_to_job_info(ARTIFACT_SA_1_1),
+            artifact_id_to_job_info(ARTIFACT_SA_1_2),
+        ]
+        * 10
+    )
+
+
+@pytest.mark.limit_memory("0.5 MB") # Success, it uses ~0.7 MB
+def test_get_pending_jobs_pa_table() -> None:
+    populate_queue()
+    pending_jobs_pa_table = Queue().get_pending_jobs_pa_table(dataset=DATASET_NAME)
+    assert pending_jobs_pa_table.num_rows == 50 and pending_jobs_pa_table.num_columns == 9
+
+
+@pytest.mark.limit_memory("0.5 MB") # Will fail, it uses ~0.4 MB
+def test_get_pending_jobs_df() -> None:
+    populate_queue()
+    pending_jobs_df = Queue().get_pending_jobs_df(dataset=DATASET_NAME)
+    assert pending_jobs_df.shape == (50, 9)
 
 
 @pytest.mark.parametrize(
