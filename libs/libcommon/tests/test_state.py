@@ -69,13 +69,15 @@ def populate_cache() -> tuple[list[str], list[str], list[str]]:
                 )
     return cache_kinds, configs, splits
 
-@pytest.mark.limit_memory("2 MB") # Success, it uses ~1.5 MB
+
+@pytest.mark.limit_memory("2 MB")  # Success, it uses ~1.5 MB
 def test_get_cache_entries_pa_table() -> None:
     cache_kinds, configs, splits = populate_cache()
     entries = get_cache_entries_pa_table(dataset=DATASET_NAME, cache_kinds=cache_kinds)
     assert entries.num_rows == len(cache_kinds) * len(configs) * len(splits) and entries.num_columns == 11
 
-@pytest.mark.limit_memory("2 MB") # Will fail, it uses ~2.8 MB
+
+@pytest.mark.limit_memory("2 MB")  # Will fail, it uses ~2.8 MB
 def test_get_cache_entries_df() -> None:
     cache_kinds, configs, splits = populate_cache()
     entries = get_cache_entries_df(dataset=DATASET_NAME, cache_kinds=cache_kinds)
