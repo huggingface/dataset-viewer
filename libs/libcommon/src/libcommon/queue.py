@@ -15,7 +15,7 @@ from operator import itemgetter
 from types import TracebackType
 from typing import Any, Generic, Literal, Optional, TypedDict, TypeVar
 from uuid import uuid4
-
+import bson
 import pandas as pd
 import pyarrow as pa
 import pytz
@@ -120,7 +120,7 @@ class JobQueryFilters(TypedDict, total=False):
 
 PA_SCHEMA = Schema(
     {
-        "job_id": pa.string(),
+        "_id": bson.ObjectId,
         "type": pa.string(),
         "revision": pa.string(),
         "dataset": pa.string(),
@@ -1048,7 +1048,9 @@ class Queue:
         filters = {"dataset": dataset}
         if job_types:
             filters["type"] = {"$in": job_types}  # type: ignore
-        return JobDocument.fetch_as_df(query=filters)
+        df = JobDocument.fetch_as_df(query=filters)
+        df.rename(columns={'_id': 'job_id'}, inplace=True)
+        return df
 
     def get_pending_jobs_df_old(self, dataset: str, job_types: Optional[list[str]] = None) -> pd.DataFrame:
         filters = {}
