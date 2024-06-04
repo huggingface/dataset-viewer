@@ -9,7 +9,6 @@ from http import HTTPStatus
 from typing import Any, Generic, NamedTuple, Optional, TypedDict, TypeVar, overload
 
 import pandas as pd
-import pyarrow as pa
 from bson import CodecOptions, ObjectId
 from bson.codec_options import TypeEncoder, TypeRegistry  # type: ignore[attr-defined]
 from bson.errors import InvalidId
@@ -25,7 +24,7 @@ from mongoengine.fields import (
     StringField,
 )
 from mongoengine.queryset.queryset import QuerySet
-from pymongoarrow.api import find_arrow_all
+from pymongoarrow.api import find_pandas_all
 
 from libcommon.constants import (
     CACHE_COLLECTION_RESPONSES,
@@ -154,16 +153,15 @@ class CachedResponseDocument(Document):
     objects = QuerySetManager["CachedResponseDocument"]()
 
     @classmethod
-    def fetch_arrow_table(
+    def fetch_as_df(
         cls, query: Optional[Mapping[str, Any]] = None, projection: Optional[Mapping[str, Any]] = None
-    ) -> pa.Table:
+    ) -> pd.DataFrame:
         """
-        Fetch documents matching the query as an Apache Arrow Table.
+        Fetch documents matching the query as a Pandas Dataframe.
         """
         query = query if query is not None else {}
         collection = cls._get_collection()
-        arrow_table = find_arrow_all(collection, query, projection=projection)
-        return arrow_table
+        return find_pandas_all(collection, query, projection=projection)  # type: ignore
 
 
 DEFAULT_INCREASE_AMOUNT = 1
@@ -847,7 +845,7 @@ def _get_df(entries: list[CacheEntryFullMetadata]) -> pd.DataFrame:
     # ^ does not seem optimal at all, but I get the types right
 
 
-PA_PROJECTION = {
+CACHE_ENTRIES_PROJECTION = {
     "kind": 1,
     "dataset": 1,
     "config": 1,
@@ -862,14 +860,42 @@ PA_PROJECTION = {
 }
 
 
-def get_cache_entries_pa_table(dataset: str, cache_kinds: Optional[list[str]] = None) -> pa.Table:
+def get_cache_entries_df(dataset: str, cache_kinds: Optional[list[str]] = None) -> pd.DataFrame:
     filters = {"dataset": dataset}
     if cache_kinds:
         filters["kind"] = {"$in": cache_kinds}  # type: ignore
-    return CachedResponseDocument.fetch_arrow_table(query=filters, projection=PA_PROJECTION)
+    cache_df = CachedResponseDocument.fetch_as_df(query=filters, projection=CACHE_ENTRIES_PROJECTION)
+    if cache_df.empty:
+        return pd.DataFrame(
+            columns=[
+                "kind",
+                "dataset",
+                "config",
+                "split",
+                "http_status",
+                "error_code",
+                "dataset_git_revision",
+                "job_runner_version",
+                "progress",
+                "updated_at",
+                "failed_runs",
+            ]
+        )
+
+    if "error_code" not in cache_df.columns:
+        cache_df["error_code"] = None
+    if "job_runner_version" not in cache_df.columns:
+        cache_df["job_runner_version"] = None
+    if "progress" not in cache_df.columns:
+        cache_df["progress"] = None
+    if "config" not in cache_df.columns:
+        cache_df["config"] = None
+    if "split" not in cache_df.columns:
+        cache_df["split"] = None
+    return cache_df
 
 
-def get_cache_entries_df(dataset: str, cache_kinds: Optional[list[str]] = None) -> pd.DataFrame:
+def get_cache_entries_df_old(dataset: str, cache_kinds: Optional[list[str]] = None) -> pd.DataFrame:
     filters = {}
     if cache_kinds:
         filters["kind__in"] = cache_kinds

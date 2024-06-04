@@ -17,14 +17,13 @@ from typing import Any, Generic, Literal, Optional, TypedDict, TypeVar
 from uuid import uuid4
 
 import pandas as pd
-import pyarrow as pa
+import pymongoarrow as pma
 import pytz
 from bson import ObjectId
 from mongoengine import Document
 from mongoengine.errors import DoesNotExist, NotUniqueError
 from mongoengine.fields import DateTimeField, EnumField, IntField, ObjectIdField, StringField
 from mongoengine.queryset.queryset import QuerySet
-from pymongoarrow.api import find_arrow_all
 
 from libcommon.constants import (
     DEFAULT_DIFFICULTY_MAX,
@@ -190,16 +189,15 @@ class JobDocument(Document):
     objects = QuerySetManager["JobDocument"]()
 
     @classmethod
-    def fetch_arrow_table(
+    def fetch_as_df(
         cls, query: Optional[Mapping[str, Any]] = None, projection: Optional[Mapping[str, Any]] = None
-    ) -> pa.Table:
+    ) -> pd.DataFrame:
         """
-        Fetch documents matching the query as an Apache Arrow Table.
+        Fetch documents matching the query as a Pandas Dataframe.
         """
         query = query if query is not None else {}
         collection = cls._get_collection()
-        arrow_table = find_arrow_all(collection, query, projection=projection)
-        return arrow_table
+        return pma.api.find_pandas_all(collection, query, projection=projection)  # type: ignore
 
     def info(self) -> JobInfo:
         return JobInfo(
@@ -501,8 +499,7 @@ def release_lock(key: str) -> None:
     )
 
 
-PA_PROJECTION = {
-    "job_id": 1,
+PENDING_JOBS_PROJECTION = {
     "type": 1,
     "priority": 1,
     "status": 1,
@@ -1046,19 +1043,42 @@ class Queue:
         # ^ does not seem optimal at all, but I get the types right
 
     def get_pending_jobs_df(self, dataset: str, job_types: Optional[list[str]] = None) -> pd.DataFrame:
+        filters = {"dataset": dataset}
+        if job_types:
+            filters["type"] = {"$in": job_types}  # type: ignore
+        jobs_df = JobDocument.fetch_as_df(
+            query=filters,
+            projection=PENDING_JOBS_PROJECTION,
+        )
+
+        if jobs_df.empty:
+            return pd.DataFrame(
+                columns=[
+                    "job_id",
+                    "type",
+                    "dataset",
+                    "revision",
+                    "config",
+                    "split",
+                    "priority",
+                    "status",
+                    "created_at",
+                ]
+            )
+
+        if "config" not in jobs_df.columns:
+            jobs_df["config"] = None
+        if "split" not in jobs_df.columns:
+            jobs_df["split"] = None
+
+        jobs_df.rename(columns={"_id": "job_id"}, inplace=True)
+        return jobs_df
+
+    def get_pending_jobs_df_old(self, dataset: str, job_types: Optional[list[str]] = None) -> pd.DataFrame:
         filters = {}
         if job_types:
             filters["type__in"] = job_types
         return self._get_df([job.flat_info() for job in JobDocument.objects(**filters, dataset=dataset)])
-
-    def get_pending_jobs_pa_table(self, dataset: str, job_types: Optional[list[str]] = None) -> pa.Table:
-        filters = {"dataset": dataset}
-        if job_types:
-            filters["type"] = {"$in": job_types}  # type: ignore
-        return JobDocument.fetch_arrow_table(
-            query=filters,
-            projection=PA_PROJECTION,
-        )
 
     def has_pending_jobs(self, dataset: str, job_types: Optional[list[str]] = None) -> bool:
         filters = {}

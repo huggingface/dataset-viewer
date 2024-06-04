@@ -211,22 +211,22 @@ def populate_queue() -> None:
             artifact_id_to_job_info(ARTIFACT_SA_1_1),
             artifact_id_to_job_info(ARTIFACT_SA_1_2),
         ]
-        * 10
+        * 50
     )
 
 
-@pytest.mark.limit_memory("0.5 MB")  # Success, it uses ~0.7 MB
-def test_get_pending_jobs_pa_table() -> None:
-    populate_queue()
-    pending_jobs_pa_table = Queue().get_pending_jobs_pa_table(dataset=DATASET_NAME)
-    assert pending_jobs_pa_table.num_rows == 50 and pending_jobs_pa_table.num_columns == 9
-
-
-@pytest.mark.limit_memory("0.5 MB")  # Will fail, it uses ~0.4 MB
+@pytest.mark.limit_memory("1.5 MB")  # Success, it uses ~1.4 MB
 def test_get_pending_jobs_df() -> None:
     populate_queue()
     pending_jobs_df = Queue().get_pending_jobs_df(dataset=DATASET_NAME)
-    assert pending_jobs_df.shape == (50, 9)
+    assert pending_jobs_df.shape == (250, 9)
+
+
+@pytest.mark.limit_memory("1.6 MB")  # Will fail, it uses ~1.6 MB
+def test_get_pending_jobs_df_old() -> None:
+    populate_queue()
+    pending_jobs_df = Queue().get_pending_jobs_df_old(dataset=DATASET_NAME)
+    assert pending_jobs_df.shape == (250, 9)
 
 
 @pytest.mark.parametrize(
