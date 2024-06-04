@@ -82,8 +82,7 @@ common:
   blockedDatasets: "open-llm-leaderboard/details_*,lunaluan/*,atom-in-the-universe/*,cot-leaderboard/cot-eval-traces,mitermix/yt-links,mcding-org/*"
   # Comma-separated list of the datasets for which we support dataset scripts.
   # Unix shell-style wildcards also work in the dataset name for namespaced datasets, for example `some_namespace/*` to refer to all the datasets in the `some_namespace` namespace.
-  # The keyword `{{ALL_DATASETS_WITH_NO_NAMESPACE}}` refers to all the datasets without namespace.
-  datasetScriptsAllowList: "{{ALL_DATASETS_WITH_NO_NAMESPACE}},hf-internal-testing/dataset_with_script,togethercomputer/RedPajama-Data-1T,togethercomputer/RedPajama-Data-V2,gaia-benchmark/GAIA,poloclub/diffusiondb,mozilla-foundation/common_voice_*,google/fleurs,speechcolab/gigaspeech,espnet/yodas"
+  datasetScriptsAllowList: "hf-internal-testing/dataset_with_script,togethercomputer/RedPajama-Data-1T,togethercomputer/RedPajama-Data-V2,gaia-benchmark/GAIA,poloclub/diffusiondb,mozilla-foundation/common_voice_*,google/fleurs,speechcolab/gigaspeech,espnet/yodas,ylecun/mnist,zalando-datasets/fashion_mnist"
   # URL of the HuggingFace Hub
   hfEndpoint: ""
 
