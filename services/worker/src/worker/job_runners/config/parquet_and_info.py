@@ -1179,7 +1179,6 @@ def compute_config_parquet_and_info_response(
             List of datasets for which we support dataset scripts.
             Unix shell-style wildcards also work in the dataset name for namespaced datasets,
             for example `some_namespace/*` to refer to all the datasets in the `some_namespace` namespace.
-            The keyword `{{ALL_DATASETS_WITH_NO_NAMESPACE}}` refers to all the datasets without namespace.
 
     Raises:
         [~`libcommon.exceptions.DatasetNotFoundError`]:

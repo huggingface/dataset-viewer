@@ -224,9 +224,7 @@ def is_dataset_script_error() -> bool:
 
 def resolve_trust_remote_code(dataset: str, allow_list: list[str]) -> bool:
     for allowed_pattern in allow_list:
-        if (allowed_pattern == "{{ALL_DATASETS_WITH_NO_NAMESPACE}}" and "/" not in dataset) or fnmatch(
-            dataset, allowed_pattern
-        ):
+        if fnmatch(dataset, allowed_pattern):
             return True
     return False
 
