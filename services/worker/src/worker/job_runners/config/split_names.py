@@ -46,7 +46,6 @@ def compute_split_names_from_streaming_response(
             List of datasets for which we support dataset scripts.
             Unix shell-style wildcards also work in the dataset name for namespaced datasets,
             for example `some_namespace/*` to refer to all the datasets in the `some_namespace` namespace.
-            The keyword `{{ALL_DATASETS_WITH_NO_NAMESPACE}}` refers to all the datasets without namespace.
         hf_token (`str`, *optional*):
             An authentication token (See https://huggingface.co/settings/token)
         max_number (`str`):

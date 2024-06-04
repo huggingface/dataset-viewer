@@ -177,7 +177,6 @@ def compute_first_rows_from_streaming_response(
             List of datasets for which we support dataset scripts.
             Unix shell-style wildcards also work in the dataset name for namespaced datasets,
             for example `some_namespace/*` to refer to all the datasets in the `some_namespace` namespace.
-            The keyword `{{ALL_DATASETS_WITH_NO_NAMESPACE}}` refers to all the datasets without namespace.
         max_size_fallback (`int`, *optional*): **DEPRECATED**
             The maximum number of bytes of the split to fallback to normal mode if the streaming mode fails.
             This argument is now hard-coded to 100MB, and will be removed in a future version.
