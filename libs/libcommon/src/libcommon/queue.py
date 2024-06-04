@@ -17,13 +17,14 @@ from typing import Any, Generic, Literal, Optional, TypedDict, TypeVar
 from uuid import uuid4
 
 import pandas as pd
-import pymongoarrow as pma
+import pyarrow as pa
 import pytz
 from bson import ObjectId
 from mongoengine import Document
 from mongoengine.errors import DoesNotExist, NotUniqueError
 from mongoengine.fields import DateTimeField, EnumField, IntField, ObjectIdField, StringField
 from mongoengine.queryset.queryset import QuerySet
+from pymongoarrow.api import Schema, find_pandas_all
 
 from libcommon.constants import (
     DEFAULT_DIFFICULTY_MAX,
@@ -117,6 +118,21 @@ class JobQueryFilters(TypedDict, total=False):
     difficulty__lte: int
 
 
+PA_SCHEMA = Schema(
+    {
+        "job_id": pa.string(),
+        "type": pa.string(),
+        "revision": pa.string(),
+        "dataset": pa.string(),
+        "config": pa.string(),
+        "split": pa.string(),
+        "priority": pa.string(),
+        "status": pa.string(),
+        "created_at": pa.timestamp("ms"),
+    }
+)
+
+
 # States:
 # - waiting: started_at is None
 # - started: started_at is not None
@@ -189,15 +205,13 @@ class JobDocument(Document):
     objects = QuerySetManager["JobDocument"]()
 
     @classmethod
-    def fetch_as_df(
-        cls, query: Optional[Mapping[str, Any]] = None, projection: Optional[Mapping[str, Any]] = None
-    ) -> pd.DataFrame:
+    def fetch_as_df(cls, query: Optional[Mapping[str, Any]] = None) -> pd.DataFrame:
         """
         Fetch documents matching the query as a Pandas Dataframe.
         """
         query = query if query is not None else {}
         collection = cls._get_collection()
-        return pma.api.find_pandas_all(collection, query, projection=projection)  # type: ignore
+        return find_pandas_all(collection, query, schema=PA_SCHEMA)  # type: ignore
 
     def info(self) -> JobInfo:
         return JobInfo(
@@ -497,18 +511,6 @@ def release_lock(key: str) -> None:
         owner=None,
         updated_at=get_datetime(),
     )
-
-
-PENDING_JOBS_PROJECTION = {
-    "type": 1,
-    "priority": 1,
-    "status": 1,
-    "created_at": 1,
-    "revision": 1,
-    "dataset": 1,
-    "config": 1,
-    "split": 1,
-}
 
 
 class Queue:
@@ -1046,33 +1048,7 @@ class Queue:
         filters = {"dataset": dataset}
         if job_types:
             filters["type"] = {"$in": job_types}  # type: ignore
-        jobs_df = JobDocument.fetch_as_df(
-            query=filters,
-            projection=PENDING_JOBS_PROJECTION,
-        )
-
-        if jobs_df.empty:
-            return pd.DataFrame(
-                columns=[
-                    "job_id",
-                    "type",
-                    "dataset",
-                    "revision",
-                    "config",
-                    "split",
-                    "priority",
-                    "status",
-                    "created_at",
-                ]
-            )
-
-        if "config" not in jobs_df.columns:
-            jobs_df["config"] = None
-        if "split" not in jobs_df.columns:
-            jobs_df["split"] = None
-
-        jobs_df.rename(columns={"_id": "job_id"}, inplace=True)
-        return jobs_df
+        return JobDocument.fetch_as_df(query=filters)
 
     def get_pending_jobs_df_old(self, dataset: str, job_types: Optional[list[str]] = None) -> pd.DataFrame:
         filters = {}

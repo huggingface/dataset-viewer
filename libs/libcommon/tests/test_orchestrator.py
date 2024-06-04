@@ -215,7 +215,7 @@ def populate_queue() -> None:
     )
 
 
-@pytest.mark.limit_memory("1.5 MB")  # Success, it uses ~1.4 MB
+@pytest.mark.limit_memory("1.4 MB")  # Success, it uses ~1.4 MB
 def test_get_pending_jobs_df() -> None:
     populate_queue()
     pending_jobs_df = Queue().get_pending_jobs_df(dataset=DATASET_NAME)
