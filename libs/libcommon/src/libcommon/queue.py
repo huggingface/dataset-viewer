@@ -15,6 +15,7 @@ from operator import itemgetter
 from types import TracebackType
 from typing import Any, Generic, Literal, Optional, TypedDict, TypeVar
 from uuid import uuid4
+
 import bson
 import pandas as pd
 import pyarrow as pa
@@ -122,8 +123,8 @@ PA_SCHEMA = Schema(
     {
         "_id": bson.ObjectId,
         "type": pa.string(),
-        "revision": pa.string(),
         "dataset": pa.string(),
+        "revision": pa.string(),
         "config": pa.string(),
         "split": pa.string(),
         "priority": pa.string(),
@@ -1049,7 +1050,20 @@ class Queue:
         if job_types:
             filters["type"] = {"$in": job_types}  # type: ignore
         df = JobDocument.fetch_as_df(query=filters)
-        df.rename(columns={'_id': 'job_id'}, inplace=True)
+        df.rename(columns={"_id": "job_id"}, inplace=True)
+        df["priority"] = pd.Categorical(
+            df["priority"],
+            ordered=True,
+            categories=[Priority.LOW.value, Priority.NORMAL.value, Priority.HIGH.value],
+        )
+        df["status"] = pd.Categorical(
+            df["status"],
+            ordered=True,
+            categories=[
+                Status.WAITING.value,
+                Status.STARTED.value,
+            ],
+        )
         return df
 
     def get_pending_jobs_df_old(self, dataset: str, job_types: Optional[list[str]] = None) -> pd.DataFrame:
