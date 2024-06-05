@@ -27,7 +27,7 @@ torch = [
     { url = "https://download.pytorch.org/whl/cpu/torch-2.3.0-cp39-none-macosx_11_0_arm64.whl", markers = "sys_platform == 'darwin' and platform_machine == 'arm64'"},
     { url = "https://download.pytorch.org/whl/cpu/torch-2.3.0-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", markers = "sys_platform == 'linux' and platform_machine == 'aarch64'"},
 ]
-uvicorn = "^0.20.0"
+uvicorn = "^0.30.1"
 zstandard = "^0.22.0"
 # to include fix for https://github.com/microsoft/presidio/pull/1377
 presidio-analyzer = { git = "https://github.com/microsoft/presidio.git", rev = "2348fff508f1a45af92945d5f597ec56bd4faae6", subdirectory = "presidio-analyzer" }
