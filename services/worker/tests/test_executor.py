@@ -287,6 +287,7 @@ def test_executor_kill_zombies(
     assert response.details == expected_error
 
 
+@pytest.mark.asyncio
 def test_executor_start(
     executor: WorkerExecutor,
     set_just_started_job_in_queue: JobDocument,
