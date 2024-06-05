@@ -90,7 +90,7 @@ class WorkerExecutor:
         web_app_executor.start()  # blocking until the banner is printed
         self.executors.append(web_app_executor)
 
-        loop = asyncio.get_event_loop()
+        loop = asyncio.new_event_loop()
         loop.add_signal_handler(signal.SIGTERM, self.sigterm_stop)
 
         logging.info("Starting heartbeat.")
