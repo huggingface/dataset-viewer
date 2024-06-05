@@ -16,7 +16,7 @@ ENV PYTHONFAULTHANDLER=1 \
 
 # System deps:
 RUN apt-get update \
-    && apt-get install -y unzip wget procps htop ffmpeg libavcodec-extra libsndfile1 \
+    && apt-get install -y gcc g++ unzip wget procps htop ffmpeg libavcodec-extra libsndfile1 \
     && rm -rf /var/lib/apt/lists/*
 RUN pip install -U pip
 RUN pip install "poetry==$POETRY_VERSION"
@@ -42,6 +42,7 @@ WORKDIR /src/services/webhook/
 RUN --mount=type=cache,target=/home/.cache/pypoetry/cache \
     --mount=type=cache,target=/home/.cache/pypoetry/artifacts \
     poetry install --no-root
+RUN poetry run pip install pympler
 
 # FOR LOCAL DEVELOPMENT ENVIRONMENT
 # Install the webhook package.
