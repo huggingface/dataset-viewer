@@ -42,7 +42,6 @@ WORKDIR /src/services/webhook/
 RUN --mount=type=cache,target=/home/.cache/pypoetry/cache \
     --mount=type=cache,target=/home/.cache/pypoetry/artifacts \
     poetry install --no-root
-RUN poetry run pip install pympler
 
 # FOR LOCAL DEVELOPMENT ENVIRONMENT
 # Install the webhook package.
