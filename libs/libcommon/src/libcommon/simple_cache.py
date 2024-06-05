@@ -9,6 +9,7 @@ from http import HTTPStatus
 from typing import Any, Generic, NamedTuple, Optional, TypedDict, TypeVar, overload
 
 import pandas as pd
+import pyarrow as pa
 from bson import CodecOptions, ObjectId
 from bson.codec_options import TypeEncoder, TypeRegistry  # type: ignore[attr-defined]
 from bson.errors import InvalidId
@@ -24,6 +25,7 @@ from mongoengine.fields import (
     StringField,
 )
 from mongoengine.queryset.queryset import QuerySet
+from pymongoarrow.api import Schema, find_pandas_all
 
 from libcommon.constants import (
     CACHE_COLLECTION_RESPONSES,
@@ -98,6 +100,23 @@ class SplitFullName(NamedTuple):
     split: Optional[str]
 
 
+PA_SCHEMA = Schema(
+    {
+        "kind": pa.string(),
+        "dataset": pa.string(),
+        "config": pa.string(),
+        "split": pa.string(),
+        "http_status": pa.int32(),
+        "error_code": pa.string(),
+        "dataset_git_revision": pa.string(),
+        "job_runner_version": pa.int32(),
+        "progress": pa.float64(),
+        "updated_at": pa.timestamp("ms"),
+        "failed_runs": pa.int32(),
+    }
+)
+
+
 # cache of any job
 class CachedResponseDocument(Document):
     """A response computed for a job, cached in the mongoDB database
@@ -150,6 +169,15 @@ class CachedResponseDocument(Document):
         ],
     }
     objects = QuerySetManager["CachedResponseDocument"]()
+
+    @classmethod
+    def fetch_as_df(cls, query: Optional[Mapping[str, Any]] = None) -> pd.DataFrame:
+        """
+        Fetch documents matching the query as a Pandas Dataframe.
+        """
+        query = query if query is not None else {}
+        collection = cls._get_collection()
+        return find_pandas_all(collection, query, schema=PA_SCHEMA)  # type: ignore
 
 
 DEFAULT_INCREASE_AMOUNT = 1
@@ -834,6 +862,13 @@ def _get_df(entries: list[CacheEntryFullMetadata]) -> pd.DataFrame:
 
 
 def get_cache_entries_df(dataset: str, cache_kinds: Optional[list[str]] = None) -> pd.DataFrame:
+    filters = {"dataset": dataset}
+    if cache_kinds:
+        filters["kind"] = {"$in": cache_kinds}  # type: ignore
+    return CachedResponseDocument.fetch_as_df(query=filters)
+
+
+def get_cache_entries_df_old(dataset: str, cache_kinds: Optional[list[str]] = None) -> pd.DataFrame:
     filters = {}
     if cache_kinds:
         filters["kind__in"] = cache_kinds
