@@ -28,7 +28,7 @@ class UvicornServer(uvicorn.Server):
         await self.did_start.wait()
 
     async def startup(self, sockets: Optional[list[socket.socket]] = None) -> None:
-        await super().startup(sockets=sockets)  # type: ignore
+        await super().startup(sockets=sockets)
         self.did_start.set()
 
     async def shutdown(self, sockets: Optional[list[socket.socket]] = None) -> None:
