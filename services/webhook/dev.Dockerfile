@@ -46,4 +46,4 @@ RUN --mount=type=cache,target=/home/.cache/pypoetry/cache \
 # FOR LOCAL DEVELOPMENT ENVIRONMENT
 # Install the webhook package.
 # Mapping a volume to ./services/webhook/src is required when running this image.
-ENTRYPOINT ["/bin/sh", "-c" , "poetry install --only-root && poetry run python src/webhook/main.py"]
+ENTRYPOINT ["/bin/sh", "-c" , "poetry install --only-root && poetry run gunicorn 'webhook.app:create_app()' -w $API_UVICORN_NUM_WORKERS -k uvicorn.workers.UvicornWorker -b $API_UVICORN_HOSTNAME:$API_UVICORN_PORT"]

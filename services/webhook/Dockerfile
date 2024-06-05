@@ -31,4 +31,4 @@ RUN poetry install --no-cache
 COPY services/webhook/src ./src
 RUN poetry install --no-cache
 
-ENTRYPOINT ["poetry", "run", "python", "src/webhook/main.py"]
+ENTRYPOINT ["poetry", "run", "gunicorn", "'webhook.app:create_app()'", "-w $API_UVICORN_NUM_WORKERS", "-k uvicorn.workers.UvicornWorker", "-b $API_UVICORN_HOSTNAME:$API_UVICORN_PORT"]
