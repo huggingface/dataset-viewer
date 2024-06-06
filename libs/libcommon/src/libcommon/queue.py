@@ -984,12 +984,11 @@ class Queue:
         Returns:
             `int`: the number of deleted jobs
         """
-        jobs = JobDocument.objects(dataset=dataset, status=Status.WAITING)
-        previous_status = [(job.type, job.status, job.unicity_id, job.difficulty) for job in jobs.all()]
-        num_deleted_jobs = jobs.delete()
-        for job_type, status, unicity_id, difficulty in previous_status:
-            decrease_metric(job_type=job_type, status=status, difficulty=difficulty)
-            release_lock(key=unicity_id)
+        existing_waiting_jobs = JobDocument.objects(dataset=dataset, status=Status.WAITING)
+        for job in existing_waiting_jobs.no_cache():
+            decrease_metric(job_type=job.type, status=job.status, difficulty=job.difficulty)
+            release_lock(key=job.unicity_id)
+        num_deleted_jobs = existing_waiting_jobs.delete()
         return 0 if num_deleted_jobs is None else num_deleted_jobs
 
     def is_job_in_process(

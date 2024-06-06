@@ -349,7 +349,7 @@ def delete_dataset_responses(dataset: str) -> int:
         `int`: The number of deleted documents.
     """
     existing_cache = CachedResponseDocument.objects(dataset=dataset)
-    for cache in existing_cache:
+    for cache in existing_cache.no_cache():
         decrease_metric(kind=cache.kind, http_status=cache.http_status, error_code=cache.error_code)
     num_deleted_cache_responses = existing_cache.delete()
     return 0 if num_deleted_cache_responses is None else num_deleted_cache_responses
