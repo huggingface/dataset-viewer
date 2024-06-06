@@ -217,7 +217,7 @@ This type represents categorical data encoded as [`ClassLabel`](https://huggingf
 The following measures are returned for float data types:
 
 * minimum, maximum, mean, and standard deviation values
-* number and proportion of `null` values
+* number and proportion of `null` and `NaN` values (`NaN` values are treated as `null`)
 * histogram with 10 bins
 
 <details><summary>Example </summary>
