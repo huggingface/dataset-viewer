@@ -27,9 +27,9 @@ from datasets import (
 from datasets.features.features import FeatureType
 
 from .statistics_dataset import (
-    all_nan_column,
     audio_dataset,
     image_dataset,
+    null_column,
     statistics_dataset,
     statistics_not_supported_dataset,
     statistics_string_text_dataset,
@@ -180,7 +180,7 @@ def datasets() -> Mapping[str, Dataset]:
         "duckdb_index": Dataset.from_dict(
             {
                 "text": SEARCH_TEXT_CONTENT,
-                "text_all_nan": all_nan_column(5),
+                "text_all_null": null_column(5),
                 "column with spaces": [
                     "a",
                     "b",
@@ -195,7 +195,7 @@ def datasets() -> Mapping[str, Dataset]:
                     [1, 2, 3, 4],
                     [1, 2, 3, 4, 5],
                 ],
-                "list_all_nan": all_nan_column(5),
+                "list_all_null": null_column(5),
                 "sequence_list": [
                     [1],
                     [1, 2],
@@ -203,7 +203,7 @@ def datasets() -> Mapping[str, Dataset]:
                     [1, 2, 3, 4],
                     [1, 2, 3, 4, 5],
                 ],
-                "sequence_list_all_nan": all_nan_column(5),
+                "sequence_list_all_null": null_column(5),
                 "sequence_struct": [
                     [],
                     [{"author": "cat", "likes": 5}],
@@ -212,24 +212,24 @@ def datasets() -> Mapping[str, Dataset]:
                     None,
                 ],
                 "audio": audio_dataset["audio"] + [None],
-                "audio_all_nan": all_nan_column(5),
+                "audio_all_null": null_column(5),
                 "image": image_dataset["image"] + [None],
-                "image_all_nan": all_nan_column(5),
+                "image_all_null": null_column(5),
             },
             features=Features(
                 {
                     "text": Value(dtype="string"),
-                    "text_all_nan": Value(dtype="string"),
+                    "text_all_null": Value(dtype="string"),
                     "column with spaces": Value(dtype="string"),
                     "list": [Value(dtype="int32")],
-                    "list_all_nan": [Value(dtype="int32")],
+                    "list_all_null": [Value(dtype="int32")],
                     "sequence_list": Sequence(Value(dtype="int32")),
-                    "sequence_list_all_nan": Sequence(Value(dtype="int32")),
+                    "sequence_list_all_null": Sequence(Value(dtype="int32")),
                     "sequence_struct": Sequence({"author": Value("string"), "likes": Value("int32")}),
                     "audio": Audio(sampling_rate=1600, decode=False),
-                    "audio_all_nan": Audio(sampling_rate=1600, decode=False),
+                    "audio_all_null": Audio(sampling_rate=1600, decode=False),
                     "image": Image(decode=False),
-                    "image_all_nan": Image(decode=False),
+                    "image_all_null": Image(decode=False),
                 }
             ),
         ),
