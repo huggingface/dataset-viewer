@@ -181,15 +181,16 @@ def get_cache_entry_from_step(
     try:
         response = get_cached_response(kind=processing_step_name, dataset=dataset, config=config, split=split)
     except CachedArtifactNotFoundError:
-        try_backfill_dataset_then_raise(
-            processing_step_name=processing_step_name,
-            dataset=dataset,
-            hf_endpoint=hf_endpoint,
-            blocked_datasets=blocked_datasets,
-            hf_timeout_seconds=hf_timeout_seconds,
-            hf_token=hf_token,
-            storage_clients=storage_clients,
-        )
+        if not dataset.startswith("CyberHarem/"):  # most of their datasets are nfaa
+            try_backfill_dataset_then_raise(
+                processing_step_name=processing_step_name,
+                dataset=dataset,
+                hf_endpoint=hf_endpoint,
+                blocked_datasets=blocked_datasets,
+                hf_timeout_seconds=hf_timeout_seconds,
+                hf_token=hf_token,
+                storage_clients=storage_clients,
+            )
     return response
 
 
