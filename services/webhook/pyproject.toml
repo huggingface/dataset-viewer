@@ -10,7 +10,7 @@ python = "3.9.18"
 environs = "^9.5.0"
 jsonschema = "^4.17.0"
 libapi = {path = "../../libs/libapi", develop = true}
-uvicorn = "^0.20.0"
+uvicorn = "^0.30.1"
 watchdog = { extras = ["watchmedo"], version = "^2.2.1" }
 
 [tool.poetry.group.dev.dependencies]
