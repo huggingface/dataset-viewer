@@ -286,8 +286,8 @@ def descriptive_statistics_string_text_partial_expected(datasets: Mapping[str, D
 def audio_statistics_expected() -> dict:  # type: ignore
     column_names_to_durations = [
         ("audio", [1.0, 2.0, 3.0, 4.0]),  # datasets consists of 4 audio files of 1, 2, 3, 4 seconds lengths
-        ("audio_nan", [1.0, None, 3.0, None]),  # take first and third audio file for this testcase
-        ("audio_all_nan", [None, None, None, None]),
+        ("audio_null", [1.0, None, 3.0, None]),  # take first and third audio file for this testcase
+        ("audio_all_null", [None, None, None, None]),
     ]
     dataset_statistics = {}
     for column_name, durations in column_names_to_durations:
@@ -311,8 +311,8 @@ def audio_statistics_expected() -> dict:  # type: ignore
 def image_statistics_expected() -> dict:  # type: ignore
     column_names_to_widths = [
         ("image", [640, 1440, 520, 1240]),  # datasets consists of 4 image files
-        ("image_nan", [640, None, 520, None]),  # take first and third image file for this testcase
-        ("image_all_nan", [None, None, None, None]),
+        ("image_null", [640, None, 520, None]),  # take first and third image file for this testcase
+        ("image_all_null", [None, None, None, None]),
     ]
     dataset_statistics = {}
     for column_name, widths in column_names_to_widths:

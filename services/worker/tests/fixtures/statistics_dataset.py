@@ -125,7 +125,6 @@ def null_column(n_samples: int) -> list[None]:
     return [None] * n_samples
 
 
-
 statistics_dataset = Dataset.from_dict(
     {
         "string_label__column": [

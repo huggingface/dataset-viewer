@@ -41,7 +41,7 @@ from worker.job_runners.split.duckdb_index import (
 from worker.resources import LibrariesResource
 
 from ...fixtures.hub import HubDatasetTest
-from ...fixtures.statistics_dataset import all_nan_column
+from ...fixtures.statistics_dataset import null_column
 from ..utils import REVISION_NAME
 
 GetJobRunner = Callable[[str, str, str, AppConfig], SplitDuckDbIndexJobRunner]
@@ -231,13 +231,13 @@ def expected_data(datasets: Mapping[str, Dataset]) -> dict[str, list[Any]]:
             expected[f"{feature_name}.length"] = [len(row) if row is not None else None for row in ds[feature_name]]
         elif isinstance(feature, Audio):
             if "all_nan" in feature_name:
-                expected[f"{feature_name}.duration"] = all_nan_column(5)
+                expected[f"{feature_name}.duration"] = null_column(5)
             else:
                 expected[f"{feature_name}.duration"] = [1.0, 2.0, 3.0, 4.0, None]
         elif isinstance(feature, Image):
             if "all_nan" in feature_name:
-                expected[f"{feature_name}.width"] = all_nan_column(5)
-                expected[f"{feature_name}.height"] = all_nan_column(5)
+                expected[f"{feature_name}.width"] = null_column(5)
+                expected[f"{feature_name}.height"] = null_column(5)
             else:
                 expected[f"{feature_name}.width"] = [640, 1440, 520, 1240, None]
                 expected[f"{feature_name}.height"] = [480, 1058, 400, 930, None]
