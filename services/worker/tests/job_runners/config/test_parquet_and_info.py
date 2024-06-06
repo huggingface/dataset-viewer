@@ -832,6 +832,22 @@ def test_fill_builder_info_multiple_parquets(
         assert split_info.num_bytes == pytest.approx(actual_info.splits[split_name].num_bytes, 300)
 
 
+def test_fill_builder_info_empty_rows(
+    hub_public_parquet_splits_empty_rows: str,
+    app_config: AppConfig,
+    tmp_path: Path,
+) -> None:
+    cache_dir = str(tmp_path / "test_fill_builder_info_empty_rows")
+    name = hub_public_parquet_splits_empty_rows
+    builder = load_dataset_builder(name, cache_dir=cache_dir)
+    builder.info = datasets.info.DatasetInfo()
+    validate = ParquetFileValidator(max_row_group_byte_size=100_000).validate
+    fill_builder_info(builder, hf_endpoint=app_config.common.hf_endpoint, hf_token=None, validate=validate)
+    assert "train" in builder.info.splits
+    assert builder.info.splits["train"].num_examples == 0
+    assert builder.info.splits["train"].num_bytes == 0
+
+
 def test_fill_builder_info_multiple_splits(
     hub_public_three_parquet_splits_builder: str,
     app_config: AppConfig,
@@ -886,20 +902,8 @@ def test_get_writer_batch_size_from_row_group_size(
 
 def test_resolve_trust_remote_code() -> None:
     assert resolve_trust_remote_code("lhoestq/demo1", allow_list=[]) is False
-    assert resolve_trust_remote_code("lhoestq/demo1", allow_list=["{{ALL_DATASETS_WITH_NO_NAMESPACE}}"]) is False
-    assert (
-        resolve_trust_remote_code("lhoestq/demo1", allow_list=["{{ALL_DATASETS_WITH_NO_NAMESPACE}}", "lhoestq/d*"])
-        is True
-    )
-    assert resolve_trust_remote_code("mnist", allow_list=[]) is False
-    assert resolve_trust_remote_code("mnist", allow_list=["{{ALL_DATASETS_WITH_NO_NAMESPACE}}"]) is True
-    assert resolve_trust_remote_code("mnist", allow_list=["{{ALL_DATASETS_WITH_NO_NAMESPACE}}", "lhoestq/s*"]) is True
-    assert (
-        resolve_trust_remote_code(
-            "lhoestq/custom_mnist", allow_list=["{{ALL_DATASETS_WITH_NO_NAMESPACE}}", "lhoestq/d*"]
-        )
-        is False
-    )
+    assert resolve_trust_remote_code("lhoestq/demo1", allow_list=["lhoestq/d*"]) is True
+    assert resolve_trust_remote_code("lhoestq/custom_mnist", allow_list=["lhoestq/d*"]) is False
 
 
 @pytest.mark.parametrize(

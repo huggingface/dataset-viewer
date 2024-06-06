@@ -649,10 +649,25 @@ specification: ProcessingGraphSpecification = {
         "job_runner_version": 2,
         "difficulty": 20,
     },
+    "split-presidio-scan": {
+        "input_type": "split",
+        "triggered_by": "config-parquet-metadata",
+        "job_runner_version": 1,
+        "difficulty": 70,
+    },
+    "dataset-presidio-entities-count": {
+        "input_type": "dataset",
+        "triggered_by": [
+            "dataset-split-names",  # required in case the dataset has no configs (error in previous step)
+            "split-presidio-scan",
+        ],
+        "job_runner_version": 1,
+        "difficulty": 20,
+    },
     "split-duckdb-index": {
         "input_type": "split",
         "triggered_by": "config-parquet-metadata",
-        "job_runner_version": 2,
+        "job_runner_version": 3,
         "difficulty": 70,
         "bonus_difficulty_if_dataset_is_big": 20,
     },

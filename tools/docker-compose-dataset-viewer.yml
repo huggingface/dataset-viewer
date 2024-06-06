@@ -2,7 +2,7 @@ services:
   reverse-proxy:
     image: docker.io/nginx:1.25.3
     volumes:
-      - ../chart/nginx-templates/:/etc/nginx/templates:ro
+      - ../services/reverse-proxy/nginx-templates/:/etc/nginx/templates:ro
       - storage:${STORAGE_DIRECTORY-/storage}:ro
     ports:
       - "${PORT_REVERSE_PROXY-8000}:80"
@@ -17,6 +17,7 @@ services:
       URL_ROWS: http://rows:${ROWS_UVICORN_PORT-8082}
       URL_SEARCH: http://search:${SEARCH_UVICORN_PORT-8083}
       URL_SSE_API: http://sse-api:${SSE_API_UVICORN_PORT-8085}
+      URL_WEBHOOK: http://webhook:${WEBHOOK_UVICORN_PORT-8087}
     depends_on:
       admin:
         condition: service_started
@@ -222,6 +223,29 @@ services:
       mongodb:
         condition: service_healthy
     restart: always
+  webhook:
+    build:
+      context: ..
+      dockerfile: services/webhook/Dockerfile
+    volumes:
+      - storage:${STORAGE_DIRECTORY-/storage}:rw
+    extends:
+      file: docker-compose-base.yml
+      service: libapi
+    environment:
+      # prometheus
+      PROMETHEUS_MULTIPROC_DIR: ${PROMETHEUS_MULTIPROC_DIR-}
+      # uvicorn
+      API_UVICORN_HOSTNAME: 0.0.0.0 # required for docker compose
+      API_UVICORN_NUM_WORKERS: ${WEBHOOK_UVICORN_NUM_WORKERS-2}
+      API_UVICORN_PORT: ${WEBHOOK_UVICORN_PORT-8087}
+    ports:
+      # for debug
+      - ${WEBHOOK_UVICORN_PORT-8087}:${WEBHOOK_UVICORN_PORT-8087}
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    restart: unless-stopped
   mongodb:
     image: "mongo:6.0.9"
     ports:

@@ -746,6 +746,9 @@ def fill_builder_info(
             approx_num_bytes = int(compression_ratio * num_examples)
             builder.info.splits.add(SplitInfo(split, num_bytes=approx_num_bytes, num_examples=num_examples))
             builder.info.dataset_size += approx_num_bytes
+        else:
+            builder.info.splits.add(SplitInfo(split, num_bytes=0, num_examples=0))
+
         logging.info(
             f"{sum(len(split_files) for split_files in data_files.values())} parquet files are valid for copy."
         )
@@ -1176,7 +1179,6 @@ def compute_config_parquet_and_info_response(
             List of datasets for which we support dataset scripts.
             Unix shell-style wildcards also work in the dataset name for namespaced datasets,
             for example `some_namespace/*` to refer to all the datasets in the `some_namespace` namespace.
-            The keyword `{{ALL_DATASETS_WITH_NO_NAMESPACE}}` refers to all the datasets without namespace.
 
     Raises:
         [~`libcommon.exceptions.DatasetNotFoundError`]:

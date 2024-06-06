@@ -28,12 +28,12 @@ from PIL import Image as PILImage
 
 from libcommon.dtos import FeatureItem
 from libcommon.storage_client import StorageClient
-from libcommon.viewer_utils.asset import create_audio_file, create_image_file
+from libcommon.viewer_utils.asset import SUPPORTED_AUDIO_EXTENSIONS, create_audio_file, create_image_file
 
 UNSUPPORTED_FEATURES = [Value("binary")]
 AUDIO_FILE_MAGIC_NUMBERS: dict[str, Any] = {
     ".wav": [(b"\x52\x49\x46\x46", 0), (b"\x57\x41\x56\x45", 8)],  # AND: (magic_number, start)
-    ".mp3": (b"\xFF\xFB", b"\xFF\xF3", b"\xFF\xF2", b"\x49\x44\x33"),  # OR
+    ".mp3": (b"\xff\xfb", b"\xff\xf3", b"\xff\xf2", b"\x49\x44\x33"),  # OR
 }
 
 
@@ -128,8 +128,10 @@ def audio(
     audio_file_bytes = get_audio_file_bytes(value)
     if not audio_file_extension:
         audio_file_extension = infer_audio_file_extension(audio_file_bytes)
-    # convert to wav if the file is not wav or mp3 already
-    target_audio_file_extension = audio_file_extension if audio_file_extension in [".wav", ".mp3"] else ".wav"
+    # convert to wav if the audio file extension is not supported
+    target_audio_file_extension = (
+        audio_file_extension if audio_file_extension in SUPPORTED_AUDIO_EXTENSIONS else ".wav"
+    )
     # this function can raise, we don't catch it
     return create_audio_file(
         dataset=dataset,

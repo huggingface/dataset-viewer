@@ -121,8 +121,9 @@ def long_text_null_column() -> list[Optional[str]]:
     return texts  # type: ignore
 
 
-def null_column() -> list[None]:
-    return [None] * 20
+def null_column(n_samples: int) -> list[None]:
+    return [None] * n_samples
+
 
 
 statistics_dataset = Dataset.from_dict(
@@ -171,10 +172,10 @@ statistics_dataset = Dataset.from_dict(
             None,
             "cat",
         ],
-        "string_label__all_null_column": null_column(),
+        "string_label__all_null_column": null_column(20),
         "int__column": [0, 0, 1, 1, 2, 2, 2, 3, 4, 4, 5, 5, 5, 5, 5, 6, 7, 8, 8, 8],
         "int__null_column": [0, None, 1, None, 2, None, 2, None, 4, None, 5, None, 5, 5, 5, 6, 7, 8, 8, 8],
-        "int__all_null_column": null_column(),
+        "int__all_null_column": null_column(20),
         "int__only_one_value_column": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
         "int__only_one_value_null_column": [
             0,
@@ -264,7 +265,7 @@ statistics_dataset = Dataset.from_dict(
             9.7,
             9.9,
         ],
-        "float__all_null_column": null_column(),
+        "float__all_null_column": null_column(20),
         "float__all_nan_column": [float("nan")] * 20,
         "class_label__column": [
             0,
@@ -332,7 +333,7 @@ statistics_dataset = Dataset.from_dict(
             None,
             0,
         ],
-        "class_label__all_null_column": null_column(),
+        "class_label__all_null_column": null_column(20),
         "class_label__string_column": [
             "cat",
             "dog",
@@ -377,7 +378,7 @@ statistics_dataset = Dataset.from_dict(
             None,
             "cat",
         ],
-        "class_label__string_all_null_column": null_column(),
+        "class_label__string_all_null_column": null_column(20),
         "float__negative_column": [
             -7.221,
             -5.333,
@@ -598,7 +599,7 @@ statistics_dataset = Dataset.from_dict(
             None,
             None,
         ],
-        "bool__all_null_column": null_column(),
+        "bool__all_null_column": null_column(20),
         "list__int_column": [
             [1],
             [1],
@@ -643,7 +644,7 @@ statistics_dataset = Dataset.from_dict(
             [],
             [],
         ],
-        "list__int_all_null_column": null_column(),
+        "list__int_all_null_column": null_column(20),
         "list__string_column": [
             ["cat"],
             ["cat"],
@@ -688,7 +689,7 @@ statistics_dataset = Dataset.from_dict(
             [],
             [],
         ],
-        "list__string_all_null_column": null_column(),
+        "list__string_all_null_column": null_column(20),
         "list__dict_column": [
             [{"author": "cat", "content": "mouse", "likes": 5}],
             [{"author": "cat", "content": "mouse", "likes": 5}, {"author": "cat", "content": "mouse", "likes": 5}],
@@ -841,7 +842,7 @@ statistics_dataset = Dataset.from_dict(
             [],
             [],
         ],
-        "list__dict_all_null_column": null_column(),
+        "list__dict_all_null_column": null_column(20),
         "list__sequence_int_column": [
             [1],
             [1],
@@ -886,7 +887,7 @@ statistics_dataset = Dataset.from_dict(
             [],
             [],
         ],
-        "list__sequence_int_all_null_column": null_column(),
+        "list__sequence_int_all_null_column": null_column(20),
         "list__sequence_class_label_column": [
             ["cat"],
             ["cat"],
@@ -931,7 +932,7 @@ statistics_dataset = Dataset.from_dict(
             [],
             [],
         ],
-        "list__sequence_class_label_all_null_column": null_column(),
+        "list__sequence_class_label_all_null_column": null_column(20),
         "list__sequence_of_sequence_bool_column": [
             [[True]],
             [[True]],
@@ -976,7 +977,7 @@ statistics_dataset = Dataset.from_dict(
             [[True], [None, True, False]],
             [[True], [True, False], [True, False]],
         ],
-        "list__sequence_of_sequence_bool_all_null_column": null_column(),
+        "list__sequence_of_sequence_bool_all_null_column": null_column(20),
         "list__sequence_of_sequence_dict_column": [
             [[{"author": "cat", "likes": 5}]],
             [[{"author": "cat", "likes": 5}, {"author": "cat", "likes": 5}]],
@@ -1155,7 +1156,7 @@ statistics_dataset = Dataset.from_dict(
             [[]],
             [[]],
         ],
-        "list__sequence_of_sequence_dict_all_null_column": null_column(),
+        "list__sequence_of_sequence_dict_all_null_column": null_column(20),
         "list__sequence_of_list_dict_column": [
             [[{"author": "cat", "likes": 5}]],
             [[{"author": "cat", "likes": 5}, {"author": "cat", "likes": 5}]],
@@ -1334,7 +1335,7 @@ statistics_dataset = Dataset.from_dict(
             [[]],
             [[]],
         ],
-        "list__sequence_of_list_dict_all_null_column": null_column(),
+        "list__sequence_of_list_dict_all_null_column": null_column(20),
         "array__list_column": [
             [[[1, 2, 3]]],
             [[[1, 2, 3]]],
@@ -1456,7 +1457,6 @@ statistics_dataset = Dataset.from_dict(
         }
     ),
 )
-
 
 statistics_string_text_dataset = Dataset.from_dict(
     {
@@ -1631,7 +1631,7 @@ statistics_not_supported_dataset = Dataset.from_dict(
             [],
             [],
         ],
-        "list__sequence_dict_all_null_column": null_column(),
+        "list__sequence_dict_all_null_column": null_column(20),
     },
     features=Features(
         {

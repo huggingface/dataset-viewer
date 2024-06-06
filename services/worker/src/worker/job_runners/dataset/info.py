@@ -7,7 +7,7 @@ from typing import Any
 
 from libcommon.exceptions import PreviousStepFormatError
 from libcommon.simple_cache import (
-    CacheEntryDoesNotExistError,
+    CachedArtifactNotFoundError,
     get_previous_step_or_raise,
     get_response,
 )
@@ -53,7 +53,7 @@ def compute_dataset_info_response(dataset: str) -> tuple[DatasetInfoResponse, fl
             total += 1
             try:
                 config_response = get_response(kind="config-info", dataset=dataset, config=config)
-            except CacheEntryDoesNotExistError:
+            except CachedArtifactNotFoundError:
                 logging.debug(f"No response found in previous step for {dataset=} {config=}: 'config-info'.")
                 pending.append(
                     PreviousJob(

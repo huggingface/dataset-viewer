@@ -14,8 +14,8 @@ from pymongo.errors import DocumentTooLarge
 from libcommon.resources import CacheMongoResource
 from libcommon.simple_cache import (
     CachedArtifactError,
+    CachedArtifactNotFoundError,
     CachedResponseDocument,
-    CacheEntryDoesNotExistError,
     CacheReportsPage,
     CacheReportsWithContentPage,
     CacheTotalMetricDocument,
@@ -205,7 +205,7 @@ def test_upsert_response(config: Optional[str], split: Optional[str]) -> None:
 
     assert_metric(http_status=HTTPStatus.OK, error_code=None, kind=kind, total=0)
 
-    with pytest.raises(CacheEntryDoesNotExistError):
+    with pytest.raises(CachedArtifactNotFoundError):
         get_response(kind=kind, dataset=dataset, config=config, split=split)
 
     error_code = "error_code"
@@ -297,7 +297,7 @@ def test_delete_response() -> None:
     get_response(kind=kind, dataset=dataset_b, config=config, split=split)
     delete_response(kind=kind, dataset=dataset_a, config=config, split=split)
     assert_metric(http_status=HTTPStatus.OK, error_code=None, kind=kind, total=1)
-    with pytest.raises(CacheEntryDoesNotExistError):
+    with pytest.raises(CachedArtifactNotFoundError):
         get_response(kind=kind, dataset=dataset_a, config=config, split=split)
     get_response(kind=kind, dataset=dataset_b, config=config, split=split)
 
@@ -342,9 +342,9 @@ def test_delete_dataset_responses() -> None:
     delete_dataset_responses(dataset=dataset_a)
     assert_metric(http_status=HTTPStatus.OK, error_code=None, kind=kind_a, total=1)
     assert_metric(http_status=HTTPStatus.OK, error_code=None, kind=kind_b, total=0)
-    with pytest.raises(CacheEntryDoesNotExistError):
+    with pytest.raises(CachedArtifactNotFoundError):
         get_response(kind=kind_a, dataset=dataset_a)
-    with pytest.raises(CacheEntryDoesNotExistError):
+    with pytest.raises(CachedArtifactNotFoundError):
         get_response(kind=kind_b, dataset=dataset_a, config=config, split=split)
     get_response(kind=kind_a, dataset=dataset_b)
 
@@ -664,14 +664,13 @@ def test_stress_get_cache_reports(num_entries: int) -> None:
     kind = CACHE_KIND
     content = {"key": "value"}
     http_status = HTTPStatus.OK
-    splits = [f"split{i}" for i in range(num_entries)]
-    for split in splits:
+    for i in range(num_entries):
         upsert_response(
             kind=kind,
             dataset="dataset",
             dataset_git_revision=REVISION_NAME,
             config="config",
-            split=split,
+            split=f"split{i}",
             content=content,
             http_status=http_status,
         )

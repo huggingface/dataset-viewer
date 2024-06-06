@@ -136,7 +136,7 @@ def test_compute_progress(
     progress: float,
 ) -> None:
     # we could also have tested if dataset-info has a response (it's one case among many, see
-    # libcommon.simple_cache.get_response_or_missing_error)
+    # libcommon.simple_cache.get_response -> CachedArtifactNotFoundError)
     upsert_response(
         kind="dataset-config-names",
         dataset=dataset,
@@ -171,7 +171,7 @@ def test_compute_error(app_config: AppConfig, get_job_runner: GetJobRunner) -> N
     dataset = "error"
     config = "error"
     # we could also have tested if dataset-info has a response (it's one case among many, see
-    # libcommon.simple_cache.get_response_or_missing_error)
+    # libcommon.simple_cache.get_response -> CachedArtifactNotFoundError)
     upsert_response(
         kind="dataset-config-names",
         dataset=dataset,

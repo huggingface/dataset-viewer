@@ -38,6 +38,7 @@ from worker.job_runners.dataset.opt_in_out_urls_count import (
     DatasetOptInOutUrlsCountJobRunner,
 )
 from worker.job_runners.dataset.parquet import DatasetParquetJobRunner
+from worker.job_runners.dataset.presidio_entities_count import DatasetPresidioEntitiesCountJobRunner
 from worker.job_runners.dataset.size import DatasetSizeJobRunner
 from worker.job_runners.dataset.split_names import DatasetSplitNamesJobRunner
 from worker.job_runners.split.descriptive_statistics import (
@@ -53,6 +54,7 @@ from worker.job_runners.split.opt_in_out_urls_count import (
 from worker.job_runners.split.opt_in_out_urls_scan_from_streaming import (
     SplitOptInOutUrlsScanJobRunner,
 )
+from worker.job_runners.split.presidio_scan import SplitPresidioEntitiesScanJobRunner
 
 
 class BaseJobRunnerFactory(ABC):
@@ -192,6 +194,17 @@ class JobRunnerFactory(BaseJobRunnerFactory):
                 job_info=job_info,
                 app_config=self.app_config,
             )
+        if job_type == SplitPresidioEntitiesScanJobRunner.get_job_type():
+            return SplitPresidioEntitiesScanJobRunner(
+                job_info=job_info,
+                app_config=self.app_config,
+                hf_datasets_cache=self.hf_datasets_cache,
+            )
+        if job_type == DatasetPresidioEntitiesCountJobRunner.get_job_type():
+            return DatasetPresidioEntitiesCountJobRunner(
+                job_info=job_info,
+                app_config=self.app_config,
+            )
         if job_type == SplitDescriptiveStatisticsJobRunner.get_job_type():
             return SplitDescriptiveStatisticsJobRunner(
                 job_info=job_info,
@@ -256,6 +269,8 @@ class JobRunnerFactory(BaseJobRunnerFactory):
             SplitOptInOutUrlsCountJobRunner.get_job_type(),
             ConfigOptInOutUrlsCountJobRunner.get_job_type(),
             DatasetOptInOutUrlsCountJobRunner.get_job_type(),
+            SplitPresidioEntitiesScanJobRunner.get_job_type(),
+            DatasetPresidioEntitiesCountJobRunner.get_job_type(),
             SplitDuckDbIndexJobRunner.get_job_type(),
             SplitDescriptiveStatisticsJobRunner.get_job_type(),
             ConfigDuckdbIndexSizeJobRunner.get_job_type(),

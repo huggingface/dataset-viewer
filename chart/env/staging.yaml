@@ -13,11 +13,6 @@ global:
 images:
   pullPolicy: IfNotPresent
   pullSecrets: []
-  reverseProxy:
-    useGlobalRegistry: false
-    registry: docker.io
-    repository: nginx
-    tag: "1.25.3"
   jobs:
     mongodbMigration:
       registry: huggingface
@@ -55,15 +50,15 @@ images:
       useGlobalRegistry: false
       repository: datasets-server-services-sse-api
       tag: sha-fb3399a
-    storageAdmin:
-      registry: huggingface
-      useGlobalRegistry: false
-      repository: datasets-server-services-storage-admin
-      tag: sha-fb3399a
     worker:
       registry: huggingface
       useGlobalRegistry: false
       repository: datasets-server-services-worker
+      tag: sha-fb3399a
+    webhook:
+      registry: huggingface
+      useGlobalRegistry: false
+      repository: datasets-server-services-webhook
       tag: sha-fb3399a
 
 secrets:
@@ -158,17 +153,6 @@ mongodbMigration:
     limits:
       cpu: 1
 
-# --- jobs (post-install/upgrade hooks) ---
-
-deleteDuckdbIndexes:
-  log:
-    level: "debug"
-  resources:
-    requests:
-      cpu: 100m
-    limits:
-      cpu: 1
-
 # --- cron jobs  ---
 backfill:
   enabled: false
@@ -184,31 +168,7 @@ queueMetricsCollector:
       cpu: 1
       memory: "512Mi"
 
-# --- storage admin (to manually inspect the storage, in /data) ---
-
-storageAdmin:
-  replicas: 1
-  resources:
-    requests:
-      cpu: 50m
-      memory: "64Mi"
-    limits:
-      cpu: 1
-      memory: "256Mi"
-
-# --- reverse proxy ---
-
-reverseProxy:
-  replicas: 1
-  resources:
-    requests:
-      cpu: 100m
-      memory: "64Mi"
-    limits:
-      cpu: 1
-      memory: "256Mi"
-  service:
-    type: NodePort
+# --- ALB ---
 
 ingress:
   tls:
@@ -223,6 +183,7 @@ ingress:
     alb.ingress.kubernetes.io/scheme: "internet-facing"
     alb.ingress.kubernetes.io/group.name: "datasets-server"
     kubernetes.io/ingress.class: "alb"
+    alb.ingress.kubernetes.io/group.order: "100"
 
 # --- services ---
 
@@ -231,6 +192,10 @@ admin:
   replicas: 1
   service:
     type: NodePort
+  ingress:
+    enabled: true
+    annotations:
+      alb.ingress.kubernetes.io/group.order: "1"
   resources:
     requests:
       cpu: 100m
@@ -244,6 +209,11 @@ api:
   replicas: 1
   service:
     type: NodePort
+  ingress:
+    enabled: true
+    annotations:
+      alb.ingress.kubernetes.io/actions.openapi-redirect: '{"Type":"redirect","RedirectConfig":{"Host":"raw.githubusercontent.com","Path":"/huggingface/dataset-viewer/main/docs/source/openapi.json","Port":"443","Protocol":"HTTPS","Query":"#{query}","StatusCode":"HTTP_302"}}'
+      alb.ingress.kubernetes.io/actions.metrics-unauthorized: '{"type":"fixed-response","fixedResponseConfig":{"contentType":"text/plain","statusCode":"401","messageBody":"401 Unauthorized"}}'
   resources:
     requests:
       cpu: 100m
@@ -257,6 +227,10 @@ rows:
   replicas: 1
   service:
     type: NodePort
+  ingress:
+    enabled: true
+    annotations:
+      alb.ingress.kubernetes.io/group.order: "2"
   resources:
     requests:
       cpu: 100m
@@ -270,6 +244,10 @@ search:
   replicas: 1
   service:
     type: NodePort
+  ingress:
+    enabled: true
+    annotations:
+      alb.ingress.kubernetes.io/group.order: "3"
   resources:
     requests:
       cpu: 100m
@@ -277,6 +255,10 @@ search:
     limits:
       cpu: 1
       memory: "4Gi"
+
+sseApi:
+  service:
+    type: NodePort
 
 workers:
   - deployName: "all"
@@ -332,3 +314,20 @@ workers:
       limits:
         cpu: 1
         memory: "4Gi"
+
+webhook:
+  uvicornNumWorkers: "1"
+  replicas: 1
+  service:
+    type: NodePort
+  ingress:
+    enabled: true
+    annotations:
+      alb.ingress.kubernetes.io/group.order: "4"
+  resources:
+    requests:
+      cpu: 100m
+      memory: "512Mi"
+    limits:
+      cpu: 1
+      memory: "4Gi"

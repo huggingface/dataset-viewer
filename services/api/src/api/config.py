@@ -82,6 +82,9 @@ class EndpointConfig:
                 "config": "config-opt-in-out-urls-count",
                 "split": "split-opt-in-out-urls-count",
             },
+            "/presidio-entities": {
+                "dataset": "dataset-presidio-entities-count",
+            },
             "/is-valid": {
                 "dataset": "dataset-is-valid",
                 "config": "config-is-valid",

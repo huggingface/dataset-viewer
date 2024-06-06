@@ -46,7 +46,6 @@ def compute_split_names_from_streaming_response(
             List of datasets for which we support dataset scripts.
             Unix shell-style wildcards also work in the dataset name for namespaced datasets,
             for example `some_namespace/*` to refer to all the datasets in the `some_namespace` namespace.
-            The keyword `{{ALL_DATASETS_WITH_NO_NAMESPACE}}` refers to all the datasets without namespace.
         hf_token (`str`, *optional*):
             An authentication token (See https://huggingface.co/settings/token)
         max_number (`str`):
@@ -61,6 +60,10 @@ def compute_split_names_from_streaming_response(
           If the list of splits could not be obtained using the datasets library.
         [~`libcommon.exceptions.DatasetWithScriptNotSupportedError`]:
             If the dataset has a dataset script and is not in the allow list.
+        [~`libcommon.exceptions.SplitNamesFromStreamingError`]:
+            If the split names could not be obtained using the datasets library.
+        [~`libcommon.exceptions.DatasetWithTooManySplitsError`]:
+            If the config has too many splits.
 
     Returns:
         `SplitsList`: An object with the list of split names for the dataset and config.
@@ -118,6 +121,8 @@ def compute_split_names_from_info_response(dataset: str, config: str, max_number
           If the previous step has not been computed yet.
         [~`libcommon.exceptions.PreviousStepFormatError`]:
           If the content of the previous step has not the expected format
+        [~`libcommon.exceptions.DatasetWithTooManySplitsError`]:
+            If the config has too many splits.
 
     Returns:
         `SplitsList`: An object with the list of split names for the dataset and config.

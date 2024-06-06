@@ -112,9 +112,11 @@ CacheableErrorCode = Literal[
     "NotSupportedDisabledViewerError",
     "NotSupportedPrivateRepositoryError",
     "NotSupportedRepositoryNotFoundError",
+    "NotSupportedTagNFAAError",
     "NormalRowsError",
     "ParameterMissingError",
     "ParquetResponseEmptyError",
+    "PresidioScanNotEnabledForThisDataset",
     "PreviousStepFormatError",
     "PreviousStepStatusError",
     "PreviousStepStillProcessingError",
@@ -605,6 +607,13 @@ class NotSupportedPrivateRepositoryError(NotSupportedError):
         super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "NotSupportedPrivateRepositoryError", cause, False)
 
 
+class NotSupportedTagNFAAError(NotSupportedError):
+    """The dataset viewer is disabled because the dataset has the NFAA tag."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "NotSupportedTagNFAAError", cause, False)
+
+
 class DatasetInBlockListError(NotSupportedError):
     """The dataset is in the list of blocked datasets."""
 
@@ -619,3 +628,10 @@ class DatasetWithTooComplexDataFilesPatternsError(CacheableError):
         super().__init__(
             message, HTTPStatus.INTERNAL_SERVER_ERROR, "DatasetWithTooComplexDataFilesPatternsError", cause, True
         )
+
+
+class PresidioScanNotEnabledForThisDataset(CacheableError):
+    """We've only enabled some datasets for presidio scans."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "PresidioScanNotEnabledForThisDataset", cause, False)

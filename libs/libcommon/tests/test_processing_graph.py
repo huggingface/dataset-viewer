@@ -90,7 +90,9 @@ def test_graph() -> None:
         ),
         (
             "dataset-split-names",
-            [],
+            [
+                "dataset-presidio-entities-count",
+            ],
             [
                 "dataset-config-names",
                 "config-split-names",
@@ -123,7 +125,7 @@ def test_graph() -> None:
         ),
         (
             "config-parquet-metadata",
-            ["split-first-rows", "split-duckdb-index", "split-descriptive-statistics"],
+            ["split-first-rows", "split-duckdb-index", "split-descriptive-statistics", "split-presidio-scan"],
             ["config-parquet"],
             ["dataset-config-names", "config-parquet-and-info", "config-parquet"],
         ),
@@ -269,6 +271,32 @@ def test_graph() -> None:
                 "split-opt-in-out-urls-scan",
                 "config-parquet",
                 "split-image-url-columns",
+            ],
+        ),
+        (
+            "split-presidio-scan",
+            ["dataset-presidio-entities-count"],
+            ["config-parquet-metadata"],
+            [
+                "config-parquet",
+                "config-parquet-and-info",
+                "config-parquet-metadata",
+                "dataset-config-names",
+            ],
+        ),
+        (
+            "dataset-presidio-entities-count",
+            [],
+            ["dataset-split-names", "split-presidio-scan"],
+            [
+                "config-info",
+                "config-parquet",
+                "config-parquet-and-info",
+                "config-parquet-metadata",
+                "config-split-names",
+                "dataset-config-names",
+                "dataset-split-names",
+                "split-presidio-scan",
             ],
         ),
         (

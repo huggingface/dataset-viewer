@@ -9,6 +9,7 @@ from http import HTTPStatus
 from typing import Any, Generic, NamedTuple, Optional, TypedDict, TypeVar, overload
 
 import pandas as pd
+import pyarrow as pa
 from bson import CodecOptions, ObjectId
 from bson.codec_options import TypeEncoder, TypeRegistry  # type: ignore[attr-defined]
 from bson.errors import InvalidId
@@ -24,6 +25,7 @@ from mongoengine.fields import (
     StringField,
 )
 from mongoengine.queryset.queryset import QuerySet
+from pymongoarrow.api import Schema, find_pandas_all
 
 from libcommon.constants import (
     CACHE_COLLECTION_RESPONSES,
@@ -98,6 +100,23 @@ class SplitFullName(NamedTuple):
     split: Optional[str]
 
 
+PA_SCHEMA = Schema(
+    {
+        "kind": pa.string(),
+        "dataset": pa.string(),
+        "config": pa.string(),
+        "split": pa.string(),
+        "http_status": pa.int32(),
+        "error_code": pa.string(),
+        "dataset_git_revision": pa.string(),
+        "job_runner_version": pa.int32(),
+        "progress": pa.float64(),
+        "updated_at": pa.timestamp("ms"),
+        "failed_runs": pa.int32(),
+    }
+)
+
+
 # cache of any job
 class CachedResponseDocument(Document):
     """A response computed for a job, cached in the mongoDB database
@@ -151,6 +170,15 @@ class CachedResponseDocument(Document):
     }
     objects = QuerySetManager["CachedResponseDocument"]()
 
+    @classmethod
+    def fetch_as_df(cls, query: Optional[Mapping[str, Any]] = None) -> pd.DataFrame:
+        """
+        Fetch documents matching the query as a Pandas Dataframe.
+        """
+        query = query if query is not None else {}
+        collection = cls._get_collection()
+        return find_pandas_all(collection, query, schema=PA_SCHEMA)  # type: ignore
+
 
 DEFAULT_INCREASE_AMOUNT = 1
 DEFAULT_DECREASE_AMOUNT = -1
@@ -195,8 +223,24 @@ CachedResponseDocument.config.required = False  # type: ignore
 CachedResponseDocument.split.required = False  # type: ignore
 
 
-class CacheEntryDoesNotExistError(DoesNotExist):
-    pass
+class CachedArtifactNotFoundError(Exception):
+    kind: str
+    dataset: str
+    config: Optional[str]
+    split: Optional[str]
+
+    def __init__(
+        self,
+        kind: str,
+        dataset: str,
+        config: Optional[str],
+        split: Optional[str],
+    ):
+        super().__init__(f"Cache entry does not exist: {kind=} {dataset=} {config=} {split=}")
+        self.kind = kind
+        self.dataset = dataset
+        self.config = config
+        self.split = split
 
 
 def _update_metrics(kind: str, http_status: HTTPStatus, increase_by: int, error_code: Optional[str] = None) -> None:
@@ -315,18 +359,15 @@ T = TypeVar("T")
 
 
 @overload
-def _clean_nested_mongo_object(obj: dict[str, T]) -> dict[str, T]:
-    ...
+def _clean_nested_mongo_object(obj: dict[str, T]) -> dict[str, T]: ...
 
 
 @overload
-def _clean_nested_mongo_object(obj: list[T]) -> list[T]:
-    ...
+def _clean_nested_mongo_object(obj: list[T]) -> list[T]: ...
 
 
 @overload
-def _clean_nested_mongo_object(obj: T) -> T:
-    ...
+def _clean_nested_mongo_object(obj: T) -> T: ...
 
 
 def _clean_nested_mongo_object(obj: Any) -> Any:
@@ -360,7 +401,7 @@ def get_response_without_content(
             .get()
         )
     except DoesNotExist as e:
-        raise CacheEntryDoesNotExistError(f"Cache entry does not exist: {kind=} {dataset=} {config=} {split=}") from e
+        raise CachedArtifactNotFoundError(kind=kind, dataset=dataset, config=config, split=split) from e
     return {
         "http_status": response.http_status,
         "error_code": response.error_code,
@@ -394,7 +435,7 @@ def get_response_metadata(
             .get()
         )
     except DoesNotExist as e:
-        raise CacheEntryDoesNotExistError(f"Cache entry does not exist: {kind=} {dataset=} {config=} {split=}") from e
+        raise CachedArtifactNotFoundError(kind=kind, dataset=dataset, config=config, split=split) from e
     return {
         "http_status": response.http_status,
         "error_code": response.error_code,
@@ -412,26 +453,6 @@ class CacheEntry(CacheEntryWithoutContent):
 
 class CacheEntryWithDetails(CacheEntry):
     details: Mapping[str, str]
-
-
-class CachedArtifactNotFoundError(Exception):
-    kind: str
-    dataset: str
-    config: Optional[str]
-    split: Optional[str]
-
-    def __init__(
-        self,
-        kind: str,
-        dataset: str,
-        config: Optional[str],
-        split: Optional[str],
-    ):
-        super().__init__("The cache entry has not been found.")
-        self.kind = kind
-        self.dataset = dataset
-        self.config = config
-        self.split = split
 
 
 class CachedArtifactError(Exception):
@@ -475,7 +496,7 @@ def get_response(kind: str, dataset: str, config: Optional[str] = None, split: O
             .get()
         )
     except DoesNotExist as e:
-        raise CacheEntryDoesNotExistError(f"Cache entry does not exist: {kind=} {dataset=} {config=} {split=}") from e
+        raise CachedArtifactNotFoundError(kind=kind, dataset=dataset, config=config, split=split) from e
     return {
         "content": _clean_nested_mongo_object(response.content),
         "http_status": response.http_status,
@@ -505,7 +526,7 @@ def get_response_with_details(
             .get()
         )
     except DoesNotExist as e:
-        raise CacheEntryDoesNotExistError(f"Cache entry does not exist: {kind=} {dataset=} {config=} {split=}") from e
+        raise CachedArtifactNotFoundError(kind=kind, dataset=dataset, config=config, split=split) from e
     return {
         "content": _clean_nested_mongo_object(response.content),
         "http_status": response.http_status,
@@ -521,28 +542,6 @@ CACHED_RESPONSE_NOT_FOUND = "CachedResponseNotFound"
 DATASET_GIT_REVISION_NOT_FOUND = "dataset-git-revision-not-found"
 
 
-def get_response_or_missing_error(
-    kind: str, dataset: str, config: Optional[str] = None, split: Optional[str] = None
-) -> CacheEntryWithDetails:
-    try:
-        response = get_response_with_details(kind=kind, dataset=dataset, config=config, split=split)
-    except CacheEntryDoesNotExistError:
-        response = CacheEntryWithDetails(
-            content={
-                "error": (
-                    f"Cached response not found for kind {kind}, dataset {dataset}, config {config}, split {split}"
-                )
-            },
-            http_status=HTTPStatus.NOT_FOUND,
-            error_code=CACHED_RESPONSE_NOT_FOUND,
-            dataset_git_revision=DATASET_GIT_REVISION_NOT_FOUND,
-            job_runner_version=None,
-            progress=None,
-            details={},
-        )
-    return response
-
-
 def get_previous_step_or_raise(
     kind: str, dataset: str, config: Optional[str] = None, split: Optional[str] = None
 ) -> CacheEntryWithDetails:
@@ -555,13 +554,15 @@ def get_previous_step_or_raise(
         config (`str`, *optional*): The config name.
         split (`str`, *optional*): The split name.
 
+    Raises:
+        [~`CachedArtifactNotFoundError`]: If the response does not exist.
+        [~`CachedArtifactError`]: If the response is not successful.
+
     Returns:
         `CacheEntryWithDetails`: The response. It can be an error,
           including a cache miss (error code: `CachedResponseNotFound`)
     """
-    response = get_response_or_missing_error(kind=kind, dataset=dataset, config=config, split=split)
-    if "error_code" in response and response["error_code"] == CACHED_RESPONSE_NOT_FOUND:
-        raise CachedArtifactNotFoundError(kind=kind, dataset=dataset, config=config, split=split)
+    response = get_response_with_details(kind=kind, dataset=dataset, config=config, split=split)
     if response["http_status"] != HTTPStatus.OK:
         raise CachedArtifactError(
             message="The previous step failed.",
@@ -861,6 +862,13 @@ def _get_df(entries: list[CacheEntryFullMetadata]) -> pd.DataFrame:
 
 
 def get_cache_entries_df(dataset: str, cache_kinds: Optional[list[str]] = None) -> pd.DataFrame:
+    filters = {"dataset": dataset}
+    if cache_kinds:
+        filters["kind"] = {"$in": cache_kinds}  # type: ignore
+    return CachedResponseDocument.fetch_as_df(query=filters)
+
+
+def get_cache_entries_df_old(dataset: str, cache_kinds: Optional[list[str]] = None) -> pd.DataFrame:
     filters = {}
     if cache_kinds:
         filters["kind__in"] = cache_kinds
@@ -922,7 +930,7 @@ def fetch_names(dataset: str, config: Optional[str], cache_kind: str, names_fiel
     """
     try:
         names = []
-        response = get_response_or_missing_error(kind=cache_kind, dataset=dataset, config=config)
+        response = get_response_with_details(kind=cache_kind, dataset=dataset, config=config)
         for name_item in response["content"][names_field]:
             name = name_item[name_field]
             if not isinstance(name, str):
