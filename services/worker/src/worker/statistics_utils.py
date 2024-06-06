@@ -683,19 +683,16 @@ class ImageColumn(MediaColumn):
     @staticmethod
     def get_width(example: Optional[Union[bytes, dict[str, Any]]]) -> Optional[int]:
         """Get image widths."""
-        if example is None:
-            return None
-        example_bytes = example["bytes"] if isinstance(example, dict) else example
-        with io.BytesIO(example_bytes) as f:
-            image = Image.open(f)
-            return image.size[0]
+        image_shape = ImageColumn.get_shape(example)
+        return image_shape[0]
 
     @staticmethod
-    def get_shape(example: Optional[dict[str, Any]]) -> Union[tuple[None, None], tuple[int, int]]:
+    def get_shape(example: Optional[Union[bytes, dict[str, Any]]]) -> Union[tuple[None, None], tuple[int, int]]:
         """Get image widths and heights."""
         if example is None:
             return None, None
-        with io.BytesIO(example["bytes"]) as f:
+        example_bytes = example["bytes"] if isinstance(example, dict) else example
+        with io.BytesIO(example_bytes) as f:
             image = Image.open(f)
             return image.size
 
