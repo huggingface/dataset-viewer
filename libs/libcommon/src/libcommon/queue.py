@@ -13,16 +13,19 @@ from enum import IntEnum
 from itertools import groupby
 from operator import itemgetter
 from types import TracebackType
-from typing import Generic, Literal, Optional, TypedDict, TypeVar
+from typing import Any, Generic, Literal, Optional, TypedDict, TypeVar
 from uuid import uuid4
 
+import bson
 import pandas as pd
+import pyarrow as pa
 import pytz
 from bson import ObjectId
 from mongoengine import Document
 from mongoengine.errors import DoesNotExist, NotUniqueError
 from mongoengine.fields import DateTimeField, EnumField, IntField, ObjectIdField, StringField
 from mongoengine.queryset.queryset import QuerySet
+from pymongoarrow.api import Schema, find_pandas_all
 
 from libcommon.constants import (
     DEFAULT_DIFFICULTY_MAX,
@@ -116,6 +119,21 @@ class JobQueryFilters(TypedDict, total=False):
     difficulty__lte: int
 
 
+PA_SCHEMA = Schema(
+    {
+        "_id": bson.ObjectId,
+        "type": pa.string(),
+        "dataset": pa.string(),
+        "revision": pa.string(),
+        "config": pa.string(),
+        "split": pa.string(),
+        "priority": pa.string(),
+        "status": pa.string(),
+        "created_at": pa.timestamp("ms"),
+    }
+)
+
+
 # States:
 # - waiting: started_at is None
 # - started: started_at is not None
@@ -186,6 +204,15 @@ class JobDocument(Document):
         }
 
     objects = QuerySetManager["JobDocument"]()
+
+    @classmethod
+    def fetch_as_df(cls, query: Optional[Mapping[str, Any]] = None) -> pd.DataFrame:
+        """
+        Fetch documents matching the query as a Pandas Dataframe.
+        """
+        query = query if query is not None else {}
+        collection = cls._get_collection()
+        return find_pandas_all(collection, query, schema=PA_SCHEMA)  # type: ignore
 
     def info(self) -> JobInfo:
         return JobInfo(
@@ -1019,6 +1046,27 @@ class Queue:
         # ^ does not seem optimal at all, but I get the types right
 
     def get_pending_jobs_df(self, dataset: str, job_types: Optional[list[str]] = None) -> pd.DataFrame:
+        filters = {"dataset": dataset}
+        if job_types:
+            filters["type"] = {"$in": job_types}  # type: ignore
+        df = JobDocument.fetch_as_df(query=filters)
+        df.rename(columns={"_id": "job_id"}, inplace=True)
+        df["priority"] = pd.Categorical(
+            df["priority"],
+            ordered=True,
+            categories=[Priority.LOW.value, Priority.NORMAL.value, Priority.HIGH.value],
+        )
+        df["status"] = pd.Categorical(
+            df["status"],
+            ordered=True,
+            categories=[
+                Status.WAITING.value,
+                Status.STARTED.value,
+            ],
+        )
+        return df
+
+    def get_pending_jobs_df_old(self, dataset: str, job_types: Optional[list[str]] = None) -> pd.DataFrame:
         filters = {}
         if job_types:
             filters["type__in"] = job_types

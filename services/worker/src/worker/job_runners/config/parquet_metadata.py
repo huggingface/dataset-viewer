@@ -5,6 +5,7 @@ import functools
 import logging
 from typing import Optional
 
+import aiohttp
 from fsspec.implementations.http import HTTPFileSystem
 from libcommon.dtos import JobInfo, SplitHubFile
 from libcommon.exceptions import (
@@ -14,6 +15,7 @@ from libcommon.exceptions import (
 )
 from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.storage import StrPath
+from libcommon.utils import retry
 from libcommon.viewer_utils.parquet_metadata import create_parquet_metadata_file
 from tqdm.contrib.concurrent import thread_map
 
@@ -26,12 +28,15 @@ from worker.dtos import (
 from worker.job_runners.config.config_job_runner import ConfigJobRunner
 from worker.utils import get_parquet_file
 
+SLEEPS = [0.2, 1, 1, 10, 10, 10]
+
 
 def create_parquet_metadata_file_from_remote_parquet(
     parquet_file_item: SplitHubFile, fs: HTTPFileSystem, hf_token: Optional[str], parquet_metadata_directory: StrPath
 ) -> ParquetFileMetadataItem:
     try:
-        parquet_file = get_parquet_file(url=parquet_file_item["url"], fs=fs, hf_token=hf_token)
+        retry_get_parquet_file = retry(on=[aiohttp.ServerConnectionError], sleeps=SLEEPS)(get_parquet_file)
+        parquet_file = retry_get_parquet_file(url=parquet_file_item["url"], fs=fs, hf_token=hf_token)
     except Exception as e:
         raise FileSystemError(f"Could not read the parquet files: {e}") from e
     split = parquet_file_item["url"].split("/")[-2]

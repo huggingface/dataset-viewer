@@ -11,6 +11,7 @@ from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import (
     delete_response,
     get_cache_entries_df,
+    get_cache_entries_df_old,
     upsert_response,
 )
 from libcommon.state import (
@@ -45,6 +46,42 @@ def queue_mongo_resource_autouse(queue_mongo_resource: QueueMongoResource) -> Qu
 @pytest.fixture(autouse=True)
 def cache_mongo_resource_autouse(cache_mongo_resource: CacheMongoResource) -> CacheMongoResource:
     return cache_mongo_resource
+
+
+def populate_cache() -> tuple[list[str], int]:
+    cache_kinds = ["cache-kind-1", "cache-kind-2", "cache-kind-3"]
+    configs = [f"config-{i}" for i in range(15)]
+    splits = [f"split-{i}" for i in range(15)]
+    for cache_kind in cache_kinds:
+        for config in configs:
+            for split in splits:
+                upsert_response(
+                    kind=cache_kind,
+                    dataset=DATASET_NAME,
+                    config=config,
+                    split=split,
+                    content={},
+                    http_status=HTTPStatus.OK,
+                    dataset_git_revision=REVISION_NAME,
+                    progress=1,
+                    job_runner_version=1,
+                    failed_runs=0,
+                )
+    return cache_kinds, len(cache_kinds) * len(configs) * len(splits)
+
+
+@pytest.mark.limit_memory("2 MB")  # Success, it uses ~1.5 MB
+def test_get_cache_entries_df() -> None:
+    cache_kinds, expected_entries = populate_cache()
+    entries = get_cache_entries_df(dataset=DATASET_NAME, cache_kinds=cache_kinds)
+    assert entries.shape[0] == expected_entries
+
+
+@pytest.mark.limit_memory("2 MB")  # Will fail, it uses ~2.8 MB
+def test_get_cache_entries_df_old() -> None:
+    cache_kinds, expected_entries = populate_cache()
+    entries = get_cache_entries_df_old(dataset=DATASET_NAME, cache_kinds=cache_kinds)
+    assert entries.shape[0] == expected_entries
 
 
 @pytest.mark.parametrize(
