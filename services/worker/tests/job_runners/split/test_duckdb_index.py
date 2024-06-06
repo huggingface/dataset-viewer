@@ -230,12 +230,12 @@ def expected_data(datasets: Mapping[str, Dataset]) -> dict[str, list[Any]]:
         if is_string or is_list:
             expected[f"{feature_name}.length"] = [len(row) if row is not None else None for row in ds[feature_name]]
         elif isinstance(feature, Audio):
-            if "all_nan" in feature_name:
+            if "all_null" in feature_name:
                 expected[f"{feature_name}.duration"] = null_column(5)
             else:
                 expected[f"{feature_name}.duration"] = [1.0, 2.0, 3.0, 4.0, None]
         elif isinstance(feature, Image):
-            if "all_nan" in feature_name:
+            if "all_null" in feature_name:
                 expected[f"{feature_name}.width"] = null_column(5)
                 expected[f"{feature_name}.height"] = null_column(5)
             else:
