@@ -105,12 +105,15 @@ class StorageClient:
             int: The number of directories deleted (0 or 1)
         """
         dataset_key = self.get_full_path(dataset)
-        try:
-            self._fs.rm(dataset_key, recursive=True)
-            logging.info(f"Directory deleted: {dataset_key}")
-            return 1
-        except Exception:
-            logging.warning(f"Could not delete directory {dataset_key}")
+        if self._fs.exists(dataset_key):
+            try:
+                self._fs.rm(dataset_key, recursive=True)
+                logging.info(f"Directory deleted: {dataset_key}")
+                return 1
+            except Exception:
+                logging.warning(f"Could not delete directory {dataset_key}")
+                return 0
+        else:
             return 0
 
     def __repr__(self) -> str:
