@@ -109,6 +109,8 @@ class StorageClient:
             self._fs.rm(dataset_key, recursive=True)
             logging.info(f"Directory deleted: {dataset_key}")
             return 1
+        except FileNotFoundError:
+            return 0
         except Exception:
             logging.warning(f"Could not delete directory {dataset_key}")
             return 0
