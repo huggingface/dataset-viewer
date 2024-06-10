@@ -79,6 +79,9 @@ class URLSigner(ABC):
     def sign_url(self, url: str) -> str:
         pass
 
+    def __str__(self) -> str:
+        return self.__class__.__name__
+
     def _sign_asset_url_path_in_place(self, cell: Any, asset_url_path: AssetUrlPath) -> Any:
         if not cell:
             return cell
