@@ -114,4 +114,4 @@ class StorageClient:
             return 0
 
     def __repr__(self) -> str:
-        return f"StorageClient(protocol={self.protocol}, storage_root={self.storage_root}, base_url={self.base_url}, overwrite={self.overwrite}), url_signer={self.url_signer})"
+        return f"StorageClient(protocol={self.protocol}, storage_root={self.storage_root}, base_url={self.base_url}, overwrite={self.overwrite}, url_signer={self.url_signer})"
