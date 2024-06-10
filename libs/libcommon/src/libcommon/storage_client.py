@@ -113,5 +113,5 @@ class StorageClient:
             logging.warning(f"Could not delete directory {dataset_key}")
             return 0
 
-    def __repr__(self) -> str:
+    def __str__(self) -> str:
         return f"StorageClient(protocol={self.protocol}, storage_root={self.storage_root}, base_url={self.base_url}, overwrite={self.overwrite}, url_signer={self.url_signer})"
