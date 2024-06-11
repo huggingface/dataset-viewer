@@ -123,7 +123,7 @@ class Loop:
                 logging.debug(e)
                 return False
 
-        with LongStepProfiler("loop", "run_job", job_info["type"]):
+        with LongStepProfiler("loop", "run_job"):
             job_runner = self.job_runner_factory.create_job_runner(job_info)
             job_manager = JobManager(job_info=job_info, app_config=self.app_config, job_runner=job_runner)
             job_result = job_manager.run_job()
