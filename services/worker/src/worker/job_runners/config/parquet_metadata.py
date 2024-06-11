@@ -6,17 +6,19 @@ import logging
 from typing import Optional
 
 import aiohttp
-from fsspec.implementations.http import HTTPFileSystem
+from huggingface_hub import HfFileSystemFile
 from libcommon.dtos import JobInfo, SplitHubFile
 from libcommon.exceptions import (
     FileSystemError,
     ParquetResponseEmptyError,
     PreviousStepFormatError,
 )
+from libcommon.parquet_utils import extract_split_name_from_parquet_url
 from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.storage import StrPath
 from libcommon.utils import retry
 from libcommon.viewer_utils.parquet_metadata import create_parquet_metadata_file
+from pyarrow.parquet import ParquetFile
 from tqdm.contrib.concurrent import thread_map
 
 from worker.config import AppConfig
@@ -26,17 +28,30 @@ from worker.dtos import (
     ParquetFileMetadataItem,
 )
 from worker.job_runners.config.config_job_runner import ConfigJobRunner
-from worker.utils import get_parquet_file
+from worker.utils import open_file
 
 SLEEPS = [0.2, 1, 1, 10, 10, 10]
 
 
+# TODO: on which error?
+@retry(on=[aiohttp.ServerConnectionError], sleeps=SLEEPS)
+def retry_open_file(
+    file_url: str, hf_endpoint: str, hf_token: Optional[str], revision: Optional[str] = None
+) -> HfFileSystemFile:
+    return open_file(file_url=file_url, hf_endpoint=hf_endpoint, hf_token=hf_token, revision=revision)
+
+
 def create_parquet_metadata_file_from_remote_parquet(
-    parquet_file_item: SplitHubFile, fs: HTTPFileSystem, hf_token: Optional[str], parquet_metadata_directory: StrPath
+    parquet_file_item: SplitHubFile, hf_endpoint: str, hf_token: Optional[str], parquet_metadata_directory: StrPath
 ) -> ParquetFileMetadataItem:
+    split_directory = extract_split_name_from_parquet_url(parquet_file_item["url"])
+    hfh_file_url = f"datasets/{parquet_file_item['config']}/{split_directory}/{parquet_file_item['filename']}"
     try:
-        retry_get_parquet_file = retry(on=[aiohttp.ServerConnectionError], sleeps=SLEEPS)(get_parquet_file)
-        parquet_file = retry_get_parquet_file(url=parquet_file_item["url"], fs=fs, hf_token=hf_token)
+        # TODO: make revision config's parameter
+        f = retry_open_file(
+            file_url=hfh_file_url, hf_endpoint=hf_endpoint, hf_token=hf_token, revision="refs/convert/parquet"
+        )
+        parquet_file_metadata = ParquetFile(f).metadata
     except Exception as e:
         raise FileSystemError(f"Could not read the parquet files: {e}") from e
     split = parquet_file_item["url"].split("/")[-2]
@@ -47,10 +62,11 @@ def create_parquet_metadata_file_from_remote_parquet(
         dataset=parquet_file_item["dataset"],
         config=parquet_file_item["config"],
         split=split,
-        parquet_file_metadata=parquet_file.metadata,
+        parquet_file_metadata=parquet_file_metadata,
         filename=parquet_file_item["filename"],
         parquet_metadata_directory=parquet_metadata_directory,
     )
+    f.close()
     return ParquetFileMetadataItem(
         dataset=parquet_file_item["dataset"],
         config=parquet_file_item["config"],
@@ -58,13 +74,13 @@ def create_parquet_metadata_file_from_remote_parquet(
         url=parquet_file_item["url"],
         filename=parquet_file_item["filename"],
         size=parquet_file_item["size"],
-        num_rows=parquet_file.metadata.num_rows,
+        num_rows=parquet_file_metadata.num_rows,
         parquet_metadata_subpath=parquet_metadata_subpath,
     )
 
 
 def compute_parquet_metadata_response(
-    dataset: str, config: str, hf_token: Optional[str], parquet_metadata_directory: StrPath
+    dataset: str, config: str, hf_endpoint: str, hf_token: Optional[str], parquet_metadata_directory: StrPath
 ) -> ConfigParquetMetadataResponse:
     """
     Get the response of 'config-parquet-metadata' for one specific dataset and config on huggingface.co.
@@ -76,6 +92,8 @@ def compute_parquet_metadata_response(
             by a `/`.
         config (`str`):
             A configuration name.
+        hf_endpoint (`str`):
+            The Hub endpoint (for example: "https://huggingface.co")
         hf_token (`str`, *optional*):
             An authentication token (See https://huggingface.co/settings/token)
         parquet_metadata_directory (`str` or `pathlib.Path`):
@@ -114,12 +132,11 @@ def compute_parquet_metadata_response(
     except Exception as e:
         raise PreviousStepFormatError("Previous step did not return the expected content.") from e
 
-    fs = HTTPFileSystem()
     desc = f"{dataset}/{config}"
     parquet_files_metadata: list[ParquetFileMetadataItem] = thread_map(
         functools.partial(
             create_parquet_metadata_file_from_remote_parquet,
-            fs=fs,
+            hf_endpoint=hf_endpoint,
             hf_token=hf_token,
             parquet_metadata_directory=parquet_metadata_directory,
         ),
@@ -157,6 +174,7 @@ class ConfigParquetMetadataJobRunner(ConfigJobRunner):
             compute_parquet_metadata_response(
                 dataset=self.dataset,
                 config=self.config,
+                hf_endpoint=self.app_config.common.hf_endpoint,
                 hf_token=self.app_config.common.hf_token,
                 parquet_metadata_directory=self.parquet_metadata_directory,
             )

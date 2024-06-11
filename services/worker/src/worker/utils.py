@@ -13,8 +13,7 @@ from urllib.parse import quote
 import PIL
 import requests
 from datasets import Dataset, DatasetInfo, DownloadConfig, Features, IterableDataset, load_dataset
-from datasets.utils.file_utils import get_authentication_headers_for_url
-from fsspec.implementations.http import HTTPFileSystem
+from huggingface_hub import HfFileSystem, HfFileSystemFile
 from huggingface_hub.hf_api import HfApi
 from huggingface_hub.utils._errors import RepositoryNotFoundError
 from libcommon.constants import CONFIG_SPLIT_NAMES_KIND, EXTERNAL_DATASET_SCRIPT_PATTERN, MAX_COLUMN_NAME_LENGTH
@@ -31,7 +30,6 @@ from libcommon.exceptions import (
 )
 from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.utils import retry
-from pyarrow.parquet import ParquetFile
 
 MAX_IMAGE_PIXELS = 10_000_000_000
 # ^ see https://pillow.readthedocs.io/en/stable/reference/Image.html#PIL.Image.MAX_IMAGE_PIXELS
@@ -140,9 +138,11 @@ def hf_hub_url(repo_id: str, filename: str, hf_endpoint: str, revision: str, url
     return (hf_endpoint + url_template) % (repo_id, quote(revision, safe=""), filename)
 
 
-def get_parquet_file(url: str, fs: HTTPFileSystem, hf_token: Optional[str]) -> ParquetFile:
-    headers = get_authentication_headers_for_url(url, token=hf_token)
-    return ParquetFile(fs.open(url, headers=headers))
+def open_file(
+    file_url: str, hf_endpoint: str, hf_token: Optional[str], revision: Optional[str] = None
+) -> HfFileSystemFile:
+    fs = HfFileSystem(endpoint=hf_endpoint, token=hf_token)
+    return fs.open(file_url, revision=revision)
 
 
 DATASET_TYPE = "dataset"

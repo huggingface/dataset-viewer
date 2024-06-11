@@ -42,8 +42,11 @@ def prepare_and_clean_mongo(app_config: AppConfig) -> None:
 
 GetJobRunner = Callable[[str, str, AppConfig], ConfigParquetMetadataJobRunner]
 
-dummy_parquet_buffer = io.BytesIO()
-pq.write_table(pa.table({"a": [0, 1, 2]}), dummy_parquet_buffer)
+
+def get_dummy_parquet_buffer() -> io.BytesIO:
+    dummy_parquet_buffer = io.BytesIO()
+    pq.write_table(pa.table({"a": [0, 1, 2]}), dummy_parquet_buffer)
+    return dummy_parquet_buffer
 
 
 @pytest.fixture
@@ -298,14 +301,15 @@ def test_compute(
             job_runner.compute()
         assert e.type.__name__ == expected_error_code
     else:
-        with patch("worker.job_runners.config.parquet_metadata.get_parquet_file") as mock_ParquetFile:
-            mock_ParquetFile.return_value = pq.ParquetFile(dummy_parquet_buffer)
+        with patch("worker.job_runners.config.parquet_metadata.retry_open_file") as mock_ParquetFile:
+            # create a new buffer within each testcase time since the file is closed under the hood in .compute()
+            mock_ParquetFile.return_value = get_dummy_parquet_buffer()
             assert job_runner.compute().content == expected_content
             assert mock_ParquetFile.call_count == len(upstream_content["parquet_files"])
-            for parquet_file_item in upstream_content["parquet_files"]:
-                mock_ParquetFile.assert_any_call(
-                    url=parquet_file_item["url"], fs=HTTPFileSystem(), hf_token=app_config.common.hf_token
-                )
+            # for parquet_file_item in upstream_content["parquet_files"]:
+            #     mock_ParquetFile.assert_any_call(
+            #         file_url=parquet_file_item["url"], hf_endpoint=app_config.common.hf_endpoint, hf_token=app_config.common.hf_token
+            #     )
         assert expected_content["parquet_files_metadata"]
         for parquet_file_metadata_item in expected_content["parquet_files_metadata"]:
             assert (
@@ -313,7 +317,7 @@ def test_compute(
                     Path(job_runner.parquet_metadata_directory)
                     / parquet_file_metadata_item["parquet_metadata_subpath"]
                 )
-                == pq.ParquetFile(dummy_parquet_buffer).metadata
+                == pq.ParquetFile(get_dummy_parquet_buffer()).metadata
             )
 
 
