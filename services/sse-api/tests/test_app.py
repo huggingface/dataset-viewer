@@ -83,9 +83,7 @@ async def test_metrics(client: httpx.AsyncClient) -> None:
 
     # the metrics should contain at least the following
     starlette_requests_metric = 'starlette_requests_total{method="GET",path_template="/sse/metrics"}'
-    steps_processing_time_metric = (
-        'method_steps_processing_time_seconds_sum{method="healthcheck_endpoint",step="all"}'
-    )
+    steps_processing_time_metric = 'method_steps_processing_time_seconds_sum{method="healthcheck_endpoint",step="all"}'
     for name in [starlette_requests_metric, steps_processing_time_metric]:
         assert name in metrics, metrics
         assert metrics[name] > 0, metrics
