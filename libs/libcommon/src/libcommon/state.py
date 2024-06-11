@@ -199,7 +199,6 @@ class ConfigState:
         with StepProfiler(
             method="ConfigState.__post_init__",
             step="get_config_level_artifact_states",
-            context=f"dataset={self.dataset},config={self.config}",
         ):
             self.artifact_state_by_step = {
                 processing_step.name: ArtifactState(
@@ -222,7 +221,6 @@ class ConfigState:
         with StepProfiler(
             method="ConfigState.__post_init__",
             step="get_split_names",
-            context=f"dataset={self.dataset},config={self.config}",
         ):
             self.split_names = fetch_names(
                 dataset=self.dataset,
@@ -243,7 +241,6 @@ class ConfigState:
         with StepProfiler(
             method="ConfigState.__post_init__",
             step="get_split_states",
-            context=f"dataset={self.dataset},config={self.config}",
         ):
             self.split_states = [
                 SplitState(
@@ -277,7 +274,6 @@ class DatasetState:
         with StepProfiler(
             method="DatasetState.__post_init__",
             step="get_dataset_level_artifact_states",
-            context=f"dataset={self.dataset}",
         ):
             self.artifact_state_by_step = {
                 processing_step.name: ArtifactState(
@@ -304,7 +300,6 @@ class DatasetState:
             with StepProfiler(
                 method="DatasetState.__post_init__",
                 step="get_config_names",
-                context=f"dataset={self.dataset}",
             ):
                 self.config_names = fetch_names(
                     dataset=self.dataset,
@@ -325,7 +320,6 @@ class DatasetState:
             with StepProfiler(
                 method="DatasetState.__post_init__",
                 step="get_config_states",
-                context=f"dataset={self.dataset}",
             ):
                 self.config_states = [
                     ConfigState(
@@ -351,7 +345,6 @@ class FirstStepsDatasetState(DatasetState):
         with StepProfiler(
             method="FirstStepsDatasetState.__post_init__",
             step="get_dataset_level_artifact_states",
-            context=f"dataset={self.dataset}",
         ):
             self.artifact_state_by_step = {
                 processing_step.name: ArtifactState(
