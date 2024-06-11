@@ -50,6 +50,14 @@ UPSTREAM_RESPONSE_SIZE_OK: UpstreamResponse = UpstreamResponse(
     content={"size": {"dataset": {"num_rows": 1000}}, "partial": False},
     progress=0.2,
 )
+UPSTREAM_RESPONSE_SIZE_ERROR: UpstreamResponse = UpstreamResponse(
+    kind="dataset-size",
+    dataset=DATASET,
+    dataset_git_revision=REVISION_NAME,
+    http_status=HTTPStatus.INTERNAL_SERVER_ERROR,
+    content={},
+    progress=0.0,
+)
 UPSTREAM_RESPONSE_SIZE_NO_PROGRESS: UpstreamResponse = UpstreamResponse(
     kind="dataset-size",
     dataset=DATASET,
@@ -66,6 +74,14 @@ UPSTREAM_RESPONSE_COMPATIBLE_LIBRARIES_OK: UpstreamResponse = UpstreamResponse(
     content={"tags": ["tag"], "libraries": [{"library": "library"}], "formats": ["format"]},
     progress=1.0,
 )
+UPSTREAM_RESPONSE_COMPATIBLE_LIBRARIES_ERROR: UpstreamResponse = UpstreamResponse(
+    kind="dataset-compatible-libraries",
+    dataset=DATASET,
+    dataset_git_revision=REVISION_NAME,
+    http_status=HTTPStatus.INTERNAL_SERVER_ERROR,
+    content={},
+    progress=0.0,
+)
 UPSTREAM_RESPONSE_MODALITIES_OK: UpstreamResponse = UpstreamResponse(
     kind="dataset-modalities",
     dataset=DATASET,
@@ -73,6 +89,14 @@ UPSTREAM_RESPONSE_MODALITIES_OK: UpstreamResponse = UpstreamResponse(
     http_status=HTTPStatus.OK,
     content={"tags": ["tag"], "modalities": ["modality"]},
     progress=1.0,
+)
+UPSTREAM_RESPONSE_MODALITIES_ERROR: UpstreamResponse = UpstreamResponse(
+    kind="dataset-modalities",
+    dataset=DATASET,
+    dataset_git_revision=REVISION_NAME,
+    http_status=HTTPStatus.INTERNAL_SERVER_ERROR,
+    content={},
+    progress=0.0,
 )
 EXPECTED_OK = (
     {
@@ -99,6 +123,19 @@ EXPECTED_NO_PROGRESS = (
         "formats": [],
     },
     0.5,
+)
+EXPECTED_NO_SIZE = (
+    {
+        "viewer": False,
+        "preview": True,
+        "partial": False,
+        "num_rows": 0,
+        "tags": [],
+        "libraries": [],
+        "modalities": [],
+        "formats": [],
+    },
+    0.0,
 )
 EXPECTED_OK_WITH_LIBRARIES_AND_FORMATS = (
     {
@@ -188,6 +225,29 @@ def get_job_runner(
                 UPSTREAM_RESPONSE_MODALITIES_OK,
             ],
             EXPECTED_OK_WITH_MODALITIES,
+        ),
+        (
+            [
+                UPSTREAM_RESPONSE_IS_VALID_OK,
+                UPSTREAM_RESPONSE_SIZE_ERROR,
+            ],
+            EXPECTED_NO_SIZE,
+        ),
+        (
+            [
+                UPSTREAM_RESPONSE_IS_VALID_OK,
+                UPSTREAM_RESPONSE_SIZE_OK,
+                UPSTREAM_RESPONSE_COMPATIBLE_LIBRARIES_ERROR,
+            ],
+            EXPECTED_OK,
+        ),
+        (
+            [
+                UPSTREAM_RESPONSE_IS_VALID_OK,
+                UPSTREAM_RESPONSE_SIZE_OK,
+                UPSTREAM_RESPONSE_MODALITIES_ERROR,
+            ],
+            EXPECTED_OK,
         ),
     ],
 )
