@@ -64,7 +64,7 @@ def check_histogram_metric(
     events: int,
     duration: float,
 ) -> None:
-    labels = {"context": "None", "method": method, "step": step}
+    labels = {"method": method, "step": step}
     assert metrics[create_key("count", labels)] == events, metrics
     assert metrics[create_key("bucket", labels, le="+Inf")] == events, metrics
     assert metrics[create_key("bucket", labels, le="1.0")] == events, metrics
