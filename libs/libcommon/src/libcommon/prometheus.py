@@ -68,12 +68,12 @@ PARQUET_METADATA_DISK_USAGE = Gauge(
 METHOD_STEPS_PROCESSING_TIME = Histogram(
     "method_steps_processing_time_seconds",
     "Histogram of the processing time of specific steps in methods for a given context (in seconds)",
-    ["method", "step", "context"],
+    ["method", "step"],
 )
 METHOD_LONG_STEPS_PROCESSING_TIME = Histogram(
     "method_long_steps_processing_time_seconds",
     "Histogram of the processing time of specific long steps in methods for a given context (in seconds)",
-    ["method", "step", "context"],
+    ["method", "step"],
     buckets=LONG_DURATION_PROMETHEUS_HISTOGRAM_BUCKETS,
 )
 
@@ -116,20 +116,18 @@ class StepProfiler:
     A context manager that measures the time spent in a step of a method and reports it to Prometheus.
 
     Example:
-        >>> with StepProfiler("method", "step", "context") as profiler:
+        >>> with StepProfiler("method", "step") as profiler:
         ...     pass
 
     Args:
         method (`str`): The name of the method.
         step (`str`): The name of the step.
-        context (`str`, *optional*): An optional string that adds context. If None, the label "None" is used.
     """
 
-    def __init__(self, method: str, step: str, context: Optional[str] = None, histogram: Optional[Histogram] = None):
+    def __init__(self, method: str, step: str, histogram: Optional[Histogram] = None):
         self.histogram = METHOD_STEPS_PROCESSING_TIME if histogram is None else histogram
         self.method = method
         self.step = step
-        self.context = str(context)
         self.before_time = time.perf_counter()
 
     def __enter__(self: T) -> T:
@@ -145,10 +143,9 @@ class StepProfiler:
         self.histogram.labels(
             method=self.method,
             step=self.step,
-            context=self.context,
         ).observe(after_time - self.before_time)
 
 
 class LongStepProfiler(StepProfiler):
-    def __init__(self, method: str, step: str, context: Optional[str] = None):
-        super().__init__(method, step, context, histogram=METHOD_LONG_STEPS_PROCESSING_TIME)
+    def __init__(self, method: str, step: str):
+        super().__init__(method, step, histogram=METHOD_LONG_STEPS_PROCESSING_TIME)
