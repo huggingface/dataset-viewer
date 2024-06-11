@@ -125,7 +125,6 @@ class CreateJobsTask(Task):
         with StepProfiler(
             method="CreateJobsTask.run",
             step="all",
-            context=f"num_jobs_to_create={len(self.job_infos)}",
         ):
             num_created_jobs = Queue().create_jobs(job_infos=self.job_infos)
             if num_created_jobs != len(self.job_infos):
@@ -156,7 +155,6 @@ class DeleteWaitingJobsTask(Task):
         with StepProfiler(
             method="DeleteWaitingJobsTask.run",
             step="all",
-            context=f"num_jobs_to_delete={len(self.jobs_df)}",
         ):
             num_deleted_waiting_jobs = Queue().delete_waiting_jobs_by_job_id(job_ids=self.jobs_df["job_id"].tolist())
             logging.debug(f"{num_deleted_waiting_jobs} waiting jobs were deleted.")
@@ -182,7 +180,6 @@ class DeleteDatasetWaitingJobsTask(Task):
         with StepProfiler(
             method="DeleteDatasetWaitingJobsTask.run",
             step="all",
-            context=f"dataset={self.dataset}",
         ):
             return TasksStatistics(num_deleted_waiting_jobs=Queue().delete_dataset_waiting_jobs(dataset=self.dataset))
 
@@ -206,7 +203,6 @@ class DeleteDatasetCacheEntriesTask(Task):
         with StepProfiler(
             method="DeleteDatasetCacheEntriesTask.run",
             step="all",
-            context=f"dataset={self.dataset}",
         ):
             return TasksStatistics(num_deleted_cache_entries=delete_dataset_responses(dataset=self.dataset))
 
@@ -231,7 +227,6 @@ class DeleteDatasetStorageTask(Task):
         with StepProfiler(
             method="DeleteDatasetStorageTask.run",
             step="all",
-            context=f"dataset={self.dataset},storage_client={self.storage_client}",
         ):
             return TasksStatistics(
                 num_deleted_storage_directories=self.storage_client.delete_dataset_directory(self.dataset)
@@ -487,12 +482,10 @@ class DatasetBackfillPlan(Plan):
         with StepProfiler(
             method="DatasetBackfillPlan.__post_init__",
             step="all",
-            context=f"dataset={self.dataset}",
         ):
             with StepProfiler(
                 method="DatasetBackfillPlan.__post_init__",
                 step="get_pending_jobs_df",
-                context=f"dataset={self.dataset}",
             ):
                 job_types = (
                     [
@@ -509,7 +502,6 @@ class DatasetBackfillPlan(Plan):
             with StepProfiler(
                 method="DatasetBackfillPlan.__post_init__",
                 step="get_cache_entries_df",
-                context=f"dataset={self.dataset}",
             ):
                 cache_kinds = (
                     [
@@ -527,7 +519,6 @@ class DatasetBackfillPlan(Plan):
             with StepProfiler(
                 method="DatasetBackfillPlan.__post_init__",
                 step="get_dataset_state",
-                context=f"dataset={self.dataset}",
             ):
                 self.dataset_state = (
                     FirstStepsDatasetState(
@@ -549,13 +540,11 @@ class DatasetBackfillPlan(Plan):
             with StepProfiler(
                 method="DatasetBackfillPlan.__post_init__",
                 step="_get_cache_status",
-                context=f"dataset={self.dataset}",
             ):
                 self.cache_status = self._get_cache_status()
             with StepProfiler(
                 method="DatasetBackfillPlan.__post_init__",
                 step="_create_plan",
-                context=f"dataset={self.dataset}",
             ):
                 self._create_plan()
 

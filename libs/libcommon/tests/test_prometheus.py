@@ -110,9 +110,9 @@ def test_nested_step_profiler() -> None:
     with StepProfiler(method=method, step=step_all):
         with StepProfiler(method, step_1):
             time.sleep(duration_1a)
-        with StepProfiler(method, step_1, context_1):
+        with StepProfiler(method, step_1):
             time.sleep(duration_1b)
-        with StepProfiler(method, step_2, context_2):
+        with StepProfiler(method, step_2):
             time.sleep(duration_2)
     metrics = parse_metrics(Prometheus().getLatestContent())
     check_histogram_metric(

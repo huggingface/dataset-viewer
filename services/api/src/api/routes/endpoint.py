@@ -106,14 +106,13 @@ def create_endpoint(
     storage_clients: Optional[list[StorageClient]] = None,
 ) -> Endpoint:
     async def processing_step_endpoint(request: Request) -> Response:
-        context = f"endpoint: {endpoint_name}"
+        # context = f"endpoint: {endpoint_name}"
         revision: Optional[str] = None
-        with StepProfiler(method="processing_step_endpoint", step="all", context=context):
+        with StepProfiler(method="processing_step_endpoint", step="all"):
             try:
                 with StepProfiler(
                     method="processing_step_endpoint",
                     step="validate parameters and get processing steps",
-                    context=context,
                 ):
                     dataset = get_request_parameter(request, "dataset")
                     config = get_request_parameter(request, "config") or None
@@ -126,7 +125,7 @@ def create_endpoint(
                     # full: only used in /croissant-crumbs endpoint
                     full = get_request_parameter(request, "full", default="true").lower() != "false"
                 # if auth_check fails, it will raise an exception that will be caught below
-                with StepProfiler(method="processing_step_endpoint", step="check authentication", context=context):
+                with StepProfiler(method="processing_step_endpoint", step="check authentication"):
                     await auth_check(
                         dataset,
                         external_auth_url=external_auth_url,
@@ -136,7 +135,7 @@ def create_endpoint(
                         hf_timeout_seconds=hf_timeout_seconds,
                     )
                 # getting result based on processing steps
-                with StepProfiler(method="processing_step_endpoint", step="get cache entry", context=context):
+                with StepProfiler(method="processing_step_endpoint", step="get cache entry"):
                     # TODO: remove once full scan is implemented for spawning urls scan
                     if (
                         endpoint_name == "/opt-in-out-urls"
@@ -164,19 +163,18 @@ def create_endpoint(
                 revision = result["dataset_git_revision"]
                 if http_status == HTTPStatus.OK:
                     if endpoint_name == "/first-rows" and assets_storage_client.url_signer:
-                        with StepProfiler(method="processing_step_endpoint", step="sign assets urls", context=context):
+                        with StepProfiler(method="processing_step_endpoint", step="sign assets urls"):
                             assets_storage_client.url_signer.sign_urls_in_first_rows_in_place(content)
                     elif endpoint_name == "/croissant-crumbs" and not full:
                         with StepProfiler(
                             method="processing_step_endpoint",
                             step="truncate features from croissant-crumbs response",
-                            context=context,
                         ):
                             truncate_features_from_croissant_crumbs_response(content)
-                    with StepProfiler(method="processing_step_endpoint", step="generate OK response", context=context):
+                    with StepProfiler(method="processing_step_endpoint", step="generate OK response"):
                         return get_json_ok_response(content=content, max_age=max_age_long, revision=revision)
 
-                with StepProfiler(method="processing_step_endpoint", step="generate error response", context=context):
+                with StepProfiler(method="processing_step_endpoint", step="generate error response"):
                     return get_json_error_response(
                         content=content,
                         status_code=http_status,
@@ -188,9 +186,7 @@ def create_endpoint(
                 error = (
                     e if isinstance(e, (ApiError, NotSupportedError)) else UnexpectedApiError("Unexpected error.", e)
                 )
-                with StepProfiler(
-                    method="processing_step_endpoint", step="generate API error response", context=context
-                ):
+                with StepProfiler(method="processing_step_endpoint", step="generate API error response"):
                     return get_json_api_error_response(error=error, max_age=max_age_short, revision=revision)
 
     return processing_step_endpoint
