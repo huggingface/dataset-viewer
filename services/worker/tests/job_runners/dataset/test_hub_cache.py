@@ -8,7 +8,7 @@ from typing import Any
 import pytest
 from libcommon.dtos import Priority
 from libcommon.resources import CacheMongoResource, QueueMongoResource
-from libcommon.simple_cache import CachedArtifactError, upsert_response
+from libcommon.simple_cache import CachedArtifactError, CachedArtifactNotFoundError, upsert_response
 
 from worker.config import AppConfig
 from worker.job_runners.dataset.hub_cache import DatasetHubCacheJobRunner
@@ -210,12 +210,16 @@ def test_compute(
     "upstream_responses,expectation",
     [
         (
+            [],
+            pytest.raises(CachedArtifactNotFoundError),
+        ),
+        (
             [
                 UPSTREAM_RESPONSE_IS_VALID_ERROR,
                 UPSTREAM_RESPONSE_SIZE_OK,
             ],
             pytest.raises(CachedArtifactError),
-        )
+        ),
     ],
 )
 def test_compute_error(
