@@ -415,6 +415,12 @@ def test_graph() -> None:
             ["dataset-info"],
             ["dataset-config-names", "config-parquet-and-info", "config-info", "dataset-info"],
         ),
+        (
+            "dataset-filetypes",
+            [],
+            [],
+            [],
+        ),
     ],
 )
 def test_default_graph_steps(
@@ -424,5 +430,5 @@ def test_default_graph_steps(
 
 
 def test_default_graph_first_steps() -> None:
-    roots = ["dataset-config-names"]
+    roots = ["dataset-config-names", "dataset-filetypes"]
     assert_lists_are_equal(processing_graph.get_first_processing_steps(), roots)
