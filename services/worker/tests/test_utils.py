@@ -30,6 +30,10 @@ from worker.utils import get_file_extension
         ("file.csv?dl=1", ".csv"),
         ("file.csv_1", ".csv"),
         ("file.csv-00000-of-00001", ".csv"),
+        # ignore paths
+        ("path/to/file.csv", ".csv"),
+        (".path/to.some/file.csv", ".csv"),
+        ("path/to/.gitignore", ""),
     ],
 )
 def test_get_file_extension(filename: str, expected_extension: str) -> None:
