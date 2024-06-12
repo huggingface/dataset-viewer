@@ -49,9 +49,11 @@ class JobState:
     is_in_process: bool = field(init=False)
 
     def __post_init__(self) -> None:
-        self.valid_pending_jobs_df = self.pending_jobs_df.sort_values(
-            ["status", "priority", "created_at"], ascending=[False, False, True]
-        ).head(1)
+        self.valid_pending_jobs_df = (
+            self.pending_jobs_df.sort_values(["status", "priority", "created_at"], ascending=[False, False, True])
+            .head(1)
+            .copy()
+        )
         # ^ only keep the first valid job, if any, in order of priority
         self.is_in_process = not self.valid_pending_jobs_df.empty
 
@@ -79,7 +81,7 @@ class CacheState:
         if len(self.cache_entries_df) == 0:
             self.cache_entry_metadata = None
         else:
-            entry = self.cache_entries_df.iloc[0]
+            entry = self.cache_entries_df.iloc[0].copy()
             self.cache_entry_metadata = CacheEntryMetadata(
                 http_status=entry["http_status"],
                 error_code=None if entry["error_code"] is pd.NA else entry["error_code"],
@@ -139,7 +141,7 @@ class ArtifactState(Artifact):
             revision=self.revision,
             config=self.config,
             split=self.split,
-            pending_jobs_df=self.pending_jobs_df,
+            pending_jobs_df=self.pending_jobs_df.copy(),
         )
         self.cache_state = CacheState(
             cache_kind=self.processing_step.cache_kind,
@@ -147,7 +149,7 @@ class ArtifactState(Artifact):
             config=self.config,
             split=self.split,
             job_runner_version=self.processing_step.job_runner_version,
-            cache_entries_df=self.cache_entries_df,
+            cache_entries_df=self.cache_entries_df.copy(),
         )
 
 
@@ -173,8 +175,10 @@ class SplitState:
                 revision=self.revision,
                 config=self.config,
                 split=self.split,
-                pending_jobs_df=self.pending_jobs_df[self.pending_jobs_df["type"] == processing_step.job_type],
-                cache_entries_df=self.cache_entries_df[self.cache_entries_df["kind"] == processing_step.cache_kind],
+                pending_jobs_df=self.pending_jobs_df[self.pending_jobs_df["type"] == processing_step.job_type].copy(),
+                cache_entries_df=self.cache_entries_df[
+                    self.cache_entries_df["kind"] == processing_step.cache_kind
+                ].copy(),
             )
             for processing_step in self.processing_graph.get_input_type_processing_steps(input_type="split")
         }
@@ -210,10 +214,10 @@ class ConfigState:
                     pending_jobs_df=self.pending_jobs_df[
                         (self.pending_jobs_df["split"].isnull())
                         & (self.pending_jobs_df["type"] == processing_step.job_type)
-                    ],
+                    ].copy(),
                     cache_entries_df=self.cache_entries_df[
                         self.cache_entries_df["kind"] == processing_step.cache_kind
-                    ],
+                    ].copy(),
                 )
                 for processing_step in self.processing_graph.get_input_type_processing_steps(input_type="config")
             }
@@ -249,8 +253,8 @@ class ConfigState:
                     config=self.config,
                     split=split_name,
                     processing_graph=self.processing_graph,
-                    pending_jobs_df=self.pending_jobs_df[self.pending_jobs_df["split"] == split_name],
-                    cache_entries_df=self.cache_entries_df[self.cache_entries_df["split"] == split_name],
+                    pending_jobs_df=self.pending_jobs_df[self.pending_jobs_df["split"] == split_name].copy(),
+                    cache_entries_df=self.cache_entries_df[self.cache_entries_df["split"] == split_name].copy(),
                 )
                 for split_name in self.split_names
             ]
@@ -287,12 +291,12 @@ class DatasetState:
                         & (self.pending_jobs_df["config"].isnull())
                         & (self.pending_jobs_df["split"].isnull())
                         & (self.pending_jobs_df["type"] == processing_step.job_type)
-                    ],
+                    ].copy(),
                     cache_entries_df=self.cache_entries_df[
                         (self.cache_entries_df["kind"] == processing_step.cache_kind)
                         & (self.cache_entries_df["config"].isnull())
                         & (self.cache_entries_df["split"].isnull())
-                    ],
+                    ].copy(),
                 )
                 for processing_step in self.processing_graph.get_input_type_processing_steps(input_type="dataset")
             }
@@ -330,8 +334,8 @@ class DatasetState:
                         pending_jobs_df=self.pending_jobs_df[
                             (self.pending_jobs_df["revision"] == self.revision)
                             & (self.pending_jobs_df["config"] == config_name)
-                        ],
-                        cache_entries_df=self.cache_entries_df[self.cache_entries_df["config"] == config_name],
+                        ].copy(),
+                        cache_entries_df=self.cache_entries_df[self.cache_entries_df["config"] == config_name].copy(),
                     )
                     for config_name in self.config_names
                 ]
@@ -358,12 +362,12 @@ class FirstStepsDatasetState(DatasetState):
                         & (self.pending_jobs_df["config"].isnull())
                         & (self.pending_jobs_df["split"].isnull())
                         & (self.pending_jobs_df["type"] == processing_step.job_type)
-                    ],
+                    ].copy(),
                     cache_entries_df=self.cache_entries_df[
                         (self.cache_entries_df["kind"] == processing_step.cache_kind)
                         & (self.cache_entries_df["config"].isnull())
                         & (self.cache_entries_df["split"].isnull())
-                    ],
+                    ].copy(),
                 )
                 for processing_step in self.processing_graph.get_first_processing_steps()
             }

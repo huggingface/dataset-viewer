@@ -525,16 +525,16 @@ class DatasetBackfillPlan(Plan):
                         dataset=self.dataset,
                         processing_graph=self.processing_graph,
                         revision=self.revision,
-                        pending_jobs_df=self.pending_jobs_df,
-                        cache_entries_df=self.cache_entries_df,
+                        pending_jobs_df=self.pending_jobs_df.copy(),
+                        cache_entries_df=self.cache_entries_df.copy(),
                     )
                     if self.only_first_processing_steps
                     else DatasetState(
                         dataset=self.dataset,
                         processing_graph=self.processing_graph,
                         revision=self.revision,
-                        pending_jobs_df=self.pending_jobs_df,
-                        cache_entries_df=self.cache_entries_df,
+                        pending_jobs_df=self.pending_jobs_df.copy(),
+                        cache_entries_df=self.cache_entries_df.copy(),
                     )
                 )
             with StepProfiler(
