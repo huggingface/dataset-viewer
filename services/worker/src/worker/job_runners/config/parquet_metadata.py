@@ -45,7 +45,7 @@ def create_parquet_metadata_file_from_remote_parquet(
     parquet_file_item: SplitHubFile, hf_endpoint: str, hf_token: Optional[str], parquet_metadata_directory: StrPath
 ) -> ParquetFileMetadataItem:
     split_directory = extract_split_name_from_parquet_url(parquet_file_item["url"])
-    hfh_file_url = f"datasets/{parquet_file_item['config']}/{split_directory}/{parquet_file_item['filename']}"
+    hfh_file_url = f"datasets/{parquet_file_item['dataset']}/{parquet_file_item['config']}/{split_directory}/{parquet_file_item['filename']}"
     try:
         # TODO: make revision config's parameter
         f = retry_open_file(
