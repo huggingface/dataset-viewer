@@ -351,10 +351,13 @@ class DatasetHubCacheResponse(TypedDict):
     formats: list[DatasetFormat]
 
 
-class Filetype(TypedDict):
+class _Filetype(TypedDict):
     extension: str
     count: int
-    archived_in: Optional[str]
+
+
+class Filetype(_Filetype, total=False):
+    archived_in: str
 
 
 class DatasetFiletypesResponse(TypedDict):

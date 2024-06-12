@@ -27,7 +27,7 @@ def get_counter_from_archive(
     dataset: str,
     archive_filename: str,
     hf_token: Optional[str] = None,
-) -> Counter:
+) -> Counter[tuple[str, str]]:
     dl_manager = StreamingDownloadManager(download_config=DownloadConfig(token=hf_token))
     base_url = f"hf://datasets/{dataset}/"
     archived_in = get_file_extension(archive_filename, recursive=False, clean=False)
@@ -42,7 +42,7 @@ def get_filetypes_from_archives(
     archive_filenames: list[str],
     hf_token: Optional[str] = None,
 ) -> list[Filetype]:
-    counter = Counter()
+    counter = Counter[tuple[str, str]]()
     for archive_filename in archive_filenames:
         counter.update(get_counter_from_archive(dataset=dataset, archive_filename=archive_filename, hf_token=hf_token))
     return [

@@ -241,7 +241,7 @@ def raise_if_long_column_name(features: Optional[Features]) -> None:
             )
 
 
-def get_file_extension(filename: str, recursive=True, clean=True) -> str:
+def get_file_extension(filename: str, recursive: bool = True, clean: bool = True) -> str:
     [base, extension] = os.path.splitext(filename)
     # special cases we find in datasets (gz?dl=1 -> gz, txt_1 -> txt, txt-00000-of-00100-> txt)
     # https://github.com/huggingface/datasets/blob/af3acfdfcf76bb980dbac871540e30c2cade0cf9/src/datasets/utils/file_utils.py#L795
