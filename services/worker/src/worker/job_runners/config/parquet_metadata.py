@@ -6,6 +6,7 @@ import logging
 from typing import Optional
 
 from huggingface_hub import HfFileSystemFile
+from libcommon.constants import PARQUET_REVISION
 from libcommon.dtos import JobInfo, SplitHubFile
 from libcommon.exceptions import (
     FileSystemError,
@@ -51,9 +52,8 @@ def create_parquet_metadata_file_from_remote_parquet(
         filename=parquet_file_item["filename"],
     )
     try:
-        # TODO: make revision config's parameter
         f = retry_open_file(
-            file_url=hfh_parquet_file_path, hf_endpoint=hf_endpoint, hf_token=hf_token, revision="refs/convert/parquet"
+            file_url=hfh_parquet_file_path, hf_endpoint=hf_endpoint, hf_token=hf_token, revision=PARQUET_REVISION
         )
         parquet_file_metadata = ParquetFile(f).metadata
     except Exception as e:
