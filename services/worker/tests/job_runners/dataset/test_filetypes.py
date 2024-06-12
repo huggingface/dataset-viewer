@@ -152,7 +152,7 @@ def test_compute(
     filetypes: list[Filetype],
     get_job_runner: GetJobRunner,
 ) -> None:
-    job_runner = get_job_runner(dataset, app_config=app_config_prod)
+    job_runner = get_job_runner(dataset, app_config_prod)
     response = job_runner.compute()
     content = response.content
     assert content["filetypes"] == filetypes
