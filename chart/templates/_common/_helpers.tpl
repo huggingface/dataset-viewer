@@ -200,3 +200,11 @@ note: keep $instanceAnnotations in first position during the merge, to avoid ove
 {{ $key | quote }}: {{ $value | quote }}
 {{- end }}
 {{- end -}}
+
+
+{{/*
+Return the secret name where Infisical secrets are loaded
+*/}}
+{{- define "datasetsServer.infisical.secretName" -}}
+{{ include "name" $ }}-secs
+{{- end -}}
