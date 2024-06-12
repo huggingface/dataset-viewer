@@ -5,7 +5,6 @@ import functools
 import logging
 from typing import Optional
 
-import aiohttp
 from huggingface_hub import HfFileSystemFile
 from libcommon.dtos import JobInfo, SplitHubFile
 from libcommon.exceptions import (
@@ -28,28 +27,33 @@ from worker.dtos import (
     ParquetFileMetadataItem,
 )
 from worker.job_runners.config.config_job_runner import ConfigJobRunner
-from worker.utils import open_file
+from worker.utils import hf_hub_open_file, hf_hub_parquet_path
 
 SLEEPS = [0.2, 1, 1, 10, 10, 10]
 
 
 # TODO: on which error?
-@retry(on=[aiohttp.ServerConnectionError], sleeps=SLEEPS)
+@retry(sleeps=SLEEPS)
 def retry_open_file(
     file_url: str, hf_endpoint: str, hf_token: Optional[str], revision: Optional[str] = None
 ) -> HfFileSystemFile:
-    return open_file(file_url=file_url, hf_endpoint=hf_endpoint, hf_token=hf_token, revision=revision)
+    return hf_hub_open_file(file_url=file_url, hf_endpoint=hf_endpoint, hf_token=hf_token, revision=revision)
 
 
 def create_parquet_metadata_file_from_remote_parquet(
     parquet_file_item: SplitHubFile, hf_endpoint: str, hf_token: Optional[str], parquet_metadata_directory: StrPath
 ) -> ParquetFileMetadataItem:
     split_directory = extract_split_name_from_parquet_url(parquet_file_item["url"])
-    hfh_file_url = f"datasets/{parquet_file_item['dataset']}/{parquet_file_item['config']}/{split_directory}/{parquet_file_item['filename']}"
+    hfh_parquet_file_path = hf_hub_parquet_path(
+        repo_id=parquet_file_item["dataset"],
+        config=parquet_file_item["config"],
+        split_directory=split_directory,
+        filename=parquet_file_item["filename"],
+    )
     try:
         # TODO: make revision config's parameter
         f = retry_open_file(
-            file_url=hfh_file_url, hf_endpoint=hf_endpoint, hf_token=hf_token, revision="refs/convert/parquet"
+            file_url=hfh_parquet_file_path, hf_endpoint=hf_endpoint, hf_token=hf_token, revision="refs/convert/parquet"
         )
         parquet_file_metadata = ParquetFile(f).metadata
     except Exception as e:

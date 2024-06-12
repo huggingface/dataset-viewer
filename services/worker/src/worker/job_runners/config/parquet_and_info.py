@@ -82,8 +82,8 @@ from worker.job_runners.config.config_job_runner import ConfigJobRunnerWithDatas
 from worker.utils import (
     LOCK_GIT_BRANCH_RETRY_SLEEPS,
     create_branch,
+    hf_hub_open_file,
     hf_hub_url,
-    open_file,
     raise_if_long_column_name,
     resolve_trust_remote_code,
 )
@@ -587,7 +587,7 @@ def retry_validate_get_num_examples_and_size(
         `tuple[int, int]` - (num examples, size in bytes)
     """
     try:
-        f = retry(on=[pa.ArrowInvalid], sleeps=SLEEPS)(open_file)(url, hf_endpoint, hf_token)
+        f = retry(on=[pa.ArrowInvalid], sleeps=SLEEPS)(hf_hub_open_file)(url, hf_endpoint, hf_token)
         pf, size = pq.ParquetFile(f), f.size
         if validate:
             validate(pf)
@@ -612,7 +612,7 @@ def retry_validate_get_features_num_examples_size_and_compression_ratio(
         `tuple[pq.ParquetFile, int]` - (parquet files, size in bytes)
     """
     try:
-        f = retry(on=[pa.ArrowInvalid], sleeps=SLEEPS)(open_file)(url, hf_endpoint, hf_token)
+        f = retry(on=[pa.ArrowInvalid], sleeps=SLEEPS)(hf_hub_open_file)(url, hf_endpoint, hf_token)
         pf, size = pq.ParquetFile(f), f.size
         num_row_groups = pf.metadata.num_row_groups
         compression_ratio = 0
