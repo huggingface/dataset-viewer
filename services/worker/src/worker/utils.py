@@ -3,6 +3,7 @@
 
 import itertools
 import logging
+import os
 import sys
 import traceback
 import warnings
@@ -238,3 +239,17 @@ def raise_if_long_column_name(features: Optional[Features]) -> None:
             raise TooLongColumnNameError(
                 f"Column name '{short_name}' is too long. It should be less than {MAX_COLUMN_NAME_LENGTH} characters."
             )
+
+
+def get_file_extension(filename: str, recursive=True, clean=True) -> str:
+    [base, extension] = os.path.splitext(filename)
+    # special cases we find in datasets (gz?dl=1 -> gz, txt_1 -> txt, txt-00000-of-00100-> txt)
+    # https://github.com/huggingface/datasets/blob/af3acfdfcf76bb980dbac871540e30c2cade0cf9/src/datasets/utils/file_utils.py#L795
+    if clean:
+        for symb in "?-_":
+            extension = extension.split(symb)[0]
+    if recursive and extension in [".gz", ".bz2", ".xz", ".zst", ".7z"]:
+        base_extension = get_file_extension(base, recursive=False, clean=False)
+        if base_extension == ".tar":
+            return base_extension + extension
+    return extension
