@@ -116,4 +116,4 @@ jobs:
           ADMIN_HF_ORGANIZATION: "valid_org"
           E2E_ADMIN_USER_TOKEN: "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"
         run: |
-          poetry run python -m pytest --memray -vv -s tests
+          poetry run python -m pytest -vv -s tests
