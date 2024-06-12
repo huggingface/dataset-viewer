@@ -6,6 +6,7 @@ from collections import Counter
 from typing import Optional
 
 from datasets import DownloadConfig, StreamingDownloadManager
+from datasets.utils.file_utils import xbasename
 from huggingface_hub.hf_api import HfApi, RepoSibling
 from huggingface_hub.utils import RepositoryNotFoundError
 from libcommon.exceptions import DatasetNotFoundError
@@ -30,9 +31,10 @@ def get_filetypes_from_archive(
     dl_manager = StreamingDownloadManager(download_config=DownloadConfig(token=hf_token))
     base_url = f"hf://datasets/{dataset}/"
     archived_in = get_file_extension(archive_filename, recursive=False, clean=False)
-    counter = Counter()
-    for filename, _ in dl_manager.iter_archive(base_url + archive_filename):
-        counter.update(Counter([get_file_extension(filename)]))
+    counter = Counter(
+        get_file_extension(xbasename(filename))
+        for filename in dl_manager.iter_files(dl_manager.extract(base_url + archive_filename))
+    )
     return [Filetype(extension=k, count=v, archived_in=archived_in) for k, v in counter.items()]
 
 

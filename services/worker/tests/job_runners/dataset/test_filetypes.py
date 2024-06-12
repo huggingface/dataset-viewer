@@ -64,7 +64,7 @@ def test_get_filetypes(siblings: list[RepoSibling], filetypes: list[Filetype]) -
             "severo/winogavil",
             "winogavil_images.zip",
             [
-                Filetype(extension=".jsonl", count=1, archived_in=".zip"),
+                Filetype(extension=".jpg", count=2044, archived_in=".zip"),
             ],
         ),
     ],
