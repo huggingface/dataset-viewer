@@ -16,7 +16,7 @@ from fsspec.implementations.http import HTTPFile, HTTPFileSystem
 from huggingface_hub import hf_hub_url
 from libcommon.dtos import Priority, SplitHubFile
 from libcommon.exceptions import PreviousStepFormatError
-from libcommon.parquet_utils import ParquetIndexWithMetadata
+from libcommon.parquet_utils import ParquetIndexWithMetadata, extract_split_name_from_parquet_url
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import CachedArtifactError, upsert_response
 from libcommon.storage import StrPath
@@ -27,6 +27,7 @@ from worker.dtos import (
     ConfigParquetResponse,
     ParquetFileMetadataItem,
 )
+from worker.utils import hf_hub_parquet_path
 from worker.job_runners.config.parquet_metadata import ConfigParquetMetadataJobRunner
 
 from ...constants import CI_USER_TOKEN
@@ -301,17 +302,20 @@ def test_compute(
             job_runner.compute()
         assert e.type.__name__ == expected_error_code
     else:
-        with patch("worker.job_runners.config.parquet_metadata.retry_open_file") as mock_ParquetFile:
-            # create a new buffer within each testcase time since the file is closed under the hood in .compute()
-            mock_ParquetFile.return_value = get_dummy_parquet_buffer()
-            assert job_runner.compute().content == expected_content
-            assert mock_ParquetFile.call_count == len(upstream_content["parquet_files"])
-            # for parquet_file_item in upstream_content["parquet_files"]:
-            #     mock_ParquetFile.assert_any_call(
-            #         file_url=parquet_file_item["url"], hf_endpoint=app_config.common.hf_endpoint, hf_token=app_config.common.hf_token
-            #     )
-        assert expected_content["parquet_files_metadata"]
-        for parquet_file_metadata_item in expected_content["parquet_files_metadata"]:
+        with patch("worker.job_runners.config.parquet_metadata.retry_open_file") as mock_OpenFile:
+            # create a new buffer within each test run time since the file is closed under the hood in .compute()
+            mock_OpenFile.return_value = get_dummy_parquet_buffer()
+            content = job_runner.compute().content
+            assert content == expected_content
+            assert mock_OpenFile.call_count == len(upstream_content["parquet_files"])
+            for parquet_file_item in upstream_content["parquet_files"]:
+                split_directory = extract_split_name_from_parquet_url(parquet_file_item["url"])
+                path = hf_hub_parquet_path(dataset, config, split_directory, parquet_file_item["filename"])
+                mock_OpenFile.assert_any_call(
+                    file_url=path, hf_endpoint=app_config.common.hf_endpoint, hf_token=app_config.common.hf_token, revision="refs/convert/parquet"
+                )
+        assert content["parquet_files_metadata"]
+        for parquet_file_metadata_item in content["parquet_files_metadata"]:
             assert (
                 pq.read_metadata(
                     Path(job_runner.parquet_metadata_directory)
