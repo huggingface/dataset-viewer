@@ -167,7 +167,7 @@ class DeleteDatasetWaitingJobsTask(Task):
 
     def __post_init__(self) -> None:
         # for debug and testing
-        self.id = f"DeleteDatasetJobs,{len(self.dataset)}"
+        self.id = f"DeleteDatasetJobs,{self.dataset}"
         self.long_id = self.id
 
     def run(self) -> TasksStatistics:
@@ -190,7 +190,7 @@ class DeleteDatasetCacheEntriesTask(Task):
 
     def __post_init__(self) -> None:
         # for debug and testing
-        self.id = f"DeleteDatasetCacheEntries,{len(self.dataset)}"
+        self.id = f"DeleteDatasetCacheEntries,{self.dataset}"
         self.long_id = self.id
 
     def run(self) -> TasksStatistics:
