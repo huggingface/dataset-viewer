@@ -411,10 +411,22 @@ def test_2274_only_first_steps(
         assert pending_jobs_df.iloc[0]["type"] in FIRST_CACHE_KINDS
         assert cache_entries_df.empty
 
-        # start the first job
+        # process the first two jobs
         job_info = queue.start_job()
-
-        # finish the started job
+        job_result: JobResult = {
+            "job_info": job_info,
+            "job_runner_version": JOB_RUNNER_VERSION,
+            "is_success": True,
+            "output": {
+                "content": {},
+                "http_status": HTTPStatus.OK,
+                "error_code": None,
+                "details": None,
+                "progress": 1.0,
+            },
+        }
+        finish_job(job_result=job_result)
+        job_info = queue.start_job()
         job_result: JobResult = {
             "job_info": job_info,
             "job_runner_version": JOB_RUNNER_VERSION,
@@ -429,27 +441,27 @@ def test_2274_only_first_steps(
         }
         finish_job(job_result=job_result)
 
-        assert len(queue.get_pending_jobs_df(dataset=dataset)) == 8
-        assert len(get_cache_entries_df(dataset=dataset)) == 1
+        assert len(queue.get_pending_jobs_df(dataset=dataset)) == 7
+        assert len(get_cache_entries_df(dataset=dataset)) == 2
 
         # let's delete all the jobs, to get in the same state as the bug
         queue.delete_dataset_waiting_jobs(dataset=dataset)
 
         assert queue.get_pending_jobs_df(dataset=dataset).empty
-        assert len(get_cache_entries_df(dataset=dataset)) == 1
+        assert len(get_cache_entries_df(dataset=dataset)) == 2
 
         # try to reproduce the bug in #2375 by update at this point: no
         update_dataset(dataset=dataset, hf_endpoint=CI_HUB_ENDPOINT, hf_token=CI_APP_TOKEN)
 
         assert queue.get_pending_jobs_df(dataset=dataset).empty
-        assert len(get_cache_entries_df(dataset=dataset)) == 1
+        assert len(get_cache_entries_df(dataset=dataset)) == 2
 
         # THE BUG IS REPRODUCED: the jobs should have been recreated at that point.
 
         backfill_dataset(dataset=dataset, hf_endpoint=CI_HUB_ENDPOINT, hf_token=CI_APP_TOKEN)
 
         assert not queue.get_pending_jobs_df(dataset=dataset).empty
-        assert len(get_cache_entries_df(dataset=dataset)) == 1
+        assert len(get_cache_entries_df(dataset=dataset)) == 2
 
 
 @pytest.mark.parametrize(
