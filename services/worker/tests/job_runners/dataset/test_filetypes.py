@@ -1,12 +1,19 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright 2022 The HuggingFace Authors.
+# Copyright 2024 The HuggingFace Authors.
 
+
+from collections.abc import Callable
 
 import pytest
 from huggingface_hub.hf_api import RepoSibling
+from libcommon.dtos import Priority
 
+from worker.config import AppConfig
 from worker.dtos import Filetype
-from worker.job_runners.dataset.filetypes import get_filetypes, get_filetypes_from_archive
+from worker.job_runners.dataset.filetypes import DatasetFiletypesJobRunner, get_filetypes, get_filetypes_from_archives
+from worker.resources import LibrariesResource
+
+from ..utils import REVISION_NAME
 
 
 @pytest.mark.parametrize(
@@ -51,18 +58,18 @@ def test_get_filetypes(siblings: list[RepoSibling], filetypes: list[Filetype]) -
 
 @pytest.mark.real_dataset
 @pytest.mark.parametrize(
-    "dataset,archive_filename,filetypes",
+    "dataset,archive_filenames,filetypes",
     [
         (
             "severo/LILA",
-            "data/Caltech_Camera_Traps.jsonl.zip",
+            ["data/Caltech_Camera_Traps.jsonl.zip"],
             [
                 Filetype(extension=".jsonl", count=1, archived_in=".zip"),
             ],
         ),
         (
             "severo/winogavil",
-            "winogavil_images.zip",
+            ["winogavil_images.zip"],
             [
                 Filetype(extension=".jpg", count=2044, archived_in=".zip"),
             ],
@@ -72,7 +79,80 @@ def test_get_filetypes(siblings: list[RepoSibling], filetypes: list[Filetype]) -
 def test_get_filetypes_from_archive(
     use_hub_prod_endpoint: pytest.MonkeyPatch,
     dataset: str,
-    archive_filename: str,
+    archive_filenames: list[str],
     filetypes: list[Filetype],
 ) -> None:
-    assert get_filetypes_from_archive(dataset=dataset, archive_filename=archive_filename, hf_token=None) == filetypes
+    assert (
+        get_filetypes_from_archives(dataset=dataset, archive_filenames=archive_filenames, hf_token=None) == filetypes
+    )
+
+
+GetJobRunner = Callable[[str, AppConfig], DatasetFiletypesJobRunner]
+
+
+@pytest.fixture
+def get_job_runner(
+    libraries_resource: LibrariesResource,
+) -> GetJobRunner:
+    def _get_job_runner(
+        dataset: str,
+        app_config: AppConfig,
+    ) -> DatasetFiletypesJobRunner:
+        return DatasetFiletypesJobRunner(
+            job_info={
+                "type": DatasetFiletypesJobRunner.get_job_type(),
+                "params": {
+                    "dataset": dataset,
+                    "revision": REVISION_NAME,
+                    "config": None,
+                    "split": None,
+                },
+                "job_id": "job_id",
+                "priority": Priority.NORMAL,
+                "difficulty": 50,
+            },
+            app_config=app_config,
+            hf_datasets_cache=libraries_resource.hf_datasets_cache,
+        )
+
+    return _get_job_runner
+
+
+@pytest.mark.real_dataset
+@pytest.mark.parametrize(
+    "dataset,filetypes",
+    [
+        (
+            "severo/LILA",
+            [
+                Filetype(extension="", count=1),
+                Filetype(extension=".py", count=1),
+                Filetype(extension=".zip", count=18),
+                Filetype(extension=".md", count=1),
+                Filetype(extension=".jsonl", count=18, archived_in=".zip"),
+            ],
+        ),
+        (
+            "severo/winogavil",
+            [
+                Filetype(extension="", count=1),
+                Filetype(extension=".md", count=1),
+                Filetype(extension=".py", count=1),
+                Filetype(extension=".csv", count=1),
+                Filetype(extension=".zip", count=1),
+                Filetype(extension=".jpg", count=2044, archived_in=".zip"),
+            ],
+        ),
+    ],
+)
+def test_compute(
+    app_config_prod: AppConfig,
+    use_hub_prod_endpoint: pytest.MonkeyPatch,
+    dataset: str,
+    filetypes: list[Filetype],
+    get_job_runner: GetJobRunner,
+) -> None:
+    job_runner = get_job_runner(dataset, app_config=app_config_prod)
+    response = job_runner.compute()
+    content = response.content
+    assert content["filetypes"] == filetypes

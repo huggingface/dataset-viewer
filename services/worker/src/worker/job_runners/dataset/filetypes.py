@@ -23,19 +23,32 @@ def get_filetypes(siblings: list[RepoSibling]) -> list[Filetype]:
     return [Filetype(extension=k, count=v) for k, v in counter.items()]
 
 
-def get_filetypes_from_archive(
+def get_counter_from_archive(
     dataset: str,
     archive_filename: str,
     hf_token: Optional[str] = None,
-) -> list[Filetype]:
+) -> Counter:
     dl_manager = StreamingDownloadManager(download_config=DownloadConfig(token=hf_token))
     base_url = f"hf://datasets/{dataset}/"
     archived_in = get_file_extension(archive_filename, recursive=False, clean=False)
-    counter = Counter(
-        get_file_extension(xbasename(filename))
+    return Counter(
+        (archived_in, get_file_extension(xbasename(filename)))
         for filename in dl_manager.iter_files(dl_manager.extract(base_url + archive_filename))
     )
-    return [Filetype(extension=k, count=v, archived_in=archived_in) for k, v in counter.items()]
+
+
+def get_filetypes_from_archives(
+    dataset: str,
+    archive_filenames: list[str],
+    hf_token: Optional[str] = None,
+) -> list[Filetype]:
+    counter = Counter()
+    for archive_filename in archive_filenames:
+        counter.update(get_counter_from_archive(dataset=dataset, archive_filename=archive_filename, hf_token=hf_token))
+    return [
+        Filetype(extension=extension, count=v, archived_in=archived_in)
+        for (archived_in, extension), v in counter.items()
+    ]
 
 
 def compute_filetypes_response(
@@ -79,11 +92,9 @@ def compute_filetypes_response(
         for sibling in info.siblings
         if get_file_extension(sibling.rfilename, recursive=False, clean=False) in SUPPORTED_ARCHIVE_EXTENSIONS
     ]
-    filetypes_from_archives = []
-    for archive_filename in archive_filenames:
-        filetypes_from_archives += get_filetypes_from_archive(
-            dataset=dataset, archive_filename=archive_filename, hf_token=hf_token
-        )
+    filetypes_from_archives = get_filetypes_from_archives(
+        dataset=dataset, archive_filenames=archive_filenames, hf_token=hf_token
+    )
 
     return DatasetFiletypesResponse(filetypes=filetypes + filetypes_from_archives)
 
