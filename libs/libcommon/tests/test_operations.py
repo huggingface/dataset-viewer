@@ -15,7 +15,6 @@ from huggingface_hub.utils import HfHubHTTPError
 from requests import Response  # type: ignore
 
 from libcommon.constants import CONFIG_SPLIT_NAMES_KIND, DATASET_CONFIG_NAMES_KIND, TAG_NFAA_SYNONYMS
-from libcommon.dtos import JobResult
 from libcommon.exceptions import (
     DatasetInBlockListError,
     NotSupportedDisabledRepositoryError,
@@ -412,34 +411,21 @@ def test_2274_only_first_steps(
         assert cache_entries_df.empty
 
         # process the first two jobs
-        job_info = queue.start_job()
-        job_result: JobResult = {
-            "job_info": job_info,
-            "job_runner_version": JOB_RUNNER_VERSION,
-            "is_success": True,
-            "output": {
-                "content": {},
-                "http_status": HTTPStatus.OK,
-                "error_code": None,
-                "details": None,
-                "progress": 1.0,
-            },
-        }
-        finish_job(job_result=job_result)
-        job_info = queue.start_job()
-        job_result = {
-            "job_info": job_info,
-            "job_runner_version": JOB_RUNNER_VERSION,
-            "is_success": True,
-            "output": {
-                "content": {},
-                "http_status": HTTPStatus.OK,
-                "error_code": None,
-                "details": None,
-                "progress": 1.0,
-            },
-        }
-        finish_job(job_result=job_result)
+        for _ in range(2):
+            finish_job(
+                job_result={
+                    "job_info": queue.start_job(),
+                    "job_runner_version": JOB_RUNNER_VERSION,
+                    "is_success": True,
+                    "output": {
+                        "content": {},
+                        "http_status": HTTPStatus.OK,
+                        "error_code": None,
+                        "details": None,
+                        "progress": 1.0,
+                    },
+                }
+            )
 
         assert len(queue.get_pending_jobs_df(dataset=dataset)) == 7
         assert len(get_cache_entries_df(dataset=dataset)) == 2
