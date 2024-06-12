@@ -427,7 +427,7 @@ def test_2274_only_first_steps(
         }
         finish_job(job_result=job_result)
         job_info = queue.start_job()
-        job_result: JobResult = {
+        job_result = {
             "job_info": job_info,
             "job_runner_version": JOB_RUNNER_VERSION,
             "is_success": True,
