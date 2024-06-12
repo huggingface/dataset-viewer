@@ -107,7 +107,12 @@ def get_job_runner(
 
 def assert_content_is_equal(content: Any, expected: Any) -> None:
     print(content)
-    assert set(content) == {"parquet_files", "dataset_info", "partial"}, f"keys: {set(content)}"
+    assert set(content) == {
+        "parquet_files",
+        "dataset_info",
+        "estimated_dataset_info",
+        "partial",
+    }, f"keys: {set(content)}"
     assert content["parquet_files"] == expected["parquet_files"], f"parquet files: {content['parquet_files']}"
     assert len(content["dataset_info"]) == len(
         expected["dataset_info"]
@@ -120,6 +125,20 @@ def assert_content_is_equal(content: Any, expected: Any) -> None:
     for key in content_value.keys():
         if key != "download_checksums":
             assert content_value[key] == expected_value[key], f"content of dataset_info['{key}']: {content_value[key]}"
+    if content["estimated_dataset_info"] is not None or expected["estimated_dataset_info"] is not None:
+        assert len(content["estimated_dataset_info"]) == len(
+            expected["estimated_dataset_info"]
+        ), f"length of estimated_dataset_info: {content['estimated_dataset_info']}"
+        content_value = content["estimated_dataset_info"]
+        expected_value = expected["estimated_dataset_info"]
+        assert set(content_value.keys()) == set(
+            expected_value.keys()
+        ), f"keys of estimated_dataset_info: {set(content_value.keys())}"
+        for key in content_value.keys():
+            if key != "download_checksums":
+                assert (
+                    content_value[key] == expected_value[key]
+                ), f"content of estimated_dataset_info['{key}']: {content_value[key]}"
     assert content["partial"] == expected["partial"], f"partial: {content['partial']}"
 
 
@@ -690,12 +709,13 @@ def test_stream_convert_to_parquet_arrowbasedbuilder(
     )
     with patch("worker.job_runners.config.parquet_and_info.get_writer_batch_size_from_info", lambda ds_config_info: 1):
         with patch.object(datasets.config, "MAX_SHARD_SIZE", 1):
-            parquet_operations, partial = stream_convert_to_parquet(
+            parquet_operations, partial, estimated_dataset_info = stream_convert_to_parquet(
                 builder, max_dataset_size_bytes=max_dataset_size_bytes
             )
     num_shards = len(parquet_operations)
     assert num_shards == expected_num_shards
     assert partial == (expected_num_shards < num_data_files)
+    assert partial == (estimated_dataset_info is not None)
     assert all(isinstance(op.path_or_fileobj, str) for op in parquet_operations)
     parquet_files = list_generated_parquet_files(builder, partial=partial)
     assert len(parquet_files) == expected_num_shards
@@ -732,12 +752,13 @@ def test_stream_convert_to_parquet_generatorbasedbuilder(
     builder = ParametrizedGeneratorBasedBuilder(generator=long_generator, cache_dir=cache_dir)
     with patch("worker.job_runners.config.parquet_and_info.get_writer_batch_size_from_info", lambda ds_config_info: 1):
         with patch.object(datasets.config, "MAX_SHARD_SIZE", 1):
-            parquet_operations, partial = stream_convert_to_parquet(
+            parquet_operations, partial, estimated_dataset_info = stream_convert_to_parquet(
                 builder, max_dataset_size_bytes=max_dataset_size_bytes
             )
     num_shards = len(parquet_operations)
     assert num_shards == expected_num_shards
     assert partial == (expected_num_shards < num_rows)
+    assert partial == (estimated_dataset_info is not None)
     assert all(isinstance(op.path_or_fileobj, str) for op in parquet_operations)
     parquet_files = list_generated_parquet_files(builder, partial=partial)
     assert len(parquet_files) == expected_num_shards

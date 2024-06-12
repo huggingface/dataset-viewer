@@ -29,8 +29,10 @@ from datasets.builder import DatasetBuilder, ManualDownloadError
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
 from datasets.download import StreamingDownloadManager
 from datasets.packaged_modules.parquet.parquet import Parquet as ParquetBuilder
-from datasets.splits import SplitDict, SplitInfo
+from datasets.splits import SplitDict, SplitGenerator, SplitInfo
 from datasets.utils.file_utils import (
+    ArchiveIterable,
+    FilesIterable,
     get_authentication_headers_for_url,
     http_head,
     is_relative_path,
@@ -849,11 +851,11 @@ class limit_parquet_writes:
         return self.exit_stack.close()
 
 
-def get_shards_in_gen_kwargs(gen_kwargs: dict) -> list[str]:
+def get_urlpaths_in_gen_kwargs(gen_kwargs: dict[str, Any]) -> list[str]:
     """Return the number of possible shards according to the input gen_kwargs"""
     # Having lists of different sizes makes sharding ambigious, raise an error in this case (same as in the `datasets` lib)
     lists = [value for value in gen_kwargs.values() if isinstance(value, list)] or [[]]
-    if len(set(len(list_ for list_ in lists))) > 1:
+    if len(set(len(list_) for list_ in lists)) > 1:
         raise RuntimeError(
             (
                 "Sharding is ambiguous for this dataset: "
@@ -862,7 +864,16 @@ def get_shards_in_gen_kwargs(gen_kwargs: dict) -> list[str]:
                 + "and use tuples otherwise. In the end there should only be one single list, or several lists with the same length."
             )
         )
-    return max(lists, key=len)
+    shards = max(lists, key=len)
+    urlpaths: list[str] = []
+    for shard in shards:
+        if isinstance(shard, str):
+            urlpaths.append(shard)
+        elif isinstance(shard, FilesIterable):
+            urlpaths.extend(list(shard))
+        elif isinstance(shard, ArchiveIterable) and shard.args and isinstance(shard.args[0], str):
+            urlpaths.append(shard.args[0])
+    return urlpaths
 
 
 ReadOutput = TypeVar("ReadOutput", bound=Union[bytes, str])
@@ -986,7 +997,7 @@ def stream_convert_to_parquet(
     )
     os.makedirs(builder.cache_dir, exist_ok=True)
     split_dict = SplitDict(dataset_name=builder.name)
-    splits_generators = {sg.name: sg for sg in builder._split_generators(dl_manager)}
+    splits_generators: dict[str, SplitGenerator] = {sg.name: sg for sg in builder._split_generators(dl_manager)}
     prepare_split_kwargs: dict[str, Any] = (
         {"check_duplicate_keys": True} if isinstance(builder, datasets.builder.GeneratorBasedBuilder) else {}
     )
@@ -994,7 +1005,8 @@ def stream_convert_to_parquet(
     estimated_splits_info: dict[str, dict[str, Any]] = {}
     estimated_info: dict[str, Any] = {"download_size": 0}
     for split in splits_generators:
-        split_dict.add(splits_generators[split].split_info)
+        split_info = splits_generators[split].split_info
+        split_dict.add(split_info)
         if max_dataset_size_bytes is None:
             builder._prepare_split(
                 split_generator=splits_generators[split], file_format="parquet", **prepare_split_kwargs
@@ -1008,16 +1020,17 @@ def stream_convert_to_parquet(
                     split_generator=splits_generators[split], file_format="parquet", **prepare_split_kwargs
                 )
                 partial = partial or limiter.total_bytes >= max_dataset_size_bytes
-                shards = get_shards_in_gen_kwargs(splits_generators[split].gen_kwargs)
-                if shards:
-                    shards_total_read = sum(reads_tracker.files[shard]["read"] for shard in shards)
-                    shards_total_size = sum(reads_tracker.files[shard]["size"] for shard in shards)
-                    estimated_splits_info[split]["name"] = split_dict[split]["num_examples"]["name"]
-                    estimated_splits_info[split]["num_examples"] = int(
-                        shards_total_read / shards_total_size * split_dict[split]["num_examples"]
-                    )
-                    estimated_splits_info[split]["num_bytes"] = int(
-                        shards_total_read / shards_total_size * split_dict[split]["num_bytes"]
+                urlpaths = get_urlpaths_in_gen_kwargs(splits_generators[split].gen_kwargs)
+                if urlpaths:
+                    shards_total_read = sum(reads_tracker.files[urlpath]["read"] for urlpath in urlpaths)
+                    shards_total_size = sum(reads_tracker.files[urlpath]["size"] for urlpath in urlpaths)
+                    estimated_splits_info[split] = asdict(
+                        SplitInfo(
+                            name=split_info.name,
+                            num_examples=int(shards_total_size / shards_total_read * split_info.num_examples),
+                            num_bytes=int(shards_total_size / shards_total_read * split_info.num_bytes),
+                            dataset_name=split_info.dataset_name,
+                        )
                     )
                     estimated_info["download_size"] += shards_total_size
     builder.info.splits = split_dict
@@ -1025,13 +1038,11 @@ def stream_convert_to_parquet(
     builder.info.download_size = None
     builder.info.size_in_bytes = None
     if estimated_splits_info:
-        estimated_info["splits"] = (estimated_splits_info,)
-        estimated_info["dataset_size"] = (
-            sum(split_info["num_examples"] for split_info in estimated_splits_info.values()),
+        estimated_info["splits"] = estimated_splits_info
+        estimated_info["dataset_size"] = sum(
+            split_info["num_examples"] for split_info in estimated_splits_info.values()
         )
-        estimated_info["size_in_bytes"] = (
-            sum(split_info["num_bytes"] for split_info in estimated_splits_info.values()),
-        )
+        estimated_info["size_in_bytes"] = sum(split_info["num_bytes"] for split_info in estimated_splits_info.values())
 
     # send the files to the target revision
     local_parquet_files = list_generated_parquet_files(builder, partial=partial)

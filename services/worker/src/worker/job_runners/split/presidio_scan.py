@@ -267,6 +267,7 @@ def compute_presidio_entities_scan_response(
             parquet_files=parquet_and_info_response["content"]["parquet_files"],
             dataset_info=parquet_and_info_response["content"]["dataset_info"],
             partial=parquet_and_info_response["content"]["partial"],
+            estimated_dataset_info=parquet_and_info_response["content"].get("estimated_dataset_info"),
         )
         info = DatasetInfo.from_dict(upstream_response_content["dataset_info"])
         if info.features is None:
