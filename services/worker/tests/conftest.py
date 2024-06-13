@@ -109,6 +109,17 @@ def app_config(set_env_vars: MonkeyPatch) -> Iterator[AppConfig]:
 
 
 @fixture
+def app_config_prod(set_env_vars: MonkeyPatch) -> Iterator[AppConfig]:
+    mp = MonkeyPatch()
+    mp.setenv("COMMON_HF_ENDPOINT", "https://huggingface.co")
+    app_config = AppConfig.from_env()
+    if "test" not in app_config.cache.mongo_database or "test" not in app_config.queue.mongo_database:
+        raise ValueError("Test must be launched on a test mongo database")
+    yield app_config
+    mp.undo()
+
+
+@fixture
 def cache_mongo_resource(app_config: AppConfig) -> Iterator[CacheMongoResource]:
     with CacheMongoResource(database=app_config.cache.mongo_database, host=app_config.cache.mongo_url) as resource:
         if not resource.is_available():
