@@ -14,7 +14,7 @@ from urllib.parse import quote
 import PIL
 import requests
 from datasets import Dataset, DatasetInfo, DownloadConfig, Features, IterableDataset, load_dataset
-from datasets.utils.file_utils import get_authentication_headers_for_url
+from datasets.utils.file_utils import SINGLE_FILE_COMPRESSION_EXTENSION_TO_PROTOCOL, get_authentication_headers_for_url
 from fsspec.implementations.http import HTTPFileSystem
 from huggingface_hub.hf_api import HfApi
 from huggingface_hub.utils._errors import RepositoryNotFoundError
