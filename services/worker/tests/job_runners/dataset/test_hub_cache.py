@@ -11,7 +11,7 @@ from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import CachedArtifactError, CachedArtifactNotFoundError, upsert_response
 
 from worker.config import AppConfig
-from worker.job_runners.dataset.hub_cache import DatasetHubCacheJobRunner
+from worker.job_runners.dataset.hub_cache import DatasetHubCacheJobRunner, DatasetHubCacheResponse
 
 from ..utils import REVISION_NAME, UpstreamResponse
 
@@ -98,7 +98,7 @@ UPSTREAM_RESPONSE_MODALITIES_ERROR: UpstreamResponse = UpstreamResponse(
     content={},
     progress=0.0,
 )
-EXPECTED_OK = (
+EXPECTED_OK: tuple[DatasetHubCacheResponse, float] = (
     {
         "viewer": False,
         "preview": True,
@@ -111,7 +111,7 @@ EXPECTED_OK = (
     },
     0.2,
 )
-EXPECTED_NO_PROGRESS = (
+EXPECTED_NO_PROGRESS: tuple[DatasetHubCacheResponse, float] = (
     {
         "viewer": False,
         "preview": True,
@@ -124,7 +124,7 @@ EXPECTED_NO_PROGRESS = (
     },
     0.5,
 )
-EXPECTED_NO_SIZE = (
+EXPECTED_NO_SIZE: tuple[DatasetHubCacheResponse, float] = (
     {
         "viewer": False,
         "preview": True,
@@ -137,7 +137,7 @@ EXPECTED_NO_SIZE = (
     },
     0.0,
 )
-EXPECTED_OK_WITH_LIBRARIES_AND_FORMATS = (
+EXPECTED_OK_WITH_LIBRARIES_AND_FORMATS: tuple[DatasetHubCacheResponse, float] = (
     {
         "viewer": False,
         "preview": True,
@@ -150,7 +150,7 @@ EXPECTED_OK_WITH_LIBRARIES_AND_FORMATS = (
     },
     0.5,
 )
-EXPECTED_OK_WITH_MODALITIES = (
+EXPECTED_OK_WITH_MODALITIES: tuple[DatasetHubCacheResponse, float] = (
     {
         "viewer": False,
         "preview": True,
