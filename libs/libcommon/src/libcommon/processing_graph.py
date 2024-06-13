@@ -708,7 +708,7 @@ specification: ProcessingGraphSpecification = {
     },
     "dataset-modalities": {
         "input_type": "dataset",
-        "triggered_by": "dataset-info",
+        "triggered_by": ["dataset-info", "dataset-filetypes"],
         "job_runner_version": 1,
         "difficulty": 20,
     },
