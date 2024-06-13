@@ -43,7 +43,6 @@ from huggingface_hub._commit_api import (
     CommitOperationDelete,
 )
 from huggingface_hub.hf_api import CommitInfo, DatasetInfo, HfApi, RepoFile
-from huggingface_hub.hf_file_system import HfFileSystem, HfFileSystemFile
 from huggingface_hub.utils._errors import HfHubHTTPError, RepositoryNotFoundError
 from huggingface_hub.utils._http import HTTP_METHOD_T, Response, http_backoff
 from libcommon.constants import (
@@ -86,13 +85,13 @@ from worker.utils import (
     hf_hub_url,
     raise_if_long_column_name,
     resolve_trust_remote_code,
+    retry_on_arrow_invalid_open_file,
 )
 
 DATASET_TYPE = "dataset"
 MAX_FILES_PER_DIRECTORY = 10_000  # hf hub limitation
 MAX_FILES_PER_REPOSITORY = 100_000  # hf hub limitation
 MAX_OPERATIONS_PER_COMMIT = 500
-SLEEPS = [0.2, 1, 1, 10, 10, 10]
 
 T = TypeVar("T")
 
@@ -576,11 +575,6 @@ class TooBigRowGroupsError(ParquetValidationError):
         self.row_group_byte_size = row_group_byte_size
 
 
-def open_file(file_url: str, hf_endpoint: str, hf_token: Optional[str]) -> HfFileSystemFile:
-    fs = HfFileSystem(endpoint=hf_endpoint, token=hf_token)
-    return fs.open(file_url)
-
-
 def retry_validate_get_num_examples_and_size(
     url: str, hf_endpoint: str, hf_token: Optional[str], validate: Optional[Callable[[pq.ParquetFile], None]]
 ) -> tuple[int, int]:
@@ -592,7 +586,7 @@ def retry_validate_get_num_examples_and_size(
         `tuple[int, int]` - (num examples, size in bytes)
     """
     try:
-        f = retry(on=[pa.ArrowInvalid], sleeps=SLEEPS)(open_file)(url, hf_endpoint, hf_token)
+        f = retry_on_arrow_invalid_open_file(url, hf_endpoint, hf_token)
         pf, size = pq.ParquetFile(f), f.size
         if validate:
             validate(pf)
@@ -617,7 +611,7 @@ def retry_validate_get_features_num_examples_size_and_compression_ratio(
         `tuple[pq.ParquetFile, int]` - (parquet files, size in bytes)
     """
     try:
-        f = retry(on=[pa.ArrowInvalid], sleeps=SLEEPS)(open_file)(url, hf_endpoint, hf_token)
+        f = retry_on_arrow_invalid_open_file(url, hf_endpoint, hf_token)
         pf, size = pq.ParquetFile(f), f.size
         num_row_groups = pf.metadata.num_row_groups
         compression_ratio = 0

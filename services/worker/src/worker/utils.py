@@ -15,8 +15,8 @@ from urllib.parse import quote
 import PIL
 import requests
 from datasets import Dataset, DatasetInfo, DownloadConfig, Features, IterableDataset, load_dataset
-from datasets.utils.file_utils import SINGLE_FILE_COMPRESSION_EXTENSION_TO_PROTOCOL, get_authentication_headers_for_url
-from fsspec.implementations.http import HTTPFileSystem
+from datasets.utils.file_utils import SINGLE_FILE_COMPRESSION_EXTENSION_TO_PROTOCOL
+from huggingface_hub import HfFileSystem, HfFileSystemFile
 from huggingface_hub.hf_api import HfApi
 from huggingface_hub.utils._errors import RepositoryNotFoundError
 from libcommon.constants import CONFIG_SPLIT_NAMES_KIND, EXTERNAL_DATASET_SCRIPT_PATTERN, MAX_COLUMN_NAME_LENGTH
@@ -33,7 +33,7 @@ from libcommon.exceptions import (
 )
 from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.utils import retry
-from pyarrow.parquet import ParquetFile
+from pyarrow import ArrowInvalid
 
 MAX_IMAGE_PIXELS = 10_000_000_000
 # ^ see https://pillow.readthedocs.io/en/stable/reference/Image.html#PIL.Image.MAX_IMAGE_PIXELS
@@ -142,9 +142,25 @@ def hf_hub_url(repo_id: str, filename: str, hf_endpoint: str, revision: str, url
     return (hf_endpoint + url_template) % (repo_id, quote(revision, safe=""), filename)
 
 
-def get_parquet_file(url: str, fs: HTTPFileSystem, hf_token: Optional[str]) -> ParquetFile:
-    headers = get_authentication_headers_for_url(url, token=hf_token)
-    return ParquetFile(fs.open(url, headers=headers))
+def hffs_parquet_url(repo_id: str, config: str, split_directory: str, filename: str) -> str:
+    """Construct url of a parquet file on the Hub, to be used with HfFileSystem."""
+    return f"hf://datasets/{repo_id}/{config}/{split_directory}/{filename}"
+
+
+def hf_hub_open_file(
+    file_url: str, hf_endpoint: str, hf_token: Optional[str], revision: Optional[str] = None
+) -> HfFileSystemFile:
+    """Open file with the HfFileSystem."""
+    fs = HfFileSystem(endpoint=hf_endpoint, token=hf_token)
+    return fs.open(file_url, revision=revision)
+
+
+# used by `config-parquet-and-info` and `config-parquet-metadata` steps
+@retry(on=[ArrowInvalid], sleeps=[0.2, 1, 1, 10, 10, 10])
+def retry_on_arrow_invalid_open_file(
+    file_url: str, hf_endpoint: str, hf_token: Optional[str], revision: Optional[str] = None
+) -> HfFileSystemFile:
+    return hf_hub_open_file(file_url=file_url, hf_endpoint=hf_endpoint, hf_token=hf_token, revision=revision)
 
 
 DATASET_TYPE = "dataset"
