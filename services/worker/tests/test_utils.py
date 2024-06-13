@@ -1,40 +1,42 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2024 The HuggingFace Authors.
 
+
 import pytest
 
-from worker.utils import get_file_extension
+from worker.utils import FileExtension, get_file_extension
 
 
 @pytest.mark.parametrize(
     "filename,expected_extension",
     [
-        ("README.md", ".md"),
-        ("file.csv", ".csv"),
+        ("README.md", FileExtension(extension=".md")),
+        ("file.csv", FileExtension(extension=".csv")),
         # leading dots are ignored
-        (".gitattributes", ""),
-        (".file.csv", ".csv"),
-        ("....file.csv", ".csv"),
+        (".gitattributes", FileExtension(extension="")),
+        (".file.csv", FileExtension(extension=".csv")),
+        ("....file.csv", FileExtension(extension=".csv")),
         # no extension
-        ("LICENSE", ""),
+        ("LICENSE", FileExtension(extension="")),
         # multiple dots
-        ("file.with.dots.csv", ".csv"),
-        # special case for tar
-        ("file.tar.gz", ".tar.gz"),
-        ("file.with.dots.tar.gz", ".tar.gz"),
-        ("file.tar.bz2", ".tar.bz2"),
-        ("file.tar.unknown", ".unknown"),
-        ("file.tar", ".tar"),
-        ("file.nottar.gz", ".gz"),
+        ("file.with.dots.csv", FileExtension(extension=".csv")),
         # clean suffixes
-        ("file.csv?dl=1", ".csv"),
-        ("file.csv_1", ".csv"),
-        ("file.csv-00000-of-00001", ".csv"),
+        ("file.csv?dl=1", FileExtension(extension=".csv")),
+        ("file.csv_1", FileExtension(extension=".csv")),
+        ("file.csv-00000-of-00001", FileExtension(extension=".csv")),
         # ignore paths
-        ("path/to/file.csv", ".csv"),
-        (".path/to.some/file.csv", ".csv"),
-        ("path/to/.gitignore", ""),
+        ("path/to/file.csv", FileExtension(extension=".csv")),
+        (".path/to.some/file.csv", FileExtension(extension=".csv")),
+        ("path/to/.gitignore", FileExtension(extension="")),
+        # double extensions
+        ("file.tar.gz", FileExtension(extension=".gz", archived_extension=".tar")),
+        ("file.with.dots.tar.gz", FileExtension(extension=".gz", archived_extension=".tar")),
+        ("file.tar.bz2", FileExtension(extension=".bz2", archived_extension=".tar")),
+        ("file.jsonl.gz", FileExtension(extension=".gz", archived_extension=".jsonl")),
+        ("file.tar.unknown", FileExtension(extension=".unknown")),
+        ("file.tar", FileExtension(extension=".tar")),
     ],
 )
-def test_get_file_extension(filename: str, expected_extension: str) -> None:
-    assert get_file_extension(filename) == expected_extension
+def test_get_file_extension(filename: str, expected_extension: FileExtension) -> None:
+    assert get_file_extension(filename).extension == expected_extension.extension
+    assert get_file_extension(filename).archived_extension == expected_extension.archived_extension

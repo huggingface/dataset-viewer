@@ -7,6 +7,7 @@ import os
 import sys
 import traceback
 import warnings
+from dataclasses import dataclass, field
 from fnmatch import fnmatch
 from typing import Optional, Union
 from urllib.parse import quote
@@ -241,7 +242,43 @@ def raise_if_long_column_name(features: Optional[Features]) -> None:
             )
 
 
-def get_file_extension(filename: str, recursive: bool = True, clean: bool = True) -> str:
+FileExtensionTuple = tuple[str, Optional[str]]
+
+
+@dataclass
+class FileExtension:
+    extension: str
+    archived_extension: Optional[str] = field(default=None)
+
+    def get_tuples(self) -> list[FileExtensionTuple]:
+        """
+        Get the extension and the archived extension if it exists.
+
+        The list contains two entries if the archived extension exists (for the archive and for the archived file),
+          otherwise one entry.
+        """
+        if self.archived_extension:
+            return [
+                (self.extension, None),
+                (self.archived_extension, self.extension),
+            ]
+        return [(self.extension, None)]
+
+
+def get_file_extension(filename: str, recursive: bool = True, clean: bool = True) -> FileExtension:
+    """
+    Get the extension of a file.
+
+    In the case of .tar.gz or other "double extensions", the uncompressed file extension is set in the archived_extension field
+
+    Args:
+        filename (`str`): The name of the file.
+        recursive (`bool`, *optional*): Whether to recursively extract the extension of the archive.
+        clean (`bool`, *optional*): Whether to clean the extension by removing special characters.
+
+    Returns:
+        FileExtension: the extension of the file
+    """
     [base, extension] = os.path.splitext(filename)
     # special cases we find in datasets (gz?dl=1 -> gz, txt_1 -> txt, txt-00000-of-00100-> txt)
     # https://github.com/huggingface/datasets/blob/af3acfdfcf76bb980dbac871540e30c2cade0cf9/src/datasets/utils/file_utils.py#L795
@@ -249,7 +286,6 @@ def get_file_extension(filename: str, recursive: bool = True, clean: bool = True
         for symb in "?-_":
             extension = extension.split(symb)[0]
     if recursive and extension.lstrip(".") in SINGLE_FILE_COMPRESSION_EXTENSION_TO_PROTOCOL:
-        base_extension = get_file_extension(base, recursive=False, clean=False)
-        if base_extension == ".tar":
-            return base_extension + extension
-    return extension
+        archived_extension = get_file_extension(base, recursive=False, clean=False)
+        return FileExtension(extension=extension, archived_extension=archived_extension.extension)
+    return FileExtension(extension=extension)

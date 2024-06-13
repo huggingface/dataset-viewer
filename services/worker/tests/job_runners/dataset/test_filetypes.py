@@ -17,7 +17,7 @@ from ..utils import REVISION_NAME
 
 
 @pytest.mark.parametrize(
-    "siblings,filetypes",
+    "siblings,expected_filetypes",
     [
         (
             [
@@ -39,21 +39,24 @@ from ..utils import REVISION_NAME
                 RepoSibling("file3.tar.gz-1"),
                 RepoSibling("file3.tar.gz?dl=1-1"),
                 RepoSibling("file.gz"),
+                RepoSibling("file.json.gz"),
                 RepoSibling(".gitignore"),
             ],
             [
                 Filetype(extension=".txt", count=2),
                 Filetype(extension=".csv", count=1),
                 Filetype(extension=".tar", count=1),
-                Filetype(extension=".tar.gz", count=4),
-                Filetype(extension=".gz", count=1),
+                Filetype(extension=".gz", count=6),
+                Filetype(extension=".tar", count=4, archived_in=".gz"),
+                Filetype(extension=".json", count=1, archived_in=".gz"),
                 Filetype(extension="", count=1),
             ],
         ),
     ],
 )
-def test_get_filetypes(siblings: list[RepoSibling], filetypes: list[Filetype]) -> None:
-    assert get_filetypes(siblings) == filetypes
+def test_get_filetypes(siblings: list[RepoSibling], expected_filetypes: list[Filetype]) -> None:
+    filetypes = get_filetypes(siblings)
+    assert filetypes == expected_filetypes
 
 
 @pytest.mark.real_dataset
