@@ -85,11 +85,11 @@ def parquet_export_is_partial(parquet_file_url: str) -> bool:
         `bool`: True is the Parquet export is partial,
             or False if it's the full dataset.
     """
-    split_directory_name_for_parquet_export = extract_split_name_from_parquet_url(parquet_file_url)
+    split_directory_name_for_parquet_export = extract_split_directory_from_parquet_url(parquet_file_url)
     return split_directory_name_for_parquet_export.startswith(PARTIAL_PREFIX)
 
 
-def extract_split_name_from_parquet_url(parquet_url: str) -> str:
+def extract_split_directory_from_parquet_url(parquet_url: str) -> str:
     """
     Extracts the split name from a parquet file URL
     stored in the `refs/convert/parquet` branch of a

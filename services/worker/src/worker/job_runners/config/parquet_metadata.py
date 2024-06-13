@@ -13,7 +13,7 @@ from libcommon.exceptions import (
     ParquetResponseEmptyError,
     PreviousStepFormatError,
 )
-from libcommon.parquet_utils import extract_split_name_from_parquet_url
+from libcommon.parquet_utils import extract_split_directory_from_parquet_url
 from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.storage import StrPath
 from libcommon.utils import retry
@@ -44,7 +44,7 @@ def retry_open_file(
 def create_parquet_metadata_file_from_remote_parquet(
     parquet_file_item: SplitHubFile, hf_endpoint: str, hf_token: Optional[str], parquet_metadata_directory: StrPath
 ) -> ParquetFileMetadataItem:
-    split_directory = extract_split_name_from_parquet_url(parquet_file_item["url"])
+    split_directory = extract_split_directory_from_parquet_url(parquet_file_item["url"])
     hfh_parquet_file_path = hffs_parquet_url(
         repo_id=parquet_file_item["dataset"],
         config=parquet_file_item["config"],

@@ -17,7 +17,7 @@ from huggingface_hub import hf_hub_url
 from libcommon.constants import PARQUET_REVISION
 from libcommon.dtos import Priority, SplitHubFile
 from libcommon.exceptions import PreviousStepFormatError
-from libcommon.parquet_utils import ParquetIndexWithMetadata, extract_split_name_from_parquet_url
+from libcommon.parquet_utils import ParquetIndexWithMetadata, extract_split_directory_from_parquet_url
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import CachedArtifactError, upsert_response
 from libcommon.storage import StrPath
@@ -310,7 +310,7 @@ def test_compute(
             assert content == expected_content
             assert mock_OpenFile.call_count == len(upstream_content["parquet_files"])
             for parquet_file_item in upstream_content["parquet_files"]:
-                split_directory = extract_split_name_from_parquet_url(parquet_file_item["url"])
+                split_directory = extract_split_directory_from_parquet_url(parquet_file_item["url"])
                 path = hffs_parquet_url(dataset, config, split_directory, parquet_file_item["filename"])
                 mock_OpenFile.assert_any_call(
                     file_url=path,

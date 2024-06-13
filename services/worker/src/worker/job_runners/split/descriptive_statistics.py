@@ -19,7 +19,7 @@ from libcommon.exceptions import (
     PreviousStepFormatError,
 )
 from libcommon.parquet_utils import (
-    extract_split_name_from_parquet_url,
+    extract_split_directory_from_parquet_url,
     get_num_parquet_files_to_process,
     is_list_pa_type,
     parquet_export_is_partial,
@@ -176,7 +176,7 @@ def compute_descriptive_statistics_response(
     logging.info(f"Downloading remote parquet files to a local directory {local_parquet_directory}. ")
     # For directories like "partial-train" for the file at "en/partial-train/0000.parquet" in the C4 dataset.
     # Note that "-" is forbidden for split names so it doesn't create directory names collisions.
-    split_directory = extract_split_name_from_parquet_url(split_parquet_files[0]["url"])
+    split_directory = extract_split_directory_from_parquet_url(split_parquet_files[0]["url"])
     for parquet_file in split_parquet_files:
         download_file_from_hub(
             repo_type=REPO_TYPE,

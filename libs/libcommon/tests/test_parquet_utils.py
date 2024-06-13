@@ -22,7 +22,7 @@ from libcommon.parquet_utils import (
     RowsIndex,
     SchemaMismatchError,
     TooBigRows,
-    extract_split_name_from_parquet_url,
+    extract_split_directory_from_parquet_url,
     get_num_parquet_files_to_process,
     parquet_export_is_partial,
 )
@@ -504,8 +504,8 @@ def test_indexer_schema_mistmatch_error(
         ),
     ],
 )
-def test_extract_split_name_from_parquet_url(parquet_url: str, expected: str) -> None:
-    split_name = extract_split_name_from_parquet_url(parquet_url)
+def test_extract_split_directory_from_parquet_url(parquet_url: str, expected: str) -> None:
+    split_name = extract_split_directory_from_parquet_url(parquet_url)
 
     assert split_name == expected
 
