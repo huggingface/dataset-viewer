@@ -344,7 +344,7 @@ class DatasetHubCacheResponse(TypedDict):
     preview: bool
     viewer: bool
     partial: bool
-    num_rows: Union[int, None]
+    num_rows: Optional[int]
     tags: list[DatasetTag]
     libraries: list[DatasetLibrary]
     modalities: list[DatasetModality]
