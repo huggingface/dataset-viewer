@@ -5,9 +5,9 @@ import logging
 import re
 from collections import Counter
 from collections.abc import Iterable
-from itertools import count, islice
+from itertools import count
 from pathlib import Path
-from typing import Any, Literal, Optional, TypeVar, Union, overload
+from typing import Any, Optional
 
 from datasets import DatasetInfo, Features, Value
 from datasets.features.features import FeatureType, _visit
@@ -23,31 +23,10 @@ from presidio_analyzer import AnalyzerEngine, BatchAnalyzerEngine, RecognizerRes
 from worker.config import AppConfig, PresidioEntitiesScanConfig
 from worker.dtos import CompleteJobResult, ConfigParquetAndInfoResponse, PresidioEntitiesScanResponse, PresidioEntity
 from worker.job_runners.split.split_job_runner import SplitJobRunnerWithDatasetsCache
-from worker.utils import get_rows_or_raise, resolve_trust_remote_code
+from worker.utils import batched, get_rows_or_raise, resolve_trust_remote_code
 
-T = TypeVar("T")
 BATCH_SIZE = 10
 batch_analyzer: Optional[BatchAnalyzerEngine] = None
-
-
-@overload
-def batched(it: Iterable[T], n: int) -> Iterable[list[T]]: ...
-
-
-@overload
-def batched(it: Iterable[T], n: int, with_indices: Literal[False]) -> Iterable[list[T]]: ...
-
-
-@overload
-def batched(it: Iterable[T], n: int, with_indices: Literal[True]) -> Iterable[tuple[list[int], list[T]]]: ...
-
-
-def batched(
-    it: Iterable[T], n: int, with_indices: bool = False
-) -> Union[Iterable[list[T]], Iterable[tuple[list[int], list[T]]]]:
-    it, indices = iter(it), count()
-    while batch := list(islice(it, n)):
-        yield (list(islice(indices, len(batch))), batch) if with_indices else batch
 
 
 def mask(text: str) -> str:

@@ -7,6 +7,7 @@ import os
 import re
 from collections.abc import Callable, Generator
 from contextlib import ExitStack
+from itertools import groupby
 from multiprocessing.pool import ThreadPool
 from pathlib import Path
 from types import TracebackType
@@ -87,6 +88,7 @@ from worker.dtos import CompleteJobResult, ConfigParquetAndInfoResponse
 from worker.job_runners.config.config_job_runner import ConfigJobRunnerWithDatasetsCache
 from worker.utils import (
     LOCK_GIT_BRANCH_RETRY_SLEEPS,
+    batched,
     create_branch,
     hf_hub_url,
     raise_if_long_column_name,
@@ -386,6 +388,14 @@ def _request_size(url: str, hf_token: Optional[str] = None) -> Optional[int]:
     response.raise_for_status()
     size = response.headers.get("Content-Length") if response.ok else None
     return int(size) if size is not None else size
+
+
+def _fsspec_request_size(urlpath: str, storage_options: dict[str, Any]) -> Optional[int]:
+    with fsspec.open(urlpath, **storage_options) as f:
+        if isinstance(f, AbstractBufferedFile) and isinstance(f.size, int):
+            return f.size
+        else:
+            return None
 
 
 class _MockStreamingDownloadManager(StreamingDownloadManager):  # type: ignore
@@ -980,6 +990,34 @@ def list_generated_parquet_files(builder: DatasetBuilder, partial: bool = False)
     return local_parquet_files
 
 
+def get_total_files_size(urlpaths: list[str], storage_options: dict[str, Any]) -> int:
+    total_size = 0
+    fs = HfFileSystem(**storage_options["hf"])
+    # fastest way to get hf files sizes is using get_paths_info
+    hf_paths = [fs.resolve_path(path) for path in urlpaths if path.startswith("hf://")]
+    for repo_id, hf_paths_in_repo in groupby(hf_paths, key=lambda path: path.repo_id):
+        batches = list(batched((path.path_in_repo for path in hf_paths_in_repo), 200))  # max is 1k files per request
+        paths_info_per_batch = thread_map(
+            functools.partial(fs._api.get_paths_info, repo_type="dataset"), [repo_id] * len(batches), batches
+        )
+        total_size += sum(
+            path_info.size
+            for paths_info in paths_info_per_batch
+            for path_info in paths_info
+            if isinstance(path_info, RepoFile)
+        )
+    # for other files we simply use fsspec
+    external_paths = [path for path in urlpaths if not path.startswith("hf://")]
+    total_size += sum(
+        size
+        for size in thread_map(
+            functools.partial(_fsspec_request_size, storage_options=storage_options), external_paths
+        )
+        if size
+    )
+    return total_size
+
+
 def stream_convert_to_parquet(
     builder: DatasetBuilder, max_dataset_size_bytes: Optional[int], writer_batch_size: Optional[int] = None
 ) -> tuple[list[CommitOperationAdd], bool, Optional[dict[str, Any]]]:
@@ -1020,10 +1058,17 @@ def stream_convert_to_parquet(
                     split_generator=splits_generators[split], file_format="parquet", **prepare_split_kwargs
                 )
                 partial = partial or limiter.total_bytes >= max_dataset_size_bytes
+                # estimate num_examples if partial conversion
                 urlpaths = get_urlpaths_in_gen_kwargs(splits_generators[split].gen_kwargs)
-                if urlpaths:
-                    shards_total_read = sum(reads_tracker.files[urlpath]["read"] for urlpath in urlpaths)
-                    shards_total_size = sum(reads_tracker.files[urlpath]["size"] for urlpath in urlpaths)
+                if limiter.total_bytes >= max_dataset_size_bytes and urlpaths:
+                    shards_total_read = sum(
+                        reads_tracker.files[urlpath]["read"] for urlpath in urlpaths if urlpath in reads_tracker.files
+                    )
+                    shards_total_size = (
+                        len(urlpaths)
+                        / min(10_000, len(urlpaths))
+                        * get_total_files_size(urlpaths[:10_000], storage_options=builder.storage_options)
+                    )
                     estimated_splits_info[split] = asdict(
                         SplitInfo(
                             name=split_info.name,
