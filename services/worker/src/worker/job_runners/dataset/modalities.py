@@ -18,9 +18,9 @@ from worker.dtos import (
 from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
 
 
-def compute_modalities_response(dataset: str) -> DatasetModalitiesResponse:
+def detect_modalities_from_features(dataset: str) -> set[DatasetModality]:
     """
-    Get the response of 'dataset-modalities' for one specific dataset on huggingface.co.
+    Detect modalities of a dataset using the features (column types).
 
     Args:
         dataset (`str`):
@@ -33,7 +33,7 @@ def compute_modalities_response(dataset: str) -> DatasetModalitiesResponse:
             If the content of the previous step has not the expected format
 
     Returns:
-        `tuple[DatasetModalitiesResponse, float]`: An object with the modalities_response and the progress.
+        `set[DatasetModality]`: A set of modalities.
     """
     logging.info(f"compute 'dataset-modalities' for {dataset=}")
 
@@ -62,6 +62,35 @@ def compute_modalities_response(dataset: str) -> DatasetModalitiesResponse:
 
     except Exception as e:
         raise PreviousStepFormatError("Previous step did not return the expected content.", e) from e
+
+    return modalities
+
+
+def compute_modalities_response(dataset: str) -> DatasetModalitiesResponse:
+    """
+    Get the response of 'dataset-modalities' for one specific dataset on huggingface.co.
+
+    Args:
+        dataset (`str`):
+            A namespace (user or an organization) and a repo name separated by a `/`.
+
+    Raises:
+        [~`libcommon.exceptions.PreviousStepFormatError`]:
+            If the content of the previous step has not the expected format
+
+    Returns:
+        `tuple[DatasetModalitiesResponse, float]`: An object with the modalities_response and the progress.
+    """
+    logging.info(f"compute 'dataset-modalities' for {dataset=}")
+
+    modalities: set[DatasetModality] = set()
+    try:
+        modalities.update(detect_modalities_from_features(dataset))
+    except PreviousStepFormatError:
+        raise
+    except Exception:
+        # If the previous step gave an error, we should not raise it, but just pass to try the other detection methods.
+        pass
 
     return DatasetModalitiesResponse(
         {

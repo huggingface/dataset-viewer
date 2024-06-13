@@ -8,8 +8,9 @@ from typing import Any
 import pytest
 from datasets import Features, Image, Value
 from libcommon.dtos import Priority
+from libcommon.exceptions import PreviousStepFormatError
 from libcommon.resources import CacheMongoResource, QueueMongoResource
-from libcommon.simple_cache import CachedArtifactError, upsert_response
+from libcommon.simple_cache import upsert_response
 
 from worker.config import AppConfig
 from worker.job_runners.dataset.modalities import (
@@ -57,7 +58,7 @@ UPSTREAM_RESPONSE_INFO_IMAGE_TEXT: UpstreamResponse = UpstreamResponse(
     },
     progress=1.0,
 )
-UPSTREAM_RESPONSE_INFD_ERROR: UpstreamResponse = UpstreamResponse(
+UPSTREAM_RESPONSE_INFO_ERROR: UpstreamResponse = UpstreamResponse(
     kind="dataset-info",
     dataset=ERROR_DATASET,
     dataset_git_revision=REVISION_NAME,
@@ -65,12 +66,26 @@ UPSTREAM_RESPONSE_INFD_ERROR: UpstreamResponse = UpstreamResponse(
     content={},
     progress=0.0,
 )
+UPSTREAM_RESPONSE_INFO_MALFORMED: UpstreamResponse = UpstreamResponse(
+    kind="dataset-info",
+    dataset=ERROR_DATASET,
+    dataset_git_revision=REVISION_NAME,
+    http_status=HTTPStatus.OK,
+    # The content is missing the "dataset_info" key
+    content={"bad": "content"},
+    progress=0.0,
+)
+
 EXPECTED_TEXT = (
     {"modalities": ["text"]},
     1.0,
 )
 EXPECTED_IMAGE_TEXT = (
     {"modalities": ["image", "text"]},
+    1.0,
+)
+EXPECTED_EMPTY = (
+    {"modalities": []},
     1.0,
 )
 
@@ -121,6 +136,13 @@ def get_job_runner(
             ],
             EXPECTED_IMAGE_TEXT,
         ),
+        (
+            ERROR_DATASET,
+            [
+                UPSTREAM_RESPONSE_INFO_ERROR,
+            ],
+            EXPECTED_EMPTY,
+        ),
     ],
 )
 def test_compute(
@@ -144,9 +166,9 @@ def test_compute(
         (
             ERROR_DATASET,
             [
-                UPSTREAM_RESPONSE_INFD_ERROR,
+                UPSTREAM_RESPONSE_INFO_MALFORMED,
             ],
-            pytest.raises(CachedArtifactError),
+            pytest.raises(PreviousStepFormatError),
         )
     ],
 )
