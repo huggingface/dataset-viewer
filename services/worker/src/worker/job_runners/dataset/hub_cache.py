@@ -72,7 +72,7 @@ def compute_hub_cache_response(dataset: str) -> tuple[DatasetHubCacheResponse, f
         raise
     except Exception:
         partial = False
-        num_rows = 0
+        num_rows = None
         size_progress = 0.0
 
     progress = min((p for p in [is_valid_progress, size_progress] if p is not None), default=0.0)

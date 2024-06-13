@@ -129,7 +129,7 @@ EXPECTED_NO_SIZE = (
         "viewer": False,
         "preview": True,
         "partial": False,
-        "num_rows": 0,
+        "num_rows": None,
         "tags": [],
         "libraries": [],
         "modalities": [],
