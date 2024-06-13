@@ -14,6 +14,7 @@ import pytest
 from datasets import Dataset, Features, Value
 from fsspec.implementations.http import HTTPFile, HTTPFileSystem
 from huggingface_hub import hf_hub_url
+from libcommon.constants import PARQUET_REVISION
 from libcommon.dtos import Priority, SplitHubFile
 from libcommon.exceptions import PreviousStepFormatError
 from libcommon.parquet_utils import ParquetIndexWithMetadata, extract_split_name_from_parquet_url
@@ -27,8 +28,8 @@ from worker.dtos import (
     ConfigParquetResponse,
     ParquetFileMetadataItem,
 )
-from worker.utils import hf_hub_parquet_path
 from worker.job_runners.config.parquet_metadata import ConfigParquetMetadataJobRunner
+from worker.utils import hffs_parquet_url
 
 from ...constants import CI_USER_TOKEN
 from ...fixtures.hub import hf_api
@@ -227,7 +228,7 @@ def get_job_runner(
             ConfigParquetResponse(
                 parquet_files=[
                     SplitHubFile(
-                        dataset="with_features",
+                        dataset="more_than_10k_files",
                         config="config_1",
                         split="train",
                         url="https://url1/train-part0/0000.parquet",
@@ -235,7 +236,7 @@ def get_job_runner(
                         size=0,
                     ),
                     SplitHubFile(
-                        dataset="with_features",
+                        dataset="more_than_10k_files",
                         config="config_1",
                         split="train",
                         url="https://url1/train-part1/0000.parquet",
@@ -250,24 +251,24 @@ def get_job_runner(
             ConfigParquetMetadataResponse(
                 parquet_files_metadata=[
                     ParquetFileMetadataItem(
-                        dataset="with_features",
+                        dataset="more_than_10k_files",
                         config="config_1",
                         split="train",
                         url="https://url1/train-part0/0000.parquet",
                         filename="filename1",
                         size=0,
                         num_rows=3,
-                        parquet_metadata_subpath="with_features/--/config_1/train-part0/filename1",
+                        parquet_metadata_subpath="more_than_10k_files/--/config_1/train-part0/filename1",
                     ),
                     ParquetFileMetadataItem(
-                        dataset="with_features",
+                        dataset="more_than_10k_files",
                         config="config_1",
                         split="train",
                         url="https://url1/train-part1/0000.parquet",
                         filename="filename2",
                         size=0,
                         num_rows=3,
-                        parquet_metadata_subpath="with_features/--/config_1/train-part1/filename2",
+                        parquet_metadata_subpath="more_than_10k_files/--/config_1/train-part1/filename2",
                     ),
                 ],
                 partial=False,
@@ -310,9 +311,12 @@ def test_compute(
             assert mock_OpenFile.call_count == len(upstream_content["parquet_files"])
             for parquet_file_item in upstream_content["parquet_files"]:
                 split_directory = extract_split_name_from_parquet_url(parquet_file_item["url"])
-                path = hf_hub_parquet_path(dataset, config, split_directory, parquet_file_item["filename"])
+                path = hffs_parquet_url(dataset, config, split_directory, parquet_file_item["filename"])
                 mock_OpenFile.assert_any_call(
-                    file_url=path, hf_endpoint=app_config.common.hf_endpoint, hf_token=app_config.common.hf_token, revision="refs/convert/parquet"
+                    file_url=path,
+                    hf_endpoint=app_config.common.hf_endpoint,
+                    hf_token=app_config.common.hf_token,
+                    revision=PARQUET_REVISION,
                 )
         assert content["parquet_files_metadata"]
         for parquet_file_metadata_item in content["parquet_files_metadata"]:

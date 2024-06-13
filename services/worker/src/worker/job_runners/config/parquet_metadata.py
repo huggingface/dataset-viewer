@@ -28,7 +28,7 @@ from worker.dtos import (
     ParquetFileMetadataItem,
 )
 from worker.job_runners.config.config_job_runner import ConfigJobRunner
-from worker.utils import hf_hub_open_file, hf_hub_parquet_path
+from worker.utils import hf_hub_open_file, hffs_parquet_url
 
 SLEEPS = [0.2, 1, 1, 10, 10, 10]
 
@@ -45,7 +45,7 @@ def create_parquet_metadata_file_from_remote_parquet(
     parquet_file_item: SplitHubFile, hf_endpoint: str, hf_token: Optional[str], parquet_metadata_directory: StrPath
 ) -> ParquetFileMetadataItem:
     split_directory = extract_split_name_from_parquet_url(parquet_file_item["url"])
-    hfh_parquet_file_path = hf_hub_parquet_path(
+    hfh_parquet_file_path = hffs_parquet_url(
         repo_id=parquet_file_item["dataset"],
         config=parquet_file_item["config"],
         split_directory=split_directory,

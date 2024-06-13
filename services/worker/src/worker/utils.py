@@ -138,9 +138,9 @@ def hf_hub_url(repo_id: str, filename: str, hf_endpoint: str, revision: str, url
     return (hf_endpoint + url_template) % (repo_id, quote(revision, safe=""), filename)
 
 
-def hf_hub_parquet_path(repo_id: str, config: str, split_directory: str, filename: str) -> str:
+def hffs_parquet_url(repo_id: str, config: str, split_directory: str, filename: str) -> str:
     """Construct path of a dataset parquet file on the Hub, to be used with HfFileSystem."""
-    return f"/datasets/{repo_id}/{config}/{split_directory}/{filename}"
+    return f"hf://datasets/{repo_id}/{config}/{split_directory}/{filename}"
 
 
 def hf_hub_open_file(
