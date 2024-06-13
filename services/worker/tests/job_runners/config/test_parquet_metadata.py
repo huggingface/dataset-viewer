@@ -304,7 +304,7 @@ def test_compute(
         assert e.type.__name__ == expected_error_code
     else:
         with patch("worker.utils.hf_hub_open_file") as mock_OpenFile:
-            # create a new buffer within each test run time since the file is closed under the hood in .compute()
+            # create a new buffer within each test run since the file is closed under the hood in .compute()
             mock_OpenFile.return_value = get_dummy_parquet_buffer()
             content = job_runner.compute().content
             assert content == expected_content

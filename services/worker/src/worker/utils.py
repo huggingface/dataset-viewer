@@ -152,7 +152,7 @@ def hf_hub_open_file(
     return fs.open(file_url, revision=revision)
 
 
-# used by `config-parquet-and-info` and `parquet-metadata` steps
+# used by `config-parquet-and-info` and `config-parquet-metadata` steps
 @retry(on=[ArrowInvalid], sleeps=[0.2, 1, 1, 10, 10, 10])
 def retry_on_arrow_invalid_open_file(
     file_url: str, hf_endpoint: str, hf_token: Optional[str], revision: Optional[str] = None
