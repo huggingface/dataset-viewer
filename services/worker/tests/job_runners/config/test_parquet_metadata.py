@@ -303,7 +303,7 @@ def test_compute(
             job_runner.compute()
         assert e.type.__name__ == expected_error_code
     else:
-        with patch("worker.job_runners.config.parquet_metadata.retry_open_file") as mock_OpenFile:
+        with patch("worker.utils.hf_hub_open_file") as mock_OpenFile:
             # create a new buffer within each test run time since the file is closed under the hood in .compute()
             mock_OpenFile.return_value = get_dummy_parquet_buffer()
             content = job_runner.compute().content

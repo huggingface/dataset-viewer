@@ -5,7 +5,6 @@ import functools
 import logging
 from typing import Optional
 
-from huggingface_hub import HfFileSystemFile
 from libcommon.constants import PARQUET_REVISION
 from libcommon.dtos import JobInfo, SplitHubFile
 from libcommon.exceptions import (
@@ -16,7 +15,6 @@ from libcommon.exceptions import (
 from libcommon.parquet_utils import extract_split_directory_from_parquet_url
 from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.storage import StrPath
-from libcommon.utils import retry
 from libcommon.viewer_utils.parquet_metadata import create_parquet_metadata_file
 from pyarrow.parquet import ParquetFile
 from tqdm.contrib.concurrent import thread_map
@@ -28,17 +26,7 @@ from worker.dtos import (
     ParquetFileMetadataItem,
 )
 from worker.job_runners.config.config_job_runner import ConfigJobRunner
-from worker.utils import hf_hub_open_file, hffs_parquet_url
-
-SLEEPS = [0.2, 1, 1, 10, 10, 10]
-
-
-# TODO: on which error?
-@retry(sleeps=SLEEPS)
-def retry_open_file(
-    file_url: str, hf_endpoint: str, hf_token: Optional[str], revision: Optional[str] = None
-) -> HfFileSystemFile:
-    return hf_hub_open_file(file_url=file_url, hf_endpoint=hf_endpoint, hf_token=hf_token, revision=revision)
+from worker.utils import hffs_parquet_url, retry_on_arrow_invalid_open_file
 
 
 def create_parquet_metadata_file_from_remote_parquet(
@@ -52,7 +40,7 @@ def create_parquet_metadata_file_from_remote_parquet(
         filename=parquet_file_item["filename"],
     )
     try:
-        f = retry_open_file(
+        f = retry_on_arrow_invalid_open_file(
             file_url=hfh_parquet_file_path, hf_endpoint=hf_endpoint, hf_token=hf_token, revision=PARQUET_REVISION
         )
         parquet_file_metadata = ParquetFile(f).metadata

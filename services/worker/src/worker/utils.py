@@ -30,6 +30,7 @@ from libcommon.exceptions import (
 )
 from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.utils import retry
+from pyarrow import ArrowInvalid
 
 MAX_IMAGE_PIXELS = 10_000_000_000
 # ^ see https://pillow.readthedocs.io/en/stable/reference/Image.html#PIL.Image.MAX_IMAGE_PIXELS
@@ -149,6 +150,14 @@ def hf_hub_open_file(
     """Open file with the HfFileSystem."""
     fs = HfFileSystem(endpoint=hf_endpoint, token=hf_token)
     return fs.open(file_url, revision=revision)
+
+
+# used by `config-parquet-and-info` and `parquet-metadata` steps
+@retry(on=[ArrowInvalid], sleeps=[0.2, 1, 1, 10, 10, 10])
+def retry_on_arrow_invalid_open_file(
+    file_url: str, hf_endpoint: str, hf_token: Optional[str], revision: Optional[str] = None
+) -> HfFileSystemFile:
+    return hf_hub_open_file(file_url=file_url, hf_endpoint=hf_endpoint, hf_token=hf_token, revision=revision)
 
 
 DATASET_TYPE = "dataset"
