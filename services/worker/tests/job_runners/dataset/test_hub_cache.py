@@ -11,7 +11,8 @@ from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import CachedArtifactError, CachedArtifactNotFoundError, upsert_response
 
 from worker.config import AppConfig
-from worker.job_runners.dataset.hub_cache import DatasetHubCacheJobRunner, DatasetHubCacheResponse
+from worker.dtos import DatasetHubCacheResponse
+from worker.job_runners.dataset.hub_cache import DatasetHubCacheJobRunner
 
 from ..utils import REVISION_NAME, UpstreamResponse
 
@@ -25,7 +26,10 @@ def prepare_and_clean_mongo(app_config: AppConfig) -> None:
 GetJobRunner = Callable[[str, AppConfig], DatasetHubCacheJobRunner]
 
 DATASET = "dataset"
-
+TAG = "croissant"
+LIBRARY = "mlcroissant"
+FORMAT = "json"
+MODALITY = "image"
 UPSTREAM_RESPONSE_IS_VALID_OK: UpstreamResponse = UpstreamResponse(
     kind="dataset-is-valid",
     dataset=DATASET,
@@ -71,7 +75,7 @@ UPSTREAM_RESPONSE_COMPATIBLE_LIBRARIES_OK: UpstreamResponse = UpstreamResponse(
     dataset=DATASET,
     dataset_git_revision=REVISION_NAME,
     http_status=HTTPStatus.OK,
-    content={"tags": ["tag"], "libraries": [{"library": "library"}], "formats": ["format"]},
+    content={"tags": [TAG], "libraries": [{"library": LIBRARY}], "formats": [FORMAT]},
     progress=1.0,
 )
 UPSTREAM_RESPONSE_COMPATIBLE_LIBRARIES_ERROR: UpstreamResponse = UpstreamResponse(
@@ -87,7 +91,7 @@ UPSTREAM_RESPONSE_MODALITIES_OK: UpstreamResponse = UpstreamResponse(
     dataset=DATASET,
     dataset_git_revision=REVISION_NAME,
     http_status=HTTPStatus.OK,
-    content={"tags": ["tag"], "modalities": ["modality"]},
+    content={"tags": [TAG], "modalities": [MODALITY]},
     progress=1.0,
 )
 UPSTREAM_RESPONSE_MODALITIES_ERROR: UpstreamResponse = UpstreamResponse(
@@ -143,10 +147,10 @@ EXPECTED_OK_WITH_LIBRARIES_AND_FORMATS: tuple[DatasetHubCacheResponse, float] = 
         "preview": True,
         "partial": True,
         "num_rows": 1000,
-        "tags": ["tag"],
-        "libraries": ["library"],
+        "tags": [TAG],
+        "libraries": [LIBRARY],
         "modalities": [],
-        "formats": ["format"],
+        "formats": [FORMAT],
     },
     0.5,
 )
@@ -158,7 +162,7 @@ EXPECTED_OK_WITH_MODALITIES: tuple[DatasetHubCacheResponse, float] = (
         "num_rows": 1000,
         "tags": [],
         "libraries": [],
-        "modalities": ["modality"],
+        "modalities": [MODALITY],
         "formats": [],
     },
     0.5,
