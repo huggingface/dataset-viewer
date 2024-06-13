@@ -248,19 +248,19 @@ FileExtensionTuple = tuple[str, Optional[str]]
 @dataclass
 class FileExtension:
     extension: str
-    archived_extension: Optional[str] = field(default=None)
+    uncompressed_extension: Optional[str] = field(default=None)
 
     def get_tuples(self) -> list[FileExtensionTuple]:
         """
         Get the extension and the archived extension if it exists.
 
-        The list contains two entries if the archived extension exists (for the archive and for the archived file),
+        The list contains two entries if the uncompressed extension exists (for the compressed and the uncompressed files),
           otherwise one entry.
         """
-        if self.archived_extension:
+        if self.uncompressed_extension:
             return [
                 (self.extension, None),
-                (self.archived_extension, self.extension),
+                (self.uncompressed_extension, self.extension),
             ]
         return [(self.extension, None)]
 
@@ -269,7 +269,7 @@ def get_file_extension(filename: str, recursive: bool = True, clean: bool = True
     """
     Get the extension of a file.
 
-    In the case of .tar.gz or other "double extensions", the uncompressed file extension is set in the archived_extension field
+    In the case of .tar.gz or other "double extensions", the uncompressed file extension is set in the uncompressed_extension field
 
     Args:
         filename (`str`): The name of the file.
@@ -286,6 +286,6 @@ def get_file_extension(filename: str, recursive: bool = True, clean: bool = True
         for symb in "?-_":
             extension = extension.split(symb)[0]
     if recursive and extension.lstrip(".") in SINGLE_FILE_COMPRESSION_EXTENSION_TO_PROTOCOL:
-        archived_extension = get_file_extension(base, recursive=False, clean=False)
-        return FileExtension(extension=extension, archived_extension=archived_extension.extension)
+        uncompressed_extension = get_file_extension(base, recursive=False, clean=False)
+        return FileExtension(extension=extension, uncompressed_extension=uncompressed_extension.extension)
     return FileExtension(extension=extension)

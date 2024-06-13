@@ -18,7 +18,7 @@ from worker.utils import FileExtensionTuple, get_file_extension
 
 def extension_to_filetype(file_extension_tuple: FileExtensionTuple, count: int) -> Filetype:
     if file_extension_tuple[1]:
-        return Filetype(extension=file_extension_tuple[0], count=count, archived_in=file_extension_tuple[1])
+        return Filetype(extension=file_extension_tuple[0], count=count, compressed_in=file_extension_tuple[1])
     return Filetype(extension=file_extension_tuple[0], count=count)
 
 

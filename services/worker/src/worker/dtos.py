@@ -358,6 +358,7 @@ class _Filetype(TypedDict):
 
 class Filetype(_Filetype, total=False):
     archived_in: str
+    compressed_in: str
 
 
 class DatasetFiletypesResponse(TypedDict):

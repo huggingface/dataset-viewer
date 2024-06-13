@@ -29,14 +29,14 @@ from worker.utils import FileExtension, get_file_extension
         (".path/to.some/file.csv", FileExtension(extension=".csv")),
         ("path/to/.gitignore", FileExtension(extension="")),
         # double extensions
-        ("file.tar.gz", FileExtension(extension=".gz", archived_extension=".tar")),
-        ("file.with.dots.tar.gz", FileExtension(extension=".gz", archived_extension=".tar")),
-        ("file.tar.bz2", FileExtension(extension=".bz2", archived_extension=".tar")),
-        ("file.jsonl.gz", FileExtension(extension=".gz", archived_extension=".jsonl")),
+        ("file.tar.gz", FileExtension(extension=".gz", uncompressed_extension=".tar")),
+        ("file.with.dots.tar.gz", FileExtension(extension=".gz", uncompressed_extension=".tar")),
+        ("file.tar.bz2", FileExtension(extension=".bz2", uncompressed_extension=".tar")),
+        ("file.jsonl.gz", FileExtension(extension=".gz", uncompressed_extension=".jsonl")),
         ("file.tar.unknown", FileExtension(extension=".unknown")),
         ("file.tar", FileExtension(extension=".tar")),
     ],
 )
 def test_get_file_extension(filename: str, expected_extension: FileExtension) -> None:
     assert get_file_extension(filename).extension == expected_extension.extension
-    assert get_file_extension(filename).archived_extension == expected_extension.archived_extension
+    assert get_file_extension(filename).uncompressed_extension == expected_extension.uncompressed_extension
