@@ -30,6 +30,7 @@ from worker.job_runners.dataset.croissant_crumbs import DatasetCroissantCrumbsJo
 from worker.job_runners.dataset.duckdb_index_size import (
     DatasetDuckdbIndexSizeJobRunner,
 )
+from worker.job_runners.dataset.filetypes import DatasetFiletypesJobRunner
 from worker.job_runners.dataset.hub_cache import DatasetHubCacheJobRunner
 from worker.job_runners.dataset.info import DatasetInfoJobRunner
 from worker.job_runners.dataset.is_valid import DatasetIsValidJobRunner
@@ -87,6 +88,12 @@ class JobRunnerFactory(BaseJobRunnerFactory):
         job_type = job_info["type"]
         if job_type == DatasetConfigNamesJobRunner.get_job_type():
             return DatasetConfigNamesJobRunner(
+                job_info=job_info,
+                app_config=self.app_config,
+                hf_datasets_cache=self.hf_datasets_cache,
+            )
+        if job_type == DatasetFiletypesJobRunner.get_job_type():
+            return DatasetFiletypesJobRunner(
                 job_info=job_info,
                 app_config=self.app_config,
                 hf_datasets_cache=self.hf_datasets_cache,
@@ -250,34 +257,4 @@ class JobRunnerFactory(BaseJobRunnerFactory):
                 job_info=job_info,
                 app_config=self.app_config,
             )
-        supported_job_types = [
-            DatasetConfigNamesJobRunner.get_job_type(),
-            ConfigSplitNamesJobRunner.get_job_type(),
-            SplitFirstRowsJobRunner.get_job_type(),
-            ConfigParquetAndInfoJobRunner.get_job_type(),
-            ConfigParquetJobRunner.get_job_type(),
-            DatasetParquetJobRunner.get_job_type(),
-            DatasetInfoJobRunner.get_job_type(),
-            ConfigInfoJobRunner.get_job_type(),
-            DatasetSizeJobRunner.get_job_type(),
-            ConfigSizeJobRunner.get_job_type(),
-            SplitIsValidJobRunner.get_job_type(),
-            ConfigIsValidJobRunner.get_job_type(),
-            DatasetIsValidJobRunner.get_job_type(),
-            SplitImageUrlColumnsJobRunner.get_job_type(),
-            SplitOptInOutUrlsScanJobRunner.get_job_type(),
-            SplitOptInOutUrlsCountJobRunner.get_job_type(),
-            ConfigOptInOutUrlsCountJobRunner.get_job_type(),
-            DatasetOptInOutUrlsCountJobRunner.get_job_type(),
-            SplitPresidioEntitiesScanJobRunner.get_job_type(),
-            DatasetPresidioEntitiesCountJobRunner.get_job_type(),
-            SplitDuckDbIndexJobRunner.get_job_type(),
-            SplitDescriptiveStatisticsJobRunner.get_job_type(),
-            ConfigDuckdbIndexSizeJobRunner.get_job_type(),
-            DatasetDuckdbIndexSizeJobRunner.get_job_type(),
-            DatasetHubCacheJobRunner.get_job_type(),
-            DatasetCompatibleLibrariesJobRunner.get_job_type(),
-            DatasetModalitiesJobRunner.get_job_type(),
-            DatasetCroissantCrumbsJobRunner.get_job_type(),
-        ]
-        raise KeyError(f"Unsupported job type: '{job_type}'. The supported job types are: {supported_job_types}")
+        raise KeyError(f"Unsupported job type: '{job_type}'.")

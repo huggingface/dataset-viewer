@@ -351,6 +351,20 @@ class DatasetHubCacheResponse(TypedDict):
     formats: list[DatasetFormat]
 
 
+class _Filetype(TypedDict):
+    extension: str
+    count: int
+
+
+class Filetype(_Filetype, total=False):
+    archived_in: str
+    compressed_in: str
+
+
+class DatasetFiletypesResponse(TypedDict):
+    filetypes: list[Filetype]
+
+
 class DatasetParquetResponse(TypedDict):
     parquet_files: list[SplitHubFile]
     pending: list[PreviousJob]
