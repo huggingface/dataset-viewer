@@ -31,6 +31,16 @@ from ..utils import REVISION_NAME
         (
             [
                 RepoSibling("file1.txt"),
+                RepoSibling("file2.tXt"),
+                RepoSibling("file2.TXT"),
+            ],
+            [
+                Filetype(extension=".txt", count=3),
+            ],
+        ),
+        (
+            [
+                RepoSibling("file1.txt"),
                 RepoSibling("file2.txt"),
                 RepoSibling("file3.csv"),
                 RepoSibling("file3.tar"),

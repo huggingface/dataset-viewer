@@ -296,6 +296,7 @@ def get_file_extension(filename: str, recursive: bool = True, clean: bool = True
         FileExtension: the extension of the file
     """
     [base, extension] = os.path.splitext(filename)
+    extension = extension.lower()
     # special cases we find in datasets (gz?dl=1 -> gz, txt_1 -> txt, txt-00000-of-00100-> txt)
     # https://github.com/huggingface/datasets/blob/af3acfdfcf76bb980dbac871540e30c2cade0cf9/src/datasets/utils/file_utils.py#L795
     if clean:

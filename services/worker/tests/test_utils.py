@@ -35,6 +35,11 @@ from worker.utils import FileExtension, get_file_extension
         ("file.jsonl.gz", FileExtension(extension=".gz", uncompressed_extension=".jsonl")),
         ("file.tar.unknown", FileExtension(extension=".unknown")),
         ("file.tar", FileExtension(extension=".tar")),
+        # case insensitive
+        ("file.CSV", FileExtension(extension=".csv")),
+        ("file.CSv", FileExtension(extension=".csv")),
+        ("file.CSV?dl=1", FileExtension(extension=".csv")),
+        ("file.with.dots.TAR.GZ", FileExtension(extension=".gz", uncompressed_extension=".tar")),
     ],
 )
 def test_get_file_extension(filename: str, expected_extension: FileExtension) -> None:
