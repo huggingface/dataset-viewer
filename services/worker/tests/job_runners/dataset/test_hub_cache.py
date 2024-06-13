@@ -11,7 +11,7 @@ from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import CachedArtifactError, CachedArtifactNotFoundError, upsert_response
 
 from worker.config import AppConfig
-from worker.dtos import DatasetHubCacheResponse
+from worker.dtos import DatasetFormat, DatasetHubCacheResponse, DatasetLibrary, DatasetModality, DatasetTag
 from worker.job_runners.dataset.hub_cache import DatasetHubCacheJobRunner
 
 from ..utils import REVISION_NAME, UpstreamResponse
@@ -26,10 +26,10 @@ def prepare_and_clean_mongo(app_config: AppConfig) -> None:
 GetJobRunner = Callable[[str, AppConfig], DatasetHubCacheJobRunner]
 
 DATASET = "dataset"
-TAG = "croissant"
-LIBRARY = "mlcroissant"
-FORMAT = "json"
-MODALITY = "image"
+TAG: DatasetTag = "croissant"
+LIBRARY: DatasetLibrary = "mlcroissant"
+FORMAT: DatasetFormat = "json"
+MODALITY: DatasetModality = "image"
 UPSTREAM_RESPONSE_IS_VALID_OK: UpstreamResponse = UpstreamResponse(
     kind="dataset-is-valid",
     dataset=DATASET,
