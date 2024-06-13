@@ -16,7 +16,7 @@ from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunnerWithDa
 from worker.utils import FileExtensionTuple, get_file_extension
 
 
-def extension_to_filetypes(file_extension_tuple: FileExtensionTuple, count: int) -> list[Filetype]:
+def extension_to_filetype(file_extension_tuple: FileExtensionTuple, count: int) -> Filetype:
     if file_extension_tuple[1]:
         return Filetype(extension=file_extension_tuple[0], count=count, archived_in=file_extension_tuple[1])
     return Filetype(extension=file_extension_tuple[0], count=count)
@@ -29,7 +29,7 @@ def get_filetypes(siblings: list[RepoSibling]) -> list[Filetype]:
         t for sibling in siblings for t in get_file_extension(sibling.rfilename).get_tuples()
     )
 
-    return [extension_to_filetypes(k, v) for k, v in counter.items()]
+    return [extension_to_filetype(k, v) for k, v in counter.items()]
 
 
 def get_counter_from_archive(
@@ -56,6 +56,8 @@ def get_filetypes_from_archives(
         counter.update(get_counter_from_archive(dataset=dataset, archive_filename=archive_filename, hf_token=hf_token))
     return [
         Filetype(extension=extension, count=v, archived_in=archived_in)
+        if archived_in
+        else Filetype(extension=extension, count=v)
         for (extension, archived_in), v in counter.items()
     ]
 
