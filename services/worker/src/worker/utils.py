@@ -248,7 +248,7 @@ def get_file_extension(filename: str, recursive: bool = True, clean: bool = True
     if clean:
         for symb in "?-_":
             extension = extension.split(symb)[0]
-    if recursive and extension in [".gz", ".bz2", ".xz", ".zst", ".7z"]:
+    if recursive and extension.lstrip(".") in SINGLE_FILE_COMPRESSION_EXTENSION_TO_PROTOCOL:
         base_extension = get_file_extension(base, recursive=False, clean=False)
         if base_extension == ".tar":
             return base_extension + extension
