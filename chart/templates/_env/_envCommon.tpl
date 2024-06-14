@@ -14,11 +14,7 @@
   {{- if .Values.secrets.appHfToken.fromSecret }}
   valueFrom:
     secretKeyRef:
-      {{- if eq .Values.secrets.appHfToken.secretName "" }}
-      name: {{ .Release.Name }}-datasets-server-app-token
-      {{- else }}
-      name: {{ .Values.secrets.appHfToken.secretName | quote }}
-      {{- end }}
+      name: {{ .Values.secrets.appHfToken.secretName | default (include "datasetsServer.infisical.secretName" $) | quote }}
       key: HF_TOKEN
       optional: false
   {{- else }}
@@ -30,7 +26,7 @@
 {{- if .Values.secrets.mongoUrl.fromSecret }}
 valueFrom:
   secretKeyRef:
-    name: {{ .Values.secrets.mongoUrl.secretName | quote }}
+    name: {{ .Values.secrets.mongoUrl.secretName | default (include "datasetsServer.infisical.secretName" $) | quote }}
     key: MONGO_URL
     optional: false
 {{- else }}

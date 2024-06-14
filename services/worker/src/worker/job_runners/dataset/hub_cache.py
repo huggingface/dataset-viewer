@@ -51,23 +51,29 @@ def compute_hub_cache_response(dataset: str) -> tuple[DatasetHubCacheResponse, f
     viewer = content["viewer"]
     is_valid_progress = is_valid_response["progress"]
 
-    size_response = get_previous_step_or_raise(kind="dataset-size", dataset=dataset)
-    content = size_response["content"]
-    if (
-        "partial" not in content
-        or not isinstance(content["partial"], bool)
-        or "size" not in content
-        or "dataset" not in content["size"]
-        or "num_rows" not in content["size"]["dataset"]
-        or not isinstance(content["size"]["dataset"]["num_rows"], int)
-    ):
-        raise PreviousStepFormatError(
-            "Previous step 'dataset-size' did not return the expected content: 'partial' or 'size.dataset.num_rows'."
-        )
-
-    partial = content["partial"]
-    num_rows = content["size"]["dataset"]["num_rows"]
-    size_progress = size_response["progress"]
+    try:
+        size_response = get_previous_step_or_raise(kind="dataset-size", dataset=dataset)
+        content = size_response["content"]
+        if (
+            "partial" not in content
+            or not isinstance(content["partial"], bool)
+            or "size" not in content
+            or "dataset" not in content["size"]
+            or "num_rows" not in content["size"]["dataset"]
+            or not isinstance(content["size"]["dataset"]["num_rows"], int)
+        ):
+            raise PreviousStepFormatError(
+                "Previous step 'dataset-size' did not return the expected content: 'partial' or 'size.dataset.num_rows'."
+            )
+        partial = content["partial"]
+        num_rows = content["size"]["dataset"]["num_rows"]
+        size_progress = size_response["progress"]
+    except (CachedArtifactNotFoundError, PreviousStepFormatError):
+        raise
+    except Exception:
+        partial = False
+        num_rows = None
+        size_progress = 0.0
 
     progress = min((p for p in [is_valid_progress, size_progress] if p is not None), default=0.0)
 
@@ -89,6 +95,8 @@ def compute_hub_cache_response(dataset: str) -> tuple[DatasetHubCacheResponse, f
         raise PreviousStepFormatError(
             "Previous step 'dataset-compatible-libraries' did not return the expected content: 'tags', 'libraries'."
         )
+    except Exception:
+        logging.info("Error while parsing 'dataset-compatible-libraries' response. We let the fields empty.")
 
     try:
         modalities_response = get_previous_step_or_raise(kind="dataset-modalities", dataset=dataset)
@@ -99,6 +107,8 @@ def compute_hub_cache_response(dataset: str) -> tuple[DatasetHubCacheResponse, f
         raise PreviousStepFormatError(
             "Previous step 'dataset-modalities' did not return the expected content: 'modalities'."
         )
+    except Exception:
+        logging.info("Error while parsing 'dataset-modalities' response. We let the field empty.")
 
     return (
         DatasetHubCacheResponse(

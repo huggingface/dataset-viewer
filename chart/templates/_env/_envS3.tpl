@@ -8,7 +8,7 @@
   {{- if .Values.secrets.s3.accessKeyId.fromSecret }}
   valueFrom:
     secretKeyRef:
-      name: {{ .Values.secrets.s3.accessKeyId.secretName | quote }}
+      name: {{ .Values.secrets.s3.accessKeyId.secretName | default (include "datasetsServer.infisical.secretName" $) | quote }}
       key: AWS_ACCESS_KEY_ID
       optional: false
   {{- else }}
@@ -18,7 +18,7 @@
   {{- if .Values.secrets.s3.secretAccessKey.fromSecret }}
   valueFrom:
     secretKeyRef:
-      name: {{ .Values.secrets.s3.secretAccessKey.secretName | quote }}
+      name: {{ .Values.secrets.s3.secretAccessKey.secretName | default (include "datasetsServer.infisical.secretName" $) | quote }}
       key: AWS_SECRET_ACCESS_KEY
       optional: false
   {{- else }}

@@ -29,7 +29,7 @@ from libcommon.exceptions import (
     PreviousStepFormatError,
 )
 from libcommon.parquet_utils import (
-    extract_split_name_from_parquet_url,
+    extract_split_directory_from_parquet_url,
     get_num_parquet_files_to_process,
     is_list_pa_type,
     parquet_export_is_partial,
@@ -227,7 +227,7 @@ def compute_split_duckdb_index_response(
 
         # For directories like "partial-train" for the file at "en/partial-train/0000.parquet" in the C4 dataset.
         # Note that "-" is forbidden for split names so it doesn't create directory names collisions.
-        split_directory = extract_split_name_from_parquet_url(split_parquet_files[0]["url"])
+        split_directory = extract_split_directory_from_parquet_url(split_parquet_files[0]["url"])
         partial_parquet_export = parquet_export_is_partial(split_parquet_files[0]["url"])
 
         num_parquet_files_to_index, num_bytes, num_rows = get_num_parquet_files_to_process(

@@ -62,53 +62,41 @@ images:
       tag: sha-fb3399a
 
 secrets:
-  externalSecret:
+  infisical:
     enabled: true
-    secretName: "datasets-server-staging-secrets"
-    secretStoreName: "datasets-server-ephemeral-secretstore"
-    parameters:
-      MONGO_URL: "hub-ephemeral-datasets-server-mongo-url"
-      HF_TOKEN: "hub-ephemeral-datasets-server-hf-token"
-      PARQUET_CONVERTER_HF_TOKEN: "hub-ephemeral-datasets-server-parquet-converter-hf-token"
-      WEBHOOK_SECRET: "hub-ephemeral-datasets-server-webhook-secret"
-      SPAWNING_TOKEN: "hub-ephemeral-datasets-server-spawning-token"
-      API_HF_JWT_ADDITIONAL_PUBLIC_KEYS: "hub-ephemeral-datasets-server-jwt-additional-public-keys"
-      AWS_ACCESS_KEY_ID: "hub-ephemeral-datasets-server-s3-access-key-id"
-      AWS_SECRET_ACCESS_KEY: "hub-ephemeral-datasets-server-s3-secret-access-key"
-      CLOUDFRONT_KEY_PAIR_ID: "hub-ephemeral-datasets-server-cloudfront-key-id"
-      CLOUDFRONT_PRIVATE_KEY: "hub-ephemeral-datasets-server-cloudfront-key"
+    env: "ephemeral-us-east-1"
   mongoUrl:
     fromSecret: true
-    secretName: "datasets-server-staging-secrets"
+    secretName: ""
   appHfToken:
     fromSecret: true
-    secretName: "datasets-server-staging-secrets"
+    secretName: ""
   appParquetConverterHfToken:
     fromSecret: true
-    secretName: "datasets-server-staging-secrets"
+    secretName: ""
   hfWebhookSecret:
     fromSecret: false
-    secretName: "datasets-server-staging-secrets"
+    secretName: ""
   hfJwtAdditionalPublicKeys:
     fromSecret: true
-    secretName: "datasets-server-staging-secrets"
+    secretName: ""
   spawningToken:
     fromSecret: true
-    secretName: "datasets-server-staging-secrets"
+    secretName: ""
   s3:
     accessKeyId:
       fromSecret: true
-      secretName: "datasets-server-staging-secrets"
+      secretName: ""
     secretAccessKey:
       fromSecret: true
-      secretName: "datasets-server-staging-secrets"
+      secretName: ""
   cloudfront:
     keyPairId:
       fromSecret: true
-      secretName: "datasets-server-staging-secrets"
+      secretName: ""
     privateKey:
       fromSecret: true
-      secretName: "datasets-server-staging-secrets"
+      secretName: ""
 
 persistence:
   duckDBIndex:

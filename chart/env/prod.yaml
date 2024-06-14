@@ -65,53 +65,41 @@ images:
       repository: datasets-server-services-webhook
       tag: sha-fb3399a
 secrets:
-  externalSecret:
+  infisical:
     enabled: true
-    secretName: "datasets-server-prod-secrets"
-    secretStoreName: "datasets-server-prod-secretstore"
-    parameters:
-      MONGO_URL: "hub-prod-datasets-server-mongo-url"
-      HF_TOKEN: "hub-prod-datasets-server-hf-token"
-      PARQUET_CONVERTER_HF_TOKEN: "hub-prod-datasets-server-parquet-converter-hf-token"
-      WEBHOOK_SECRET: "hub-prod-datasets-server-webhook-secret"
-      SPAWNING_TOKEN: "hub-prod-datasets-server-spawning-token"
-      API_HF_JWT_ADDITIONAL_PUBLIC_KEYS: "hub-prod-datasets-server-jwt-additional-public-keys"
-      AWS_ACCESS_KEY_ID: "hub-prod-datasets-server-s3-access-key-id"
-      AWS_SECRET_ACCESS_KEY: "hub-prod-datasets-server-s3-secret-access-key"
-      CLOUDFRONT_KEY_PAIR_ID: "hub-prod-datasets-server-cloudfront-key-id"
-      CLOUDFRONT_PRIVATE_KEY: "hub-prod-datasets-server-cloudfront-key"
+    env: "prod-us-east-1"
   mongoUrl:
     fromSecret: true
-    secretName: "datasets-server-prod-secrets"
+    secretName: ""
   appHfToken:
     fromSecret: true
-    secretName: "datasets-server-prod-secrets"
+    secretName: ""
   appParquetConverterHfToken:
     fromSecret: true
-    secretName: "datasets-server-prod-secrets"
+    secretName: ""
   hfWebhookSecret:
     fromSecret: true
-    secretName: "datasets-server-prod-secrets"
+    secretName: ""
   hfJwtAdditionalPublicKeys:
     fromSecret: true
-    secretName: "datasets-server-prod-secrets"
+    secretName: ""
   spawningToken:
     fromSecret: true
-    secretName: "datasets-server-prod-secrets"
+    secretName: ""
   s3:
     accessKeyId:
       fromSecret: true
-      secretName: "datasets-server-prod-secrets"
+      secretName: ""
     secretAccessKey:
       fromSecret: true
-      secretName: "datasets-server-prod-secrets"
+      secretName: ""
   cloudfront:
     keyPairId:
       fromSecret: true
-      secretName: "datasets-server-prod-secrets"
+      secretName: ""
     privateKey:
       fromSecret: true
-      secretName: "datasets-server-prod-secrets"
+      secretName: ""
 
 persistence:
   duckDBIndex:
