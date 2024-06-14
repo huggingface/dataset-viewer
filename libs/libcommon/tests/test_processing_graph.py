@@ -169,7 +169,7 @@ def test_graph() -> None:
             "dataset-modalities",
             ["dataset-hub-cache"],
             ["dataset-info", "dataset-filetypes"],
-            ["dataset-config-names", "config-parquet-and-info", "config-info", "dataset-info"],
+            ["dataset-config-names", "config-parquet-and-info", "config-info", "dataset-info", "dataset-filetypes"],
         ),
         (
             "dataset-is-valid",
