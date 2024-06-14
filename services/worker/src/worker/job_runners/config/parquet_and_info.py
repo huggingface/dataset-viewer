@@ -42,6 +42,7 @@ from datasets.utils.file_utils import (
 from datasets.utils.py_utils import asdict, map_nested
 from fsspec.core import OpenFile, PickleableTextIOWrapper
 from fsspec.spec import AbstractBufferedFile
+from huggingface_hub import HfFileSystem
 from huggingface_hub._commit_api import (
     CommitOperation,
     CommitOperationAdd,

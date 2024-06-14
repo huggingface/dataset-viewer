@@ -282,7 +282,7 @@ def batched(
     while batch := list(islice(it, n)):
         yield (list(islice(indices, len(batch))), batch) if with_indices else batch
 
-        
+
 FileExtensionTuple = tuple[str, Optional[str]]
 
 
