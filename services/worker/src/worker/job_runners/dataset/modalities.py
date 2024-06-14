@@ -18,6 +18,35 @@ from worker.dtos import (
 from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
 
 
+def detect_features_modalities(features: Features) -> set[DatasetModality]:
+    """
+    Detect modalities of a dataset using the features (column types).
+
+    Args:
+        features (`datasets.Features`):
+            The features of a config.
+
+    Returns:
+        `set[DatasetModality]`: A set of modalities.
+    """
+    modalities: set[DatasetModality] = set()
+
+    def classify_modality(feature: FeatureType) -> None:
+        nonlocal modalities
+        if isinstance(feature, Audio):
+            modalities.add("audio")
+        elif isinstance(feature, Image):
+            modalities.add("image")
+        elif isinstance(feature, Value) and feature.dtype in ("string", "large_string"):
+            modalities.add("text")
+        elif isinstance(feature, (Translation, TranslationVariableLanguages)):
+            modalities.add("text")
+
+    _visit(features, classify_modality)
+
+    return modalities
+
+
 def detect_modalities_from_features(dataset: str) -> set[DatasetModality]:
     """
     Detect modalities of a dataset using the features (column types).
@@ -42,22 +71,8 @@ def detect_modalities_from_features(dataset: str) -> set[DatasetModality]:
 
     try:
         modalities: set[DatasetModality] = set()
-
-        def classify_modality(feature: FeatureType) -> None:
-            nonlocal modalities
-            if isinstance(feature, Audio):
-                modalities.add("audio")
-            elif isinstance(feature, Image):
-                modalities.add("image")
-            elif isinstance(feature, Value) and feature.dtype in ("string", "large_string"):
-                modalities.add("text")
-            elif isinstance(feature, (Translation, TranslationVariableLanguages)):
-                modalities.add("text")
-
         for config_info in content["dataset_info"].values():
-            features = Features.from_dict(config_info["features"])
-            _visit(features, classify_modality)
-
+            modalities.update(detect_features_modalities(features=Features.from_dict(config_info["features"])))
     except Exception as e:
         raise PreviousStepFormatError("Previous step did not return the expected content.", e) from e
 
