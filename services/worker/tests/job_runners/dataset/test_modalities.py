@@ -29,11 +29,16 @@ def prepare_and_clean_mongo(app_config: AppConfig) -> None:
 GetJobRunner = Callable[[str, AppConfig], DatasetModalitiesJobRunner]
 
 TEXT_DATASET = "text-dataset"
+TABULAR_DATASET = "tabular-dataset"
 IMAGE_TEXT_DATASET = "image-text-dataset"
+IMAGE_DATASET = "image-dataset"
 ERROR_DATASET = "error-dataset"
 
 text_features = Features({"conversations": [{"from": Value("string"), "value": Value("string")}]})
 image_text_features = Features({"image": Image(), "caption": Value("string")})
+tabular_features = Features({"col1": Value("int8"), "col2": Value("float32")})
+not_tabular_features_1 = Features({"col1": Value("int8"), "col2": Value("float32"), "image": Image()})
+not_tabular_features_2 = Features({"col1": Value("int8"), "col2": Value("string")})
 
 UPSTREAM_RESPONSE_INFO_TEXT: UpstreamResponse = UpstreamResponse(
     kind="dataset-info",
@@ -53,6 +58,39 @@ UPSTREAM_RESPONSE_INFO_IMAGE_TEXT: UpstreamResponse = UpstreamResponse(
     http_status=HTTPStatus.OK,
     content={
         "dataset_info": {"default": {"config_name": "default", "features": image_text_features.to_dict()}},
+        "partial": False,
+    },
+    progress=1.0,
+)
+UPSTREAM_RESPONSE_INFO_TABULAR: UpstreamResponse = UpstreamResponse(
+    kind="dataset-info",
+    dataset=TABULAR_DATASET,
+    dataset_git_revision=REVISION_NAME,
+    http_status=HTTPStatus.OK,
+    content={
+        "dataset_info": {"default": {"config_name": "default", "features": tabular_features.to_dict()}},
+        "partial": False,
+    },
+    progress=1.0,
+)
+UPSTREAM_RESPONSE_INFO_NOT_TABULAR_1: UpstreamResponse = UpstreamResponse(
+    kind="dataset-info",
+    dataset=IMAGE_DATASET,
+    dataset_git_revision=REVISION_NAME,
+    http_status=HTTPStatus.OK,
+    content={
+        "dataset_info": {"default": {"config_name": "default", "features": not_tabular_features_1.to_dict()}},
+        "partial": False,
+    },
+    progress=1.0,
+)
+UPSTREAM_RESPONSE_INFO_NOT_TABULAR_2: UpstreamResponse = UpstreamResponse(
+    kind="dataset-info",
+    dataset=TEXT_DATASET,
+    dataset_git_revision=REVISION_NAME,
+    http_status=HTTPStatus.OK,
+    content={
+        "dataset_info": {"default": {"config_name": "default", "features": not_tabular_features_2.to_dict()}},
         "partial": False,
     },
     progress=1.0,
@@ -112,6 +150,14 @@ UPSTREAM_RESPONSE_FILETYPES_ALL: UpstreamResponse = UpstreamResponse(
 
 EXPECTED_TEXT: tuple[DatasetModalitiesResponse, float] = (
     {"modalities": ["text"]},
+    1.0,
+)
+EXPECTED_TABULAR: tuple[DatasetModalitiesResponse, float] = (
+    {"modalities": ["tabular"]},
+    1.0,
+)
+EXPECTED_IMAGE: tuple[DatasetModalitiesResponse, float] = (
+    {"modalities": ["image"]},
     1.0,
 )
 EXPECTED_IMAGE_TEXT: tuple[DatasetModalitiesResponse, float] = (
@@ -211,6 +257,27 @@ def get_job_runner(
                 UPSTREAM_RESPONSE_INFO_ERROR,
             ],
             EXPECTED_EMPTY,
+        ),
+        (
+            TABULAR_DATASET,
+            [
+                UPSTREAM_RESPONSE_INFO_TABULAR,
+            ],
+            EXPECTED_TABULAR,
+        ),
+        (
+            IMAGE_DATASET,
+            [
+                UPSTREAM_RESPONSE_INFO_NOT_TABULAR_1,
+            ],
+            EXPECTED_IMAGE,
+        ),
+        (
+            TEXT_DATASET,
+            [
+                UPSTREAM_RESPONSE_INFO_NOT_TABULAR_2,
+            ],
+            EXPECTED_TEXT,
         ),
     ],
 )
