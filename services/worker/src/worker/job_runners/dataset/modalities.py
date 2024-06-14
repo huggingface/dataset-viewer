@@ -3,7 +3,7 @@
 
 import logging
 
-from datasets import Audio, Features, Image, Translation, TranslationVariableLanguages, Value
+from datasets import Audio, Features, Image, Sequence, Translation, TranslationVariableLanguages, Value
 from datasets.features.features import FeatureType, _visit
 from libcommon.exceptions import PreviousStepFormatError
 from libcommon.simple_cache import (
@@ -16,6 +16,62 @@ from worker.dtos import (
     DatasetModality,
 )
 from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
+
+
+def detect_features_modalities(features: Features) -> set[DatasetModality]:
+    """
+    Detect modalities of a dataset using the features (column types).
+
+    Args:
+        features (`datasets.Features`):
+            The features of a config.
+
+    Returns:
+        `set[DatasetModality]`: A set of modalities.
+    """
+    modalities: set[DatasetModality] = set()
+
+    def classify_modality(feature: FeatureType) -> None:
+        nonlocal modalities
+        if isinstance(feature, Audio):
+            modalities.add("audio")
+        elif isinstance(feature, Image):
+            modalities.add("image")
+        elif isinstance(feature, Value) and feature.dtype in ("string", "large_string"):
+            modalities.add("text")
+        elif isinstance(feature, (Translation, TranslationVariableLanguages)):
+            modalities.add("text")
+
+    _visit(features, classify_modality)
+
+    # detection of tabular data: if there are at least two top-level numerical columns, and no "media" columns
+    if (
+        not ("audio" in modalities or "image" in modalities)
+        and len(
+            [
+                feature
+                for feature in features.values()
+                if isinstance(feature, Value) and ("int" in feature.dtype or "float" in feature.dtype)
+            ]
+        )
+        >= 2
+    ):
+        modalities.add("tabular")
+
+    # detection of time series
+    if any(
+        "emb" not in column_name  # ignore lists of floats that may be embeddings
+        and (
+            (isinstance(feature, Sequence) and feature.feature == Value("float32"))
+            or (isinstance(feature, list) and feature[0] == Value("float32"))
+        )
+        for column_name, feature in features.items()
+    ):
+        modalities.add("timeseries")
+    # other idea: detect datasets with only numerical columns and one timestamp column
+    # (and ideally be able to detect dates/timestamps even from a column with string type)
+
+    return modalities
 
 
 def detect_modalities_from_features(dataset: str) -> set[DatasetModality]:
@@ -42,22 +98,8 @@ def detect_modalities_from_features(dataset: str) -> set[DatasetModality]:
 
     try:
         modalities: set[DatasetModality] = set()
-
-        def classify_modality(feature: FeatureType) -> None:
-            nonlocal modalities
-            if isinstance(feature, Audio):
-                modalities.add("audio")
-            elif isinstance(feature, Image):
-                modalities.add("image")
-            elif isinstance(feature, Value) and feature.dtype in ("string", "large_string"):
-                modalities.add("text")
-            elif isinstance(feature, (Translation, TranslationVariableLanguages)):
-                modalities.add("text")
-
         for config_info in content["dataset_info"].values():
-            features = Features.from_dict(config_info["features"])
-            _visit(features, classify_modality)
-
+            modalities.update(detect_features_modalities(features=Features.from_dict(config_info["features"])))
     except Exception as e:
         raise PreviousStepFormatError("Previous step did not return the expected content.", e) from e
 
