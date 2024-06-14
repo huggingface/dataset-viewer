@@ -6,7 +6,7 @@ from http import HTTPStatus
 from typing import Any
 
 import pytest
-from datasets import Features, Image, Value
+from datasets import Features, Image, Sequence, Value
 from libcommon.dtos import Priority
 from libcommon.exceptions import PreviousStepFormatError
 from libcommon.resources import CacheMongoResource, QueueMongoResource
@@ -32,6 +32,7 @@ TEXT_DATASET = "text-dataset"
 TABULAR_DATASET = "tabular-dataset"
 IMAGE_TEXT_DATASET = "image-text-dataset"
 IMAGE_DATASET = "image-dataset"
+TIME_SERIES_DATASET = "time-series-dataset"
 ERROR_DATASET = "error-dataset"
 
 text_features = Features({"conversations": [{"from": Value("string"), "value": Value("string")}]})
@@ -39,6 +40,7 @@ image_text_features = Features({"image": Image(), "caption": Value("string")})
 tabular_features = Features({"col1": Value("int8"), "col2": Value("float32")})
 not_tabular_features_1 = Features({"col1": Value("int8"), "col2": Value("float32"), "image": Image()})
 not_tabular_features_2 = Features({"col1": Value("int8"), "col2": Value("string")})
+time_series_features = Features({"window": Sequence(Value("float32")), "target": Value("float32")})
 
 UPSTREAM_RESPONSE_INFO_TEXT: UpstreamResponse = UpstreamResponse(
     kind="dataset-info",
@@ -91,6 +93,17 @@ UPSTREAM_RESPONSE_INFO_NOT_TABULAR_2: UpstreamResponse = UpstreamResponse(
     http_status=HTTPStatus.OK,
     content={
         "dataset_info": {"default": {"config_name": "default", "features": not_tabular_features_2.to_dict()}},
+        "partial": False,
+    },
+    progress=1.0,
+)
+UPSTREAM_RESPONSE_INFO_TIME_SERIES: UpstreamResponse = UpstreamResponse(
+    kind="dataset-info",
+    dataset=TIME_SERIES_DATASET,
+    dataset_git_revision=REVISION_NAME,
+    http_status=HTTPStatus.OK,
+    content={
+        "dataset_info": {"default": {"config_name": "default", "features": time_series_features.to_dict()}},
         "partial": False,
     },
     progress=1.0,
@@ -179,6 +192,10 @@ EXPECTED_ALL_MODALITIES: tuple[DatasetModalitiesResponse, float] = (
 )
 EXPECTED_EMPTY: tuple[DatasetModalitiesResponse, float] = (
     {"modalities": []},
+    1.0,
+)
+EXPECTED_TIME_SERIES: tuple[DatasetModalitiesResponse, float] = (
+    {"modalities": ["timeseries"]},
     1.0,
 )
 
@@ -278,6 +295,13 @@ def get_job_runner(
                 UPSTREAM_RESPONSE_INFO_NOT_TABULAR_2,
             ],
             EXPECTED_TEXT,
+        ),
+        (
+            TIME_SERIES_DATASET,
+            [
+                UPSTREAM_RESPONSE_INFO_TIME_SERIES,
+            ],
+            EXPECTED_TIME_SERIES,
         ),
     ],
 )
