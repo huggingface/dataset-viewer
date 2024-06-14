@@ -3,7 +3,7 @@
 
 import logging
 
-from datasets import Audio, Features, Image, Translation, TranslationVariableLanguages, Value
+from datasets import Audio, Features, Image, Sequence, Translation, TranslationVariableLanguages, Value
 from datasets.features.features import FeatureType, _visit
 from libcommon.exceptions import PreviousStepFormatError
 from libcommon.simple_cache import (
@@ -57,6 +57,17 @@ def detect_features_modalities(features: Features) -> set[DatasetModality]:
         >= 2
     ):
         modalities.add("tabular")
+
+    # detection of time series
+    if any(
+        "emb" not in column_name  # ignore lists of floats that may be embeddings
+        and (
+            (isinstance(feature, Sequence) and feature.feature == Value("float32"))
+            or (isinstance(feature, list) and feature[0] == Value("float32"))
+        )
+        for column_name, feature in features.items()
+    ):
+        modalities.add("timeseries")
 
     return modalities
 
