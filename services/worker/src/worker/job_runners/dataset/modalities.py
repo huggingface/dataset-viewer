@@ -144,8 +144,8 @@ def detect_modalities_from_filetypes(dataset: str) -> set[DatasetModality]:
         ".bmp",
         ".ico",
         ".cur",
-        # ".tif", # move to geospatial (geotiff)
-        # ".tiff", # move to geospatial (geotiff)
+        ".tif",
+        ".tiff",
     )
     # from https://developer.mozilla.org/en-US/docs/Web/Media/Formats/Containers#browser_compatibility + others
     AUDIO_EXTENSIONS = (
@@ -199,8 +199,10 @@ def detect_modalities_from_filetypes(dataset: str) -> set[DatasetModality]:
         ".bil",
         ".bip",
         ".bsq",
-        ".tif",  # (geotiff) or should it go to image?
-        ".tiff",  # (geotiff) or should it go to image?
+        # geotiff uses .tif or .tiff, but better to just show "image" modality
+        # than wrongly put "geospatial" if it only contains tif images
+        # ".tif",
+        # ".tiff",
         # vectorial or raster
         ".gpkg",
         ".mbtiles",
