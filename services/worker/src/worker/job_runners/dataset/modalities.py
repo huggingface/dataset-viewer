@@ -44,7 +44,7 @@ def detect_features_modalities(features: Features) -> set[DatasetModality]:
 
     _visit(features, classify_modality)
 
-    # detection of tabular data: if there are at least two numerical columns, and no "media" columns
+    # detection of tabular data: if there are at least two top-level numerical columns, and no "media" columns
     if (
         not ("audio" in modalities or "image" in modalities)
         and len(
