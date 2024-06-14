@@ -13,9 +13,8 @@ from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import upsert_response
 
 from worker.config import AppConfig
-from worker.job_runners.dataset.modalities import (
-    DatasetModalitiesJobRunner,
-)
+from worker.dtos import DatasetModalitiesResponse
+from worker.job_runners.dataset.modalities import DatasetModalitiesJobRunner
 from worker.resources import LibrariesResource
 
 from ..utils import REVISION_NAME, UpstreamResponse
@@ -76,15 +75,15 @@ UPSTREAM_RESPONSE_INFO_MALFORMED: UpstreamResponse = UpstreamResponse(
     progress=0.0,
 )
 
-EXPECTED_TEXT = (
+EXPECTED_TEXT: tuple[DatasetModalitiesResponse, float] = (
     {"modalities": ["text"]},
     1.0,
 )
-EXPECTED_IMAGE_TEXT = (
+EXPECTED_IMAGE_TEXT: tuple[DatasetModalitiesResponse, float] = (
     {"modalities": ["image", "text"]},
     1.0,
 )
-EXPECTED_EMPTY = (
+EXPECTED_EMPTY: tuple[DatasetModalitiesResponse, float] = (
     {"modalities": []},
     1.0,
 )
