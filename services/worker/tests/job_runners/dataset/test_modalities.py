@@ -75,12 +75,60 @@ UPSTREAM_RESPONSE_INFO_MALFORMED: UpstreamResponse = UpstreamResponse(
     progress=0.0,
 )
 
+UPSTREAM_RESPONSE_FILETYPES_TEXT: UpstreamResponse = UpstreamResponse(
+    kind="dataset-filetypes",
+    dataset=TEXT_DATASET,
+    dataset_git_revision=REVISION_NAME,
+    http_status=HTTPStatus.OK,
+    content={
+        "filetypes": [
+            {"extension": ".txt", "count": 1, "compressed_in": ".gz"},
+            {"extension": ".gz", "count": 1},
+        ],
+        "partial": False,
+    },
+    progress=1.0,
+)
+UPSTREAM_RESPONSE_FILETYPES_ALL: UpstreamResponse = UpstreamResponse(
+    kind="dataset-filetypes",
+    dataset=TEXT_DATASET,
+    dataset_git_revision=REVISION_NAME,
+    http_status=HTTPStatus.OK,
+    content={
+        "filetypes": [
+            {"extension": ".txt", "count": 1, "compressed_in": ".gz"},
+            {"extension": ".avi", "count": 1},
+            {"extension": ".geoparquet", "count": 1, "archived_in": ".zip"},
+            {"extension": ".gz", "count": 1},
+            {"extension": ".zip", "count": 1},
+            {"extension": ".jpg", "count": 1},
+            {"extension": ".wav", "count": 1},
+            {"extension": ".gltf", "count": 1},
+        ],
+        "partial": False,
+    },
+    progress=1.0,
+)
+
 EXPECTED_TEXT: tuple[DatasetModalitiesResponse, float] = (
     {"modalities": ["text"]},
     1.0,
 )
 EXPECTED_IMAGE_TEXT: tuple[DatasetModalitiesResponse, float] = (
     {"modalities": ["image", "text"]},
+    1.0,
+)
+EXPECTED_ALL_MODALITIES: tuple[DatasetModalitiesResponse, float] = (
+    {
+        "modalities": [
+            "3d",
+            "audio",
+            "geospatial",
+            "image",
+            "text",
+            "video",
+        ]
+    },
     1.0,
 )
 EXPECTED_EMPTY: tuple[DatasetModalitiesResponse, float] = (
@@ -134,6 +182,28 @@ def get_job_runner(
                 UPSTREAM_RESPONSE_INFO_IMAGE_TEXT,
             ],
             EXPECTED_IMAGE_TEXT,
+        ),
+        (
+            TEXT_DATASET,
+            [
+                UPSTREAM_RESPONSE_FILETYPES_TEXT,
+            ],
+            EXPECTED_TEXT,
+        ),
+        (
+            TEXT_DATASET,
+            [
+                UPSTREAM_RESPONSE_INFO_TEXT,
+                UPSTREAM_RESPONSE_FILETYPES_TEXT,
+            ],
+            EXPECTED_TEXT,
+        ),
+        (
+            TEXT_DATASET,
+            [
+                UPSTREAM_RESPONSE_FILETYPES_ALL,
+            ],
+            EXPECTED_ALL_MODALITIES,
         ),
         (
             ERROR_DATASET,

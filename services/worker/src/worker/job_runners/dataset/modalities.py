@@ -223,6 +223,7 @@ def compute_modalities_response(dataset: str) -> DatasetModalitiesResponse:
     except PreviousStepFormatError:
         raise
     except Exception:
+        logging.info(f"failed to detect modalities from features of {dataset=}")
         pass
 
     try:
@@ -230,6 +231,7 @@ def compute_modalities_response(dataset: str) -> DatasetModalitiesResponse:
     except PreviousStepFormatError:
         raise
     except Exception:
+        logging.info(f"failed to detect modalities from file types of {dataset=}")
         pass
 
     return DatasetModalitiesResponse(
