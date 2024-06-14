@@ -93,11 +93,14 @@ log:
 # --- common parameters ---
 
 secrets:
-  externalSecret:
+  infisical:
     enabled: false
-    secretName: ""
-    secretStoreName: ""
-    parameters: {}
+    env: ""
+    project: "datasets-server-n5x-l"
+    url: ""
+    resyncInterval: 60
+    operatorSecretName: "datasets-server-operator-secrets"
+    operatorSecretNamespace: "datasets-server"
   mongoUrl:
     fromSecret: false
     secretName: "mongo-url"
@@ -123,14 +126,14 @@ secrets:
     value: ""
   spawningToken:
     fromSecret: true
-    secretName: "spawning-token"
+    secretName: ""
   s3:
     accessKeyId:
       fromSecret: true
-      secretName: "aws-access-key-id"
+      secretName: ""
     secretAccessKey:
       fromSecret: true
-      secretName: "aws-secret-access-key"
+      secretName: ""
   cloudfront:
     keyPairId:
       fromSecret: false

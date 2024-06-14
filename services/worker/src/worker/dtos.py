@@ -345,11 +345,25 @@ class DatasetHubCacheResponse(TypedDict):
     preview: bool
     viewer: bool
     partial: bool
-    num_rows: int
+    num_rows: Optional[int]
     tags: list[DatasetTag]
     libraries: list[DatasetLibrary]
     modalities: list[DatasetModality]
     formats: list[DatasetFormat]
+
+
+class _Filetype(TypedDict):
+    extension: str
+    count: int
+
+
+class Filetype(_Filetype, total=False):
+    archived_in: str
+    compressed_in: str
+
+
+class DatasetFiletypesResponse(TypedDict):
+    filetypes: list[Filetype]
 
 
 class DatasetParquetResponse(TypedDict):
