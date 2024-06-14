@@ -722,7 +722,7 @@ specification: ProcessingGraphSpecification = {
         "input_type": "dataset",
         # no "triggered_by" <- this is a root step
         "job_runner_version": 1,
-        "difficulty": 20,
+        "difficulty": 50,
     },
 }
 
