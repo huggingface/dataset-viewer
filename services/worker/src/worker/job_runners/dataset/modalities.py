@@ -68,6 +68,8 @@ def detect_features_modalities(features: Features) -> set[DatasetModality]:
         for column_name, feature in features.items()
     ):
         modalities.add("timeseries")
+    # other idea: detect datasets with only numerical columns and one timestamp column
+    # (and ideally be able to detect dates/timestamps even from a column with string type)
 
     return modalities
 
