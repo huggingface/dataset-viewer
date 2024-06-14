@@ -7,6 +7,10 @@ metadata:
   labels: {{ include "labels.admin" . | nindent 4 }}
   name: "{{ include "name" . }}-admin"
   namespace: {{ .Release.Namespace }}
+  {{- if .Values.secrets.infisical.enabled }}
+  annotations:
+    secrets.infisical.com/auto-reload: "true"
+  {{- end }}
 spec:
   progressDeadlineSeconds: 600
   replicas: {{ .Values.admin.replicas }}
