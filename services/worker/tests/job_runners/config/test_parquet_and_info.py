@@ -15,6 +15,7 @@ from unittest.mock import patch
 import datasets.builder
 import datasets.config
 import datasets.info
+import fsspec
 import pandas as pd
 import pyarrow.parquet as pq
 import pytest
@@ -770,6 +771,34 @@ def test_stream_convert_to_parquet_generatorbasedbuilder(
             sum(pq.ParquetFile(parquet_file.local_file).read().nbytes for parquet_file in parquet_files)
             < expected_max_dataset_size_bytes
         )
+
+
+def test_stream_convert_to_parquet_estimate_info(tmp_path: Path, csv_path: str) -> None:
+    num_rows = 100
+    expected_estimated_num_rows = 54
+
+    def generate_from_text(text_files: list[str]) -> Iterator[dict[str, int]]:
+        for text_file in text_files:
+            with fsspec.open(text_file, "r").open() as f:  # we track fsspec reads to estimate
+                yield {"text": f.read()}
+
+    cache_dir = str(tmp_path / "test_limit_parquet_writes_cache_dir")
+    gen_kwargs = {"text_files": [csv_path] * num_rows}
+    builder = ParametrizedGeneratorBasedBuilder(
+        generator=generate_from_text, cache_dir=cache_dir, gen_kwargs=gen_kwargs
+    )
+    with patch("worker.job_runners.config.parquet_and_info.get_writer_batch_size_from_info", lambda ds_config_info: 1):
+        with patch.object(datasets.config, "MAX_SHARD_SIZE", 1):
+            parquet_operations, partial, estimated_dataset_info = stream_convert_to_parquet(
+                builder, max_dataset_size_bytes=1
+            )
+    assert partial
+    assert len(parquet_operations) == 1
+    assert "train" in builder.info.splits
+    assert builder.info.splits["train"].num_examples == 1
+    assert estimated_dataset_info is not None
+    assert "dataset_size" in estimated_dataset_info
+    assert estimated_dataset_info["dataset_size"] == expected_estimated_num_rows
 
 
 def test_limit_parquet_writes(tmp_path: Path) -> None:

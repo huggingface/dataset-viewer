@@ -600,8 +600,7 @@ def create_estomated_dataset_info_response_for_partially_generated_big_csv() -> 
     return {
         "download_size": 5644817,
         "splits": {"train": {"name": "train", "num_bytes": 266581, "num_examples": 215, "dataset_name": "csv"}},
-        "dataset_size": 215,
-        "size_in_bytes": 266581,
+        "dataset_size": 266581,
     }
 
 
