@@ -759,7 +759,7 @@ def test_stream_convert_to_parquet_generatorbasedbuilder(
     num_shards = len(parquet_operations)
     assert num_shards == expected_num_shards
     assert partial == (expected_num_shards < num_rows)
-    assert partial == (estimated_dataset_info is not None)
+    assert estimated_dataset_info is None  # no file to read to estimate num_rows
     assert all(isinstance(op.path_or_fileobj, str) for op in parquet_operations)
     parquet_files = list_generated_parquet_files(builder, partial=partial)
     assert len(parquet_files) == expected_num_shards
