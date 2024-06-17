@@ -168,8 +168,8 @@ def test_graph() -> None:
         (
             "dataset-modalities",
             ["dataset-hub-cache"],
-            ["dataset-info"],
-            ["dataset-config-names", "config-parquet-and-info", "config-info", "dataset-info"],
+            ["dataset-info", "dataset-filetypes"],
+            ["dataset-config-names", "config-parquet-and-info", "config-info", "dataset-info", "dataset-filetypes"],
         ),
         (
             "dataset-is-valid",
@@ -363,6 +363,7 @@ def test_graph() -> None:
                 "config-size",
                 "config-split-names",
                 "dataset-config-names",
+                "dataset-filetypes",
                 "dataset-info",
                 "dataset-is-valid",
                 "dataset-compatible-libraries",
@@ -417,7 +418,7 @@ def test_graph() -> None:
         ),
         (
             "dataset-filetypes",
-            [],
+            ["dataset-modalities"],
             [],
             [],
         ),

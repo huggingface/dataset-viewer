@@ -708,8 +708,8 @@ specification: ProcessingGraphSpecification = {
     },
     "dataset-modalities": {
         "input_type": "dataset",
-        "triggered_by": "dataset-info",
-        "job_runner_version": 1,
+        "triggered_by": ["dataset-info", "dataset-filetypes"],
+        "job_runner_version": 2,
         "difficulty": 20,
     },
     "dataset-croissant-crumbs": {
@@ -722,7 +722,7 @@ specification: ProcessingGraphSpecification = {
         "input_type": "dataset",
         # no "triggered_by" <- this is a root step
         "job_runner_version": 1,
-        "difficulty": 20,
+        "difficulty": 50,
     },
 }
 
