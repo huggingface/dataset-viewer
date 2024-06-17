@@ -924,7 +924,15 @@ class track_reads:
         for k, attr in f.__dict__.items():  # look into GzipFile, BZ2File, etc.
             if not k.startswith("__") and hasattr(attr, "read"):
                 f = attr
+                break
         f.read = functools.partial(self.track_read, urlpath, f.read)
+        f.__iter__ = functools.partial(self.track_iter, urlpath, f.__iter__)
+        if hasattr(f, "read1"):
+            f.read1 = functools.partial(self.track_read, urlpath, f.read1)
+        if hasattr(f, "readline"):
+            f.readline = functools.partial(self.track_read, urlpath, f.readline)
+        if hasattr(f, "readlines"):
+            f.readlines = functools.partial(self.track_read, urlpath, f.readlines)
         self.files[urlpath] = {"read": 0, "size": int(f.size)}
         return out
 
@@ -932,6 +940,13 @@ class track_reads:
         out = f_read(*args, **kwargs)
         self.files[urlpath]["read"] += len(out)
         return out
+
+    def track_iter(
+        self, urlpath: str, f_iter: Callable[..., Generator[ReadOutput, None, None]]
+    ) -> Generator[ReadOutput, None, None]:
+        for out in f_iter():
+            self.files[urlpath]["read"] += len(out)
+            yield out
 
     def __enter__(self) -> "track_reads":
         fsspec_open = fsspec.open
@@ -943,6 +958,7 @@ class track_reads:
             return of
 
         self.exit_stack.enter_context(patch.object(fsspec, "open", wrapped))
+        self.exit_stack.enter_context(patch("datasets.utils.file_utils.is_local_path", return_value=False))
         return self
 
     def __exit__(
