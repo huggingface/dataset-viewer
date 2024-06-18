@@ -2,7 +2,7 @@
 # Copyright 2023 The HuggingFace Authors.
 
 import logging
-from dataclasses import dataclass, field
+from dataclasses import InitVar, dataclass, field
 from itertools import islice
 from typing import Optional
 
@@ -64,22 +64,23 @@ class CacheState:
     config: Optional[str]
     split: Optional[str]
     cache_kind: str
-    cache_entries_df: pd.DataFrame
     job_runner_version: int
 
     cache_entry_metadata: Optional[CacheEntryMetadata] = field(init=False)
     exists: bool = field(init=False)
     is_success: bool = field(init=False)
 
-    def __post_init__(self) -> None:
-        if len(self.cache_entries_df) > 1:
+    cache_entries_df: InitVar[pd.DataFrame]
+
+    def __post_init__(self, cache_entries_df: pd.DataFrame) -> None:
+        if len(cache_entries_df) > 1:
             logging.warning(
                 f"More than one cache entry found for {self.dataset}, {self.config}, {self.split}, {self.cache_kind}"
             )
-        if len(self.cache_entries_df) == 0:
+        if len(cache_entries_df) == 0:
             self.cache_entry_metadata = None
         else:
-            entry = self.cache_entries_df.iloc[0]
+            entry = cache_entries_df.iloc[0]
             self.cache_entry_metadata = CacheEntryMetadata(
                 http_status=entry["http_status"],
                 error_code=None if entry["error_code"] is pd.NA else entry["error_code"],
