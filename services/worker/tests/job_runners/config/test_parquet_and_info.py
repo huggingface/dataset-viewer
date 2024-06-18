@@ -1027,8 +1027,8 @@ def test_track_reads_single_compressed_file(text_file: str, gz_file: str) -> Non
             expected_read_size = len(compressed_f.read())
             expected_output_size = len(uncompressed_f.read())
             assert len(f.read()) == expected_output_size
-            assert gz_file in tracker.files
-            assert tracker.files[gz_file]["read"] == expected_read_size
+            assert "file://" + gz_file in tracker.files
+            assert tracker.files["file://" + gz_file]["read"] == expected_read_size
 
 
 def test_track_reads_zip_file(text_file: str, zip_file: str) -> None:
@@ -1039,5 +1039,5 @@ def test_track_reads_zip_file(text_file: str, zip_file: str) -> None:
         ):
             expected_output_size = len(uncompressed_f.read())
             assert len(f.read()) == expected_output_size
-            assert zip_file in tracker.files
-            assert tracker.files[zip_file]["read"] != expected_output_size
+            assert "file://" + zip_file in tracker.files
+            assert tracker.files["file://" + zip_file]["read"] != expected_output_size
