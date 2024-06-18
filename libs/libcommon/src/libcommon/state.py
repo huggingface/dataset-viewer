@@ -343,7 +343,7 @@ class DatasetState:
 class FirstStepsDatasetState(DatasetState):
     """The state of the first dataset steps."""
 
-    def __post_init__(self) -> None:
+    def __post_init__(self, pending_jobs_df: pd.DataFrame, cache_entries_df: pd.DataFrame) -> None:
         with StepProfiler(
             method="FirstStepsDatasetState.__post_init__",
             step="get_dataset_level_artifact_states",
@@ -355,16 +355,16 @@ class FirstStepsDatasetState(DatasetState):
                     revision=self.revision,
                     config=None,
                     split=None,
-                    pending_jobs_df=self.pending_jobs_df[
-                        (self.pending_jobs_df["revision"] == self.revision)
-                        & (self.pending_jobs_df["config"].isnull())
-                        & (self.pending_jobs_df["split"].isnull())
-                        & (self.pending_jobs_df["type"] == processing_step.job_type)
+                    pending_jobs_df=pending_jobs_df[
+                        (pending_jobs_df["revision"] == self.revision)
+                        & (pending_jobs_df["config"].isnull())
+                        & (pending_jobs_df["split"].isnull())
+                        & (pending_jobs_df["type"] == processing_step.job_type)
                     ],
-                    cache_entries_df=self.cache_entries_df[
-                        (self.cache_entries_df["kind"] == processing_step.cache_kind)
-                        & (self.cache_entries_df["config"].isnull())
-                        & (self.cache_entries_df["split"].isnull())
+                    cache_entries_df=cache_entries_df[
+                        (cache_entries_df["kind"] == processing_step.cache_kind)
+                        & (cache_entries_df["config"].isnull())
+                        & (cache_entries_df["split"].isnull())
                     ],
                 )
                 for processing_step in self.processing_graph.get_first_processing_steps()
