@@ -40,6 +40,13 @@ UPSTREAM_RESPONSE_CONFIG_NAMES: UpstreamResponse = UpstreamResponse(
         ]
     },
 )
+UPSTREAM_RESPONSE_CONFIG_NAMES_EMPTY: UpstreamResponse = UpstreamResponse(
+    kind="dataset-config-names",
+    dataset=DATASET,
+    dataset_git_revision=REVISION_NAME,
+    http_status=HTTPStatus.OK,
+    content={"config_names": []},
+)
 UPSTREAM_RESPONSE_CONFIG_1_OK: UpstreamResponse = UpstreamResponse(
     kind="config-is-valid",
     dataset=DATASET,
@@ -108,6 +115,10 @@ EXPECTED_PENDING_ALL_FALSE = (
     {"viewer": False, "preview": False, "search": False, "filter": False, "statistics": False},
     0.0,
 )
+EXPECTED_COMPLETED_ALL_FALSE = (
+    {"viewer": False, "preview": False, "search": False, "filter": False, "statistics": False},
+    1.0,
+)
 
 
 @pytest.fixture
@@ -143,6 +154,7 @@ def get_job_runner(
     [
         (
             [
+                UPSTREAM_RESPONSE_CONFIG_NAMES,
                 UPSTREAM_RESPONSE_CONFIG_1_OK,
                 UPSTREAM_RESPONSE_CONFIG_2_OK,
             ],
@@ -150,22 +162,30 @@ def get_job_runner(
         ),
         (
             [
+                UPSTREAM_RESPONSE_CONFIG_NAMES,
                 UPSTREAM_RESPONSE_CONFIG_1_OK,
             ],
             EXPECTED_PENDING_ALL_TRUE,
         ),
         (
             [
+                UPSTREAM_RESPONSE_CONFIG_NAMES,
                 UPSTREAM_RESPONSE_CONFIG_1_ERROR,
                 UPSTREAM_RESPONSE_CONFIG_2_ERROR,
             ],
             EXPECTED_COMPLETED_ALL_FALSE,
         ),
-        ([UPSTREAM_RESPONSE_CONFIG_1_OK_VIEWER, UPSTREAM_RESPONSE_CONFIG_2_OK_SEARCH], EXPECTED_ALL_MIXED),
         (
-            [],
-            EXPECTED_PENDING_ALL_FALSE,
+            [
+                UPSTREAM_RESPONSE_CONFIG_NAMES,
+                UPSTREAM_RESPONSE_CONFIG_1_OK_VIEWER,
+                UPSTREAM_RESPONSE_CONFIG_2_OK_SEARCH,
+            ],
+            EXPECTED_ALL_MIXED,
         ),
+        ([], EXPECTED_PENDING_ALL_FALSE),
+        ([UPSTREAM_RESPONSE_CONFIG_1_OK], EXPECTED_PENDING_ALL_FALSE),
+        ([UPSTREAM_RESPONSE_CONFIG_NAMES_EMPTY], EXPECTED_COMPLETED_ALL_FALSE),
     ],
 )
 def test_compute(
@@ -175,7 +195,6 @@ def test_compute(
     expected: Any,
 ) -> None:
     dataset = DATASET
-    upsert_response(**UPSTREAM_RESPONSE_CONFIG_NAMES)
     for upstream_response in upstream_responses:
         upsert_response(**upstream_response)
     job_runner = get_job_runner(dataset, app_config)
