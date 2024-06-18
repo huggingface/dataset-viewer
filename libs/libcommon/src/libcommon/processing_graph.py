@@ -610,7 +610,7 @@ specification: ProcessingGraphSpecification = {
             "dataset-config-names",  # required in case the dataset has no configs (error in previous step)
             "config-is-valid",
         ],
-        "job_runner_version": 7,
+        "job_runner_version": 8,
         "difficulty": 20,
     },
     "split-image-url-columns": {
@@ -697,7 +697,7 @@ specification: ProcessingGraphSpecification = {
             "dataset-compatible-libraries",
             "dataset-modalities",
         ],
-        "job_runner_version": 2,
+        "job_runner_version": 3,
         "difficulty": 20,
     },
     "dataset-compatible-libraries": {
