@@ -265,14 +265,15 @@ class DatasetState:
     dataset: str
     revision: str
     processing_graph: ProcessingGraph
-    pending_jobs_df: pd.DataFrame
-    cache_entries_df: pd.DataFrame
 
     config_names: list[str] = field(init=False)
     config_states: list[ConfigState] = field(init=False)
     artifact_state_by_step: dict[str, ArtifactState] = field(init=False)
 
-    def __post_init__(self) -> None:
+    pending_jobs_df: InitVar[pd.DataFrame]
+    cache_entries_df: InitVar[pd.DataFrame]
+
+    def __post_init__(self, pending_jobs_df: pd.DataFrame, cache_entries_df: pd.DataFrame) -> None:
         with StepProfiler(
             method="DatasetState.__post_init__",
             step="get_dataset_level_artifact_states",
@@ -284,16 +285,16 @@ class DatasetState:
                     revision=self.revision,
                     config=None,
                     split=None,
-                    pending_jobs_df=self.pending_jobs_df[
-                        (self.pending_jobs_df["revision"] == self.revision)
-                        & (self.pending_jobs_df["config"].isnull())
-                        & (self.pending_jobs_df["split"].isnull())
-                        & (self.pending_jobs_df["type"] == processing_step.job_type)
+                    pending_jobs_df=pending_jobs_df[
+                        (pending_jobs_df["revision"] == self.revision)
+                        & (pending_jobs_df["config"].isnull())
+                        & (pending_jobs_df["split"].isnull())
+                        & (pending_jobs_df["type"] == processing_step.job_type)
                     ],
-                    cache_entries_df=self.cache_entries_df[
-                        (self.cache_entries_df["kind"] == processing_step.cache_kind)
-                        & (self.cache_entries_df["config"].isnull())
-                        & (self.cache_entries_df["split"].isnull())
+                    cache_entries_df=cache_entries_df[
+                        (cache_entries_df["kind"] == processing_step.cache_kind)
+                        & (cache_entries_df["config"].isnull())
+                        & (cache_entries_df["split"].isnull())
                     ],
                 )
                 for processing_step in self.processing_graph.get_input_type_processing_steps(input_type="dataset")
@@ -311,7 +312,7 @@ class DatasetState:
                     name_field="config",
                 )  # Note that we use the cached content even the revision is different (ie. maybe obsolete)
 
-            unexpected_config_names = set(self.cache_entries_df["config"].unique()).difference(
+            unexpected_config_names = set(cache_entries_df["config"].unique()).difference(
                 set(self.config_names).union({None})
             )
             if unexpected_config_names:
@@ -329,11 +330,10 @@ class DatasetState:
                         revision=self.revision,
                         config=config_name,
                         processing_graph=self.processing_graph,
-                        pending_jobs_df=self.pending_jobs_df[
-                            (self.pending_jobs_df["revision"] == self.revision)
-                            & (self.pending_jobs_df["config"] == config_name)
+                        pending_jobs_df=pending_jobs_df[
+                            (pending_jobs_df["revision"] == self.revision) & (pending_jobs_df["config"] == config_name)
                         ],
-                        cache_entries_df=self.cache_entries_df[self.cache_entries_df["config"] == config_name],
+                        cache_entries_df=cache_entries_df[cache_entries_df["config"] == config_name],
                     )
                     for config_name in self.config_names
                 ]
