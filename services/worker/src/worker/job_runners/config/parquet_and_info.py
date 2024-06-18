@@ -858,7 +858,10 @@ class limit_parquet_writes:
 
 
 def get_urlpaths_in_gen_kwargs(gen_kwargs: dict[str, Any]) -> list[str]:
-    """Return the number of possible shards according to the input gen_kwargs"""
+    """
+    Return the (deduplicated) list of file sources according to the input gen_kwargs.
+    In case of chained URLs like `zip://xxx::hf://yyy`, only `hf://yyy` is returned.
+    """
     # Having lists of different sizes makes sharding ambigious, raise an error in this case (same as in the `datasets` lib)
     lists = [value for value in gen_kwargs.values() if isinstance(value, list)] or [[]]
     if len(set(len(list_) for list_ in lists)) > 1:
@@ -871,15 +874,15 @@ def get_urlpaths_in_gen_kwargs(gen_kwargs: dict[str, Any]) -> list[str]:
             )
         )
     shards = max(lists, key=len)
-    urlpaths: list[str] = []
+    urlpaths: set[str] = set()
     for shard in shards:
         if isinstance(shard, str):
-            urlpaths.append(shard)
+            urlpaths.add(shard.split("::")[-1])
         elif isinstance(shard, FilesIterable):
-            urlpaths.extend(list(shard))
+            urlpaths.update(item.split("::")[-1] for item in shard)
         elif isinstance(shard, ArchiveIterable) and shard.args and isinstance(shard.args[0], str):
-            urlpaths.append(shard.args[0])
-    return urlpaths
+            urlpaths.add(shard.args[0].split("::")[-1])
+    return list(urlpaths)
 
 
 ReadOutput = TypeVar("ReadOutput", bound=Union[bytes, str])
