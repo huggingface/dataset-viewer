@@ -40,6 +40,7 @@ from datasets.utils.file_utils import (
     url_or_path_join,
 )
 from datasets.utils.py_utils import asdict, map_nested
+from fsspec.core import url_to_fs
 from fsspec.implementations.http import HTTPFileSystem
 from fsspec.implementations.local import LocalFileOpener, LocalFileSystem
 from fsspec.spec import AbstractBufferedFile
@@ -882,7 +883,7 @@ def get_urlpaths_in_gen_kwargs(gen_kwargs: dict[str, Any]) -> list[str]:
             urlpaths.update(item.split("::")[-1] for item in shard)
         elif isinstance(shard, ArchiveIterable) and shard.args and isinstance(shard.args[0], str):
             urlpaths.add(shard.args[0].split("::")[-1])
-    return list(urlpaths)
+    return [url_to_fs(urlpath)[0].unstrip_protocol(urlpath) for urlpath in urlpaths]
 
 
 ReadOutput = TypeVar("ReadOutput", bound=Union[bytes, str])
@@ -900,8 +901,15 @@ class track_reads:
     """
     Context manager that tracks the number of bytes a `DatasetBuilder` reads.
 
-    It works by monitoring the calls to `fsspec.open` and wrap the file-like objects
-    to track the data from calls to `.read()`
+    It works by monitoring the calls to `fs.open` and wraps the file-like objects
+    to track the data from calls to read methods like `.read()`.
+
+    Supported file-systems are local, http and hf.
+    Tracking results are stored in the `tracker.files` dictionary,
+    with the format "urlpath with protocol" -> {"read": int, "size": int}
+
+    Since tracking is applied directly on the file from `fs.open`, reads from file-wrappers
+    like ZipFile or GZipFile are also taken into account.
 
     Example of usage:
 
@@ -952,6 +960,7 @@ class track_reads:
             **kwargs: Any,
         ) -> FsspecFile:
             f = fs_open(self, urlpath, mode, *args, **kwargs)
+            urlpath = self.unstrip_protocol(urlpath)
             if "w" not in mode:
                 f.read = functools.partial(tracker.track_read, urlpath, f.read)
                 f.__iter__ = functools.partial(tracker.track_iter, urlpath, f.__iter__)
