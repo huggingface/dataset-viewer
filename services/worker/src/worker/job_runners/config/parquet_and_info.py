@@ -40,7 +40,8 @@ from datasets.utils.file_utils import (
     url_or_path_join,
 )
 from datasets.utils.py_utils import asdict, map_nested
-from fsspec.core import OpenFile, PickleableTextIOWrapper
+from fsspec.implementations.http import HTTPFileSystem
+from fsspec.implementations.local import LocalFileOpener, LocalFileSystem
 from fsspec.spec import AbstractBufferedFile
 from huggingface_hub import HfFileSystem
 from huggingface_hub._commit_api import (
@@ -883,6 +884,14 @@ def get_urlpaths_in_gen_kwargs(gen_kwargs: dict[str, Any]) -> list[str]:
 
 ReadOutput = TypeVar("ReadOutput", bound=Union[bytes, str])
 
+FsspecFile = TypeVar(
+    "FsspecFile",
+    bound=Union[
+        LocalFileOpener,
+        AbstractBufferedFile,
+    ],
+)
+
 
 class track_reads:
     """
@@ -916,26 +925,6 @@ class track_reads:
         self.files: dict[str, dict[str, int]] = {}
         self.exit_stack = ExitStack()
 
-    def track_open(self, urlpath: str, of_open: Callable[..., AbstractBufferedFile]) -> AbstractBufferedFile:
-        out = of_open()
-        f = out
-        if isinstance(f, PickleableTextIOWrapper):
-            f = f.args[0]  # buffer argument
-        for k, attr in f.__dict__.items():  # look into GzipFile, BZ2File, etc.
-            if not k.startswith("__") and hasattr(attr, "read"):
-                f = attr
-                break
-        f.read = functools.partial(self.track_read, urlpath, f.read)
-        f.__iter__ = functools.partial(self.track_iter, urlpath, f.__iter__)
-        if hasattr(f, "read1"):
-            f.read1 = functools.partial(self.track_read, urlpath, f.read1)
-        if hasattr(f, "readline"):
-            f.readline = functools.partial(self.track_read, urlpath, f.readline)
-        if hasattr(f, "readlines"):
-            f.readlines = functools.partial(self.track_read, urlpath, f.readlines)
-        self.files[urlpath] = {"read": 0, "size": int(f.size)}
-        return out
-
     def track_read(self, urlpath: str, f_read: Callable[..., ReadOutput], *args: Any, **kwargs: Any) -> ReadOutput:
         out = f_read(*args, **kwargs)
         self.files[urlpath]["read"] += len(out)
@@ -949,15 +938,40 @@ class track_reads:
             yield out
 
     def __enter__(self) -> "track_reads":
-        fsspec_open = fsspec.open
+        tracker = self
 
-        @functools.wraps(fsspec_open)
-        def wrapped(urlpath: str, *args: Any, **kwargs: Any) -> OpenFile:
-            of = fsspec_open(urlpath, *args, **kwargs)
-            of.open = functools.partial(self.track_open, urlpath=urlpath, of_open=of.open)
-            return of
+        def wrapped(
+            self: Union[LocalFileSystem, HTTPFileSystem, HfFileSystem],
+            urlpath: str,
+            mode: str = "rb",
+            *args: Any,
+            fs_open: Callable[..., FsspecFile],
+            **kwargs: Any,
+        ) -> FsspecFile:
+            f = fs_open(self, urlpath, mode, *args, **kwargs)
+            if "w" not in mode:
+                f.read = functools.partial(tracker.track_read, urlpath, f.read)
+                f.__iter__ = functools.partial(tracker.track_iter, urlpath, f.__iter__)
+                if hasattr(f, "read1"):
+                    f.read1 = functools.partial(tracker.track_read, urlpath, f.read1)
+                if hasattr(f, "readline"):
+                    f.readline = functools.partial(tracker.track_read, urlpath, f.readline)
+                if hasattr(f, "readlines"):
+                    f.readlines = functools.partial(tracker.track_read, urlpath, f.readlines)
+                tracker.files[urlpath] = {"read": 0, "size": int(f.size)}
+            return f
 
-        self.exit_stack.enter_context(patch.object(fsspec, "open", wrapped))
+        # track files reads from local, http and hf file-systems
+        self.exit_stack.enter_context(
+            patch.object(LocalFileSystem, "open", autospec=True)
+        ).side_effect = functools.partial(wrapped, fs_open=LocalFileSystem.open)
+        self.exit_stack.enter_context(
+            patch.object(HTTPFileSystem, "open", autospec=True)
+        ).side_effect = functools.partial(wrapped, fs_open=HTTPFileSystem.open)
+        self.exit_stack.enter_context(
+            patch.object(HfFileSystem, "open", autospec=True)
+        ).side_effect = functools.partial(wrapped, fs_open=HfFileSystem.open)
+        # always use fsspec even for local paths
         self.exit_stack.enter_context(patch("datasets.utils.file_utils.is_local_path", return_value=False))
         return self
 
