@@ -396,7 +396,7 @@ with gr.Blocks() as demo:
             with gr.Tab("Refresh dataset step"):
                 job_types = [
                     processing_step.job_type
-                    for processing_step in processing_graph.get_topologically_ordered_processing_steps()
+                    for processing_step in processing_graph.get_alphabetically_ordered_processing_steps()
                 ]
 
                 def on_change_refresh_job_type(job_type):
