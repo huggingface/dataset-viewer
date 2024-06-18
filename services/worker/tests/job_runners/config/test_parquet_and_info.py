@@ -55,6 +55,7 @@ from worker.job_runners.config.parquet_and_info import (
     parse_repo_filename,
     raise_if_requires_manual_download,
     stream_convert_to_parquet,
+    track_reads,
 )
 from worker.job_runners.dataset.config_names import DatasetConfigNamesJobRunner
 from worker.resources import LibrariesResource
@@ -981,3 +982,22 @@ def test_parquet_file_path_in_repo(
     else:
         with pytest.raises(ValueError):
             ParquetFile(config=config, split=split, shard_idx=shard_idx, num_shards=num_shards, partial=partial)
+
+
+def test_track_reads_single_compressed_file(text_file: str, gz_file: str) -> None:
+    with track_reads() as tracker:
+        with fsspec.open(gz_file, compression="gzip") as f, open(gz_file, "rb") as compressed_f, open(text_file, "rb") as uncompressed_f:
+            expected_read_size = len(compressed_f.read())
+            expected_output_size = len(uncompressed_f.read())
+            assert len(f.read()) == expected_output_size
+            assert gz_file in tracker.files
+            assert tracker.files[gz_file]["read"] == expected_read_size
+
+
+def test_track_reads_zip_file(text_file: str, zip_file: str) -> None:
+    with track_reads() as tracker:
+        with fsspec.open(f"zip://{os.path.basename(text_file)}::{zip_file}") as f, open(text_file, "rb") as uncompressed_f:
+            expected_output_size = len(uncompressed_f.read())
+            assert len(f.read()) == expected_output_size
+            assert zip_file in tracker.files
+            assert tracker.files[zip_file]["read"] != expected_output_size
