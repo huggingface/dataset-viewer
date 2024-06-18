@@ -163,12 +163,13 @@ class SplitState:
     config: str
     split: str
     processing_graph: ProcessingGraph
-    pending_jobs_df: pd.DataFrame
-    cache_entries_df: pd.DataFrame
 
     artifact_state_by_step: dict[str, ArtifactState] = field(init=False)
 
-    def __post_init__(self) -> None:
+    pending_jobs_df: InitVar[pd.DataFrame]
+    cache_entries_df: InitVar[pd.DataFrame]
+
+    def __post_init__(self, pending_jobs_df: pd.DataFrame, cache_entries_df: pd.DataFrame) -> None:
         self.artifact_state_by_step = {
             processing_step.name: ArtifactState(
                 processing_step=processing_step,
@@ -176,8 +177,8 @@ class SplitState:
                 revision=self.revision,
                 config=self.config,
                 split=self.split,
-                pending_jobs_df=self.pending_jobs_df[self.pending_jobs_df["type"] == processing_step.job_type],
-                cache_entries_df=self.cache_entries_df[self.cache_entries_df["kind"] == processing_step.cache_kind],
+                pending_jobs_df=pending_jobs_df[pending_jobs_df["type"] == processing_step.job_type],
+                cache_entries_df=cache_entries_df[cache_entries_df["kind"] == processing_step.cache_kind],
             )
             for processing_step in self.processing_graph.get_input_type_processing_steps(input_type="split")
         }
