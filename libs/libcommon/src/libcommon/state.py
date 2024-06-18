@@ -192,14 +192,15 @@ class ConfigState:
     revision: str
     config: str
     processing_graph: ProcessingGraph
-    pending_jobs_df: pd.DataFrame
-    cache_entries_df: pd.DataFrame
 
     split_names: list[str] = field(init=False)
     split_states: list[SplitState] = field(init=False)
     artifact_state_by_step: dict[str, ArtifactState] = field(init=False)
 
-    def __post_init__(self) -> None:
+    pending_jobs_df: InitVar[pd.DataFrame]
+    cache_entries_df: InitVar[pd.DataFrame]
+
+    def __post_init__(self, pending_jobs_df: pd.DataFrame, cache_entries_df: pd.DataFrame) -> None:
         with StepProfiler(
             method="ConfigState.__post_init__",
             step="get_config_level_artifact_states",
@@ -211,13 +212,10 @@ class ConfigState:
                     revision=self.revision,
                     config=self.config,
                     split=None,
-                    pending_jobs_df=self.pending_jobs_df[
-                        (self.pending_jobs_df["split"].isnull())
-                        & (self.pending_jobs_df["type"] == processing_step.job_type)
+                    pending_jobs_df=pending_jobs_df[
+                        (pending_jobs_df["split"].isnull()) & (pending_jobs_df["type"] == processing_step.job_type)
                     ],
-                    cache_entries_df=self.cache_entries_df[
-                        self.cache_entries_df["kind"] == processing_step.cache_kind
-                    ],
+                    cache_entries_df=cache_entries_df[cache_entries_df["kind"] == processing_step.cache_kind],
                 )
                 for processing_step in self.processing_graph.get_input_type_processing_steps(input_type="config")
             }
@@ -234,7 +232,7 @@ class ConfigState:
                 name_field="split",
             )  # Note that we use the cached content even the revision is different (ie. maybe obsolete)
 
-        unexpected_split_names = set(self.cache_entries_df["split"].unique()).difference(
+        unexpected_split_names = set(cache_entries_df["split"].unique()).difference(
             set(self.split_names).union({None})
         )
         if unexpected_split_names:
@@ -253,8 +251,8 @@ class ConfigState:
                     config=self.config,
                     split=split_name,
                     processing_graph=self.processing_graph,
-                    pending_jobs_df=self.pending_jobs_df[self.pending_jobs_df["split"] == split_name],
-                    cache_entries_df=self.cache_entries_df[self.cache_entries_df["split"] == split_name],
+                    pending_jobs_df=pending_jobs_df[pending_jobs_df["split"] == split_name],
+                    cache_entries_df=cache_entries_df[cache_entries_df["split"] == split_name],
                 )
                 for split_name in self.split_names
             ]
