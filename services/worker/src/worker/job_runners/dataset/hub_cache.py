@@ -39,7 +39,7 @@ def compute_hub_cache_response(dataset: str) -> tuple[DatasetHubCacheResponse, f
 
     preview = False
     viewer = False
-    progresses: list[float] = []
+    progresses: list[Optional[float]] = []
     try:
         is_valid_response = get_previous_step_or_raise(kind="dataset-is-valid", dataset=dataset)
         content = is_valid_response["content"]
