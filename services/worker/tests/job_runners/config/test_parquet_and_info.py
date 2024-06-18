@@ -3,6 +3,7 @@
 
 import io
 import os
+import zipfile
 from collections.abc import Callable, Iterator, Mapping
 from dataclasses import replace
 from fnmatch import fnmatch
@@ -802,6 +803,38 @@ def test_stream_convert_to_parquet_estimate_info(tmp_path: Path, csv_path: str) 
     assert estimated_dataset_info["dataset_size"] == expected_estimated_num_rows
 
 
+def test_stream_convert_to_parquet_estimate_info_zipped(tmp_path: Path, csv_path: str) -> None:
+    num_rows = 100
+    expected_estimated_num_rows = 142
+
+    def generate_from_text(text_files: list[str]) -> Iterator[dict[str, int]]:
+        for text_file in text_files:
+            with fsspec.open(text_file, "r").open() as f:  # we track fsspec reads to estimate
+                yield {"text": f.read()}
+
+    cache_dir = str(tmp_path / "test_limit_parquet_writes_cache_dir")
+    zip_path = str(tmp_path / "test_stream_convert_to_parquet_estimate_info_zipped.zip")
+    with zipfile.ZipFile(zip_path, "w") as zip_file:
+        for i in range(num_rows):
+            zip_file.write(csv_path, arcname=f"data{i}.csv")
+    gen_kwargs = {"text_files": [f"zip://data{i}.csv::{zip_path}" for i in range(num_rows)]}
+    builder = ParametrizedGeneratorBasedBuilder(
+        generator=generate_from_text, cache_dir=cache_dir, gen_kwargs=gen_kwargs
+    )
+    with patch("worker.job_runners.config.parquet_and_info.get_writer_batch_size_from_info", lambda ds_config_info: 1):
+        with patch.object(datasets.config, "MAX_SHARD_SIZE", 1):
+            parquet_operations, partial, estimated_dataset_info = stream_convert_to_parquet(
+                builder, max_dataset_size_bytes=1
+            )
+    assert partial
+    assert len(parquet_operations) == 1
+    assert "train" in builder.info.splits
+    assert builder.info.splits["train"].num_examples == 1
+    assert estimated_dataset_info is not None
+    assert "dataset_size" in estimated_dataset_info
+    assert estimated_dataset_info["dataset_size"] == expected_estimated_num_rows
+
+
 def test_limit_parquet_writes(tmp_path: Path) -> None:
     num_examples = 0
 
@@ -986,7 +1019,11 @@ def test_parquet_file_path_in_repo(
 
 def test_track_reads_single_compressed_file(text_file: str, gz_file: str) -> None:
     with track_reads() as tracker:
-        with fsspec.open(gz_file, compression="gzip") as f, open(gz_file, "rb") as compressed_f, open(text_file, "rb") as uncompressed_f:
+        with (
+            fsspec.open(gz_file, compression="gzip") as f,
+            open(gz_file, "rb") as compressed_f,
+            open(text_file, "rb") as uncompressed_f,
+        ):
             expected_read_size = len(compressed_f.read())
             expected_output_size = len(uncompressed_f.read())
             assert len(f.read()) == expected_output_size
@@ -996,7 +1033,10 @@ def test_track_reads_single_compressed_file(text_file: str, gz_file: str) -> Non
 
 def test_track_reads_zip_file(text_file: str, zip_file: str) -> None:
     with track_reads() as tracker:
-        with fsspec.open(f"zip://{os.path.basename(text_file)}::{zip_file}") as f, open(text_file, "rb") as uncompressed_f:
+        with (
+            fsspec.open(f"zip://{os.path.basename(text_file)}::{zip_file}") as f,
+            open(text_file, "rb") as uncompressed_f,
+        ):
             expected_output_size = len(uncompressed_f.read())
             assert len(f.read()) == expected_output_size
             assert zip_file in tracker.files
