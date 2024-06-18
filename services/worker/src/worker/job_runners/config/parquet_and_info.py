@@ -1033,7 +1033,7 @@ def get_total_files_size(urlpaths: list[str], storage_options: dict[str, Any]) -
     total_size = 0
     fs = HfFileSystem(**storage_options["hf"])
     # fastest way to get hf files sizes is using get_paths_info
-    hf_paths = [fs.resolve_path(path.split("::")[-1]) for path in urlpaths if "hf://" in path]
+    hf_paths = [fs.resolve_path(path.split("::")[-1]) for path in urlpaths if path.startswith("hf://")]
     for repo_id, hf_paths_in_repo in groupby(hf_paths, key=lambda path: path.repo_id):
         batches = list(batched((path.path_in_repo for path in hf_paths_in_repo), 200))  # max is 1k files per request
         paths_info_per_batch = thread_map(
@@ -1046,7 +1046,7 @@ def get_total_files_size(urlpaths: list[str], storage_options: dict[str, Any]) -
             if isinstance(path_info, RepoFile)
         )
     # for other files we simply use fsspec
-    external_paths = [path for path in urlpaths if "hf://" not in path]
+    external_paths = [path for path in urlpaths if not path.startswith("hf://")]
     total_size += sum(
         size
         for size in thread_map(
