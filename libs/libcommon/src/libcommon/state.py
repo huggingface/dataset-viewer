@@ -80,14 +80,14 @@ class CacheState:
         if len(cache_entries_df) == 0:
             self.cache_entry_metadata = None
         else:
-            entry = cache_entries_df.iloc[0]
+            entry = cache_entries_df.iloc[0].to_dict()
             self.cache_entry_metadata = CacheEntryMetadata(
                 http_status=entry["http_status"],
-                error_code=None if entry["error_code"] is pd.NA else entry["error_code"],
-                job_runner_version=None if entry["job_runner_version"] is pd.NA else entry["job_runner_version"],
+                error_code=entry["error_code"],
+                job_runner_version=entry["job_runner_version"],
                 dataset_git_revision=entry["dataset_git_revision"],
                 updated_at=entry["updated_at"],
-                progress=None if entry["progress"] is pd.NA else entry["progress"],
+                progress=entry["progress"],
                 failed_runs=entry["failed_runs"],
             )
 
