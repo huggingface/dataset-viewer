@@ -41,17 +41,19 @@ class JobState:
     config: Optional[str]
     split: Optional[str]
     job_type: str
-    pending_jobs_df: pd.DataFrame
 
-    valid_pending_jobs_df: pd.DataFrame = field(
-        init=False
-    )  # contains at most one row (but the logic does not depend on it)
+    # contains at most one row (but the logic does not depend on it):
+    valid_pending_jobs_df: pd.DataFrame = field(init=False)
     is_in_process: bool = field(init=False)
 
-    def __post_init__(self) -> None:
-        self.valid_pending_jobs_df = self.pending_jobs_df.sort_values(
-            ["status", "priority", "created_at"], ascending=[False, False, True]
-        ).head(1)
+    pending_jobs_df: InitVar[pd.DataFrame]
+
+    def __post_init__(self, pending_jobs_df: pd.DataFrame) -> None:
+        self.valid_pending_jobs_df = (
+            pending_jobs_df.sort_values(["status", "priority", "created_at"], ascending=[False, False, True])
+            .head(1)
+            .copy()
+        )
         # ^ only keep the first valid job, if any, in order of priority
         self.is_in_process = not self.valid_pending_jobs_df.empty
 
