@@ -128,13 +128,13 @@ class CacheState:
 class ArtifactState(Artifact):
     """The state of an artifact."""
 
-    pending_jobs_df: pd.DataFrame
-    cache_entries_df: pd.DataFrame
-
     job_state: JobState = field(init=False)
     cache_state: CacheState = field(init=False)
 
-    def __post_init__(self) -> None:
+    pending_jobs_df: InitVar[pd.DataFrame]
+    cache_entries_df: InitVar[pd.DataFrame]
+
+    def __post_init__(self, pending_jobs_df: pd.DataFrame, cache_entries_df: pd.DataFrame) -> None:
         super().__post_init__()
         self.job_state = JobState(
             job_type=self.processing_step.job_type,
@@ -142,7 +142,7 @@ class ArtifactState(Artifact):
             revision=self.revision,
             config=self.config,
             split=self.split,
-            pending_jobs_df=self.pending_jobs_df,
+            pending_jobs_df=pending_jobs_df,
         )
         self.cache_state = CacheState(
             cache_kind=self.processing_step.cache_kind,
@@ -150,7 +150,7 @@ class ArtifactState(Artifact):
             config=self.config,
             split=self.split,
             job_runner_version=self.processing_step.job_runner_version,
-            cache_entries_df=self.cache_entries_df,
+            cache_entries_df=cache_entries_df,
         )
 
 
