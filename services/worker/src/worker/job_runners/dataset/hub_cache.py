@@ -2,6 +2,7 @@
 # Copyright 2023 The HuggingFace Authors.
 
 import logging
+from typing import Optional
 
 from libcommon.exceptions import PreviousStepFormatError
 from libcommon.simple_cache import CachedArtifactNotFoundError, get_previous_step_or_raise
@@ -36,21 +37,31 @@ def compute_hub_cache_response(dataset: str) -> tuple[DatasetHubCacheResponse, f
     """
     logging.info(f"compute 'dataset-hub-cache' for {dataset=}")
 
-    is_valid_response = get_previous_step_or_raise(kind="dataset-is-valid", dataset=dataset)
-    content = is_valid_response["content"]
-    if (
-        "preview" not in content
-        or not isinstance(content["preview"], bool)
-        or "viewer" not in content
-        or not isinstance(content["viewer"], bool)
-    ):
-        raise PreviousStepFormatError(
-            "Previous step 'dataset-is-valid' did not return the expected content: 'preview', 'viewer' or 'progress'."
-        )
-    preview = content["preview"]
-    viewer = content["viewer"]
-    is_valid_progress = is_valid_response["progress"]
+    preview = False
+    viewer = False
+    progresses: list[int] = []
+    try:
+        is_valid_response = get_previous_step_or_raise(kind="dataset-is-valid", dataset=dataset)
+        content = is_valid_response["content"]
+        if (
+            "preview" not in content
+            or not isinstance(content["preview"], bool)
+            or "viewer" not in content
+            or not isinstance(content["viewer"], bool)
+        ):
+            raise PreviousStepFormatError(
+                "Previous step 'dataset-is-valid' did not return the expected content: 'preview', 'viewer' or 'progress'."
+            )
+        preview = content["preview"]
+        viewer = content["viewer"]
+        progresses.append(is_valid_response["progress"])
+    except PreviousStepFormatError:
+        raise
+    except Exception:
+        logging.info(f"Missing 'dataset-is-valid' response for {dataset=}. We let the fields empty.")
 
+    partial = False
+    num_rows: Optional[int] = None
     try:
         size_response = get_previous_step_or_raise(kind="dataset-size", dataset=dataset)
         content = size_response["content"]
@@ -67,15 +78,11 @@ def compute_hub_cache_response(dataset: str) -> tuple[DatasetHubCacheResponse, f
             )
         partial = content["partial"]
         num_rows = content["size"]["dataset"]["num_rows"]
-        size_progress = size_response["progress"]
-    except (CachedArtifactNotFoundError, PreviousStepFormatError):
+        progresses.append(size_response["progress"])
+    except PreviousStepFormatError:
         raise
     except Exception:
-        partial = False
-        num_rows = None
-        size_progress = 0.0
-
-    progress = min((p for p in [is_valid_progress, size_progress] if p is not None), default=0.0)
+        logging.info(f"Missing 'dataset-size' response for {dataset=}. We let the fields empty.")
 
     tags: list[DatasetTag] = []
     libraries: list[DatasetLibrary] = []
@@ -89,6 +96,7 @@ def compute_hub_cache_response(dataset: str) -> tuple[DatasetHubCacheResponse, f
         compatible_libraries: list[CompatibleLibrary] = compatible_libraries_response["content"]["libraries"]
         libraries = [compatible_library["library"] for compatible_library in compatible_libraries]
         formats = compatible_libraries_response["content"].get("formats", [])
+        progresses.append(compatible_libraries_response["progress"])
     except CachedArtifactNotFoundError:
         logging.info(f"Missing 'dataset-compatible-libraries' response for {dataset=}")
     except KeyError:
@@ -101,6 +109,7 @@ def compute_hub_cache_response(dataset: str) -> tuple[DatasetHubCacheResponse, f
     try:
         modalities_response = get_previous_step_or_raise(kind="dataset-modalities", dataset=dataset)
         modalities = modalities_response["content"]["modalities"]
+        progresses.append(modalities_response["progress"])
     except CachedArtifactNotFoundError:
         logging.info(f"Missing 'dataset-modalities' response for {dataset=}")
     except KeyError:
@@ -121,7 +130,7 @@ def compute_hub_cache_response(dataset: str) -> tuple[DatasetHubCacheResponse, f
             formats=formats,
             modalities=modalities,
         ),
-        progress,
+        min([0.0 if p is None else p for p in progresses], default=0.0),
     )
 
 

@@ -8,7 +8,7 @@ from typing import Any
 import pytest
 from libcommon.dtos import Priority
 from libcommon.resources import CacheMongoResource, QueueMongoResource
-from libcommon.simple_cache import CachedArtifactError, CachedArtifactNotFoundError, upsert_response
+from libcommon.simple_cache import upsert_response
 
 from worker.config import AppConfig
 from worker.dtos import DatasetFormat, DatasetHubCacheResponse, DatasetLibrary, DatasetModality, DatasetTag
@@ -102,7 +102,20 @@ UPSTREAM_RESPONSE_MODALITIES_ERROR: UpstreamResponse = UpstreamResponse(
     content={},
     progress=0.0,
 )
-EXPECTED_OK: tuple[DatasetHubCacheResponse, float] = (
+EXPECTED_ALL_OK: tuple[DatasetHubCacheResponse, float] = (
+    {
+        "viewer": False,
+        "preview": True,
+        "partial": False,
+        "num_rows": 1000,
+        "tags": [TAG],
+        "libraries": [LIBRARY],
+        "modalities": [MODALITY],
+        "formats": [FORMAT],
+    },
+    0.2,
+)
+EXPECTED_IS_VALID_AND_SIZE: tuple[DatasetHubCacheResponse, float] = (
     {
         "viewer": False,
         "preview": True,
@@ -115,19 +128,6 @@ EXPECTED_OK: tuple[DatasetHubCacheResponse, float] = (
     },
     0.2,
 )
-EXPECTED_NO_PROGRESS: tuple[DatasetHubCacheResponse, float] = (
-    {
-        "viewer": False,
-        "preview": True,
-        "partial": True,
-        "num_rows": 1000,
-        "tags": [],
-        "libraries": [],
-        "modalities": [],
-        "formats": [],
-    },
-    0.5,
-)
 EXPECTED_NO_SIZE: tuple[DatasetHubCacheResponse, float] = (
     {
         "viewer": False,
@@ -139,9 +139,22 @@ EXPECTED_NO_SIZE: tuple[DatasetHubCacheResponse, float] = (
         "modalities": [],
         "formats": [],
     },
-    0.0,
+    0.5,
 )
 EXPECTED_OK_WITH_LIBRARIES_AND_FORMATS: tuple[DatasetHubCacheResponse, float] = (
+    {
+        "viewer": False,
+        "preview": True,
+        "partial": False,
+        "num_rows": 1000,
+        "tags": [TAG],
+        "libraries": [LIBRARY],
+        "modalities": [],
+        "formats": [FORMAT],
+    },
+    0.2,
+)
+EXPECTED_NO_PROGRESS: tuple[DatasetHubCacheResponse, float] = (
     {
         "viewer": False,
         "preview": True,
@@ -149,23 +162,62 @@ EXPECTED_OK_WITH_LIBRARIES_AND_FORMATS: tuple[DatasetHubCacheResponse, float] = 
         "num_rows": 1000,
         "tags": [TAG],
         "libraries": [LIBRARY],
-        "modalities": [],
+        "modalities": [MODALITY],
         "formats": [FORMAT],
     },
-    0.5,
+    0.0,
 )
 EXPECTED_OK_WITH_MODALITIES: tuple[DatasetHubCacheResponse, float] = (
     {
         "viewer": False,
         "preview": True,
-        "partial": True,
+        "partial": False,
         "num_rows": 1000,
         "tags": [],
         "libraries": [],
         "modalities": [MODALITY],
         "formats": [],
     },
-    0.5,
+    0.2,
+)
+EXPECTED_EMPTY: tuple[DatasetHubCacheResponse, float] = (
+    {
+        "viewer": False,
+        "preview": False,
+        "partial": False,
+        "num_rows": None,
+        "tags": [],
+        "libraries": [],
+        "modalities": [],
+        "formats": [],
+    },
+    0.0,
+)
+EXPECTED_ONLY_SIZE: tuple[DatasetHubCacheResponse, float] = (
+    {
+        "viewer": False,
+        "preview": False,
+        "partial": False,
+        "num_rows": 1000,
+        "tags": [],
+        "libraries": [],
+        "modalities": [],
+        "formats": [],
+    },
+    0.2,
+)
+EXPECTED_ONLY_MODALITIES: tuple[DatasetHubCacheResponse, float] = (
+    {
+        "viewer": False,
+        "preview": False,
+        "partial": False,
+        "num_rows": None,
+        "tags": [],
+        "libraries": [],
+        "modalities": [MODALITY],
+        "formats": [],
+    },
+    1.0,
 )
 
 
@@ -204,20 +256,31 @@ def get_job_runner(
             [
                 UPSTREAM_RESPONSE_IS_VALID_OK,
                 UPSTREAM_RESPONSE_SIZE_OK,
+                UPSTREAM_RESPONSE_COMPATIBLE_LIBRARIES_OK,
+                UPSTREAM_RESPONSE_MODALITIES_OK,
             ],
-            EXPECTED_OK,
+            EXPECTED_ALL_OK,
         ),
         (
             [
                 UPSTREAM_RESPONSE_IS_VALID_OK,
                 UPSTREAM_RESPONSE_SIZE_NO_PROGRESS,
+                UPSTREAM_RESPONSE_COMPATIBLE_LIBRARIES_OK,
+                UPSTREAM_RESPONSE_MODALITIES_OK,
             ],
             EXPECTED_NO_PROGRESS,
         ),
         (
             [
                 UPSTREAM_RESPONSE_IS_VALID_OK,
-                UPSTREAM_RESPONSE_SIZE_NO_PROGRESS,
+                UPSTREAM_RESPONSE_SIZE_OK,
+            ],
+            EXPECTED_IS_VALID_AND_SIZE,
+        ),
+        (
+            [
+                UPSTREAM_RESPONSE_IS_VALID_OK,
+                UPSTREAM_RESPONSE_SIZE_OK,
                 UPSTREAM_RESPONSE_COMPATIBLE_LIBRARIES_OK,
             ],
             EXPECTED_OK_WITH_LIBRARIES_AND_FORMATS,
@@ -225,7 +288,7 @@ def get_job_runner(
         (
             [
                 UPSTREAM_RESPONSE_IS_VALID_OK,
-                UPSTREAM_RESPONSE_SIZE_NO_PROGRESS,
+                UPSTREAM_RESPONSE_SIZE_OK,
                 UPSTREAM_RESPONSE_MODALITIES_OK,
             ],
             EXPECTED_OK_WITH_MODALITIES,
@@ -243,7 +306,7 @@ def get_job_runner(
                 UPSTREAM_RESPONSE_SIZE_OK,
                 UPSTREAM_RESPONSE_COMPATIBLE_LIBRARIES_ERROR,
             ],
-            EXPECTED_OK,
+            EXPECTED_IS_VALID_AND_SIZE,
         ),
         (
             [
@@ -251,7 +314,21 @@ def get_job_runner(
                 UPSTREAM_RESPONSE_SIZE_OK,
                 UPSTREAM_RESPONSE_MODALITIES_ERROR,
             ],
-            EXPECTED_OK,
+            EXPECTED_IS_VALID_AND_SIZE,
+        ),
+        ([], EXPECTED_EMPTY),
+        (
+            [
+                UPSTREAM_RESPONSE_IS_VALID_ERROR,
+                UPSTREAM_RESPONSE_SIZE_OK,
+            ],
+            EXPECTED_ONLY_SIZE,
+        ),
+        (
+            [
+                UPSTREAM_RESPONSE_MODALITIES_OK,
+            ],
+            EXPECTED_ONLY_MODALITIES,
         ),
     ],
 )
@@ -268,33 +345,3 @@ def test_compute(
     compute_result = job_runner.compute()
     assert compute_result.content == expected[0]
     assert compute_result.progress == expected[1]
-
-
-@pytest.mark.parametrize(
-    "upstream_responses,expectation",
-    [
-        (
-            [],
-            pytest.raises(CachedArtifactNotFoundError),
-        ),
-        (
-            [
-                UPSTREAM_RESPONSE_IS_VALID_ERROR,
-                UPSTREAM_RESPONSE_SIZE_OK,
-            ],
-            pytest.raises(CachedArtifactError),
-        ),
-    ],
-)
-def test_compute_error(
-    app_config: AppConfig,
-    get_job_runner: GetJobRunner,
-    upstream_responses: list[UpstreamResponse],
-    expectation: Any,
-) -> None:
-    dataset = DATASET
-    for upstream_response in upstream_responses:
-        upsert_response(**upstream_response)
-    job_runner = get_job_runner(dataset, app_config)
-    with expectation:
-        job_runner.compute()
