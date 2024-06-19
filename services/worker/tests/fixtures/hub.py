@@ -594,7 +594,7 @@ def create_dataset_info_response_for_partially_generated_big_csv(dataset: str, c
     }
 
 
-def create_estomated_dataset_info_response_for_partially_generated_big_csv() -> Any:
+def create_estimated_dataset_info_response_for_partially_generated_big_csv() -> Any:
     # Dataset is partially converted to parquet: the first 10KB instead of the full 5MB
     # Estimation is made based on the ratio of data read vs full data
     return {
@@ -706,7 +706,7 @@ def create_parquet_and_info_response(
     )
     partial_prefix = "partial-" if partial else ""
     estimated_info = (
-        create_estomated_dataset_info_response_for_partially_generated_big_csv() if data_type == "big-csv" else None
+        create_estimated_dataset_info_response_for_partially_generated_big_csv() if data_type == "big-csv" else None
     )
     return {
         "parquet_files": [
