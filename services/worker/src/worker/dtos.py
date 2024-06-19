@@ -172,6 +172,7 @@ class ConfigInfoResponse(TypedDict):
 class ConfigParquetAndInfoResponse(TypedDict):
     parquet_files: list[SplitHubFile]
     dataset_info: dict[str, Any]
+    estimated_dataset_info: Optional[dict[str, Any]]
     partial: bool
 
 

@@ -71,6 +71,9 @@ from mongodb_migration.migrations._20240221160700_cache_merge_split_first_rows i
 from mongodb_migration.migrations._20240221160800_cache_set_updated_at_to_root_step import (
     MigrationSetUpdatedAtToOldestStep,
 )
+from mongodb_migration.migrations._20240619124500_cache_add_estimated_dataset_info_field_parquet_and_info import (
+    MigrationAddEstimatedDatasetInfoToParquetAndInfoCacheResponse,
+)
 from mongodb_migration.renaming_migrations import (
     CacheRenamingMigration,
     QueueRenamingMigration,
@@ -356,5 +359,9 @@ class MigrationsCollector:
                 cache_kind="dataset-loading-tags",
                 new_cache_kind="dataset-compatible-libraries",
                 version="20240307191000",
+            ),
+            MigrationAddEstimatedDatasetInfoToParquetAndInfoCacheResponse(
+                version="20240619124500",
+                description="add 'estimated_dataset_info' field to config-parquet-and-info cache records",
             ),
         ]

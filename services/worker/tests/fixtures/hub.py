@@ -594,6 +594,16 @@ def create_dataset_info_response_for_partially_generated_big_csv(dataset: str, c
     }
 
 
+def create_estimated_dataset_info_response_for_partially_generated_big_csv() -> Any:
+    # Dataset is partially converted to parquet: the first 10KB instead of the full 5MB
+    # Estimation is made based on the ratio of data read vs full data
+    return {
+        "download_size": 5644817,
+        "splits": {"train": {"name": "train", "num_bytes": 266581, "num_examples": 215, "dataset_name": "csv"}},
+        "dataset_size": 266581,
+    }
+
+
 def create_dataset_info_response_for_big_parquet(dataset: str, config: str) -> Any:
     dataset_name = dataset.split("/")[-1]
     return {
@@ -695,6 +705,9 @@ def create_parquet_and_info_response(
         else create_dataset_info_response_for_big_parquet_no_info()
     )
     partial_prefix = "partial-" if partial else ""
+    estimated_info = (
+        create_estimated_dataset_info_response_for_partially_generated_big_csv() if data_type == "big-csv" else None
+    )
     return {
         "parquet_files": [
             {
@@ -711,6 +724,7 @@ def create_parquet_and_info_response(
             }
         ],
         "dataset_info": info,
+        "estimated_dataset_info": estimated_info,
         "partial": partial,
     }
 

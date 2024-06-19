@@ -7,6 +7,8 @@ import os
 import re
 from collections.abc import Callable, Generator
 from contextlib import ExitStack
+from fnmatch import fnmatch
+from itertools import groupby
 from multiprocessing.pool import ThreadPool
 from pathlib import Path
 from types import TracebackType
@@ -18,6 +20,7 @@ import datasets
 import datasets.config
 import datasets.exceptions
 import datasets.info
+import fsspec
 import numpy as np
 import pyarrow as pa
 import pyarrow.parquet as pq
@@ -28,14 +31,21 @@ from datasets.builder import DatasetBuilder, ManualDownloadError
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
 from datasets.download import StreamingDownloadManager
 from datasets.packaged_modules.parquet.parquet import Parquet as ParquetBuilder
-from datasets.splits import SplitDict, SplitInfo
+from datasets.splits import SplitDict, SplitGenerator, SplitInfo
 from datasets.utils.file_utils import (
+    ArchiveIterable,
+    FilesIterable,
     get_authentication_headers_for_url,
     http_head,
     is_relative_path,
     url_or_path_join,
 )
 from datasets.utils.py_utils import asdict, map_nested
+from fsspec.core import url_to_fs
+from fsspec.implementations.http import HTTPFileSystem
+from fsspec.implementations.local import LocalFileOpener, LocalFileSystem
+from fsspec.spec import AbstractBufferedFile
+from huggingface_hub import HfFileSystem
 from huggingface_hub._commit_api import (
     CommitOperation,
     CommitOperationAdd,
@@ -81,6 +91,7 @@ from worker.dtos import CompleteJobResult, ConfigParquetAndInfoResponse
 from worker.job_runners.config.config_job_runner import ConfigJobRunnerWithDatasetsCache
 from worker.utils import (
     LOCK_GIT_BRANCH_RETRY_SLEEPS,
+    batched,
     create_branch,
     hf_hub_url,
     raise_if_long_column_name,
@@ -380,6 +391,14 @@ def _request_size(url: str, hf_token: Optional[str] = None) -> Optional[int]:
     response.raise_for_status()
     size = response.headers.get("Content-Length") if response.ok else None
     return int(size) if size is not None else size
+
+
+def _fsspec_request_size(urlpath: str, storage_options: dict[str, Any]) -> Optional[int]:
+    with fsspec.open(urlpath, **storage_options) as f:
+        if hasattr(f, "size") and isinstance(f.size, int):
+            return f.size
+        else:
+            return None
 
 
 class _MockStreamingDownloadManager(StreamingDownloadManager):  # type: ignore
@@ -840,6 +859,153 @@ class limit_parquet_writes:
         return self.exit_stack.close()
 
 
+def get_urlpaths_in_gen_kwargs(gen_kwargs: dict[str, Any]) -> list[str]:
+    """
+    Return the (deduplicated) list of file sources according to the input gen_kwargs.
+    In case of chained URLs like `zip://xxx::hf://yyy`, only `hf://yyy` is returned.
+    """
+    # Having lists of different sizes makes sharding ambigious, raise an error in this case (same as in the `datasets` lib)
+    lists = [value for value in gen_kwargs.values() if isinstance(value, list)] or [[]]
+    if len(set(len(list_) for list_ in lists)) > 1:
+        raise RuntimeError(
+            (
+                "Sharding is ambiguous for this dataset: "
+                + "we found several data sources lists of different lengths, and we don't know over which list we should list shards.\n"
+                + "To fix this, check the 'gen_kwargs' and make sure to use lists only for data sources, "
+                + "and use tuples otherwise. In the end there should only be one single list, or several lists with the same length."
+            )
+        )
+    shards = max(lists, key=len)
+    urlpaths: set[str] = set()
+    for shard in shards:
+        if isinstance(shard, str):
+            urlpaths.add(shard.split("::")[-1])
+        elif isinstance(shard, FilesIterable):
+            urlpaths.update(item.split("::")[-1] for item in shard)
+        elif isinstance(shard, ArchiveIterable) and shard.args and isinstance(shard.args[0], str):
+            urlpaths.add(shard.args[0].split("::")[-1])
+    return [url_to_fs(urlpath)[0].unstrip_protocol(urlpath) for urlpath in urlpaths]
+
+
+ReadOutput = TypeVar("ReadOutput", bound=Union[bytes, str])
+
+FsspecFile = TypeVar(
+    "FsspecFile",
+    bound=Union[
+        LocalFileOpener,
+        AbstractBufferedFile,
+    ],
+)
+
+
+class track_reads:
+    """
+    Context manager that tracks the number of bytes a `DatasetBuilder` reads.
+
+    It works by monitoring the calls to `fs.open` and wraps the file-like objects
+    to track the data from calls to read methods like `.read()`.
+
+    Supported file-systems are local, http and hf.
+    Tracking results are stored in the `tracker.files` dictionary,
+    with the format "urlpath with protocol" -> {"read": int, "size": int}
+
+    Since tracking is applied directly on the file from `fs.open`, reads from file-wrappers
+    like ZipFile or GZipFile are also taken into account.
+
+    Example of usage:
+
+    ```python
+    builder = load_dataset_builder("rajpurkar/squad")
+    with track_reads() as tracker:
+        builder.download_and_prepare(file_format="parquet")
+        print(tracker.files)
+    ```
+
+    The limiter is usually used with a `StreamingDownloadManager` to not have to download
+    the full dataset:
+
+    ```python
+    builder = load_dataset_builder("rajpurkar/squad")
+    dl_manager = StreamingDownloadManager(...)
+    for split_generator in builder._split_generators(dl_manager):
+        with track_reads() as tracker:
+            builder._prepare_split(split_generator=split_generator, file_format="parquet")
+    ```
+    """
+
+    allow_list = ["hf://datasets/allenai/c4/*", "hf://datasets/datasets-maintainers/*"]
+
+    def __init__(self) -> None:
+        self.files: dict[str, dict[str, int]] = {}
+        self.exit_stack = ExitStack()
+
+    def track_read(self, urlpath: str, f_read: Callable[..., ReadOutput], *args: Any, **kwargs: Any) -> ReadOutput:
+        out = f_read(*args, **kwargs)
+        self.files[urlpath]["read"] += len(out)
+        return out
+
+    def track_iter(
+        self, urlpath: str, f_iter: Callable[..., Generator[ReadOutput, None, None]]
+    ) -> Generator[ReadOutput, None, None]:
+        for out in f_iter():
+            self.files[urlpath]["read"] += len(out)
+            yield out
+
+    def __enter__(self) -> "track_reads":
+        tracker = self
+
+        # Track files reads from local, http and hf file-systems.
+
+        # To do so, we replace LocalFileSystem.open, HTTPFileSystem.open and HfFileSystem.open
+        # by wrappers that modify the output file read functions with tracked read functions.
+
+        def wrapped(
+            self: Union[LocalFileSystem, HTTPFileSystem, HfFileSystem],
+            urlpath: str,
+            mode: str = "rb",
+            *args: Any,
+            fs_open: Callable[..., FsspecFile],
+            **kwargs: Any,
+        ) -> FsspecFile:
+            f = fs_open(self, urlpath, mode, *args, **kwargs)
+            urlpath = self.unstrip_protocol(urlpath)
+            if "w" not in mode and any(fnmatch(urlpath, pattern) for pattern in tracker.allow_list):
+                f.read = functools.partial(tracker.track_read, urlpath, f.read)
+                f.__iter__ = functools.partial(tracker.track_iter, urlpath, f.__iter__)
+                if hasattr(f, "read1"):
+                    f.read1 = functools.partial(tracker.track_read, urlpath, f.read1)
+                if hasattr(f, "readline"):
+                    f.readline = functools.partial(tracker.track_read, urlpath, f.readline)
+                if hasattr(f, "readlines"):
+                    f.readlines = functools.partial(tracker.track_read, urlpath, f.readlines)
+                tracker.files[urlpath] = {"read": 0, "size": int(f.size)}
+            return f
+
+        # Use an exit_stack to be able to un-do all the replacements once the track_reads context ends.
+        # Use patch.object to apply the replacement, and autospec=True to handle methods replacements properly.
+        # Apply the wrapped open function using `side_effect`.
+        local_open = LocalFileSystem.open
+        mock_local_open = self.exit_stack.enter_context(patch.object(LocalFileSystem, "open", autospec=True))
+        mock_local_open.side_effect = functools.partial(wrapped, fs_open=local_open)
+        http_open = HTTPFileSystem.open
+        mock_http_open = self.exit_stack.enter_context(patch.object(HTTPFileSystem, "open", autospec=True))
+        mock_http_open.side_effect = functools.partial(wrapped, fs_open=http_open)
+        hf_open = HfFileSystem.open
+        mock_hf_open = self.exit_stack.enter_context(patch.object(HfFileSystem, "open", autospec=True))
+        mock_hf_open.side_effect = functools.partial(wrapped, fs_open=hf_open)
+        # always use fsspec even for local paths
+        self.exit_stack.enter_context(patch("datasets.utils.file_utils.is_local_path", return_value=False))
+        return self
+
+    def __exit__(
+        self,
+        exc_type: Optional[type[BaseException]],
+        exc_value: Optional[BaseException],
+        traceback: Optional[TracebackType],
+    ) -> None:
+        return self.exit_stack.close()
+
+
 def list_generated_parquet_files(builder: DatasetBuilder, partial: bool = False) -> list[LocalParquetFile]:
     """List the parquet files generated by `builder.download_and_prepare` in the `builder.cache_dir`."""
     if not builder.info.splits:
@@ -873,9 +1039,37 @@ def list_generated_parquet_files(builder: DatasetBuilder, partial: bool = False)
     return local_parquet_files
 
 
+def get_total_files_size(urlpaths: list[str], storage_options: dict[str, Any]) -> int:
+    total_size = 0
+    fs = HfFileSystem(**storage_options["hf"])
+    # fastest way to get hf files sizes is using get_paths_info
+    hf_paths = [fs.resolve_path(path.split("::")[-1]) for path in urlpaths if path.startswith("hf://")]
+    for repo_id, hf_paths_in_repo in groupby(hf_paths, key=lambda path: path.repo_id):
+        batches = list(batched((path.path_in_repo for path in hf_paths_in_repo), 200))  # max is 1k files per request
+        paths_info_per_batch = thread_map(
+            functools.partial(fs._api.get_paths_info, repo_type="dataset"), [repo_id] * len(batches), batches
+        )
+        total_size += sum(
+            path_info.size
+            for paths_info in paths_info_per_batch
+            for path_info in paths_info
+            if isinstance(path_info, RepoFile)
+        )
+    # for other files we simply use fsspec
+    external_paths = [path for path in urlpaths if not path.startswith("hf://")]
+    total_size += sum(
+        size
+        for size in thread_map(
+            functools.partial(_fsspec_request_size, storage_options=storage_options), external_paths
+        )
+        if size
+    )
+    return total_size
+
+
 def stream_convert_to_parquet(
     builder: DatasetBuilder, max_dataset_size_bytes: Optional[int], writer_batch_size: Optional[int] = None
-) -> tuple[list[CommitOperationAdd], bool]:
+) -> tuple[list[CommitOperationAdd], bool, Optional[dict[str, Any]]]:
     """Stream and prepare the dataset as parquet files and fills the builder info."""
     writer_batch_size = writer_batch_size or get_writer_batch_size_from_info(builder.info)
     if writer_batch_size is not None and (
@@ -890,27 +1084,57 @@ def stream_convert_to_parquet(
     )
     os.makedirs(builder.cache_dir, exist_ok=True)
     split_dict = SplitDict(dataset_name=builder.name)
-    splits_generators = {sg.name: sg for sg in builder._split_generators(dl_manager)}
+    splits_generators: dict[str, SplitGenerator] = {sg.name: sg for sg in builder._split_generators(dl_manager)}
     prepare_split_kwargs: dict[str, Any] = (
         {"check_duplicate_keys": True} if isinstance(builder, datasets.builder.GeneratorBasedBuilder) else {}
     )
     partial = False
+    estimated_splits_info: dict[str, dict[str, Any]] = {}
+    estimated_info: dict[str, Any] = {"download_size": 0}
     for split in splits_generators:
-        split_dict.add(splits_generators[split].split_info)
+        split_info = splits_generators[split].split_info
+        split_dict.add(split_info)
         if max_dataset_size_bytes is None:
             builder._prepare_split(
                 split_generator=splits_generators[split], file_format="parquet", **prepare_split_kwargs
             )
         else:
-            with limit_parquet_writes(builder, max_dataset_size_bytes=max_dataset_size_bytes) as limiter:
+            with (
+                limit_parquet_writes(builder, max_dataset_size_bytes=max_dataset_size_bytes) as limiter,
+                track_reads() as reads_tracker,
+            ):
                 builder._prepare_split(
                     split_generator=splits_generators[split], file_format="parquet", **prepare_split_kwargs
                 )
                 partial = partial or limiter.total_bytes >= max_dataset_size_bytes
+                # estimate num_examples if partial conversion
+                urlpaths = get_urlpaths_in_gen_kwargs(splits_generators[split].gen_kwargs)
+                if limiter.total_bytes >= max_dataset_size_bytes and urlpaths:
+                    shards_total_read = sum(
+                        reads_tracker.files[urlpath]["read"] for urlpath in urlpaths if urlpath in reads_tracker.files
+                    )
+                    if shards_total_read > 0:
+                        shards_total_size = (
+                            len(urlpaths)
+                            / min(10_000, len(urlpaths))
+                            * get_total_files_size(urlpaths[:10_000], storage_options=builder.storage_options)
+                        )
+                        estimated_splits_info[split] = asdict(
+                            SplitInfo(
+                                name=split_info.name,
+                                num_examples=int(shards_total_size / shards_total_read * split_info.num_examples),
+                                num_bytes=int(shards_total_size / shards_total_read * split_info.num_bytes),
+                                dataset_name=split_info.dataset_name,
+                            )
+                        )
+                        estimated_info["download_size"] += shards_total_size
     builder.info.splits = split_dict
     builder.info.dataset_size = sum(split.num_bytes for split in builder.info.splits.values())
     builder.info.download_size = None
     builder.info.size_in_bytes = None
+    if estimated_splits_info:
+        estimated_info["splits"] = estimated_splits_info
+        estimated_info["dataset_size"] = sum(split_info["num_bytes"] for split_info in estimated_splits_info.values())
 
     # send the files to the target revision
     local_parquet_files = list_generated_parquet_files(builder, partial=partial)
@@ -918,7 +1142,7 @@ def stream_convert_to_parquet(
         CommitOperationAdd(path_in_repo=parquet_file.path_in_repo, path_or_fileobj=parquet_file.local_file)
         for parquet_file in local_parquet_files
     ]
-    return parquet_operations, partial
+    return parquet_operations, partial, estimated_info if estimated_splits_info else None
 
 
 def convert_to_parquet(builder: DatasetBuilder) -> list[CommitOperationAdd]:
@@ -1262,6 +1486,7 @@ def compute_config_parquet_and_info_response(
         raise HfHubError(f"Couldn't load dataset builder for {dataset=} {config=}.") from err
 
     partial = False
+    estimated_dataset_info: Optional[dict[str, Any]] = None
     try:
         if is_parquet_builder_with_hub_files(builder):
             try:
@@ -1285,7 +1510,7 @@ def compute_config_parquet_and_info_response(
                     row_group_byte_size=err.row_group_byte_size,
                     max_row_group_byte_size=max_row_group_byte_size_for_copy,
                 )
-                parquet_operations, partial = stream_convert_to_parquet(
+                parquet_operations, partial, estimated_dataset_info = stream_convert_to_parquet(
                     builder,
                     max_dataset_size_bytes=max_dataset_size_bytes,
                     writer_batch_size=writer_batch_size,
@@ -1309,7 +1534,7 @@ def compute_config_parquet_and_info_response(
                     f"{dataset=} {config=} is too big to be fully converted, "
                     f"converting first {max_dataset_size_bytes} bytes."
                 )
-                parquet_operations, partial = stream_convert_to_parquet(
+                parquet_operations, partial, estimated_dataset_info = stream_convert_to_parquet(
                     builder, max_dataset_size_bytes=max_dataset_size_bytes
                 )
 
@@ -1381,6 +1606,7 @@ def compute_config_parquet_and_info_response(
             for repo_file in repo_files
         ],
         dataset_info=asdict(builder.info),
+        estimated_dataset_info=estimated_dataset_info,
         partial=partial,
     )
 

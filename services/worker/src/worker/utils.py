@@ -7,9 +7,11 @@ import os
 import sys
 import traceback
 import warnings
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from fnmatch import fnmatch
-from typing import Optional, Union
+from itertools import count, islice
+from typing import Literal, Optional, TypeVar, Union, overload
 from urllib.parse import quote
 
 import PIL
@@ -256,6 +258,29 @@ def raise_if_long_column_name(features: Optional[Features]) -> None:
             raise TooLongColumnNameError(
                 f"Column name '{short_name}' is too long. It should be less than {MAX_COLUMN_NAME_LENGTH} characters."
             )
+
+
+T = TypeVar("T")
+
+
+@overload
+def batched(it: Iterable[T], n: int) -> Iterable[list[T]]: ...
+
+
+@overload
+def batched(it: Iterable[T], n: int, with_indices: Literal[False]) -> Iterable[list[T]]: ...
+
+
+@overload
+def batched(it: Iterable[T], n: int, with_indices: Literal[True]) -> Iterable[tuple[list[int], list[T]]]: ...
+
+
+def batched(
+    it: Iterable[T], n: int, with_indices: bool = False
+) -> Union[Iterable[list[T]], Iterable[tuple[list[int], list[T]]]]:
+    it, indices = iter(it), count()
+    while batch := list(islice(it, n)):
+        yield (list(islice(indices, len(batch))), batch) if with_indices else batch
 
 
 FileExtensionTuple = tuple[str, Optional[str]]
