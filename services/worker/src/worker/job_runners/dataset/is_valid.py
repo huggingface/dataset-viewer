@@ -47,12 +47,11 @@ def compute_is_valid_response(dataset: str) -> tuple[IsValidResponse, float]:
     content = config_names_response["content"]
     if "config_names" not in content:
         raise PreviousStepFormatError("Previous step did not return the expected content: 'config_names'.")
-    config_names = content["config_names"]
 
     try:
         total = 0
         pending = 0
-        for config_item in config_names:
+        for config_item in content["config_names"]:
             config = config_item["config"]
             total += 1
             try:
