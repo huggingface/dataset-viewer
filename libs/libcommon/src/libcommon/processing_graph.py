@@ -601,7 +601,7 @@ specification: ProcessingGraphSpecification = {
             "config-split-names",  # required in case the config has no splits (error in previous step)
             "split-is-valid",
         ],
-        "job_runner_version": 3,
+        "job_runner_version": 4,
         "difficulty": 20,
     },
     "dataset-is-valid": {
