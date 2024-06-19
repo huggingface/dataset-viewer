@@ -34,6 +34,7 @@ from worker.job_runners.split.duckdb_index import (
     CREATE_INDEX_COMMAND,
     CREATE_INDEX_ID_COLUMN_COMMANDS,
     CREATE_TABLE_COMMAND,
+    DEFAULT_STEMMER,
     SplitDuckDbIndexJobRunner,
     get_delete_operations,
     get_indexable_columns,
@@ -374,6 +375,8 @@ def test_compute(
         features = content["features"]
         has_fts = content["has_fts"]
         partial = content["partial"]
+        stemmer = content["stemmer"]
+        assert stemmer == DEFAULT_STEMMER
         assert isinstance(has_fts, bool)
         assert has_fts == expected_has_fts
         assert isinstance(url, str)
@@ -552,7 +555,7 @@ def test_index_command(df: pd.DataFrame, query: str, expected_ids: list[int]) ->
     con = duckdb.connect()
     con.sql(CREATE_TABLE_COMMAND.format(columns=columns, source="df"))
     con.sql(CREATE_INDEX_ID_COLUMN_COMMANDS)
-    con.sql(CREATE_INDEX_COMMAND.format(columns=columns))
+    con.sql(CREATE_INDEX_COMMAND.format(columns=columns, stemmer="porter"))
     result = con.execute(FTS_COMMAND, parameters=[query]).df()
     assert list(result.__hf_index_id) == expected_ids
 
