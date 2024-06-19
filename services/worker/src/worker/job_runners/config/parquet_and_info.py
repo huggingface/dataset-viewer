@@ -933,7 +933,7 @@ class track_reads:
     ```
     """
 
-    allow_list = ["hf://datasets/allenai/c4/*", "hf://datasets/datasets-maintainers/*"]
+    allow_list = ["hf://datasets/allenai/c4*", "hf://datasets/datasets-maintainers/*"]
 
     def __init__(self) -> None:
         self.files: dict[str, dict[str, int]] = {}
