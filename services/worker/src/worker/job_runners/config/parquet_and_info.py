@@ -7,6 +7,7 @@ import os
 import re
 from collections.abc import Callable, Generator
 from contextlib import ExitStack
+from fnmatch import fnmatch
 from itertools import groupby
 from multiprocessing.pool import ThreadPool
 from pathlib import Path
@@ -932,6 +933,8 @@ class track_reads:
     ```
     """
 
+    allow_list = ["hf://datasets/allenai/c4/*", "hf://datasets/datasets-maintainers/*"]
+
     def __init__(self) -> None:
         self.files: dict[str, dict[str, int]] = {}
         self.exit_stack = ExitStack()
@@ -951,6 +954,11 @@ class track_reads:
     def __enter__(self) -> "track_reads":
         tracker = self
 
+        # Track files reads from local, http and hf file-systems.
+
+        # To do so, we replace LocalFileSystem.open, HTTPFileSystem.open and HfFileSystem.open
+        # by wrappers that modify the output file read functions with tracked read functions.
+
         def wrapped(
             self: Union[LocalFileSystem, HTTPFileSystem, HfFileSystem],
             urlpath: str,
@@ -961,7 +969,7 @@ class track_reads:
         ) -> FsspecFile:
             f = fs_open(self, urlpath, mode, *args, **kwargs)
             urlpath = self.unstrip_protocol(urlpath)
-            if "w" not in mode:
+            if "w" not in mode and any(fnmatch(urlpath, pattern) for pattern in tracker.allow_list):
                 f.read = functools.partial(tracker.track_read, urlpath, f.read)
                 f.__iter__ = functools.partial(tracker.track_iter, urlpath, f.__iter__)
                 if hasattr(f, "read1"):
@@ -973,16 +981,18 @@ class track_reads:
                 tracker.files[urlpath] = {"read": 0, "size": int(f.size)}
             return f
 
-        # track files reads from local, http and hf file-systems
-        self.exit_stack.enter_context(
-            patch.object(LocalFileSystem, "open", autospec=True)
-        ).side_effect = functools.partial(wrapped, fs_open=LocalFileSystem.open)
-        self.exit_stack.enter_context(
-            patch.object(HTTPFileSystem, "open", autospec=True)
-        ).side_effect = functools.partial(wrapped, fs_open=HTTPFileSystem.open)
-        self.exit_stack.enter_context(
-            patch.object(HfFileSystem, "open", autospec=True)
-        ).side_effect = functools.partial(wrapped, fs_open=HfFileSystem.open)
+        # Use an exit_stack to be able to un-do all the replacements once the track_reads context ends.
+        # Use patch.object to apply the replacement, and autospec=True to handle methods replacements properly.
+        # Apply the wrapped open function using `side_effect`.
+        local_open = LocalFileSystem.open
+        mock_local_open = self.exit_stack.enter_context(patch.object(LocalFileSystem, "open", autospec=True))
+        mock_local_open.side_effect = functools.partial(wrapped, fs_open=local_open)
+        http_open = HTTPFileSystem.open
+        mock_http_open = self.exit_stack.enter_context(patch.object(HTTPFileSystem, "open", autospec=True))
+        mock_http_open.side_effect = functools.partial(wrapped, fs_open=http_open)
+        hf_open = HfFileSystem.open
+        mock_hf_open = self.exit_stack.enter_context(patch.object(HfFileSystem, "open", autospec=True))
+        mock_hf_open.side_effect = functools.partial(wrapped, fs_open=hf_open)
         # always use fsspec even for local paths
         self.exit_stack.enter_context(patch("datasets.utils.file_utils.is_local_path", return_value=False))
         return self
