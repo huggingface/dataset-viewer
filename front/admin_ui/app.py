@@ -193,6 +193,7 @@ with gr.Blocks() as demo:
                         )
                         trending_datasets_coverage = {"All trending datasets": []}
                         error_datasets = []
+                        unauthorized_datasets = []
                         for dataset, is_valid_response in zip(
                             trending_datasets, is_valid_responses
                         ):
@@ -212,16 +213,23 @@ with gr.Blocks() as demo:
                                         if response_json[is_valid_field] is True
                                         else "❌"
                                     )
-                            else:
+                            elif is_valid_response.status_code == 500:
                                 error_datasets.append(dataset)
-                        trending_datasets_coverage[
-                            "All trending datasets"
-                        ] += error_datasets
-                        for pretty_field in trending_datasets_coverage:
-                            trending_datasets_coverage[pretty_field] += ["❌"] * (
-                                len(trending_datasets_coverage["All trending datasets"])
-                                - len(trending_datasets_coverage[pretty_field])
-                            )
+                            else:
+                                unauthorized_datasets.append(dataset)
+                        
+                        def fill_empty_cells(datasets, sign):
+                            trending_datasets_coverage[
+                                "All trending datasets"
+                            ] += datasets
+                            for pretty_field in trending_datasets_coverage:
+                                trending_datasets_coverage[pretty_field] += [sign] * (
+                                    len(trending_datasets_coverage["All trending datasets"])
+                                    - len(trending_datasets_coverage[pretty_field])
+                                )    
+                        fill_empty_cells(error_datasets, "❌")
+                        fill_empty_cells(unauthorized_datasets, "🚫")
+
                         out[
                             home_dashboard_trending_datasets_coverage_table
                         ] = gr.DataFrame(
