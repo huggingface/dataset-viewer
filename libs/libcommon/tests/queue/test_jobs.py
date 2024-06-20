@@ -13,7 +13,7 @@ from libcommon.dtos import Priority, Status, WorkerSize
 from libcommon.queue.dataset_blockages import block_dataset
 from libcommon.queue.jobs import EmptyQueueError, JobDocument, Queue
 from libcommon.queue.metrics import JobTotalMetricDocument, WorkerSizeJobsCountDocument
-from libcommon.queue.past_jobs import PastJobDocument
+from libcommon.queue.past_jobs import JOB_DURATION_MIN_SECONDS, PastJobDocument
 from libcommon.resources import QueueMongoResource
 from libcommon.utils import get_datetime
 
@@ -38,6 +38,10 @@ def get_old_datetime() -> datetime:
     # Beware: the TTL index is set to 10 minutes. So it will delete the finished jobs after 10 minutes.
     # We have to use a datetime that is not older than 10 minutes.
     return get_datetime() - timedelta(seconds=(QUEUE_TTL_SECONDS / 2))
+
+
+def get_future_datetime() -> datetime:
+    return get_datetime() + timedelta(seconds=JOB_DURATION_MIN_SECONDS * 2)
 
 
 @pytest.fixture(autouse=True)
@@ -98,8 +102,8 @@ def test_add_job() -> None:
     # finish the first job
     assert_past_jobs_number(0)
     queue.finish_job(job_id=job_info["job_id"])
-    assert_past_jobs_number(1)
-    # ^the duration has been saved in past jobs
+    assert_past_jobs_number(0)
+    # ^ the duration is too short, it's ignored
 
     # the queue is not empty
     assert queue.is_job_in_process(job_type=test_type, dataset=test_dataset, revision=test_revision)
@@ -120,8 +124,9 @@ def test_add_job() -> None:
     assert_metric_jobs_per_type(job_type=test_type, status=Status.STARTED, total=1)
     assert_metric_jobs_per_worker(worker_size=WorkerSize.medium, jobs_count=0)
 
-    # finish it
-    queue.finish_job(job_id=job_info["job_id"])
+    # finish it (but changing the start date, so that an entry is created in pastJobs)
+    with patch("libcommon.queue.jobs.get_datetime", get_future_datetime):
+        queue.finish_job(job_id=job_info["job_id"])
     assert_metric_jobs_per_type(job_type=test_type, status=Status.WAITING, total=0)
     assert_metric_jobs_per_type(job_type=test_type, status=Status.STARTED, total=0)
     assert_metric_jobs_per_worker(worker_size=WorkerSize.medium, jobs_count=0)
@@ -132,8 +137,8 @@ def test_add_job() -> None:
         # an error is raised if we try to start a job
         queue.start_job()
 
-    # two finished jobs
-    assert_past_jobs_number(2)
+    # one long finished job
+    assert_past_jobs_number(1)
 
 
 @pytest.mark.parametrize(
