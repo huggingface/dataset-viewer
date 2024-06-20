@@ -35,6 +35,7 @@ from libcommon.queue.metrics import (
     increase_metric,
     update_metrics_for_type,
 )
+from libcommon.queue.past_jobs import NegativeDurationError, create_past_job
 from libcommon.utils import get_datetime, inputs_to_string
 
 # START monkey patching ### hack ###
@@ -685,11 +686,10 @@ class Queue:
     def finish_job(self, job_id: str) -> Optional[Priority]:
         """Finish a job in the queue.
 
-        The job is moved from the started state to the success or error state. The existing locks are released.
+        The job is deleted. The existing locks are released. The duration is saved in pastJobs.
 
         Args:
             job_id (`str`): id of the job
-            is_success (`bool`): whether the job succeeded or not
 
         Returns:
             `Priority`, *optional*: the priority of the job, if the job was successfully finished.
@@ -703,6 +703,17 @@ class Queue:
             logging.error(f"job {job_id} has not the expected format for a started job. Aborting: {e}")
             return None
         decrease_metric(job_type=job.type, status=job.status, difficulty=job.difficulty)
+        if job.started_at is not None:
+            try:
+                create_past_job(
+                    dataset=job.dataset,
+                    started_at=pytz.UTC.localize(job.started_at),
+                    finished_at=get_datetime(),
+                )
+            except NegativeDurationError:
+                logging.warning(
+                    f"job {job_id} has a negative duration. The duration is not saved in the past jobs collection."
+                )
         job_priority = job.priority
         job.delete()
         release_locks(owner=job_id)

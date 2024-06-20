@@ -12,6 +12,7 @@ from libcommon.constants import QUEUE_TTL_SECONDS
 from libcommon.dtos import Priority, Status, WorkerSize
 from libcommon.queue.jobs import EmptyQueueError, JobDocument, Queue
 from libcommon.queue.metrics import JobTotalMetricDocument, WorkerSizeJobsCountDocument
+from libcommon.queue.past_jobs import PastJobDocument
 from libcommon.resources import QueueMongoResource
 from libcommon.utils import get_datetime
 
@@ -26,6 +27,10 @@ def assert_metric_jobs_per_worker(worker_size: str, jobs_count: int) -> None:
     metric = WorkerSizeJobsCountDocument.objects(worker_size=worker_size).first()
     assert metric is not None, metric
     assert metric.jobs_count == jobs_count, metric.jobs_count
+
+
+def assert_past_jobs_number(count: int) -> None:
+    assert PastJobDocument.objects().count() == count
 
 
 def get_old_datetime() -> datetime:
@@ -44,10 +49,13 @@ def test_add_job() -> None:
     test_dataset = "test_dataset"
     test_revision = "test_revision"
     test_difficulty = 50
+
     # get the queue
     queue = Queue()
     assert JobTotalMetricDocument.objects().count() == 0
     assert WorkerSizeJobsCountDocument.objects().count() == 0
+    assert_past_jobs_number(0)
+
     # add a job
     job1 = queue.add_job(job_type=test_type, dataset=test_dataset, revision=test_revision, difficulty=test_difficulty)
     assert_metric_jobs_per_type(job_type=test_type, status=Status.WAITING, total=1)
@@ -87,7 +95,11 @@ def test_add_job() -> None:
         # but: it's not possible to start two jobs with the same arguments
         queue.start_job()
     # finish the first job
+    assert_past_jobs_number(0)
     queue.finish_job(job_id=job_info["job_id"])
+    assert_past_jobs_number(1)
+    # ^the duration has been saved in past jobs
+
     # the queue is not empty
     assert queue.is_job_in_process(job_type=test_type, dataset=test_dataset, revision=test_revision)
     assert_metric_jobs_per_type(job_type=test_type, status=Status.WAITING, total=1)
@@ -118,6 +130,9 @@ def test_add_job() -> None:
     with pytest.raises(EmptyQueueError):
         # an error is raised if we try to start a job
         queue.start_job()
+
+    # two finished jobs
+    assert_past_jobs_number(2)
 
 
 @pytest.mark.parametrize(
@@ -544,7 +559,7 @@ def test_queue_get_zombies() -> None:
     assert queue.get_zombies(max_seconds_without_heartbeat=9999999) == []
 
 
-def test_delete_dataset_waiting_jobs(queue_mongo_resource: QueueMongoResource) -> None:
+def test_delete_dataset_waiting_jobs() -> None:
     """
     Test that delete_dataset_waiting_jobs deletes all the waiting jobs for a dataset
 
@@ -661,7 +676,6 @@ def create_jobs(queue: Queue) -> None:
     ],
 )
 def test_get_pending_jobs_df_and_has_pending_jobs(
-    queue_mongo_resource: QueueMongoResource,
     dataset: str,
     job_types: Optional[list[str]],
     expected_job_types: set[str],
