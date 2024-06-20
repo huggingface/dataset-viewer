@@ -6,7 +6,7 @@ from environs import Env
 from pytest import TempPathFactory, fixture
 
 from libcommon.config import ParquetMetadataConfig
-from libcommon.queue import _clean_queue_database
+from libcommon.new_queue.utils import _clean_queue_database
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import _clean_cache_database
 from libcommon.storage import StrPath, init_parquet_metadata_dir

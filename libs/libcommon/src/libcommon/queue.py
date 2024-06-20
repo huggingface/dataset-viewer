@@ -2,18 +2,14 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import contextlib
-import json
 import logging
-import time
 import types
 from collections import Counter
-from collections.abc import Mapping, Sequence
+from collections.abc import Mapping
 from datetime import datetime, timedelta
-from enum import IntEnum
 from itertools import groupby
 from operator import itemgetter
-from types import TracebackType
-from typing import Any, Generic, Literal, Optional, TypedDict, TypeVar
+from typing import Any, Generic, Optional, TypedDict, TypeVar
 from uuid import uuid4
 
 import bson
@@ -22,7 +18,7 @@ import pyarrow as pa
 import pytz
 from bson import ObjectId
 from mongoengine import Document
-from mongoengine.errors import DoesNotExist, NotUniqueError
+from mongoengine.errors import DoesNotExist
 from mongoengine.fields import DateTimeField, EnumField, IntField, ObjectIdField, StringField
 from mongoengine.queryset.queryset import QuerySet
 from pymongoarrow.api import Schema, find_pandas_all
@@ -30,16 +26,13 @@ from pymongoarrow.api import Schema, find_pandas_all
 from libcommon.constants import (
     DEFAULT_DIFFICULTY_MAX,
     DEFAULT_DIFFICULTY_MIN,
-    LOCK_TTL_SECONDS_NO_OWNER,
-    LOCK_TTL_SECONDS_TO_START_JOB,
-    LOCK_TTL_SECONDS_TO_WRITE_ON_GIT_BRANCH,
     QUEUE_COLLECTION_JOBS,
-    QUEUE_COLLECTION_LOCKS,
     QUEUE_MONGOENGINE_ALIAS,
     TYPE_AND_STATUS_JOB_COUNTS_COLLECTION,
     WORKER_TYPE_JOB_COUNTS_COLLECTION,
 )
 from libcommon.dtos import FlatJobInfo, JobInfo, Priority, Status, WorkerSize
+from libcommon.new_queue.lock import lock, release_lock, release_locks
 from libcommon.utils import get_datetime, inputs_to_string
 
 # START monkey patching ### hack ###
@@ -347,171 +340,6 @@ def update_metrics_for_type(job_type: str, previous_status: str, new_status: str
         decrease_metric(job_type=job_type, status=previous_status, difficulty=difficulty)
         increase_metric(job_type=job_type, status=new_status, difficulty=difficulty)
         # ^ this does not affect WorkerSizeJobsCountDocument, so we don't pass the job difficulty
-
-
-class _TTL(IntEnum):
-    LOCK_TTL_SECONDS_TO_START_JOB = LOCK_TTL_SECONDS_TO_START_JOB
-    LOCK_TTL_SECONDS_TO_WRITE_ON_GIT_BRANCH = LOCK_TTL_SECONDS_TO_WRITE_ON_GIT_BRANCH
-
-
-class Lock(Document):
-    meta = {
-        "collection": QUEUE_COLLECTION_LOCKS,
-        "db_alias": QUEUE_MONGOENGINE_ALIAS,
-        "indexes": [
-            ("key", "owner"),
-            {
-                "name": "LOCK_TTL_SECONDS_NO_OWNER",
-                "fields": ["updated_at"],
-                "expireAfterSeconds": LOCK_TTL_SECONDS_NO_OWNER,
-                "partialFilterExpression": {"owner": None},
-            },
-        ]
-        + [
-            {
-                "name": ttl.name,
-                "fields": ["updated_at"],
-                "expireAfterSeconds": ttl,
-                "partialFilterExpression": {"ttl": ttl},
-            }
-            for ttl in _TTL
-        ],
-    }
-
-    key = StringField(primary_key=True)
-    owner = StringField()
-    ttl = IntField()
-    job_id = StringField()  # deprecated
-
-    created_at = DateTimeField()
-    updated_at = DateTimeField()
-
-    objects = QuerySetManager["Lock"]()
-
-
-class lock(contextlib.AbstractContextManager["lock"]):
-    """
-    Provides a simple way of inter-applications communication using a MongoDB lock.
-
-    An example usage is to another worker of your application that a resource
-    or working directory is currently used in a job.
-
-    Example of usage:
-
-    ```python
-    key = json.dumps({"type": job.type, "dataset": job.dataset})
-    with lock(key=key, owner=job.pk):
-        ...
-    ```
-
-    Or using a try/except:
-
-    ```python
-    try:
-        key = json.dumps({"type": job.type, "dataset": job.dataset})
-        lock(key=key, owner=job.pk).acquire()
-    except TimeoutError:
-        ...
-    ```
-    """
-
-    TTL = _TTL
-    _default_sleeps = (0.05, 0.05, 0.05, 1, 1, 1, 5)
-
-    def __init__(
-        self, key: str, owner: str, sleeps: Sequence[float] = _default_sleeps, ttl: Optional[_TTL] = None
-    ) -> None:
-        self.key = key
-        self.owner = owner
-        self.sleeps = sleeps
-        self.ttl = ttl
-        if ttl is not None and ttl not in list(self.TTL):
-            raise ValueError(f"The TTL value is not supported by the TTL index. It should be one of {list(self.TTL)}")
-
-    def acquire(self) -> None:
-        for sleep in self.sleeps:
-            try:
-                Lock.objects(key=self.key, owner__in=[None, self.owner]).update(
-                    upsert=True,
-                    write_concern={"w": "majority", "fsync": True},
-                    read_concern={"level": "majority"},
-                    owner=self.owner,
-                    updated_at=get_datetime(),
-                    ttl=self.ttl,
-                )
-                return
-            except NotUniqueError:
-                logging.debug(f"Sleep {sleep}s to acquire lock '{self.key}' for owner='{self.owner}'")
-                time.sleep(sleep)
-        raise TimeoutError("lock couldn't be acquired")
-
-    def release(self) -> None:
-        Lock.objects(key=self.key, owner=self.owner).update(
-            write_concern={"w": "majority", "fsync": True},
-            read_concern={"level": "majority"},
-            owner=None,
-            updated_at=get_datetime(),
-        )
-
-    def __enter__(self) -> "lock":
-        self.acquire()
-        return self
-
-    def __exit__(
-        self, exctype: Optional[type[BaseException]], excinst: Optional[BaseException], exctb: Optional[TracebackType]
-    ) -> Literal[False]:
-        self.release()
-        return False
-
-    @classmethod
-    def git_branch(
-        cls,
-        dataset: str,
-        branch: str,
-        owner: str,
-        sleeps: Sequence[float] = _default_sleeps,
-    ) -> "lock":
-        """
-        Lock a git branch of a dataset on the hub for read/write
-
-        Args:
-            dataset (`str`): the dataset repository
-            branch (`str`): the branch to lock
-            owner (`str`): the current job id that holds the lock
-            sleeps (`Sequence[float]`, *optional*): the time in seconds to sleep between each attempt to acquire the lock
-        """
-        key = json.dumps({"dataset": dataset, "branch": branch})
-        return cls(key=key, owner=owner, sleeps=sleeps, ttl=_TTL.LOCK_TTL_SECONDS_TO_WRITE_ON_GIT_BRANCH)
-
-
-def release_locks(owner: str) -> None:
-    """
-    Release all locks owned by the given owner
-
-    Args:
-        owner (`str`): the current owner that holds the locks
-    """
-    Lock.objects(owner=owner).update(
-        write_concern={"w": "majority", "fsync": True},
-        read_concern={"level": "majority"},
-        owner=None,
-        updated_at=get_datetime(),
-    )
-
-
-def release_lock(key: str) -> None:
-    """
-    Release the lock for a specific key
-
-    Args:
-        key (`str`): the lock key
-    """
-    Lock.objects(key=key).update(
-        write_concern={"w": "majority", "fsync": True},
-        read_concern={"level": "majority"},
-        owner=None,
-        updated_at=get_datetime(),
-    )
 
 
 class Queue:
@@ -1187,12 +1015,3 @@ class Queue:
             )
         ]
         return [zombie.info() for zombie in zombies]
-
-
-# only for the tests
-def _clean_queue_database() -> None:
-    """Delete all the jobs in the database"""
-    JobDocument.drop_collection()  # type: ignore
-    JobTotalMetricDocument.drop_collection()  # type: ignore
-    WorkerSizeJobsCountDocument.drop_collection()  # type: ignore
-    Lock.drop_collection()  # type: ignore
