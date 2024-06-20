@@ -963,10 +963,10 @@ class Queue:
             job = self._get_started_job(job_id=job_id)
         except DoesNotExist:
             logging.error(f"job {job_id} does not exist. Aborting.")
-            return
+            return None
         except StartedJobError as e:
             logging.error(f"job {job_id} has not the expected format for a started job. Aborting: {e}")
-            return
+            return None
         decrease_metric(job_type=job.type, status=job.status, difficulty=job.difficulty)
         job_priority = job.priority
         job.delete()
