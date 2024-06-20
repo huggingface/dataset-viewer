@@ -944,7 +944,6 @@ class track_reads:
     def __init__(self) -> None:
         self.files: dict[str, dict[str, int]] = {}
         self.exit_stack = ExitStack()
-        self._no_tracking = False
 
     def track_read(self, urlpath: str, f_read: Callable[..., ReadOutput], *args: Any, **kwargs: Any) -> ReadOutput:
         out = f_read(*args, **kwargs)
