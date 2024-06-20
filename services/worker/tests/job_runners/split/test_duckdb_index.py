@@ -555,7 +555,7 @@ def test_index_command(df: pd.DataFrame, query: str, expected_ids: list[int]) ->
     con = duckdb.connect()
     con.sql(CREATE_TABLE_COMMAND.format(columns=columns, source="df"))
     con.sql(CREATE_INDEX_ID_COLUMN_COMMANDS)
-    con.sql(CREATE_INDEX_COMMAND.format(columns=columns, stemmer="porter"))
+    con.sql(CREATE_INDEX_COMMAND.format(columns=columns, stemmer=DEFAULT_STEMMER))
     result = con.execute(FTS_COMMAND, parameters=[query]).df()
     assert list(result.__hf_index_id) == expected_ids
 
