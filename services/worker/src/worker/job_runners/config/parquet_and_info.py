@@ -41,7 +41,7 @@ from datasets.utils.file_utils import (
     url_or_path_join,
 )
 from datasets.utils.py_utils import asdict, map_nested
-from fsspec.core import url_to_fs
+from fsspec.core import filesystem, url_to_fs
 from fsspec.implementations.http import HTTPFileSystem
 from fsspec.implementations.local import LocalFileOpener, LocalFileSystem
 from fsspec.implementations.zip import ZipFileSystem
@@ -960,7 +960,8 @@ class track_reads:
 
     def track_metadata_read_once(self, instance: Any, func: Callable[..., T], **kwargs: Any) -> T:
         urlpath = kwargs.pop("fo", "")
-        urlpath = url_to_fs(urlpath)[0].unstrip_protocol(urlpath)
+        target_protocol = kwargs["target_protocol"]
+        urlpath = filesystem(target_protocol).unstrip_protocol(urlpath)
         previous_read = 0
         if urlpath in self.files:
             previous_read = self.files[urlpath]["read"]
