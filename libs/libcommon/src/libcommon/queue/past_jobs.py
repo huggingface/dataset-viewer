@@ -39,7 +39,7 @@ PAST_JOB_EXPIRE_AFTER_SECONDS = 6 * 60 * 60
 
 
 class PastJobDocument(Document):
-    """A job in the mongoDB database
+    """The duration of a job that has been completed.
 
     Args:
         dataset (`str`): The dataset on which to apply the job.
@@ -51,7 +51,6 @@ class PastJobDocument(Document):
         "collection": QUEUE_COLLECTION_PAST_JOBS,
         "db_alias": QUEUE_MONGOENGINE_ALIAS,
         "indexes": [
-            ("dataset", "duration"),
             {
                 "name": "PAST_JOB_EXPIRE_AFTER_SECONDS",
                 "fields": ["finished_at"],
