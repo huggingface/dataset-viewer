@@ -10,6 +10,7 @@ from libcommon.queue.dataset_blockages import get_blocked_datasets
 from libcommon.queue.jobs import Queue
 from libcommon.queue.past_jobs import (
     DATASET_BLOCKAGE_THRESHOLD_SECONDS,
+    JOB_DURATION_MIN_SECONDS,
     NegativeDurationError,
     PastJobDocument,
     create_past_job,
@@ -28,14 +29,25 @@ DATASET = "dataset"
 
 @pytest.mark.parametrize(
     "duration",
-    [1.0, 0.0, 12345.6789],
+    [JOB_DURATION_MIN_SECONDS, JOB_DURATION_MIN_SECONDS * 2, JOB_DURATION_MIN_SECONDS + 0.33],
 )
 def test_create_past_job(duration: float) -> None:
     finished_at = get_datetime()
     started_at = finished_at - timedelta(seconds=duration)
     create_past_job(dataset=DATASET, started_at=started_at, finished_at=finished_at)
     past_job = PastJobDocument.objects(dataset=DATASET).get()
-    assert past_job.duration == duration
+    assert past_job.duration == int(duration)
+
+
+@pytest.mark.parametrize(
+    "duration",
+    [0, 1, JOB_DURATION_MIN_SECONDS - 1],
+)
+def test_create_past_job_with_short_duration(duration: float) -> None:
+    finished_at = get_datetime()
+    started_at = finished_at - timedelta(seconds=duration)
+    create_past_job(dataset=DATASET, started_at=started_at, finished_at=finished_at)
+    PastJobDocument.objects(dataset=DATASET).count() == 0
 
 
 @pytest.mark.parametrize("duration", [-1.0])

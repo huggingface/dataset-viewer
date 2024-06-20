@@ -7,7 +7,7 @@ from typing import Generic, TypeVar
 
 from mongoengine import Document
 from mongoengine.errors import ValidationError
-from mongoengine.fields import DateTimeField, FloatField, StringField
+from mongoengine.fields import DateTimeField, IntField, StringField
 from mongoengine.queryset.queryset import QuerySet
 
 from libcommon.constants import (
@@ -35,12 +35,16 @@ class QuerySetManager(Generic[U]):
 
 # END monkey patching ### hack ###
 
-# we allow 10 hours of compute (parallel jobs) every hour
-ALLOWED_RATE_OF_COMPUTE_HOURS_PER_HOUR = 10
+# we allow 10 hours of compute (parallel jobs) every hour, i.e. 10 dedicated machines
+MAX_MACHINES = 10
 # we look at the last 6 hours to decide to rate-limit a dataset
 RATE_LIMIT_WINDOW_SECONDS = 6 * 60 * 60
 # total jobs duration that triggers rate-limiting a dataset
-DATASET_BLOCKAGE_THRESHOLD_SECONDS = ALLOWED_RATE_OF_COMPUTE_HOURS_PER_HOUR * RATE_LIMIT_WINDOW_SECONDS
+DATASET_BLOCKAGE_THRESHOLD_SECONDS = MAX_MACHINES * RATE_LIMIT_WINDOW_SECONDS
+# don't check for rate-limiting if the duration is super short
+JOB_DURATION_CHECK_MIN_SECONDS = 5 * 60
+# don't record short durations, because they will not have impact, but can clutter the collection
+JOB_DURATION_MIN_SECONDS = 30
 
 
 class PastJobDocument(Document):
@@ -48,7 +52,7 @@ class PastJobDocument(Document):
 
     Args:
         dataset (`str`): The dataset on which to apply the job.
-        duration (`float`): The duration of the job, in seconds.
+        duration (`int`): The duration of the job, in seconds.
         finished_at (`datetime`): The date the job has finished.
     """
 
@@ -64,7 +68,7 @@ class PastJobDocument(Document):
         ],
     }
     dataset = StringField(required=True)
-    duration = FloatField(required=True, min_value=0.0)
+    duration = IntField(required=True, min_value=0.0)
     finished_at = DateTimeField(required=True)
 
     objects = QuerySetManager["PastJobDocument"]()
@@ -88,12 +92,14 @@ def create_past_job(dataset: str, started_at: datetime, finished_at: datetime) -
     Raises:
         ValidationError: If the duration is negative.
     """
-    duration = (finished_at - started_at).total_seconds()
+    duration = int((finished_at - started_at).total_seconds())
+    if duration < JOB_DURATION_MIN_SECONDS:
+        return
     try:
         PastJobDocument(dataset=dataset, duration=duration, finished_at=finished_at).save()
     except ValidationError as e:
         raise NegativeDurationError("The duration of the job cannot be negative.") from e
 
-    if not is_blocked(dataset):
+    if not is_blocked(dataset) and duration > JOB_DURATION_CHECK_MIN_SECONDS:
         if PastJobDocument.objects(dataset=dataset).sum("duration") > DATASET_BLOCKAGE_THRESHOLD_SECONDS:
             block_dataset(dataset)
