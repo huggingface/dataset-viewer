@@ -12,7 +12,7 @@ import orjson
 from filelock import FileLock
 from libcommon.dtos import JobInfo
 from libcommon.prometheus import LongStepProfiler, StepProfiler
-from libcommon.queue import (
+from libcommon.queue.jobs import (
     AlreadyStartedJobError,
     EmptyQueueError,
     LockTimeoutError,

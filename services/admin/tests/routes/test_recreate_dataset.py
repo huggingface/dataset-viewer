@@ -8,7 +8,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from libcommon.dtos import Priority, Status
-from libcommon.queue import Queue
+from libcommon.queue.jobs import Queue
 from libcommon.simple_cache import has_some_cache, upsert_response
 from libcommon.storage_client import StorageClient
 

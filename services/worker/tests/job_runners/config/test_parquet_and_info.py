@@ -31,7 +31,7 @@ from libcommon.dtos import JobInfo, JobParams, Priority
 from libcommon.exceptions import (
     DatasetManualDownloadError,
 )
-from libcommon.queue import Queue
+from libcommon.queue.jobs import Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import upsert_response
 

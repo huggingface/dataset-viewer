@@ -1,13 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-import json
-import os
-import random
-import time
 from datetime import datetime, timedelta
-from multiprocessing import Pool
-from pathlib import Path
 from typing import Optional
 from unittest.mock import patch
 
@@ -16,19 +10,22 @@ import pytz
 
 from libcommon.constants import QUEUE_TTL_SECONDS
 from libcommon.dtos import Priority, Status, WorkerSize
-from libcommon.queue import (
-    EmptyQueueError,
-    JobDocument,
-    JobTotalMetricDocument,
-    Lock,
-    Queue,
-    WorkerSizeJobsCountDocument,
-    lock,
-)
+from libcommon.queue.jobs import EmptyQueueError, JobDocument, Queue
+from libcommon.queue.metrics import JobTotalMetricDocument, WorkerSizeJobsCountDocument
 from libcommon.resources import QueueMongoResource
 from libcommon.utils import get_datetime
 
-from .utils import assert_metric, assert_worker_size_jobs_count
+
+def assert_metric_jobs_per_type(job_type: str, status: str, total: int) -> None:
+    metric = JobTotalMetricDocument.objects(job_type=job_type, status=status).first()
+    assert metric is not None
+    assert metric.total == total
+
+
+def assert_metric_jobs_per_worker(worker_size: str, jobs_count: int) -> None:
+    metric = WorkerSizeJobsCountDocument.objects(worker_size=worker_size).first()
+    assert metric is not None, metric
+    assert metric.jobs_count == jobs_count, metric.jobs_count
 
 
 def get_old_datetime() -> datetime:
@@ -53,14 +50,14 @@ def test_add_job() -> None:
     assert WorkerSizeJobsCountDocument.objects().count() == 0
     # add a job
     job1 = queue.add_job(job_type=test_type, dataset=test_dataset, revision=test_revision, difficulty=test_difficulty)
-    assert_metric(job_type=test_type, status=Status.WAITING, total=1)
-    assert_worker_size_jobs_count(worker_size=WorkerSize.medium, jobs_count=1)
+    assert_metric_jobs_per_type(job_type=test_type, status=Status.WAITING, total=1)
+    assert_metric_jobs_per_worker(worker_size=WorkerSize.medium, jobs_count=1)
 
     # a second call adds a second waiting job
     job2 = queue.add_job(job_type=test_type, dataset=test_dataset, revision=test_revision, difficulty=test_difficulty)
     assert queue.is_job_in_process(job_type=test_type, dataset=test_dataset, revision=test_revision)
-    assert_metric(job_type=test_type, status=Status.WAITING, total=2)
-    assert_worker_size_jobs_count(worker_size=WorkerSize.medium, jobs_count=2)
+    assert_metric_jobs_per_type(job_type=test_type, status=Status.WAITING, total=2)
+    assert_metric_jobs_per_worker(worker_size=WorkerSize.medium, jobs_count=2)
 
     # get and start a job the second one should have been picked
     job_info = queue.start_job()
@@ -71,9 +68,9 @@ def test_add_job() -> None:
     assert job_info["params"]["config"] is None
     assert job_info["params"]["split"] is None
     # it should have deleted the other waiting jobs for the same unicity_id
-    assert_metric(job_type=test_type, status=Status.WAITING, total=0)
-    assert_metric(job_type=test_type, status=Status.STARTED, total=1)
-    assert_worker_size_jobs_count(worker_size=WorkerSize.medium, jobs_count=0)
+    assert_metric_jobs_per_type(job_type=test_type, status=Status.WAITING, total=0)
+    assert_metric_jobs_per_type(job_type=test_type, status=Status.STARTED, total=1)
+    assert_metric_jobs_per_worker(worker_size=WorkerSize.medium, jobs_count=0)
 
     # and the first job should have been deleted
     assert JobDocument.objects(pk=job1.pk).count() == 0
@@ -82,9 +79,9 @@ def test_add_job() -> None:
     # (there are no limits to the number of waiting jobs)
     job3 = queue.add_job(job_type=test_type, dataset=test_dataset, revision=test_revision, difficulty=test_difficulty)
     assert job3.status == Status.WAITING
-    assert_metric(job_type=test_type, status=Status.WAITING, total=1)
-    assert_metric(job_type=test_type, status=Status.STARTED, total=1)
-    assert_worker_size_jobs_count(worker_size=WorkerSize.medium, jobs_count=1)
+    assert_metric_jobs_per_type(job_type=test_type, status=Status.WAITING, total=1)
+    assert_metric_jobs_per_type(job_type=test_type, status=Status.STARTED, total=1)
+    assert_metric_jobs_per_worker(worker_size=WorkerSize.medium, jobs_count=1)
 
     with pytest.raises(EmptyQueueError):
         # but: it's not possible to start two jobs with the same arguments
@@ -93,28 +90,28 @@ def test_add_job() -> None:
     queue.finish_job(job_id=job_info["job_id"])
     # the queue is not empty
     assert queue.is_job_in_process(job_type=test_type, dataset=test_dataset, revision=test_revision)
-    assert_metric(job_type=test_type, status=Status.WAITING, total=1)
-    assert_metric(job_type=test_type, status=Status.STARTED, total=0)
-    assert_worker_size_jobs_count(worker_size=WorkerSize.medium, jobs_count=1)
+    assert_metric_jobs_per_type(job_type=test_type, status=Status.WAITING, total=1)
+    assert_metric_jobs_per_type(job_type=test_type, status=Status.STARTED, total=0)
+    assert_metric_jobs_per_worker(worker_size=WorkerSize.medium, jobs_count=1)
 
     # process the third job
     job_info = queue.start_job()
     other_job_id = ("1" if job_info["job_id"][0] == "0" else "0") + job_info["job_id"][1:]
-    assert_metric(job_type=test_type, status=Status.WAITING, total=0)
-    assert_metric(job_type=test_type, status=Status.STARTED, total=1)
-    assert_worker_size_jobs_count(worker_size=WorkerSize.medium, jobs_count=0)
+    assert_metric_jobs_per_type(job_type=test_type, status=Status.WAITING, total=0)
+    assert_metric_jobs_per_type(job_type=test_type, status=Status.STARTED, total=1)
+    assert_metric_jobs_per_worker(worker_size=WorkerSize.medium, jobs_count=0)
 
     # trying to finish another job fails silently (with a log)
     queue.finish_job(job_id=other_job_id)
-    assert_metric(job_type=test_type, status=Status.WAITING, total=0)
-    assert_metric(job_type=test_type, status=Status.STARTED, total=1)
-    assert_worker_size_jobs_count(worker_size=WorkerSize.medium, jobs_count=0)
+    assert_metric_jobs_per_type(job_type=test_type, status=Status.WAITING, total=0)
+    assert_metric_jobs_per_type(job_type=test_type, status=Status.STARTED, total=1)
+    assert_metric_jobs_per_worker(worker_size=WorkerSize.medium, jobs_count=0)
 
     # finish it
     queue.finish_job(job_id=job_info["job_id"])
-    assert_metric(job_type=test_type, status=Status.WAITING, total=0)
-    assert_metric(job_type=test_type, status=Status.STARTED, total=0)
-    assert_worker_size_jobs_count(worker_size=WorkerSize.medium, jobs_count=0)
+    assert_metric_jobs_per_type(job_type=test_type, status=Status.WAITING, total=0)
+    assert_metric_jobs_per_type(job_type=test_type, status=Status.STARTED, total=0)
+    assert_metric_jobs_per_worker(worker_size=WorkerSize.medium, jobs_count=0)
 
     # the queue is empty
     assert not queue.is_job_in_process(job_type=test_type, dataset=test_dataset, revision=test_revision)
@@ -145,21 +142,21 @@ def test_delete_waiting_jobs_by_job_id(
     for job_id in all_jobs:
         job = queue.add_job(job_type=test_type, dataset=job_id, revision="test_revision", difficulty=test_difficulty)
         waiting_jobs += 1
-        assert_metric(job_type=test_type, status=Status.WAITING, total=waiting_jobs)
-        assert_worker_size_jobs_count(worker_size=WorkerSize.medium, jobs_count=waiting_jobs)
+        assert_metric_jobs_per_type(job_type=test_type, status=Status.WAITING, total=waiting_jobs)
+        assert_metric_jobs_per_worker(worker_size=WorkerSize.medium, jobs_count=waiting_jobs)
         if job_id in job_ids_to_delete:
             real_job_id = job.info()["job_id"]
             real_job_ids_to_delete.append(real_job_id)
         if job_id not in jobs_ids:
             # delete the job, in order to simulate that it did never exist (we just wanted a valid job_id)
             job.delete()
-    assert_metric(job_type=test_type, status=Status.WAITING, total=len(all_jobs))
-    assert_worker_size_jobs_count(worker_size=WorkerSize.medium, jobs_count=len(all_jobs))
+    assert_metric_jobs_per_type(job_type=test_type, status=Status.WAITING, total=len(all_jobs))
+    assert_metric_jobs_per_worker(worker_size=WorkerSize.medium, jobs_count=len(all_jobs))
 
     queue.start_job()
-    assert_metric(job_type=test_type, status=Status.WAITING, total=len(all_jobs) - 1)
-    assert_metric(job_type=test_type, status=Status.STARTED, total=1)
-    assert_worker_size_jobs_count(worker_size=WorkerSize.medium, jobs_count=len(all_jobs) - 1)
+    assert_metric_jobs_per_type(job_type=test_type, status=Status.WAITING, total=len(all_jobs) - 1)
+    assert_metric_jobs_per_type(job_type=test_type, status=Status.STARTED, total=1)
+    assert_metric_jobs_per_worker(worker_size=WorkerSize.medium, jobs_count=len(all_jobs) - 1)
     deleted_number = queue.delete_waiting_jobs_by_job_id(job_ids=real_job_ids_to_delete)
     assert deleted_number == expected_deleted_number
 
@@ -522,7 +519,7 @@ def test_queue_get_zombies() -> None:
     job_type = "test_type"
     test_difficulty = 50
     queue = Queue()
-    with patch("libcommon.queue.get_datetime", get_old_datetime):
+    with patch("libcommon.queue.jobs.get_datetime", get_old_datetime):
         zombie = queue.add_job(
             job_type=job_type,
             dataset="dataset1",
@@ -545,68 +542,6 @@ def test_queue_get_zombies() -> None:
     assert queue.get_zombies(max_seconds_without_heartbeat=-1) == []
     assert queue.get_zombies(max_seconds_without_heartbeat=0) == []
     assert queue.get_zombies(max_seconds_without_heartbeat=9999999) == []
-
-
-def random_sleep() -> None:
-    MAX_SLEEP_MS = 40
-    time.sleep(MAX_SLEEP_MS / 1000 * random.random())
-
-
-def increment(tmp_file: Path) -> None:
-    random_sleep()
-    with open(tmp_file, "r") as f:
-        current = int(f.read() or 0)
-    random_sleep()
-    with open(tmp_file, "w") as f:
-        f.write(str(current + 1))
-    random_sleep()
-
-
-def locked_increment(tmp_file: Path) -> None:
-    sleeps = [0.05, 0.05, 0.05, 1, 1, 1, 1, 1, 1, 5, 5, 5, 5]
-    with lock(key="test_lock", owner=str(os.getpid()), sleeps=sleeps):
-        increment(tmp_file)
-
-
-def test_lock(tmp_path_factory: pytest.TempPathFactory, queue_mongo_resource: QueueMongoResource) -> None:
-    tmp_file = Path(tmp_path_factory.mktemp("test_lock") / "tmp.txt")
-    tmp_file.touch()
-    max_parallel_jobs = 4
-    num_jobs = 42
-
-    with Pool(max_parallel_jobs, initializer=queue_mongo_resource.allocate) as pool:
-        pool.map(locked_increment, [tmp_file] * num_jobs)
-
-    expected = num_jobs
-    with open(tmp_file, "r") as f:
-        assert int(f.read()) == expected
-    Lock.objects(key="test_lock").delete()
-
-
-def git_branch_locked_increment(tmp_file: Path) -> None:
-    sleeps = [0.05, 0.05, 0.05, 1, 1, 1, 1, 1, 1, 5, 5, 5, 5]
-    dataset = "dataset"
-    branch = "refs/convert/parquet"
-    with lock.git_branch(dataset=dataset, branch=branch, owner=str(os.getpid()), sleeps=sleeps):
-        increment(tmp_file)
-
-
-def test_lock_git_branch(tmp_path_factory: pytest.TempPathFactory, queue_mongo_resource: QueueMongoResource) -> None:
-    tmp_file = Path(tmp_path_factory.mktemp("test_lock") / "tmp.txt")
-    tmp_file.touch()
-    max_parallel_jobs = 5
-    num_jobs = 43
-
-    with Pool(max_parallel_jobs, initializer=queue_mongo_resource.allocate) as pool:
-        pool.map(git_branch_locked_increment, [tmp_file] * num_jobs)
-
-    expected = num_jobs
-    with open(tmp_file, "r") as f:
-        assert int(f.read()) == expected
-    assert Lock.objects().count() == 1
-    assert Lock.objects().get().key == json.dumps({"dataset": "dataset", "branch": "refs/convert/parquet"})
-    assert Lock.objects().get().owner is None
-    Lock.objects().delete()
 
 
 def test_delete_dataset_waiting_jobs(queue_mongo_resource: QueueMongoResource) -> None:
@@ -689,11 +624,6 @@ def test_delete_dataset_waiting_jobs(queue_mongo_resource: QueueMongoResource) -
     assert JobDocument.objects(dataset=other_dataset).count() == 2
     assert JobDocument.objects(dataset=other_dataset, status=Status.STARTED).count() == 1
     assert JobDocument.objects(dataset=other_dataset, status=Status.WAITING).count() == 1
-
-    assert len(Lock.objects()) == 2
-    assert len(Lock.objects(key=f"{job_type_1},{dataset},{revision}", owner=None)) == 1
-    assert len(Lock.objects(key=f"{job_type_1},{dataset},{revision}", owner__ne=None)) == 0
-    # ^ does not test much, because at that time, the lock should already have been released
 
 
 DATASET_1 = "dataset_1"

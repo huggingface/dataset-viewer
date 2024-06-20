@@ -41,10 +41,24 @@ def compute_is_valid_response(dataset: str, config: str) -> tuple[IsValidRespons
     search = False
     filter = False
     statistics = False
+
+    try:
+        split_names = get_split_names(dataset=dataset, config=config)
+    except PreviousStepFormatError:
+        # If the previous step did not return the expected content, we raise the error
+        raise
+    except Exception:
+        logging.debug(
+            "Erroneous response, or no response found, in previous step for this dataset: 'config-split-names'."
+        )
+        return IsValidResponse(
+            preview=preview, viewer=viewer, search=search, filter=filter, statistics=statistics
+        ), 0.0
+
     try:
         total = 0
         pending = 0
-        for split in get_split_names(dataset=dataset, config=config):
+        for split in split_names:
             total += 1
             try:
                 response = get_response(kind="split-is-valid", dataset=dataset, config=config, split=split)

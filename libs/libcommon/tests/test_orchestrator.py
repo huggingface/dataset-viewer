@@ -14,7 +14,7 @@ from libcommon.orchestrator import (
     set_revision,
 )
 from libcommon.processing_graph import Artifact, ProcessingGraph
-from libcommon.queue import JobDocument, Queue
+from libcommon.queue.jobs import JobDocument, Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import (
     CachedResponseDocument,
@@ -200,6 +200,53 @@ def test_finish_job(
     assert cached_response.progress == 1.0
     assert cached_response.job_runner_version == JOB_RUNNER_VERSION
     assert cached_response.dataset_git_revision == REVISION_NAME
+
+
+@pytest.mark.parametrize(
+    "processing_graph,artifacts_to_create",
+    [
+        (PROCESSING_GRAPH_FAN_IN_OUT, [ARTIFACT_CA_1, ARTIFACT_CA_2]),
+    ],
+)
+def test_finish_job_priority_update(
+    processing_graph: ProcessingGraph,
+    artifacts_to_create: list[str],
+) -> None:
+    Queue().add_job(
+        dataset=DATASET_NAME,
+        revision=REVISION_NAME,
+        config=None,
+        split=None,
+        job_type=STEP_DA,
+        priority=Priority.NORMAL,
+        difficulty=DIFFICULTY,
+    )
+    job_info = Queue().start_job()
+    job_result = JobResult(
+        job_info=job_info,
+        job_runner_version=JOB_RUNNER_VERSION,
+        is_success=True,
+        output=JobOutput(
+            content=CONFIG_NAMES_CONTENT,
+            http_status=HTTPStatus.OK,
+            error_code=None,
+            details=None,
+            progress=1.0,
+        ),
+    )
+    # update the priority of the started job before it finishes
+    JobDocument(dataset=DATASET_NAME, pk=job_info["job_id"]).update(priority=Priority.HIGH)
+    # then finish
+    finish_job(job_result=job_result, processing_graph=processing_graph)
+
+    assert JobDocument.objects(dataset=DATASET_NAME).count() == len(artifacts_to_create)
+
+    done_job = JobDocument.objects(dataset=DATASET_NAME, status=Status.STARTED)
+    assert done_job.count() == 0
+
+    waiting_jobs = JobDocument.objects(dataset=DATASET_NAME, status=Status.WAITING)
+    assert waiting_jobs.count() == len(artifacts_to_create)
+    assert all(job.priority == Priority.HIGH for job in waiting_jobs)
 
 
 def populate_queue() -> None:

@@ -81,7 +81,7 @@ from libcommon.exceptions import (
     UnsupportedExternalFilesError,
 )
 from libcommon.parquet_utils import PART_SUFFIX, PARTIAL_PREFIX
-from libcommon.queue import lock
+from libcommon.queue.lock import lock
 from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.utils import HF_HUB_HTTP_ERROR_RETRY_SLEEPS, retry
 from tqdm.contrib.concurrent import thread_map
@@ -933,7 +933,7 @@ class track_reads:
     ```
     """
 
-    allow_list = ["hf://datasets/allenai/c4/*", "hf://datasets/datasets-maintainers/*"]
+    allow_list = ["hf://datasets/allenai/c4*", "hf://datasets/datasets-maintainers/*"]
 
     def __init__(self) -> None:
         self.files: dict[str, dict[str, int]] = {}

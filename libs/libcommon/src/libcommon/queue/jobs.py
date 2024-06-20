@@ -2,44 +2,39 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import contextlib
-import json
 import logging
-import time
 import types
 from collections import Counter
-from collections.abc import Mapping, Sequence
+from collections.abc import Mapping
 from datetime import datetime, timedelta
-from enum import IntEnum
 from itertools import groupby
 from operator import itemgetter
-from types import TracebackType
-from typing import Any, Generic, Literal, Optional, TypedDict, TypeVar
+from typing import Any, Generic, Optional, TypedDict, TypeVar
 from uuid import uuid4
 
 import bson
 import pandas as pd
 import pyarrow as pa
 import pytz
-from bson import ObjectId
 from mongoengine import Document
-from mongoengine.errors import DoesNotExist, NotUniqueError
-from mongoengine.fields import DateTimeField, EnumField, IntField, ObjectIdField, StringField
+from mongoengine.errors import DoesNotExist
+from mongoengine.fields import DateTimeField, EnumField, IntField, StringField
 from mongoengine.queryset.queryset import QuerySet
 from pymongoarrow.api import Schema, find_pandas_all
 
 from libcommon.constants import (
     DEFAULT_DIFFICULTY_MAX,
     DEFAULT_DIFFICULTY_MIN,
-    LOCK_TTL_SECONDS_NO_OWNER,
-    LOCK_TTL_SECONDS_TO_START_JOB,
-    LOCK_TTL_SECONDS_TO_WRITE_ON_GIT_BRANCH,
     QUEUE_COLLECTION_JOBS,
-    QUEUE_COLLECTION_LOCKS,
     QUEUE_MONGOENGINE_ALIAS,
-    TYPE_AND_STATUS_JOB_COUNTS_COLLECTION,
-    WORKER_TYPE_JOB_COUNTS_COLLECTION,
 )
 from libcommon.dtos import FlatJobInfo, JobInfo, Priority, Status, WorkerSize
+from libcommon.queue.lock import lock, release_lock, release_locks
+from libcommon.queue.metrics import (
+    decrease_metric,
+    increase_metric,
+    update_metrics_for_type,
+)
 from libcommon.utils import get_datetime, inputs_to_string
 
 # START monkey patching ### hack ###
@@ -59,11 +54,12 @@ class QuerySetManager(Generic[U]):
         return QuerySet(cls, cls._get_collection())
 
 
-class StartedJobError(Exception):
-    pass
-
-
 # END monkey patching ### hack ###
+
+
+JobsTotalByTypeAndStatus = Mapping[tuple[str, str], int]
+
+JobsCountByWorkerSize = Mapping[str, int]
 
 
 class JobDict(TypedDict):
@@ -80,11 +76,6 @@ class JobDict(TypedDict):
     created_at: datetime
     started_at: Optional[datetime]
     last_heartbeat: Optional[datetime]
-
-
-JobsTotalByTypeAndStatus = Mapping[tuple[str, str], int]
-
-JobsCountByWorkerSize = Mapping[str, int]
 
 
 class DumpByPendingStatus(TypedDict):
@@ -109,6 +100,10 @@ class LockTimeoutError(Exception):
 
 
 class NoWaitingJobError(Exception):
+    pass
+
+
+class StartedJobError(Exception):
     pass
 
 
@@ -252,266 +247,6 @@ class JobDocument(Document):
                 "created_at": self.created_at,
             }
         )
-
-
-DEFAULT_INCREASE_AMOUNT = 1
-DEFAULT_DECREASE_AMOUNT = -1
-
-
-class JobTotalMetricDocument(Document):
-    """Jobs total metric in mongoDB database, used to compute prometheus metrics.
-
-    Args:
-        job_type (`str`): job type
-        status (`str`): job status see libcommon.queue.Status
-        total (`int`): total of jobs
-        created_at (`datetime`): when the metric has been created.
-    """
-
-    id = ObjectIdField(db_field="_id", primary_key=True, default=ObjectId)
-    job_type = StringField(required=True, unique_with="status")
-    status = StringField(required=True)
-    total = IntField(required=True, default=0)
-    created_at = DateTimeField(default=get_datetime)
-
-    meta = {
-        "collection": TYPE_AND_STATUS_JOB_COUNTS_COLLECTION,
-        "db_alias": QUEUE_MONGOENGINE_ALIAS,
-        "indexes": [("job_type", "status")],
-    }
-    objects = QuerySetManager["JobTotalMetricDocument"]()
-
-
-class WorkerSizeJobsCountDocument(Document):
-    """Metric that counts the number of (waiting) jobs per worker size.
-
-    A worker size is defined by the job difficulties it handles. We hardcode
-        - light: difficulty <= 40
-        - medium: 40 < difficulty <= 70
-        - heavy: 70 < difficulty
-
-    Args:
-        worker_size (`WorkerSize`): worker size
-        jobs_count (`int`): jobs count
-        created_at (`datetime`): when the metric has been created.
-    """
-
-    id = ObjectIdField(db_field="_id", primary_key=True, default=ObjectId)
-    worker_size = EnumField(WorkerSize, required=True, unique=True)
-    jobs_count = IntField(required=True, default=0)
-    created_at = DateTimeField(default=get_datetime)
-
-    @staticmethod
-    def get_worker_size(difficulty: int) -> WorkerSize:
-        if difficulty <= 40:
-            return WorkerSize.light
-        if difficulty <= 70:
-            return WorkerSize.medium
-        return WorkerSize.heavy
-
-    meta = {
-        "collection": WORKER_TYPE_JOB_COUNTS_COLLECTION,
-        "db_alias": QUEUE_MONGOENGINE_ALIAS,
-        "indexes": [("worker_size")],
-    }
-    objects = QuerySetManager["WorkerSizeJobsCountDocument"]()
-
-
-def _update_metrics(job_type: str, status: str, increase_by: int, difficulty: int) -> None:
-    JobTotalMetricDocument.objects(job_type=job_type, status=status).update(
-        upsert=True,
-        write_concern={"w": "majority", "fsync": True},
-        read_concern={"level": "majority"},
-        inc__total=increase_by,
-    )
-    if status == Status.WAITING:
-        worker_size = WorkerSizeJobsCountDocument.get_worker_size(difficulty=difficulty)
-        WorkerSizeJobsCountDocument.objects(worker_size=worker_size).update(
-            upsert=True,
-            write_concern={"w": "majority", "fsync": True},
-            read_concern={"level": "majority"},
-            inc__jobs_count=increase_by,
-        )
-
-
-def increase_metric(job_type: str, status: str, difficulty: int) -> None:
-    _update_metrics(job_type=job_type, status=status, increase_by=DEFAULT_INCREASE_AMOUNT, difficulty=difficulty)
-
-
-def decrease_metric(job_type: str, status: str, difficulty: int) -> None:
-    _update_metrics(job_type=job_type, status=status, increase_by=DEFAULT_DECREASE_AMOUNT, difficulty=difficulty)
-
-
-def update_metrics_for_type(job_type: str, previous_status: str, new_status: str, difficulty: int) -> None:
-    if job_type is not None:
-        decrease_metric(job_type=job_type, status=previous_status, difficulty=difficulty)
-        increase_metric(job_type=job_type, status=new_status, difficulty=difficulty)
-        # ^ this does not affect WorkerSizeJobsCountDocument, so we don't pass the job difficulty
-
-
-class _TTL(IntEnum):
-    LOCK_TTL_SECONDS_TO_START_JOB = LOCK_TTL_SECONDS_TO_START_JOB
-    LOCK_TTL_SECONDS_TO_WRITE_ON_GIT_BRANCH = LOCK_TTL_SECONDS_TO_WRITE_ON_GIT_BRANCH
-
-
-class Lock(Document):
-    meta = {
-        "collection": QUEUE_COLLECTION_LOCKS,
-        "db_alias": QUEUE_MONGOENGINE_ALIAS,
-        "indexes": [
-            ("key", "owner"),
-            {
-                "name": "LOCK_TTL_SECONDS_NO_OWNER",
-                "fields": ["updated_at"],
-                "expireAfterSeconds": LOCK_TTL_SECONDS_NO_OWNER,
-                "partialFilterExpression": {"owner": None},
-            },
-        ]
-        + [
-            {
-                "name": ttl.name,
-                "fields": ["updated_at"],
-                "expireAfterSeconds": ttl,
-                "partialFilterExpression": {"ttl": ttl},
-            }
-            for ttl in _TTL
-        ],
-    }
-
-    key = StringField(primary_key=True)
-    owner = StringField()
-    ttl = IntField()
-    job_id = StringField()  # deprecated
-
-    created_at = DateTimeField()
-    updated_at = DateTimeField()
-
-    objects = QuerySetManager["Lock"]()
-
-
-class lock(contextlib.AbstractContextManager["lock"]):
-    """
-    Provides a simple way of inter-applications communication using a MongoDB lock.
-
-    An example usage is to another worker of your application that a resource
-    or working directory is currently used in a job.
-
-    Example of usage:
-
-    ```python
-    key = json.dumps({"type": job.type, "dataset": job.dataset})
-    with lock(key=key, owner=job.pk):
-        ...
-    ```
-
-    Or using a try/except:
-
-    ```python
-    try:
-        key = json.dumps({"type": job.type, "dataset": job.dataset})
-        lock(key=key, owner=job.pk).acquire()
-    except TimeoutError:
-        ...
-    ```
-    """
-
-    TTL = _TTL
-    _default_sleeps = (0.05, 0.05, 0.05, 1, 1, 1, 5)
-
-    def __init__(
-        self, key: str, owner: str, sleeps: Sequence[float] = _default_sleeps, ttl: Optional[_TTL] = None
-    ) -> None:
-        self.key = key
-        self.owner = owner
-        self.sleeps = sleeps
-        self.ttl = ttl
-        if ttl is not None and ttl not in list(self.TTL):
-            raise ValueError(f"The TTL value is not supported by the TTL index. It should be one of {list(self.TTL)}")
-
-    def acquire(self) -> None:
-        for sleep in self.sleeps:
-            try:
-                Lock.objects(key=self.key, owner__in=[None, self.owner]).update(
-                    upsert=True,
-                    write_concern={"w": "majority", "fsync": True},
-                    read_concern={"level": "majority"},
-                    owner=self.owner,
-                    updated_at=get_datetime(),
-                    ttl=self.ttl,
-                )
-                return
-            except NotUniqueError:
-                logging.debug(f"Sleep {sleep}s to acquire lock '{self.key}' for owner='{self.owner}'")
-                time.sleep(sleep)
-        raise TimeoutError("lock couldn't be acquired")
-
-    def release(self) -> None:
-        Lock.objects(key=self.key, owner=self.owner).update(
-            write_concern={"w": "majority", "fsync": True},
-            read_concern={"level": "majority"},
-            owner=None,
-            updated_at=get_datetime(),
-        )
-
-    def __enter__(self) -> "lock":
-        self.acquire()
-        return self
-
-    def __exit__(
-        self, exctype: Optional[type[BaseException]], excinst: Optional[BaseException], exctb: Optional[TracebackType]
-    ) -> Literal[False]:
-        self.release()
-        return False
-
-    @classmethod
-    def git_branch(
-        cls,
-        dataset: str,
-        branch: str,
-        owner: str,
-        sleeps: Sequence[float] = _default_sleeps,
-    ) -> "lock":
-        """
-        Lock a git branch of a dataset on the hub for read/write
-
-        Args:
-            dataset (`str`): the dataset repository
-            branch (`str`): the branch to lock
-            owner (`str`): the current job id that holds the lock
-            sleeps (`Sequence[float]`, *optional*): the time in seconds to sleep between each attempt to acquire the lock
-        """
-        key = json.dumps({"dataset": dataset, "branch": branch})
-        return cls(key=key, owner=owner, sleeps=sleeps, ttl=_TTL.LOCK_TTL_SECONDS_TO_WRITE_ON_GIT_BRANCH)
-
-
-def release_locks(owner: str) -> None:
-    """
-    Release all locks owned by the given owner
-
-    Args:
-        owner (`str`): the current owner that holds the locks
-    """
-    Lock.objects(owner=owner).update(
-        write_concern={"w": "majority", "fsync": True},
-        read_concern={"level": "majority"},
-        owner=None,
-        updated_at=get_datetime(),
-    )
-
-
-def release_lock(key: str) -> None:
-    """
-    Release the lock for a specific key
-
-    Args:
-        key (`str`): the lock key
-    """
-    Lock.objects(key=key).update(
-        write_concern={"w": "majority", "fsync": True},
-        read_concern={"level": "majority"},
-        owner=None,
-        updated_at=get_datetime(),
-    )
 
 
 class Queue:
@@ -947,7 +682,7 @@ class Queue:
             return False
         return True
 
-    def finish_job(self, job_id: str) -> bool:
+    def finish_job(self, job_id: str) -> Optional[Priority]:
         """Finish a job in the queue.
 
         The job is moved from the started state to the success or error state. The existing locks are released.
@@ -957,22 +692,22 @@ class Queue:
             is_success (`bool`): whether the job succeeded or not
 
         Returns:
-            `bool`: whether the job existed, and had the expected format (STARTED status, non-empty started_at)
-            before finishing
+            `Priority`, *optional*: the priority of the job, if the job was successfully finished.
         """
         try:
             job = self._get_started_job(job_id=job_id)
         except DoesNotExist:
             logging.error(f"job {job_id} does not exist. Aborting.")
-            return False
+            return None
         except StartedJobError as e:
             logging.error(f"job {job_id} has not the expected format for a started job. Aborting: {e}")
-            return False
+            return None
         decrease_metric(job_type=job.type, status=job.status, difficulty=job.difficulty)
+        job_priority = job.priority
         job.delete()
         release_locks(owner=job_id)
         # ^ bug: the lock owner is not set to the job id anymore when calling start_job()!
-        return True
+        return job_priority
 
     def delete_dataset_waiting_jobs(self, dataset: str) -> int:
         """
@@ -1187,12 +922,3 @@ class Queue:
             )
         ]
         return [zombie.info() for zombie in zombies]
-
-
-# only for the tests
-def _clean_queue_database() -> None:
-    """Delete all the jobs in the database"""
-    JobDocument.drop_collection()  # type: ignore
-    JobTotalMetricDocument.drop_collection()  # type: ignore
-    WorkerSizeJobsCountDocument.drop_collection()  # type: ignore
-    Lock.drop_collection()  # type: ignore

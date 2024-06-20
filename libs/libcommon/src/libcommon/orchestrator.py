@@ -20,7 +20,7 @@ from libcommon.constants import (
 from libcommon.dtos import JobInfo, JobResult, Priority
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep, ProcessingStepDoesNotExist, processing_graph
 from libcommon.prometheus import StepProfiler
-from libcommon.queue import Queue
+from libcommon.queue.jobs import Queue
 from libcommon.simple_cache import (
     CachedArtifactNotFoundError,
     delete_dataset_responses,
@@ -902,7 +902,10 @@ def finish_job(
     )
     logging.debug("the job output has been written to the cache.")
     # finish the job
-    Queue().finish_job(job_id=job_info["job_id"])
+    job_priority = Queue().finish_job(job_id=job_info["job_id"])
+    if job_priority:
+        job_info["priority"] = job_priority
+        # ^ change the priority of children jobs if the priority was updated during the job
     logging.debug("the job has been finished.")
     # trigger the next steps
     plan = AfterJobPlan(job_info=job_info, processing_graph=processing_graph, failed_runs=failed_runs)

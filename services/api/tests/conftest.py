@@ -6,7 +6,7 @@ from collections.abc import Iterator
 import pytest
 from libapi.config import UvicornConfig
 from libcommon.processing_graph import processing_graph
-from libcommon.queue import _clean_queue_database
+from libcommon.queue.utils import _clean_queue_database
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import _clean_cache_database
 from pytest import MonkeyPatch, fixture

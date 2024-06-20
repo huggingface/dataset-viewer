@@ -17,7 +17,7 @@ from prometheus_client.multiprocess import MultiProcessCollector
 from psutil import disk_usage
 
 from libcommon.constants import LONG_DURATION_PROMETHEUS_HISTOGRAM_BUCKETS
-from libcommon.queue import JobTotalMetricDocument, WorkerSizeJobsCountDocument
+from libcommon.queue.metrics import JobTotalMetricDocument, WorkerSizeJobsCountDocument
 from libcommon.simple_cache import CacheTotalMetricDocument
 from libcommon.storage import StrPath
 
