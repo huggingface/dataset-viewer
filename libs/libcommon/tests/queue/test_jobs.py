@@ -10,9 +10,10 @@ import pytz
 
 from libcommon.constants import QUEUE_TTL_SECONDS
 from libcommon.dtos import Priority, Status, WorkerSize
+from libcommon.queue.dataset_blockages import block_dataset
 from libcommon.queue.jobs import EmptyQueueError, JobDocument, Queue
 from libcommon.queue.metrics import JobTotalMetricDocument, WorkerSizeJobsCountDocument
-from libcommon.queue.past_jobs import PastJobDocument
+from libcommon.queue.past_jobs import JOB_DURATION_MIN_SECONDS, PastJobDocument
 from libcommon.resources import QueueMongoResource
 from libcommon.utils import get_datetime
 
@@ -37,6 +38,10 @@ def get_old_datetime() -> datetime:
     # Beware: the TTL index is set to 10 minutes. So it will delete the finished jobs after 10 minutes.
     # We have to use a datetime that is not older than 10 minutes.
     return get_datetime() - timedelta(seconds=(QUEUE_TTL_SECONDS / 2))
+
+
+def get_future_datetime() -> datetime:
+    return get_datetime() + timedelta(seconds=JOB_DURATION_MIN_SECONDS * 2)
 
 
 @pytest.fixture(autouse=True)
@@ -97,8 +102,8 @@ def test_add_job() -> None:
     # finish the first job
     assert_past_jobs_number(0)
     queue.finish_job(job_id=job_info["job_id"])
-    assert_past_jobs_number(1)
-    # ^the duration has been saved in past jobs
+    assert_past_jobs_number(0)
+    # ^ the duration is too short, it's ignored
 
     # the queue is not empty
     assert queue.is_job_in_process(job_type=test_type, dataset=test_dataset, revision=test_revision)
@@ -119,8 +124,9 @@ def test_add_job() -> None:
     assert_metric_jobs_per_type(job_type=test_type, status=Status.STARTED, total=1)
     assert_metric_jobs_per_worker(worker_size=WorkerSize.medium, jobs_count=0)
 
-    # finish it
-    queue.finish_job(job_id=job_info["job_id"])
+    # finish it (but changing the start date, so that an entry is created in pastJobs)
+    with patch("libcommon.queue.jobs.get_datetime", get_future_datetime):
+        queue.finish_job(job_id=job_info["job_id"])
     assert_metric_jobs_per_type(job_type=test_type, status=Status.WAITING, total=0)
     assert_metric_jobs_per_type(job_type=test_type, status=Status.STARTED, total=0)
     assert_metric_jobs_per_worker(worker_size=WorkerSize.medium, jobs_count=0)
@@ -131,8 +137,8 @@ def test_add_job() -> None:
         # an error is raised if we try to start a job
         queue.start_job()
 
-    # two finished jobs
-    assert_past_jobs_number(2)
+    # one long finished job
+    assert_past_jobs_number(1)
 
 
 @pytest.mark.parametrize(
@@ -690,3 +696,36 @@ def test_get_pending_jobs_df_and_has_pending_jobs(
     if expected_job_types:
         assert df["dataset"].unique() == [dataset]
         assert set(df["type"].unique()) == set(expected_job_types)
+
+
+@pytest.mark.parametrize(
+    "datasets,blocked_datasets,expected_started_dataset",
+    [
+        ([], [], None),
+        ([], ["dataset"], None),
+        (["dataset"], [], "dataset"),
+        (["dataset"], ["dataset"], None),
+        (["dataset", "dataset"], [], "dataset"),
+        (["dataset", "dataset"], ["dataset"], None),
+        (["dataset1", "dataset2"], [], "dataset1"),
+        (["dataset1", "dataset2"], ["dataset1"], "dataset2"),
+        (["dataset1", "dataset2"], ["dataset1", "dataset2"], None),
+    ],
+)
+def test_rate_limited_dataset(
+    datasets: list[str],
+    blocked_datasets: list[str],
+    expected_started_dataset: Optional[str],
+) -> None:
+    queue = Queue()
+    for dataset in datasets:
+        queue.add_job(job_type="test_type", dataset=dataset, revision="test_revision", difficulty=50)
+    for blocked_dataset in blocked_datasets:
+        block_dataset(blocked_dataset)
+
+    if expected_started_dataset:
+        job_info = queue.start_job()
+        assert job_info["params"]["dataset"] == expected_started_dataset
+    else:
+        with pytest.raises(EmptyQueueError):
+            queue.start_job()

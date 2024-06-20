@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2024 The HuggingFace Authors.
 
+from .dataset_blockages import DatasetBlockageDocument
 from .jobs import JobDocument
 from .lock import Lock
 from .metrics import JobTotalMetricDocument, WorkerSizeJobsCountDocument
@@ -15,3 +16,4 @@ def _clean_queue_database() -> None:
     WorkerSizeJobsCountDocument.drop_collection()  # type: ignore
     Lock.drop_collection()  # type: ignore
     PastJobDocument.drop_collection()  # type: ignore
+    DatasetBlockageDocument.drop_collection()  # type: ignore
