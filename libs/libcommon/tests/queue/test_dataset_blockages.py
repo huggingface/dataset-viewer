@@ -3,7 +3,7 @@
 
 import pytest
 
-from libcommon.queue.dataset_blockages import block_dataset, get_blocked_datasets
+from libcommon.queue.dataset_blockages import block_dataset, get_blocked_datasets, is_blocked
 from libcommon.resources import QueueMongoResource
 
 
@@ -15,14 +15,17 @@ def queue_mongo_resource_autouse(queue_mongo_resource: QueueMongoResource) -> Qu
 @pytest.mark.parametrize(
     "datasets,expected_datasets",
     [
-        ([], set()),
-        (["dataset"], {"dataset"}),
-        (["dataset", "dataset"], {"dataset"}),
-        (["dataset1", "dataset2"], {"dataset1", "dataset2"}),
+        ([], []),
+        (["dataset"], ["dataset"]),
+        (["dataset", "dataset"], ["dataset"]),
+        (["dataset1", "dataset2"], ["dataset1", "dataset2"]),
     ],
 )
 def test_dataset_blockage(datasets: list[str], expected_datasets: set[str]) -> None:
     for dataset in datasets:
         block_dataset(dataset=dataset)
 
-    assert get_blocked_datasets() == expected_datasets
+    assert sorted(get_blocked_datasets()) == sorted(expected_datasets)
+    for dataset in expected_datasets:
+        assert is_blocked(dataset=dataset)
+    assert not is_blocked(dataset="not_blocked_dataset")

@@ -73,6 +73,11 @@ def block_dataset(dataset: str) -> None:
     DatasetBlockageDocument(dataset=dataset, blocked_at=get_datetime()).save()
 
 
-def get_blocked_datasets() -> set[str]:
-    """Return the set of blocked datasets."""
-    return set(DatasetBlockageDocument.objects().distinct("dataset"))
+def get_blocked_datasets() -> list[str]:
+    """Return the list of blocked datasets."""
+    return DatasetBlockageDocument.objects().distinct("dataset")
+
+
+def is_blocked(dataset: str) -> bool:
+    """Return True if the dataset is blocked."""
+    return DatasetBlockageDocument.objects(dataset=dataset).count() > 0

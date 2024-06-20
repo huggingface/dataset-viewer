@@ -10,6 +10,7 @@ import pytz
 
 from libcommon.constants import QUEUE_TTL_SECONDS
 from libcommon.dtos import Priority, Status, WorkerSize
+from libcommon.queue.dataset_blockages import block_dataset
 from libcommon.queue.jobs import EmptyQueueError, JobDocument, Queue
 from libcommon.queue.metrics import JobTotalMetricDocument, WorkerSizeJobsCountDocument
 from libcommon.queue.past_jobs import PastJobDocument
@@ -690,3 +691,36 @@ def test_get_pending_jobs_df_and_has_pending_jobs(
     if expected_job_types:
         assert df["dataset"].unique() == [dataset]
         assert set(df["type"].unique()) == set(expected_job_types)
+
+
+@pytest.mark.parametrize(
+    "datasets,blocked_datasets,expected_started_dataset",
+    [
+        ([], [], None),
+        ([], ["dataset"], None),
+        (["dataset"], [], "dataset"),
+        (["dataset"], ["dataset"], None),
+        (["dataset", "dataset"], [], "dataset"),
+        (["dataset", "dataset"], ["dataset"], None),
+        (["dataset1", "dataset2"], [], "dataset1"),
+        (["dataset1", "dataset2"], ["dataset1"], "dataset2"),
+        (["dataset1", "dataset2"], ["dataset1", "dataset2"], None),
+    ],
+)
+def test_rate_limited_dataset(
+    datasets: list[str],
+    blocked_datasets: list[str],
+    expected_started_dataset: Optional[str],
+) -> None:
+    queue = Queue()
+    for dataset in datasets:
+        queue.add_job(job_type="test_type", dataset=dataset, revision="test_revision", difficulty=50)
+    for blocked_dataset in blocked_datasets:
+        block_dataset(blocked_dataset)
+
+    if expected_started_dataset:
+        job_info = queue.start_job()
+        assert job_info["params"]["dataset"] == expected_started_dataset
+    else:
+        with pytest.raises(EmptyQueueError):
+            queue.start_job()

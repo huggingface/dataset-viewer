@@ -14,6 +14,7 @@ from libcommon.constants import (
     QUEUE_COLLECTION_PAST_JOBS,
     QUEUE_MONGOENGINE_ALIAS,
 )
+from libcommon.queue.dataset_blockages import block_dataset, is_blocked
 
 # START monkey patching ### hack ###
 # see https://github.com/sbdchd/mongo-types#install
@@ -34,8 +35,12 @@ class QuerySetManager(Generic[U]):
 
 # END monkey patching ### hack ###
 
-# delete the past jobs after 6 hours
-PAST_JOB_EXPIRE_AFTER_SECONDS = 6 * 60 * 60
+# we allow 10 hours of compute (parallel jobs) every hour
+ALLOWED_RATE_OF_COMPUTE_HOURS_PER_HOUR = 10
+# we look at the last 6 hours to decide to rate-limit a dataset
+RATE_LIMIT_WINDOW_SECONDS = 6 * 60 * 60
+# total jobs duration that triggers rate-limiting a dataset
+DATASET_BLOCKAGE_THRESHOLD_SECONDS = ALLOWED_RATE_OF_COMPUTE_HOURS_PER_HOUR * RATE_LIMIT_WINDOW_SECONDS
 
 
 class PastJobDocument(Document):
@@ -54,7 +59,7 @@ class PastJobDocument(Document):
             {
                 "name": "PAST_JOB_EXPIRE_AFTER_SECONDS",
                 "fields": ["finished_at"],
-                "expireAfterSeconds": PAST_JOB_EXPIRE_AFTER_SECONDS,
+                "expireAfterSeconds": RATE_LIMIT_WINDOW_SECONDS,
             },
         ],
     }
@@ -70,7 +75,10 @@ class NegativeDurationError(ValidationError):
 
 
 def create_past_job(dataset: str, started_at: datetime, finished_at: datetime) -> None:
-    """Create a past job in the mongoDB database
+    """Create a past job in the mongoDB database.
+
+    After creating the entry, we check if it should be rate-limited (if it isn't yet), and if so, we block
+    the dataset.
 
     Args:
         dataset (`str`): The dataset on which to apply the job.
@@ -85,3 +93,7 @@ def create_past_job(dataset: str, started_at: datetime, finished_at: datetime) -
         PastJobDocument(dataset=dataset, duration=duration, finished_at=finished_at).save()
     except ValidationError as e:
         raise NegativeDurationError("The duration of the job cannot be negative.") from e
+
+    if not is_blocked(dataset):
+        if PastJobDocument.objects(dataset=dataset).sum("duration") > DATASET_BLOCKAGE_THRESHOLD_SECONDS:
+            block_dataset(dataset)
