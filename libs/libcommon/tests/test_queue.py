@@ -10,13 +10,8 @@ import pytz
 
 from libcommon.constants import QUEUE_TTL_SECONDS
 from libcommon.dtos import Priority, Status, WorkerSize
-from libcommon.queue import (
-    EmptyQueueError,
-    JobDocument,
-    JobTotalMetricDocument,
-    Queue,
-    WorkerSizeJobsCountDocument,
-)
+from libcommon.new_queue.metrics import JobTotalMetricDocument, WorkerSizeJobsCountDocument
+from libcommon.queue import EmptyQueueError, JobDocument, Queue
 from libcommon.resources import QueueMongoResource
 from libcommon.utils import get_datetime
 

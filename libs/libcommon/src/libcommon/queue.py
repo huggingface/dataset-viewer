@@ -16,10 +16,9 @@ import bson
 import pandas as pd
 import pyarrow as pa
 import pytz
-from bson import ObjectId
 from mongoengine import Document
 from mongoengine.errors import DoesNotExist
-from mongoengine.fields import DateTimeField, EnumField, IntField, ObjectIdField, StringField
+from mongoengine.fields import DateTimeField, EnumField, IntField, StringField
 from mongoengine.queryset.queryset import QuerySet
 from pymongoarrow.api import Schema, find_pandas_all
 
@@ -28,11 +27,14 @@ from libcommon.constants import (
     DEFAULT_DIFFICULTY_MIN,
     QUEUE_COLLECTION_JOBS,
     QUEUE_MONGOENGINE_ALIAS,
-    TYPE_AND_STATUS_JOB_COUNTS_COLLECTION,
-    WORKER_TYPE_JOB_COUNTS_COLLECTION,
 )
 from libcommon.dtos import FlatJobInfo, JobInfo, Priority, Status, WorkerSize
 from libcommon.new_queue.lock import lock, release_lock, release_locks
+from libcommon.new_queue.metrics import (
+    decrease_metric,
+    increase_metric,
+    update_metrics_for_type,
+)
 from libcommon.utils import get_datetime, inputs_to_string
 
 # START monkey patching ### hack ###
@@ -52,11 +54,12 @@ class QuerySetManager(Generic[U]):
         return QuerySet(cls, cls._get_collection())
 
 
-class StartedJobError(Exception):
-    pass
-
-
 # END monkey patching ### hack ###
+
+
+JobsTotalByTypeAndStatus = Mapping[tuple[str, str], int]
+
+JobsCountByWorkerSize = Mapping[str, int]
 
 
 class JobDict(TypedDict):
@@ -73,11 +76,6 @@ class JobDict(TypedDict):
     created_at: datetime
     started_at: Optional[datetime]
     last_heartbeat: Optional[datetime]
-
-
-JobsTotalByTypeAndStatus = Mapping[tuple[str, str], int]
-
-JobsCountByWorkerSize = Mapping[str, int]
 
 
 class DumpByPendingStatus(TypedDict):
@@ -102,6 +100,10 @@ class LockTimeoutError(Exception):
 
 
 class NoWaitingJobError(Exception):
+    pass
+
+
+class StartedJobError(Exception):
     pass
 
 
@@ -245,101 +247,6 @@ class JobDocument(Document):
                 "created_at": self.created_at,
             }
         )
-
-
-DEFAULT_INCREASE_AMOUNT = 1
-DEFAULT_DECREASE_AMOUNT = -1
-
-
-class JobTotalMetricDocument(Document):
-    """Jobs total metric in mongoDB database, used to compute prometheus metrics.
-
-    Args:
-        job_type (`str`): job type
-        status (`str`): job status see libcommon.queue.Status
-        total (`int`): total of jobs
-        created_at (`datetime`): when the metric has been created.
-    """
-
-    id = ObjectIdField(db_field="_id", primary_key=True, default=ObjectId)
-    job_type = StringField(required=True, unique_with="status")
-    status = StringField(required=True)
-    total = IntField(required=True, default=0)
-    created_at = DateTimeField(default=get_datetime)
-
-    meta = {
-        "collection": TYPE_AND_STATUS_JOB_COUNTS_COLLECTION,
-        "db_alias": QUEUE_MONGOENGINE_ALIAS,
-        "indexes": [("job_type", "status")],
-    }
-    objects = QuerySetManager["JobTotalMetricDocument"]()
-
-
-class WorkerSizeJobsCountDocument(Document):
-    """Metric that counts the number of (waiting) jobs per worker size.
-
-    A worker size is defined by the job difficulties it handles. We hardcode
-        - light: difficulty <= 40
-        - medium: 40 < difficulty <= 70
-        - heavy: 70 < difficulty
-
-    Args:
-        worker_size (`WorkerSize`): worker size
-        jobs_count (`int`): jobs count
-        created_at (`datetime`): when the metric has been created.
-    """
-
-    id = ObjectIdField(db_field="_id", primary_key=True, default=ObjectId)
-    worker_size = EnumField(WorkerSize, required=True, unique=True)
-    jobs_count = IntField(required=True, default=0)
-    created_at = DateTimeField(default=get_datetime)
-
-    @staticmethod
-    def get_worker_size(difficulty: int) -> WorkerSize:
-        if difficulty <= 40:
-            return WorkerSize.light
-        if difficulty <= 70:
-            return WorkerSize.medium
-        return WorkerSize.heavy
-
-    meta = {
-        "collection": WORKER_TYPE_JOB_COUNTS_COLLECTION,
-        "db_alias": QUEUE_MONGOENGINE_ALIAS,
-        "indexes": [("worker_size")],
-    }
-    objects = QuerySetManager["WorkerSizeJobsCountDocument"]()
-
-
-def _update_metrics(job_type: str, status: str, increase_by: int, difficulty: int) -> None:
-    JobTotalMetricDocument.objects(job_type=job_type, status=status).update(
-        upsert=True,
-        write_concern={"w": "majority", "fsync": True},
-        read_concern={"level": "majority"},
-        inc__total=increase_by,
-    )
-    if status == Status.WAITING:
-        worker_size = WorkerSizeJobsCountDocument.get_worker_size(difficulty=difficulty)
-        WorkerSizeJobsCountDocument.objects(worker_size=worker_size).update(
-            upsert=True,
-            write_concern={"w": "majority", "fsync": True},
-            read_concern={"level": "majority"},
-            inc__jobs_count=increase_by,
-        )
-
-
-def increase_metric(job_type: str, status: str, difficulty: int) -> None:
-    _update_metrics(job_type=job_type, status=status, increase_by=DEFAULT_INCREASE_AMOUNT, difficulty=difficulty)
-
-
-def decrease_metric(job_type: str, status: str, difficulty: int) -> None:
-    _update_metrics(job_type=job_type, status=status, increase_by=DEFAULT_DECREASE_AMOUNT, difficulty=difficulty)
-
-
-def update_metrics_for_type(job_type: str, previous_status: str, new_status: str, difficulty: int) -> None:
-    if job_type is not None:
-        decrease_metric(job_type=job_type, status=previous_status, difficulty=difficulty)
-        increase_metric(job_type=job_type, status=new_status, difficulty=difficulty)
-        # ^ this does not affect WorkerSizeJobsCountDocument, so we don't pass the job difficulty
 
 
 class Queue:

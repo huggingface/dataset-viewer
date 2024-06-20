@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from http import HTTPStatus
 from typing import Optional
 
+from libcommon.new_queue.metrics import JobTotalMetricDocument, WorkerSizeJobsCountDocument
 from libcommon.prometheus import (
     QUEUE_JOBS_TOTAL,
     RESPONSES_IN_CACHE_TOTAL,
@@ -15,7 +16,6 @@ from libcommon.prometheus import (
     update_responses_in_cache_total,
     update_worker_size_jobs_count,
 )
-from libcommon.queue import JobTotalMetricDocument, WorkerSizeJobsCountDocument
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import CacheTotalMetricDocument
 

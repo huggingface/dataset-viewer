@@ -4,13 +4,8 @@
 from unittest.mock import patch
 
 import pytest
-from libcommon.queue import (
-    JobsCountByWorkerSize,
-    JobsTotalByTypeAndStatus,
-    JobTotalMetricDocument,
-    Queue,
-    WorkerSizeJobsCountDocument,
-)
+from libcommon.new_queue.metrics import JobTotalMetricDocument, WorkerSizeJobsCountDocument
+from libcommon.queue import JobsCountByWorkerSize, JobsTotalByTypeAndStatus, Queue
 
 from cache_maintenance.queue_metrics import collect_queue_metrics, collect_worker_size_jobs_count
 
