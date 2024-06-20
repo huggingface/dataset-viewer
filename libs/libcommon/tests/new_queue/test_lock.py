@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from libcommon.new_queue.lock import Lock, lock
+from libcommon.queue.lock import Lock, lock
 from libcommon.resources import QueueMongoResource
 
 

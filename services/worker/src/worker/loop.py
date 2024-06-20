@@ -11,14 +11,14 @@ from typing import Optional, TypedDict
 import orjson
 from filelock import FileLock
 from libcommon.dtos import JobInfo
-from libcommon.new_queue.jobs import (
+from libcommon.prometheus import LongStepProfiler, StepProfiler
+from libcommon.queue.jobs import (
     AlreadyStartedJobError,
     EmptyQueueError,
     LockTimeoutError,
     NoWaitingJobError,
     Queue,
 )
-from libcommon.prometheus import LongStepProfiler, StepProfiler
 from libcommon.utils import get_datetime
 from psutil import cpu_count, getloadavg, swap_memory, virtual_memory
 

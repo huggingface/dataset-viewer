@@ -2,7 +2,7 @@
 # Copyright 2023 The HuggingFace Authors.
 
 from libcommon.constants import QUEUE_COLLECTION_JOBS, QUEUE_MONGOENGINE_ALIAS
-from libcommon.new_queue.jobs import JobDocument
+from libcommon.queue.jobs import JobDocument
 from libcommon.resources import MongoResource
 from libcommon.utils import get_datetime
 from mongoengine.connection import get_db

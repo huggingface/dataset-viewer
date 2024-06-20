@@ -4,7 +4,7 @@
 import logging
 
 from libcommon.constants import QUEUE_COLLECTION_JOBS, QUEUE_MONGOENGINE_ALIAS
-from libcommon.new_queue.jobs import JobDocument
+from libcommon.queue.jobs import JobDocument
 from mongoengine.connection import get_db
 
 from mongodb_migration.check import check_documents

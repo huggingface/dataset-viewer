@@ -28,13 +28,13 @@ from libcommon.exceptions import (
     ParquetResponseEmptyError,
     PreviousStepFormatError,
 )
-from libcommon.new_queue.lock import lock
 from libcommon.parquet_utils import (
     extract_split_directory_from_parquet_url,
     get_num_parquet_files_to_process,
     is_list_pa_type,
     parquet_export_is_partial,
 )
+from libcommon.queue.lock import lock
 from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.storage import StrPath
 from libcommon.utils import HF_HUB_HTTP_ERROR_RETRY_SLEEPS, download_file_from_hub, retry

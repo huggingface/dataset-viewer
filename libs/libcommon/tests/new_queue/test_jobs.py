@@ -10,8 +10,8 @@ import pytz
 
 from libcommon.constants import QUEUE_TTL_SECONDS
 from libcommon.dtos import Priority, Status, WorkerSize
-from libcommon.new_queue.jobs import EmptyQueueError, JobDocument, Queue
-from libcommon.new_queue.metrics import JobTotalMetricDocument, WorkerSizeJobsCountDocument
+from libcommon.queue.jobs import EmptyQueueError, JobDocument, Queue
+from libcommon.queue.metrics import JobTotalMetricDocument, WorkerSizeJobsCountDocument
 from libcommon.resources import QueueMongoResource
 from libcommon.utils import get_datetime
 
@@ -509,7 +509,7 @@ def test_queue_get_zombies() -> None:
     job_type = "test_type"
     test_difficulty = 50
     queue = Queue()
-    with patch("libcommon.new_queue.jobs.get_datetime", get_old_datetime):
+    with patch("libcommon.queue.jobs.get_datetime", get_old_datetime):
         zombie = queue.add_job(
             job_type=job_type,
             dataset="dataset1",

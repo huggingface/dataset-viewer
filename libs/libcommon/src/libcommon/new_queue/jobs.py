@@ -29,8 +29,8 @@ from libcommon.constants import (
     QUEUE_MONGOENGINE_ALIAS,
 )
 from libcommon.dtos import FlatJobInfo, JobInfo, Priority, Status, WorkerSize
-from libcommon.new_queue.lock import lock, release_lock, release_locks
-from libcommon.new_queue.metrics import (
+from libcommon.queue.lock import lock, release_lock, release_locks
+from libcommon.queue.metrics import (
     decrease_metric,
     increase_metric,
     update_metrics_for_type,

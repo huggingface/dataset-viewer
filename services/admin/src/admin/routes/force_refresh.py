@@ -19,10 +19,10 @@ from libapi.utils import (
 from libcommon.constants import DEFAULT_DIFFICULTY_MAX, DEFAULT_DIFFICULTY_MIN, MIN_BYTES_FOR_BONUS_DIFFICULTY
 from libcommon.dtos import Priority
 from libcommon.exceptions import CustomError
-from libcommon.new_queue.jobs import Queue
 from libcommon.operations import get_latest_dataset_revision_if_supported_or_raise
 from libcommon.orchestrator import get_num_bytes_from_config_infos
 from libcommon.processing_graph import InputType, processing_graph
+from libcommon.queue.jobs import Queue
 from starlette.requests import Request
 from starlette.responses import Response
 

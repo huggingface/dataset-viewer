@@ -12,7 +12,7 @@ import pytest
 import pytz
 from filelock import FileLock
 from libcommon.dtos import JobInfo, Priority, Status
-from libcommon.new_queue.jobs import JobDocument, JobDoesNotExistError, Queue
+from libcommon.queue.jobs import JobDocument, JobDoesNotExistError, Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import CachedResponseDocument
 from libcommon.storage import StrPath

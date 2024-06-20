@@ -4,7 +4,7 @@
 import logging
 
 from libcommon.constants import QUEUE_COLLECTION_LOCKS, QUEUE_MONGOENGINE_ALIAS
-from libcommon.new_queue.lock import Lock
+from libcommon.queue.lock import Lock
 from mongoengine.connection import get_db
 
 from mongodb_migration.check import check_documents

@@ -6,8 +6,8 @@ from http import HTTPStatus
 import pytest
 
 from libcommon.constants import CONFIG_SPLIT_NAMES_KIND, DATASET_CONFIG_NAMES_KIND
-from libcommon.new_queue.jobs import Queue
 from libcommon.processing_graph import processing_graph, specification
+from libcommon.queue.jobs import Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import upsert_response
 from libcommon.state import UnexceptedConfigNamesError, UnexceptedSplitNamesError
