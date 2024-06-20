@@ -47,6 +47,20 @@ UPSTREAM_RESPONSE_CONFIG_NAMES_EMPTY: UpstreamResponse = UpstreamResponse(
     http_status=HTTPStatus.OK,
     content={"config_names": []},
 )
+UPSTREAM_RESPONSE_CONFIG_NAMES_ERROR: UpstreamResponse = UpstreamResponse(
+    kind="dataset-config-names",
+    dataset=DATASET,
+    dataset_git_revision=REVISION_NAME,
+    http_status=HTTPStatus.INTERNAL_SERVER_ERROR,
+    content={},
+)
+UPSTREAM_RESPONSE_CONFIG_NAMES_BAD_FORMAT: UpstreamResponse = UpstreamResponse(
+    kind="dataset-config-names",
+    dataset=DATASET,
+    dataset_git_revision=REVISION_NAME,
+    http_status=HTTPStatus.OK,
+    content={"bad": "format"},
+)
 UPSTREAM_RESPONSE_CONFIG_1_OK: UpstreamResponse = UpstreamResponse(
     kind="config-is-valid",
     dataset=DATASET,
@@ -54,6 +68,14 @@ UPSTREAM_RESPONSE_CONFIG_1_OK: UpstreamResponse = UpstreamResponse(
     config=CONFIG_1,
     http_status=HTTPStatus.OK,
     content={"viewer": True, "preview": True, "search": True, "filter": True, "statistics": True},
+)
+UPSTREAM_RESPONSE_CONFIG_1_BAD_FORMAT: UpstreamResponse = UpstreamResponse(
+    kind="config-is-valid",
+    dataset=DATASET,
+    dataset_git_revision=REVISION_NAME,
+    config=CONFIG_1,
+    http_status=HTTPStatus.OK,
+    content={"bad": "format"},
 )
 UPSTREAM_RESPONSE_CONFIG_1_OK_VIEWER: UpstreamResponse = UpstreamResponse(
     kind="config-is-valid",
@@ -183,9 +205,14 @@ def get_job_runner(
             ],
             EXPECTED_ALL_MIXED,
         ),
+        (
+            [UPSTREAM_RESPONSE_CONFIG_NAMES],
+            EXPECTED_PENDING_ALL_FALSE,
+        ),
         ([], EXPECTED_PENDING_ALL_FALSE),
         ([UPSTREAM_RESPONSE_CONFIG_1_OK], EXPECTED_PENDING_ALL_FALSE),
         ([UPSTREAM_RESPONSE_CONFIG_NAMES_EMPTY], EXPECTED_COMPLETED_ALL_FALSE),
+        ([UPSTREAM_RESPONSE_CONFIG_NAMES_ERROR], EXPECTED_PENDING_ALL_FALSE),
     ],
 )
 def test_compute(
@@ -201,3 +228,23 @@ def test_compute(
     compute_result = job_runner.compute()
     assert compute_result.content == expected[0]
     assert compute_result.progress == expected[1]
+
+
+@pytest.mark.parametrize(
+    "upstream_responses",
+    [
+        ([UPSTREAM_RESPONSE_CONFIG_NAMES_BAD_FORMAT]),
+        ([UPSTREAM_RESPONSE_CONFIG_NAMES, UPSTREAM_RESPONSE_CONFIG_1_BAD_FORMAT]),
+    ],
+)
+def test_compute_raises(
+    app_config: AppConfig,
+    get_job_runner: GetJobRunner,
+    upstream_responses: list[UpstreamResponse],
+) -> None:
+    dataset = DATASET
+    for upstream_response in upstream_responses:
+        upsert_response(**upstream_response)
+    job_runner = get_job_runner(dataset, app_config)
+    with pytest.raises(Exception):
+        job_runner.compute()
