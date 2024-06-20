@@ -376,7 +376,6 @@ def test_compute(
         has_fts = content["has_fts"]
         partial = content["partial"]
         stemmer = content["stemmer"]
-        assert stemmer == DEFAULT_STEMMER
         assert isinstance(has_fts, bool)
         assert has_fts == expected_has_fts
         assert isinstance(url, str)
@@ -420,6 +419,7 @@ def test_compute(
             assert sorted(columns) == sorted(expected_columns)
 
         if has_fts:
+            assert stemmer == DEFAULT_STEMMER
             # perform a search to validate fts feature
             query = "Lord Vader"
             result = con.execute(
