@@ -36,7 +36,7 @@ from libcommon.queue.metrics import (
     increase_metric,
     update_metrics_for_type,
 )
-from libcommon.queue.past_jobs import NegativeDurationError, create_past_job
+from libcommon.queue.past_jobs import create_past_job
 from libcommon.utils import get_datetime, inputs_to_string
 
 # START monkey patching ### hack ###
@@ -717,16 +717,11 @@ class Queue:
             return None
         decrease_metric(job_type=job.type, status=job.status, difficulty=job.difficulty)
         if job.started_at is not None:
-            try:
-                create_past_job(
-                    dataset=job.dataset,
-                    started_at=pytz.UTC.localize(job.started_at),
-                    finished_at=get_datetime(),
-                )
-            except NegativeDurationError:
-                logging.warning(
-                    f"job {job_id} has a negative duration. The duration is not saved in the past jobs collection."
-                )
+            create_past_job(
+                dataset=job.dataset,
+                started_at=pytz.UTC.localize(job.started_at),
+                finished_at=get_datetime(),
+            )
         job_priority = job.priority
         job.delete()
         release_locks(owner=job_id)

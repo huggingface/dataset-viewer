@@ -6,7 +6,6 @@ from datetime import datetime
 from typing import Generic, TypeVar
 
 from mongoengine import Document
-from mongoengine.errors import ValidationError
 from mongoengine.fields import DateTimeField, IntField, StringField
 from mongoengine.queryset.queryset import QuerySet
 
@@ -74,10 +73,6 @@ class PastJobDocument(Document):
     objects = QuerySetManager["PastJobDocument"]()
 
 
-class NegativeDurationError(ValidationError):
-    pass
-
-
 def create_past_job(dataset: str, started_at: datetime, finished_at: datetime) -> None:
     """Create a past job in the mongoDB database.
 
@@ -88,17 +83,11 @@ def create_past_job(dataset: str, started_at: datetime, finished_at: datetime) -
         dataset (`str`): The dataset on which to apply the job.
         started_at (`datetime`): The date the job has started.
         finished_at (`datetime`): The date the job has finished.
-
-    Raises:
-        ValidationError: If the duration is negative.
     """
     duration = int((finished_at - started_at).total_seconds())
     if duration < JOB_DURATION_MIN_SECONDS:
         return
-    try:
-        PastJobDocument(dataset=dataset, duration=duration, finished_at=finished_at).save()
-    except ValidationError as e:
-        raise NegativeDurationError("The duration of the job cannot be negative.") from e
+    PastJobDocument(dataset=dataset, duration=duration, finished_at=finished_at).save()
 
     if not is_blocked(dataset) and duration > JOB_DURATION_CHECK_MIN_SECONDS:
         if PastJobDocument.objects(dataset=dataset).sum("duration") > DATASET_BLOCKAGE_THRESHOLD_SECONDS:

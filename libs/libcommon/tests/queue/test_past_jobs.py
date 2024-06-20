@@ -11,7 +11,6 @@ from libcommon.queue.jobs import Queue
 from libcommon.queue.past_jobs import (
     DATASET_BLOCKAGE_THRESHOLD_SECONDS,
     JOB_DURATION_MIN_SECONDS,
-    NegativeDurationError,
     PastJobDocument,
     create_past_job,
 )
@@ -48,14 +47,6 @@ def test_create_past_job_with_short_duration(duration: float) -> None:
     started_at = finished_at - timedelta(seconds=duration)
     create_past_job(dataset=DATASET, started_at=started_at, finished_at=finished_at)
     PastJobDocument.objects(dataset=DATASET).count() == 0
-
-
-@pytest.mark.parametrize("duration", [-1.0])
-def test_create_past_job_raises(duration: float) -> None:
-    finished_at = get_datetime()
-    started_at = finished_at - timedelta(seconds=duration)
-    with pytest.raises(NegativeDurationError):
-        create_past_job(dataset=DATASET, started_at=started_at, finished_at=finished_at)
 
 
 def test_create_past_job_raises_if_timezone_unaware() -> None:
