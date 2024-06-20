@@ -68,7 +68,7 @@ class PastJobDocument(Document):
         ],
     }
     dataset = StringField(required=True)
-    duration = IntField(required=True, min_value=0.0)
+    duration = IntField(required=True, min_value=0)
     finished_at = DateTimeField(required=True)
 
     objects = QuerySetManager["PastJobDocument"]()
