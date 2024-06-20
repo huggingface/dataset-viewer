@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2024 The HuggingFace Authors.
 
-from ..queue import JobDocument
+from .jobs import JobDocument
 from .lock import Lock
 from .metrics import JobTotalMetricDocument, WorkerSizeJobsCountDocument
 
