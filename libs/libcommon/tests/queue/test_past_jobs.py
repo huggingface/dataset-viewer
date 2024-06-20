@@ -48,6 +48,7 @@ def test_create_past_job_raises_if_timezone_unaware() -> None:
     job_info = queue.start_job()
     started_at = queue._get_started_job(job_info["job_id"]).started_at
     # ^ mongo looses the timezone, see https://github.com/huggingface/dataset-viewer/issues/862
+    assert started_at is not None
 
     with pytest.raises(TypeError) as exc_info:
         create_past_job(dataset=DATASET, started_at=started_at, finished_at=finished_at)
