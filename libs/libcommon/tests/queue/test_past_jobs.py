@@ -3,7 +3,6 @@
 
 
 from datetime import timedelta
-from typing import Optional
 
 import pytest
 
@@ -33,7 +32,7 @@ def test_create_past_job(duration: float) -> None:
 
 
 @pytest.mark.parametrize("duration", [-1.0])
-def test_create_past_job_raises(duration: Optional[float]) -> None:
+def test_create_past_job_raises(duration: float) -> None:
     finished_at = get_datetime()
     started_at = finished_at - timedelta(seconds=duration)
     with pytest.raises(NegativeDurationError):
