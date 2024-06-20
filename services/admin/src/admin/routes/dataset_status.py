@@ -7,8 +7,8 @@ from typing import Optional
 from libapi.exceptions import ApiError, UnexpectedApiError
 from libapi.request import get_request_parameter
 from libapi.utils import Endpoint, get_json_api_error_response, get_json_ok_response
+from libcommon.new_queue.jobs import Queue
 from libcommon.processing_graph import processing_graph
-from libcommon.queue import Queue
 from libcommon.simple_cache import get_dataset_responses_without_content_for_kind
 from starlette.requests import Request
 from starlette.responses import Response

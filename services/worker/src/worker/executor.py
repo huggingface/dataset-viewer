@@ -12,7 +12,7 @@ from typing import Any, Optional, Union
 
 import orjson
 from filelock import FileLock
-from libcommon.queue import Queue
+from libcommon.new_queue.jobs import Queue
 from libcommon.utils import get_datetime
 from mirakuru import OutputExecutor, ProcessExitedWithError, TCPExecutor
 

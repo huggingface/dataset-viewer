@@ -9,8 +9,8 @@ import pytest
 
 from libcommon.constants import ERROR_CODES_TO_RETRY
 from libcommon.dtos import Priority, Status
+from libcommon.new_queue.jobs import Queue
 from libcommon.processing_graph import ProcessingGraph
-from libcommon.queue import Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.state import UnexceptedConfigNamesError
 

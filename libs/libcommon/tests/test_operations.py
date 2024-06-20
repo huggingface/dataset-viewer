@@ -22,6 +22,7 @@ from libcommon.exceptions import (
     NotSupportedRepositoryNotFoundError,
     NotSupportedTagNFAAError,
 )
+from libcommon.new_queue.jobs import Queue
 from libcommon.operations import (
     CustomHfApi,
     backfill_dataset,
@@ -31,7 +32,6 @@ from libcommon.operations import (
 )
 from libcommon.orchestrator import finish_job
 from libcommon.processing_graph import specification
-from libcommon.queue import Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import get_cache_entries_df, has_some_cache, upsert_response
 from libcommon.storage_client import StorageClient

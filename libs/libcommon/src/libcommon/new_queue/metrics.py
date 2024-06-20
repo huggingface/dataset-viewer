@@ -50,7 +50,7 @@ class JobTotalMetricDocument(Document):
 
     Args:
         job_type (`str`): job type
-        status (`str`): job status see libcommon.queue.Status
+        status (`str`): job status see libcommon.new_queue.jobs.Status
         total (`int`): total of jobs
         created_at (`datetime`): when the metric has been created.
     """

@@ -6,7 +6,7 @@ from typing import Optional
 
 import pytest
 
-from libcommon.queue import Queue
+from libcommon.new_queue.jobs import Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import (
     delete_response,

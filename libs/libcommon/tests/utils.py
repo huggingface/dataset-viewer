@@ -10,10 +10,10 @@ from typing import Any, Optional
 from datasets import Dataset
 
 from libcommon.dtos import JobInfo, Priority, RowsContent
+from libcommon.new_queue.jobs import Queue
 from libcommon.new_queue.metrics import JobTotalMetricDocument, WorkerSizeJobsCountDocument
 from libcommon.orchestrator import DatasetBackfillPlan
 from libcommon.processing_graph import Artifact, ProcessingGraph
-from libcommon.queue import Queue
 from libcommon.simple_cache import upsert_response
 from libcommon.viewer_utils.rows import GetRowsContent
 

@@ -6,6 +6,7 @@ from http import HTTPStatus
 import pytest
 
 from libcommon.dtos import JobOutput, JobResult, Priority, Status
+from libcommon.new_queue.jobs import JobDocument, Queue
 from libcommon.orchestrator import (
     AfterJobPlan,
     finish_job,
@@ -14,7 +15,6 @@ from libcommon.orchestrator import (
     set_revision,
 )
 from libcommon.processing_graph import Artifact, ProcessingGraph
-from libcommon.queue import JobDocument, Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import (
     CachedResponseDocument,
