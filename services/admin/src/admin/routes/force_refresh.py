@@ -22,7 +22,7 @@ from libcommon.exceptions import CustomError
 from libcommon.operations import get_latest_dataset_revision_if_supported_or_raise
 from libcommon.orchestrator import get_num_bytes_from_config_infos
 from libcommon.processing_graph import InputType, processing_graph
-from libcommon.queue import Queue
+from libcommon.queue.jobs import Queue
 from starlette.requests import Request
 from starlette.responses import Response
 

@@ -4,7 +4,7 @@
 import logging
 from typing import Optional
 
-from libcommon.queue import JobDocument
+from libcommon.queue.jobs import JobDocument
 from libcommon.simple_cache import CachedResponseDocument
 from mongoengine.connection import get_db
 

@@ -20,7 +20,7 @@ from libcommon.constants import (
 from libcommon.dtos import JobInfo, JobResult, Priority
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep, ProcessingStepDoesNotExist, processing_graph
 from libcommon.prometheus import StepProfiler
-from libcommon.queue import Queue
+from libcommon.queue.jobs import Queue
 from libcommon.simple_cache import (
     CachedArtifactNotFoundError,
     delete_dataset_responses,

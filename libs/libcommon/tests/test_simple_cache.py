@@ -118,7 +118,7 @@ def test_insert_null_values() -> None:
     assert "config" not in cached_response.to_json()
 
 
-def assert_metric(http_status: HTTPStatus, error_code: Optional[str], kind: str, total: int) -> None:
+def assert_metric_entries_per_kind(http_status: HTTPStatus, error_code: Optional[str], kind: str, total: int) -> None:
     metric = CacheTotalMetricDocument.objects(http_status=http_status, error_code=error_code, kind=kind).first()
     assert metric is not None
     assert metric.total == total
@@ -170,7 +170,7 @@ def test_upsert_response(config: Optional[str], split: Optional[str]) -> None:
         "progress": None,
     }
 
-    assert_metric(http_status=HTTPStatus.OK, error_code=None, kind=kind, total=1)
+    assert_metric_entries_per_kind(http_status=HTTPStatus.OK, error_code=None, kind=kind, total=1)
 
     # ensure it's idempotent
     upsert_response(
@@ -185,7 +185,7 @@ def test_upsert_response(config: Optional[str], split: Optional[str]) -> None:
     cached_response2 = get_response(kind=kind, dataset=dataset, config=config, split=split)
     assert cached_response2 == cached_response
 
-    assert_metric(http_status=HTTPStatus.OK, error_code=None, kind=kind, total=1)
+    assert_metric_entries_per_kind(http_status=HTTPStatus.OK, error_code=None, kind=kind, total=1)
 
     another_config = "another_config"
     upsert_response(
@@ -199,11 +199,11 @@ def test_upsert_response(config: Optional[str], split: Optional[str]) -> None:
     )
     get_response(kind=kind, dataset=dataset, config=config, split=split)
 
-    assert_metric(http_status=HTTPStatus.OK, error_code=None, kind=kind, total=2)
+    assert_metric_entries_per_kind(http_status=HTTPStatus.OK, error_code=None, kind=kind, total=2)
 
     delete_dataset_responses(dataset=dataset)
 
-    assert_metric(http_status=HTTPStatus.OK, error_code=None, kind=kind, total=0)
+    assert_metric_entries_per_kind(http_status=HTTPStatus.OK, error_code=None, kind=kind, total=0)
 
     with pytest.raises(CachedArtifactNotFoundError):
         get_response(kind=kind, dataset=dataset, config=config, split=split)
@@ -222,8 +222,8 @@ def test_upsert_response(config: Optional[str], split: Optional[str]) -> None:
         job_runner_version=job_runner_version,
     )
 
-    assert_metric(http_status=HTTPStatus.OK, error_code=None, kind=kind, total=0)
-    assert_metric(http_status=HTTPStatus.BAD_REQUEST, error_code=error_code, kind=kind, total=1)
+    assert_metric_entries_per_kind(http_status=HTTPStatus.OK, error_code=None, kind=kind, total=0)
+    assert_metric_entries_per_kind(http_status=HTTPStatus.BAD_REQUEST, error_code=error_code, kind=kind, total=1)
 
     cached_response3 = get_response(kind=kind, dataset=dataset, config=config, split=split)
     assert cached_response3 == {
@@ -291,12 +291,12 @@ def test_delete_response() -> None:
         content={},
         http_status=HTTPStatus.OK,
     )
-    assert_metric(http_status=HTTPStatus.OK, error_code=None, kind=kind, total=2)
+    assert_metric_entries_per_kind(http_status=HTTPStatus.OK, error_code=None, kind=kind, total=2)
 
     get_response(kind=kind, dataset=dataset_a, config=config, split=split)
     get_response(kind=kind, dataset=dataset_b, config=config, split=split)
     delete_response(kind=kind, dataset=dataset_a, config=config, split=split)
-    assert_metric(http_status=HTTPStatus.OK, error_code=None, kind=kind, total=1)
+    assert_metric_entries_per_kind(http_status=HTTPStatus.OK, error_code=None, kind=kind, total=1)
     with pytest.raises(CachedArtifactNotFoundError):
         get_response(kind=kind, dataset=dataset_a, config=config, split=split)
     get_response(kind=kind, dataset=dataset_b, config=config, split=split)
@@ -334,14 +334,14 @@ def test_delete_dataset_responses() -> None:
         content={},
         http_status=HTTPStatus.OK,
     )
-    assert_metric(http_status=HTTPStatus.OK, error_code=None, kind=kind_a, total=2)
-    assert_metric(http_status=HTTPStatus.OK, error_code=None, kind=kind_b, total=1)
+    assert_metric_entries_per_kind(http_status=HTTPStatus.OK, error_code=None, kind=kind_a, total=2)
+    assert_metric_entries_per_kind(http_status=HTTPStatus.OK, error_code=None, kind=kind_b, total=1)
     get_response(kind=kind_a, dataset=dataset_a)
     get_response(kind=kind_b, dataset=dataset_a, config=config, split=split)
     get_response(kind=kind_a, dataset=dataset_b)
     delete_dataset_responses(dataset=dataset_a)
-    assert_metric(http_status=HTTPStatus.OK, error_code=None, kind=kind_a, total=1)
-    assert_metric(http_status=HTTPStatus.OK, error_code=None, kind=kind_b, total=0)
+    assert_metric_entries_per_kind(http_status=HTTPStatus.OK, error_code=None, kind=kind_a, total=1)
+    assert_metric_entries_per_kind(http_status=HTTPStatus.OK, error_code=None, kind=kind_b, total=0)
     with pytest.raises(CachedArtifactNotFoundError):
         get_response(kind=kind_a, dataset=dataset_a)
     with pytest.raises(CachedArtifactNotFoundError):

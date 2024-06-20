@@ -34,7 +34,7 @@ from libcommon.parquet_utils import (
     is_list_pa_type,
     parquet_export_is_partial,
 )
-from libcommon.queue import lock
+from libcommon.queue.lock import lock
 from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.storage import StrPath
 from libcommon.utils import HF_HUB_HTTP_ERROR_RETRY_SLEEPS, download_file_from_hub, retry

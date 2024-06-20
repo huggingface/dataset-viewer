@@ -3,7 +3,8 @@
 
 import logging
 
-from libcommon.queue import JobTotalMetricDocument, Queue, WorkerSizeJobsCountDocument
+from libcommon.queue.jobs import Queue
+from libcommon.queue.metrics import JobTotalMetricDocument, WorkerSizeJobsCountDocument
 
 
 def collect_queue_metrics() -> None:

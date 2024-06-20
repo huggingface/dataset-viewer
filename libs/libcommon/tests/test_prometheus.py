@@ -15,7 +15,7 @@ from libcommon.prometheus import (
     update_responses_in_cache_total,
     update_worker_size_jobs_count,
 )
-from libcommon.queue import JobTotalMetricDocument, WorkerSizeJobsCountDocument
+from libcommon.queue.metrics import JobTotalMetricDocument, WorkerSizeJobsCountDocument
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import CacheTotalMetricDocument
 

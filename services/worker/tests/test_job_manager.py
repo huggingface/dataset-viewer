@@ -3,7 +3,7 @@ from http import HTTPStatus
 import pytest
 from libcommon.dtos import JobInfo, Priority, Status
 from libcommon.processing_graph import processing_graph
-from libcommon.queue import JobDocument, Queue
+from libcommon.queue.jobs import JobDocument, Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import CachedResponseDocument, get_response, get_response_metadata, upsert_response
 

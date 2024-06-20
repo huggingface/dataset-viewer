@@ -14,7 +14,7 @@ from libcommon.orchestrator import (
     set_revision,
 )
 from libcommon.processing_graph import Artifact, ProcessingGraph
-from libcommon.queue import JobDocument, Queue
+from libcommon.queue.jobs import JobDocument, Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import (
     CachedResponseDocument,
