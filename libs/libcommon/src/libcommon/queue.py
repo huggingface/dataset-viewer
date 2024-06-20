@@ -947,7 +947,7 @@ class Queue:
             return False
         return True
 
-    def finish_job(self, job_id: str) -> bool:
+    def finish_job(self, job_id: str) -> Optional[Priority]:
         """Finish a job in the queue.
 
         The job is moved from the started state to the success or error state. The existing locks are released.
@@ -957,22 +957,22 @@ class Queue:
             is_success (`bool`): whether the job succeeded or not
 
         Returns:
-            `bool`: whether the job existed, and had the expected format (STARTED status, non-empty started_at)
-            before finishing
+            `Priority`, *optional*: the priority of the job, if the job was successfully finished.
         """
         try:
             job = self._get_started_job(job_id=job_id)
         except DoesNotExist:
             logging.error(f"job {job_id} does not exist. Aborting.")
-            return False
+            return None
         except StartedJobError as e:
             logging.error(f"job {job_id} has not the expected format for a started job. Aborting: {e}")
-            return False
+            return None
         decrease_metric(job_type=job.type, status=job.status, difficulty=job.difficulty)
+        job_priority = job.priority
         job.delete()
         release_locks(owner=job_id)
         # ^ bug: the lock owner is not set to the job id anymore when calling start_job()!
-        return True
+        return job_priority
 
     def delete_dataset_waiting_jobs(self, dataset: str) -> int:
         """
