@@ -812,7 +812,7 @@ def test_stream_convert_to_parquet_estimate_info(tmp_path: Path, csv_path: str) 
 
 def test_stream_convert_to_parquet_estimate_info_zipped(tmp_path: Path, csv_path: str) -> None:
     num_rows = 100
-    expected_estimated_num_rows = 142
+    expected_estimated_num_rows = 140
 
     def generate_from_text(text_files: list[str]) -> Iterator[dict[str, int]]:
         for text_file in text_files:
@@ -1045,6 +1045,8 @@ def test_track_reads_zip_file(text_file: str, zip_file: str) -> None:
             open(text_file, "rb") as uncompressed_f,
         ):
             expected_output_size = len(uncompressed_f.read())
+            tracker.files["file://" + zip_file]["read"] > 0  # open does read metadata
+            assert tracker.files["file://" + zip_file]["metadata_read"] > 0
             assert len(f.read()) == expected_output_size
             assert "file://" + zip_file in tracker.files
             assert tracker.files["file://" + zip_file]["read"] != expected_output_size

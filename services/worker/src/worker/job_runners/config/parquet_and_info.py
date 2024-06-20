@@ -44,6 +44,7 @@ from datasets.utils.py_utils import asdict, map_nested
 from fsspec.core import url_to_fs
 from fsspec.implementations.http import HTTPFileSystem
 from fsspec.implementations.local import LocalFileOpener, LocalFileSystem
+from fsspec.implementations.zip import ZipFileSystem
 from fsspec.spec import AbstractBufferedFile
 from huggingface_hub import HfFileSystem
 from huggingface_hub._commit_api import (
@@ -880,6 +881,11 @@ def get_urlpaths_in_gen_kwargs(gen_kwargs: dict[str, Any]) -> list[str]:
     for shard in shards:
         if isinstance(shard, str):
             urlpaths.add(shard.split("::")[-1])
+        if shard and isinstance(shard, tuple):
+            if isinstance(shard[-1], FilesIterable):
+                urlpaths.update(item.split("::")[-1] for item in shard[-1])
+            elif shard[-1] and isinstance(shard[-1][0], str):
+                urlpaths.update(item.split("::")[-1] for item in shard[-1])
         elif isinstance(shard, FilesIterable):
             urlpaths.update(item.split("::")[-1] for item in shard)
         elif isinstance(shard, ArchiveIterable) and shard.args and isinstance(shard.args[0], str):
@@ -938,6 +944,7 @@ class track_reads:
     def __init__(self) -> None:
         self.files: dict[str, dict[str, int]] = {}
         self.exit_stack = ExitStack()
+        self._no_tracking = False
 
     def track_read(self, urlpath: str, f_read: Callable[..., ReadOutput], *args: Any, **kwargs: Any) -> ReadOutput:
         out = f_read(*args, **kwargs)
@@ -950,6 +957,20 @@ class track_reads:
         for out in f_iter():
             self.files[urlpath]["read"] += len(out)
             yield out
+
+    def track_metadata_read_once(self, instance: Any, func: Callable[..., T], **kwargs: Any) -> T:
+        urlpath = kwargs.pop("fo", "")
+        urlpath = url_to_fs(urlpath)[0].unstrip_protocol(urlpath)
+        previous_read = 0
+        if urlpath in self.files:
+            previous_read = self.files[urlpath]["read"]
+        out = func(instance, fo=urlpath, **kwargs)
+        if urlpath in self.files:
+            if "metadata_read" in self.files[urlpath]:
+                self.files[urlpath]["read"] = previous_read
+            else:
+                self.files[urlpath]["metadata_read"] = self.files[urlpath]["read"] - previous_read
+        return out
 
     def __enter__(self) -> "track_reads":
         tracker = self
@@ -978,7 +999,8 @@ class track_reads:
                     f.readline = functools.partial(tracker.track_read, urlpath, f.readline)
                 if hasattr(f, "readlines"):
                     f.readlines = functools.partial(tracker.track_read, urlpath, f.readlines)
-                tracker.files[urlpath] = {"read": 0, "size": int(f.size)}
+                if urlpath not in tracker.files:
+                    tracker.files[urlpath] = {"read": 0, "size": int(f.size)}
             return f
 
         # Use an exit_stack to be able to un-do all the replacements once the track_reads context ends.
@@ -995,6 +1017,10 @@ class track_reads:
         mock_hf_open.side_effect = functools.partial(wrapped, fs_open=hf_open)
         # always use fsspec even for local paths
         self.exit_stack.enter_context(patch("datasets.utils.file_utils.is_local_path", return_value=False))
+        # zip central directories are read over and over again, let's track it only once
+        zip_init = ZipFileSystem.__init__
+        mock_zip_init = self.exit_stack.enter_context(patch.object(ZipFileSystem, "__init__", autospec=True))
+        mock_zip_init.side_effect = functools.partial(self.track_metadata_read_once, func=zip_init)
         return self
 
     def __exit__(
@@ -1109,11 +1135,14 @@ def stream_convert_to_parquet(
                 partial = partial or limiter.total_bytes >= max_dataset_size_bytes
                 # estimate num_examples if partial conversion
                 urlpaths = get_urlpaths_in_gen_kwargs(splits_generators[split].gen_kwargs)
+                if limiter.total_bytes >= max_dataset_size_bytes and not urlpaths:
+                    logging.info(f"Unable to estimate {split} info (empty urlpaths list from gen_kwargs)")
                 if limiter.total_bytes >= max_dataset_size_bytes and urlpaths:
                     shards_total_read = sum(
                         reads_tracker.files[urlpath]["read"] for urlpath in urlpaths if urlpath in reads_tracker.files
                     )
                     if shards_total_read > 0:
+                        logging.info(f"Estimating {split} info from tracked reads ({shards_total_read} bytes)")
                         shards_total_size = (
                             len(urlpaths)
                             / min(10_000, len(urlpaths))
@@ -1128,6 +1157,8 @@ def stream_convert_to_parquet(
                             )
                         )
                         estimated_info["download_size"] += shards_total_size
+                    else:
+                        logging.info(f"Unable to estimate {split} info (empty tracked reads)")
     builder.info.splits = split_dict
     builder.info.dataset_size = sum(split.num_bytes for split in builder.info.splits.values())
     builder.info.download_size = None
