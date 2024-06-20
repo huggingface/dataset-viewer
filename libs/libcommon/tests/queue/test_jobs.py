@@ -544,7 +544,7 @@ def test_queue_get_zombies() -> None:
     assert queue.get_zombies(max_seconds_without_heartbeat=9999999) == []
 
 
-def test_delete_dataset_waiting_jobs(queue_mongo_resource: QueueMongoResource) -> None:
+def test_delete_dataset_waiting_jobs() -> None:
     """
     Test that delete_dataset_waiting_jobs deletes all the waiting jobs for a dataset
 
@@ -661,7 +661,6 @@ def create_jobs(queue: Queue) -> None:
     ],
 )
 def test_get_pending_jobs_df_and_has_pending_jobs(
-    queue_mongo_resource: QueueMongoResource,
     dataset: str,
     job_types: Optional[list[str]],
     expected_job_types: set[str],
