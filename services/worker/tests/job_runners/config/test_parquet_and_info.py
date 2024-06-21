@@ -147,13 +147,6 @@ def assert_content_is_equal(content: Any, expected: Any) -> None:
     assert content["partial"] == expected["partial"], f"partial: {content['partial']}"
 
 
-@pytest.fixture(autouse=True)
-def always_enable_track_reads() -> Iterator[None]:
-    # TODO: remove once track_reads is enabled on all datasets
-    with patch.object(track_reads, "allow_list", ["*"]):
-        yield
-
-
 def test_compute(
     app_config: AppConfig,
     get_job_runner: GetJobRunner,
