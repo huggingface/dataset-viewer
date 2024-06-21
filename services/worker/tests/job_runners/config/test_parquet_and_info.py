@@ -826,7 +826,7 @@ def test_get_urlpaths_in_gen_kwargs(
     tmpfs.put(csv_path, "data")
     tmpfs.put(zip_file, "data.zip")
     tmpfs.put(tar_file, "data.tar")
-    assert get_urlpaths_in_gen_kwargs(gen_kwargs) == expected
+    assert sorted(get_urlpaths_in_gen_kwargs(gen_kwargs)) == sorted(expected)
 
 
 def test_stream_convert_to_parquet_estimate_info(tmp_path: Path, csv_path: str) -> None:
