@@ -400,6 +400,8 @@ class AfterJobPlan(Plan):
             self.add_task(DeleteWaitingJobsTask(jobs_df=self.pending_jobs_df))
         if self.job_infos_to_create:
             self.add_task(CreateJobsTask(job_infos=self.job_infos_to_create))
+        self.pending_jobs_df = None
+        self.job_infos_to_create = None
 
     def update(
         self,
