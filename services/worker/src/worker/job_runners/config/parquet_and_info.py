@@ -7,7 +7,6 @@ import os
 import re
 from collections.abc import Callable, Generator
 from contextlib import ExitStack
-from fnmatch import fnmatch
 from itertools import groupby
 from multiprocessing.pool import ThreadPool
 from pathlib import Path
@@ -933,8 +932,6 @@ class track_reads:
     ```
     """
 
-    allow_list = ["hf://datasets/allenai/c4*", "hf://datasets/datasets-maintainers/*"]
-
     def __init__(self) -> None:
         self.files: dict[str, dict[str, int]] = {}
         self.exit_stack = ExitStack()
@@ -969,7 +966,7 @@ class track_reads:
         ) -> FsspecFile:
             f = fs_open(self, urlpath, mode, *args, **kwargs)
             urlpath = self.unstrip_protocol(urlpath)
-            if "w" not in mode and any(fnmatch(urlpath, pattern) for pattern in tracker.allow_list):
+            if "w" not in mode:
                 f.read = functools.partial(tracker.track_read, urlpath, f.read)
                 f.__iter__ = functools.partial(tracker.track_iter, urlpath, f.__iter__)
                 if hasattr(f, "read1"):
