@@ -34,8 +34,8 @@ class QuerySetManager(Generic[U]):
 
 # END monkey patching ### hack ###
 
-# we allow 10 hours of compute (parallel jobs) every hour, i.e. 10 dedicated machines
-MAX_MACHINES = 10
+# we allow 2 hours of compute (parallel jobs) every hour, i.e. 2 dedicated machines
+MAX_MACHINES = 2
 # we look at the last 6 hours to decide to rate-limit a dataset
 RATE_LIMIT_WINDOW_SECONDS = 6 * 60 * 60
 # total jobs duration that triggers rate-limiting a dataset
