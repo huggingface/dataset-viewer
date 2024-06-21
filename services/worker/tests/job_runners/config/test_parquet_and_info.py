@@ -1044,7 +1044,7 @@ def test_track_reads_zip_file(text_file: str, zip_file: str) -> None:
             open(text_file, "rb") as uncompressed_f,
         ):
             expected_output_size = len(uncompressed_f.read())
-            tracker.files["file://" + zip_file]["read"] > 0  # open does read metadata
+            assert tracker.files["file://" + zip_file]["read"] > 0  # open does read metadata
             assert tracker.files["file://" + zip_file]["metadata_read"] > 0
             assert len(f.read()) == expected_output_size
             assert "file://" + zip_file in tracker.files
