@@ -41,9 +41,15 @@ def compute_config_size_response(dataset: str, config: str) -> ConfigSizeRespons
             "Previous step did not return the expected content.",
             TypeError(f"dataset_info should be a dict, but got {type(content['dataset_info'])}"),
         )
+    if content["estimated_info"] is not None and not isinstance(content["estimated_info"], dict):
+        raise PreviousStepFormatError(
+            "Previous step did not return the expected content.",
+            TypeError(f"estimated_info should be a dict, but got {type(content['dataset_info'])}"),
+        )
 
     try:
         config_info = content["dataset_info"]
+        config_estimated_info = content["estimated_info"]
         num_columns = len(config_info["features"])
         split_sizes: list[SplitSize] = [
             {
@@ -58,6 +64,13 @@ def compute_config_size_response(dataset: str, config: str) -> ConfigSizeRespons
                 "num_bytes_memory": split_info["num_bytes"] if "num_bytes" in split_info else 0,
                 "num_rows": split_info["num_examples"] if "num_examples" in split_info else 0,
                 "num_columns": num_columns,
+                "estimated_num_rows": config_estimated_info["splits"][split_info["name"]]["num_examples"]
+                if isinstance(config_estimated_info, dict)
+                and "splits" in config_estimated_info
+                and "name" in split_info
+                and split_info["name"] in config_estimated_info["splits"]
+                and "num_examples" in config_estimated_info["splits"][split_info["name"]]
+                else None,
             }
             for split_info in config_info["splits"].values()
         ]
@@ -70,6 +83,7 @@ def compute_config_size_response(dataset: str, config: str) -> ConfigSizeRespons
                 "num_bytes_memory": sum(split_size["num_bytes_memory"] for split_size in split_sizes),
                 "num_rows": sum(split_size["num_rows"] for split_size in split_sizes),
                 "num_columns": num_columns,
+                "estimated_num_rows": sum(split_size["estimated_num_rows"] or 0 for split_size in split_sizes) or None,
             }
         )
         partial = content["partial"]

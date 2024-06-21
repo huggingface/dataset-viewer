@@ -77,7 +77,7 @@ def compute_hub_cache_response(dataset: str) -> tuple[DatasetHubCacheResponse, f
                 "Previous step 'dataset-size' did not return the expected content: 'partial' or 'size.dataset.num_rows'."
             )
         partial = content["partial"]
-        num_rows = content["size"]["dataset"]["num_rows"]
+        num_rows = content["size"]["dataset"]["estimated_num_rows"] or content["size"]["dataset"]["num_rows"]
         progresses.append(size_response["progress"])
     except PreviousStepFormatError:
         raise
