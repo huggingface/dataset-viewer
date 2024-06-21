@@ -879,15 +879,22 @@ def get_urlpaths_in_gen_kwargs(gen_kwargs: dict[str, Any]) -> list[str]:
     shards = max(lists, key=len)
     urlpaths: set[str] = set()
     for shard in shards:
+        # Standard list of shards [data0.json, data1.json, ...]
         if isinstance(shard, str):
             urlpaths.add(shard.split("::")[-1])
-        if shard and isinstance(shard, tuple):
+        # Each item can also be an iterator
+        # (typically used in builders that support iterating on extracted zip files)
+        elif isinstance(shard, FilesIterable):
+            urlpaths.update(item.split("::")[-1] for item in shard)
+        # ImageFolder / AudioFolder list of shards
+        # Each item is a tuple like (optional original file, downloaded file)
+        elif shard and isinstance(shard, tuple):
             if isinstance(shard[-1], FilesIterable):
                 urlpaths.update(item.split("::")[-1] for item in shard[-1])
             elif shard[-1] and isinstance(shard[-1][0], str):
                 urlpaths.update(item.split("::")[-1] for item in shard[-1])
-        elif isinstance(shard, FilesIterable):
-            urlpaths.update(item.split("::")[-1] for item in shard)
+        # WebDataset list of shards
+        # (it iterates on TAR archives)
         elif isinstance(shard, ArchiveIterable) and shard.args and isinstance(shard.args[0], str):
             urlpaths.add(shard.args[0].split("::")[-1])
     return [url_to_fs(urlpath)[0].unstrip_protocol(urlpath) for urlpath in urlpaths]
