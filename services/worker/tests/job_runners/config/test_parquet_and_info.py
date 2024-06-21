@@ -21,7 +21,7 @@ import pandas as pd
 import pyarrow.parquet as pq
 import pytest
 import requests
-from datasets import Audio, Features, Image, Value, load_dataset, load_dataset_builder
+from datasets import Audio, Features, Image, StreamingDownloadManager, Value, load_dataset, load_dataset_builder
 from datasets.packaged_modules.generator.generator import (
     Generator as ParametrizedGeneratorBasedBuilder,
 )
@@ -49,6 +49,7 @@ from worker.job_runners.config.parquet_and_info import (
     create_commits,
     fill_builder_info,
     get_delete_operations,
+    get_urlpaths_in_gen_kwargs,
     get_writer_batch_size_from_info,
     get_writer_batch_size_from_row_group_size,
     limit_parquet_writes,
@@ -67,6 +68,7 @@ from ...fixtures.hub import HubDatasetTest
 from ..utils import REVISION_NAME
 
 GetJobRunner = Callable[[str, str, AppConfig], ConfigParquetAndInfoJobRunner]
+streaming_dl_manager = StreamingDownloadManager()
 
 
 @pytest.fixture
@@ -782,17 +784,68 @@ def test_stream_convert_to_parquet_generatorbasedbuilder(
         )
 
 
+@pytest.mark.parametrize(
+    "gen_kwargs,expected",
+    [
+        (
+            {
+                "files": [
+                    streaming_dl_manager.iter_files("tmp://data"),
+                    streaming_dl_manager.iter_files("zip://::tmp://data.zip"),
+                ]
+            },
+            ["tmp://data", "tmp://data.zip"],
+        ),  # arrow, csv, json, parquet, text builders
+        (
+            {
+                "metadata_files": {"tmp://metadata"},
+                "split_name": "train",
+                "add_metadata": True,
+                "add_labels": False,
+                "files": [
+                    ("tmp://data", streaming_dl_manager.iter_files("tmp://data")),
+                    (None, streaming_dl_manager.iter_files("zip://::tmp://data.zip")),
+                ],
+            },
+            ["tmp://data", "tmp://data.zip"],
+        ),  # audiofolder, imagefolder builders
+        (
+            {
+                "tar_paths": [
+                    "tmp://data.tar",
+                ],
+                "tar_iterators": [
+                    streaming_dl_manager.iter_archive("tmp://data.tar"),
+                ],
+            },
+            ["tmp://data.tar"],
+        ),  # arrow, csv, json, parquet, text builders
+    ],
+)
+def test_get_urlpaths_in_gen_kwargs(
+    gen_kwargs: dict[str, Any],
+    expected: list[str],
+    tmpfs: fsspec.AbstractFileSystem,
+    csv_path: str,
+    zip_file: str,
+    tar_file: str,
+) -> None:
+    tmpfs.put(csv_path, "data")
+    tmpfs.put(zip_file, "data.zip")
+    tmpfs.put(tar_file, "data.tar")
+    assert get_urlpaths_in_gen_kwargs(gen_kwargs) == expected
+
+
 def test_stream_convert_to_parquet_estimate_info(tmp_path: Path, csv_path: str) -> None:
-    num_rows = 100
     expected_estimated_num_rows = 54
 
     def generate_from_text(text_files: list[str]) -> Iterator[dict[str, int]]:
         for text_file in text_files:
-            with fsspec.open(text_file, "r").open() as f:  # we track fsspec reads to estimate
+            with fsspec.open(text_file, "r") as f:  # we track fsspec reads to estimate
                 yield {"text": f.read()}
 
     cache_dir = str(tmp_path / "test_limit_parquet_writes_cache_dir")
-    gen_kwargs = {"text_files": [csv_path] * num_rows}
+    gen_kwargs = {"text_files": [csv_path]}
     builder = ParametrizedGeneratorBasedBuilder(
         generator=generate_from_text, cache_dir=cache_dir, gen_kwargs=gen_kwargs
     )
@@ -812,7 +865,7 @@ def test_stream_convert_to_parquet_estimate_info(tmp_path: Path, csv_path: str) 
 
 def test_stream_convert_to_parquet_estimate_info_zipped(tmp_path: Path, csv_path: str) -> None:
     num_rows = 100
-    expected_estimated_num_rows = 142
+    expected_estimated_num_rows = 140
 
     def generate_from_text(text_files: list[str]) -> Iterator[dict[str, int]]:
         for text_file in text_files:
@@ -1045,6 +1098,8 @@ def test_track_reads_zip_file(text_file: str, zip_file: str) -> None:
             open(text_file, "rb") as uncompressed_f,
         ):
             expected_output_size = len(uncompressed_f.read())
+            assert tracker.files["file://" + zip_file]["read"] > 0  # open does read metadata
+            assert tracker.files["file://" + zip_file]["metadata_read"] > 0
             assert len(f.read()) == expected_output_size
             assert "file://" + zip_file in tracker.files
             assert tracker.files["file://" + zip_file]["read"] != expected_output_size
