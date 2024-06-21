@@ -3,7 +3,7 @@
 
 import logging
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
+from dataclasses import InitVar, dataclass, field
 from functools import lru_cache
 from http import HTTPStatus
 from typing import Optional, Union
@@ -137,13 +137,15 @@ class CreateJobsTask(Task):
 
 @dataclass
 class DeleteWaitingJobsTask(Task):
-    jobs_df: pd.DataFrame
+    job_ids: list[str]
+    jobs_df: InitVar[pd.DataFrame]
 
-    def __post_init__(self) -> None:
+    def __post_init__(self, jobs_df: pd.DataFrame) -> None:
         # for debug and testing
-        self.id = f"DeleteWaitingJobs,{len(self.jobs_df)}"
-        types = [row["type"] for _, row in self.jobs_df.iterrows()]
+        self.id = f"DeleteWaitingJobs,{len(jobs_df)}"
+        types = jobs_df["type"].tolist()
         self.long_id = f"DeleteWaitingJobs,{types}"
+        self.job_ids = jobs_df["job_id"].tolist()
 
     def run(self) -> TasksStatistics:
         """
@@ -156,7 +158,7 @@ class DeleteWaitingJobsTask(Task):
             method="DeleteWaitingJobsTask.run",
             step="all",
         ):
-            num_deleted_waiting_jobs = Queue().delete_waiting_jobs_by_job_id(job_ids=self.jobs_df["job_id"].tolist())
+            num_deleted_waiting_jobs = Queue().delete_waiting_jobs_by_job_id(job_ids=self.job_ids)
             logging.debug(f"{num_deleted_waiting_jobs} waiting jobs were deleted.")
             return TasksStatistics(num_deleted_waiting_jobs=num_deleted_waiting_jobs)
 
