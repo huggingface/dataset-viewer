@@ -12,7 +12,7 @@ from typing import Any, Literal, Optional, TypedDict, Union
 
 import pytest
 import requests
-from datasets import Dataset, DatasetBuilder, load_dataset_builder
+from datasets import Dataset, DatasetBuilder, Features, Value, load_dataset_builder
 from huggingface_hub.constants import REPO_TYPES, REPO_TYPES_URL_PREFIXES
 from huggingface_hub.hf_api import HfApi
 from huggingface_hub.utils._errors import hf_raise_for_status
@@ -302,6 +302,13 @@ def hub_public_spawning_opt_in_out(datasets: Mapping[str, Dataset]) -> Iterator[
 
 
 @pytest.fixture(scope="session")
+def hub_public_presidio_scan(datasets: Mapping[str, Dataset]) -> Iterator[str]:
+    repo_id = create_hub_dataset_repo(prefix="presidio_scan", dataset=datasets["presidio_scan"])
+    yield repo_id
+    delete_hub_dataset_repo(repo_id=repo_id)
+
+
+@pytest.fixture(scope="session")
 def hub_public_duckdb_index(datasets: Mapping[str, Dataset]) -> Iterator[str]:
     repo_id = create_hub_dataset_repo(prefix="duckdb_index", dataset=datasets["duckdb_index"])
     yield repo_id
@@ -439,6 +446,25 @@ def three_parquet_splits_paths(
 
 
 @pytest.fixture(scope="session")
+def hub_public_parquet_splits_empty_rows(tmp_path_factory: pytest.TempPathFactory) -> Iterator[str]:
+    path = str(tmp_path_factory.mktemp("data") / "train.parquet")
+    with open(path, "wb") as f:
+        Dataset.from_dict(
+            {"col": []},
+            features=Features(
+                {
+                    "col": Value("string"),
+                }
+            ),
+        ).to_parquet(f)
+
+    repo_id = create_hub_dataset_repo(prefix="hub_public_parquet_splits_empty_rows", file_paths=[path])
+
+    yield repo_id
+    delete_hub_dataset_repo(repo_id=repo_id)
+
+
+@pytest.fixture(scope="session")
 def hub_public_three_parquet_splits_builder(three_parquet_splits_paths: Mapping[str, str]) -> Iterator[str]:
     repo_id = create_hub_dataset_repo(
         prefix="parquet_builder_three_splits", file_paths=list(three_parquet_splits_paths.values())
@@ -568,6 +594,16 @@ def create_dataset_info_response_for_partially_generated_big_csv(dataset: str, c
     }
 
 
+def create_estimated_dataset_info_response_for_partially_generated_big_csv() -> Any:
+    # Dataset is partially converted to parquet: the first 10KB instead of the full 5MB
+    # Estimation is made based on the ratio of data read vs full data
+    return {
+        "download_size": 5644817,
+        "splits": {"train": {"name": "train", "num_bytes": 266581, "num_examples": 215, "dataset_name": "csv"}},
+        "dataset_size": 266581,
+    }
+
+
 def create_dataset_info_response_for_big_parquet(dataset: str, config: str) -> Any:
     dataset_name = dataset.split("/")[-1]
     return {
@@ -621,9 +657,27 @@ def create_dataset_info_response_for_audio(dataset: str, config: str) -> Any:
     }
 
 
+def create_dataset_info_response_for_presidio_scan(dataset: str, config: str) -> Any:
+    dataset_name = dataset.split("/")[-1]
+    return {
+        "description": "",
+        "citation": "",
+        "homepage": "",
+        "license": "",
+        "features": PRESIDIO_SCAN_cols,
+        "builder_name": "parquet",
+        "config_name": config,
+        "dataset_name": dataset_name,
+        "version": {"version_str": "0.0.0", "major": 0, "minor": 0, "patch": 0},
+        "splits": {"train": {"name": "train", "num_bytes": 12345, "num_examples": 6, "dataset_name": None}},
+        "download_size": 12345,
+        "dataset_size": 12345,
+    }
+
+
 def create_parquet_and_info_response(
     dataset: str,
-    data_type: Literal["csv", "big-csv", "audio", "big_parquet", "big_parquet_no_info"],
+    data_type: Literal["csv", "big-csv", "audio", "big_parquet", "big_parquet_no_info", "presidio-scan"],
     partial: bool = False,
 ) -> Any:
     config, split = get_default_config_split()
@@ -646,9 +700,14 @@ def create_parquet_and_info_response(
         if data_type == "audio"
         else create_dataset_info_response_for_big_parquet(dataset, config)
         if data_type == "big_parquet"
+        else create_dataset_info_response_for_presidio_scan(dataset, config)
+        if data_type == "presidio-scan"
         else create_dataset_info_response_for_big_parquet_no_info()
     )
     partial_prefix = "partial-" if partial else ""
+    estimated_info = (
+        create_estimated_dataset_info_response_for_partially_generated_big_csv() if data_type == "big-csv" else None
+    )
     return {
         "parquet_files": [
             {
@@ -665,6 +724,7 @@ def create_parquet_and_info_response(
             }
         ],
         "dataset_info": info,
+        "estimated_dataset_info": estimated_info,
         "partial": partial,
     }
 
@@ -811,6 +871,22 @@ SPAWNING_OPT_IN_OUT_cols = {
 }
 
 SPAWNING_OPT_IN_OUT_rows = ["http://testurl.test/test_image.jpg", "http://testurl.test/test_image2.jpg", "other"]
+
+PRESIDIO_SCAN_cols = {
+    "col": [{"_type": "Value", "dtype": "string"}],
+}
+
+PRESIDIO_SCAN_rows = [
+    {"col": text}
+    for text in [
+        "My name is Giovanni Giorgio",
+        "but everyone calls me Giorgio",
+        "My IP address is 192.168.0.1",
+        "My SSN is 345-67-8901",
+        "My email is giovanni.giorgio@daftpunk.com",
+        None,
+    ]
+]
 
 
 @pytest.fixture
@@ -998,6 +1074,21 @@ def hub_responses_spawning_opt_in_out(hub_public_spawning_opt_in_out: str) -> Hu
             hub_public_spawning_opt_in_out, SPAWNING_OPT_IN_OUT_cols, SPAWNING_OPT_IN_OUT_rows
         ),
         "parquet_and_info_response": None,
+    }
+
+
+@pytest.fixture
+def hub_responses_presidio_scan(hub_public_presidio_scan: str) -> HubDatasetTest:
+    return {
+        "name": hub_public_presidio_scan,
+        "config_names_response": create_config_names_response(hub_public_presidio_scan),
+        "splits_response": create_splits_response(hub_public_presidio_scan),
+        "first_rows_response": create_first_rows_response(
+            hub_public_presidio_scan, PRESIDIO_SCAN_cols, PRESIDIO_SCAN_rows
+        ),
+        "parquet_and_info_response": create_parquet_and_info_response(
+            dataset=hub_public_presidio_scan, data_type="presidio-scan"
+        ),
     }
 
 

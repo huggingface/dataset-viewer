@@ -11,7 +11,7 @@ environs = "^9.5.0"
 libapi = {path = "../../libs/libapi", develop = true}
 motor = "^3.3.1"
 sse-starlette = "^2.0.0"
-uvicorn = {extras = ["standard"], version = "^0.20.0"}
+uvicorn = {extras = ["standard"], version = "^0.30.1"}
 watchdog = { extras = ["watchmedo"], version = "^2.2.1" }
 
 [tool.poetry.group.dev.dependencies]
@@ -19,12 +19,13 @@ bandit = "^1.7.4"
 httpx = "^0.25.0"
 httpx-sse = "^0.1.0"
 motor-types = "^1.0.0b0"
-mypy = "^1.8.0"
+mypy = "^1.10.0"
 pandas-stubs = "^1.5.3"
-pip-audit = "^2.5.4"
-pytest = "^7.2.1"
-pytest-asyncio = "^0.20.3"
-ruff = "^0.2.1"
+pip-audit = "^2.7.3"
+pytest = "^8.2.2"
+pytest-asyncio = "^0.23.7"
+pytest-memray = "^1.6.0"
+ruff = "^0"
 types-jsonschema = "^4.17.0.4"
 types-psutil = "^5.9.5"
 

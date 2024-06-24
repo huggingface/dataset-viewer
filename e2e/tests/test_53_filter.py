@@ -12,8 +12,8 @@ def test_filter_endpoint(normal_user_public_dataset: str) -> None:
     config, split = get_default_config_split()
     offset = 1
     length = 2
-    where = "col_4='B'"
-    orderby = "col_2 DESC"
+    where = "\"col_4\"='B'"
+    orderby = '"col_2" DESC'
     filter_response = poll_until_ready_and_assert(
         relative_url=(
             f"/filter?dataset={dataset}&config={config}&split={split}&offset={offset}&length={length}&where={where}&orderby={orderby}"

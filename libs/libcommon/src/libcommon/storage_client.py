@@ -111,6 +111,8 @@ class StorageClient:
             self._fs.rm(dataset_key, recursive=True)
             logging.info(f"Directory deleted: {dataset_key}")
             return 1
+        except FileNotFoundError:
+            return 0
         except Exception:
             logging.warning(f"Could not delete directory {dataset_key}")
             return 0
@@ -142,5 +144,5 @@ class StorageClient:
             )
             return 0
 
-    def __repr__(self) -> str:
-        return f"StorageClient(protocol={self.protocol}, storage_root={self.storage_root}, base_url={self.base_url}, overwrite={self.overwrite}), url_signer={self.url_signer})"
+    def __str__(self) -> str:
+        return f"StorageClient(protocol={self.protocol}, storage_root={self.storage_root}, base_url={self.base_url}, overwrite={self.overwrite}, url_signer={self.url_signer})"

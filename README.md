@@ -1,6 +1,6 @@
 # Dataset viewer
 
-> Integrate into your apps over 10,000 datasets via simple HTTP requests, with pre-processed responses and scalability built-in.
+> Integrate into your apps over 100,000 datasets via simple HTTP requests, with pre-processed responses and scalability built-in.
 
 Documentation: https://huggingface.co/docs/datasets-server
 

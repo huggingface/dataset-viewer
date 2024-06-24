@@ -25,14 +25,14 @@ from libcommon.constants import (
 from libcommon.dtos import JobInfo, JobResult, Priority
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep, ProcessingStepDoesNotExist, processing_graph
 from libcommon.prometheus import StepProfiler
-from libcommon.queue import Queue
+from libcommon.queue.jobs import Queue
 from libcommon.simple_cache import (
-    CacheEntryDoesNotExistError,
+    CachedArtifactNotFoundError,
     delete_dataset_responses,
     fetch_names,
     get_cache_entries_df,
+    get_response,
     get_response_metadata,
-    get_response_or_missing_error,
     update_revision_of_dataset_responses,
     upsert_response_params,
 )
@@ -138,7 +138,6 @@ class CreateJobsTask(Task):
         with StepProfiler(
             method="CreateJobsTask.run",
             step="all",
-            context=f"num_jobs_to_create={len(self.job_infos)}",
         ):
             num_created_jobs = Queue().create_jobs(job_infos=self.job_infos)
             if num_created_jobs != len(self.job_infos):
@@ -169,7 +168,6 @@ class DeleteWaitingJobsTask(Task):
         with StepProfiler(
             method="DeleteWaitingJobsTask.run",
             step="all",
-            context=f"num_jobs_to_delete={len(self.jobs_df)}",
         ):
             num_deleted_waiting_jobs = Queue().delete_waiting_jobs_by_job_id(job_ids=self.jobs_df["job_id"].tolist())
             logging.debug(f"{num_deleted_waiting_jobs} waiting jobs were deleted.")
@@ -182,7 +180,7 @@ class DeleteDatasetWaitingJobsTask(Task):
 
     def __post_init__(self) -> None:
         # for debug and testing
-        self.id = "DeleteDatasetJobs,1"
+        self.id = f"DeleteDatasetJobs,{self.dataset}"
         self.long_id = self.id
 
     def run(self) -> TasksStatistics:
@@ -195,7 +193,6 @@ class DeleteDatasetWaitingJobsTask(Task):
         with StepProfiler(
             method="DeleteDatasetWaitingJobsTask.run",
             step="all",
-            context=f"dataset={self.dataset}",
         ):
             return TasksStatistics(num_deleted_waiting_jobs=Queue().delete_dataset_waiting_jobs(dataset=self.dataset))
 
@@ -206,7 +203,7 @@ class DeleteDatasetCacheEntriesTask(Task):
 
     def __post_init__(self) -> None:
         # for debug and testing
-        self.id = "DeleteDatasetCacheEntries,1"
+        self.id = f"DeleteDatasetCacheEntries,{self.dataset}"
         self.long_id = self.id
 
     def run(self) -> TasksStatistics:
@@ -219,7 +216,6 @@ class DeleteDatasetCacheEntriesTask(Task):
         with StepProfiler(
             method="DeleteDatasetCacheEntriesTask.run",
             step="all",
-            context=f"dataset={self.dataset}",
         ):
             return TasksStatistics(num_deleted_cache_entries=delete_dataset_responses(dataset=self.dataset))
 
@@ -274,7 +270,6 @@ class DeleteDatasetStorageTask(Task):
         with StepProfiler(
             method="DeleteDatasetStorageTask.run",
             step="all",
-            context=f"dataset={self.dataset},storage_client={self.storage_client}",
         ):
             return TasksStatistics(
                 num_deleted_storage_directories=self.storage_client.delete_dataset_directory(self.dataset)
@@ -350,7 +345,10 @@ class Plan:
 
 
 def get_num_bytes_from_config_infos(dataset: str, config: str, split: Optional[str] = None) -> Optional[int]:
-    resp = get_response_or_missing_error(kind=CONFIG_INFO_KIND, dataset=dataset, config=config)
+    try:
+        resp = get_response(kind=CONFIG_INFO_KIND, dataset=dataset, config=config)
+    except CachedArtifactNotFoundError:
+        return None
     if "dataset_info" in resp["content"] and isinstance(resp["content"]["dataset_info"], dict):
         dataset_info = resp["content"]["dataset_info"]
         if split is None:
@@ -560,12 +558,10 @@ class DatasetBackfillPlan(Plan):
         with StepProfiler(
             method="DatasetBackfillPlan.__post_init__",
             step="all",
-            context=f"dataset={self.dataset}",
         ):
             with StepProfiler(
                 method="DatasetBackfillPlan.__post_init__",
                 step="get_pending_jobs_df",
-                context=f"dataset={self.dataset}",
             ):
                 job_types = (
                     [
@@ -582,7 +578,6 @@ class DatasetBackfillPlan(Plan):
             with StepProfiler(
                 method="DatasetBackfillPlan.__post_init__",
                 step="get_cache_entries_df",
-                context=f"dataset={self.dataset}",
             ):
                 cache_kinds = (
                     [
@@ -600,7 +595,6 @@ class DatasetBackfillPlan(Plan):
             with StepProfiler(
                 method="DatasetBackfillPlan.__post_init__",
                 step="get_dataset_state",
-                context=f"dataset={self.dataset}",
             ):
                 self.dataset_state = (
                     FirstStepsDatasetState(
@@ -622,13 +616,11 @@ class DatasetBackfillPlan(Plan):
             with StepProfiler(
                 method="DatasetBackfillPlan.__post_init__",
                 step="_get_cache_status",
-                context=f"dataset={self.dataset}",
             ):
                 self.cache_status = self._get_cache_status()
             with StepProfiler(
                 method="DatasetBackfillPlan.__post_init__",
                 step="_create_plan",
-                context=f"dataset={self.dataset}",
             ):
                 self._create_plan()
 
@@ -1149,7 +1141,7 @@ def finish_job(
             and previous_response["dataset_git_revision"] == params["revision"]
             else 0
         )
-    except CacheEntryDoesNotExistError:
+    except CachedArtifactNotFoundError:
         failed_runs = 0
 
     upsert_response_params(
@@ -1167,7 +1159,10 @@ def finish_job(
     )
     logging.debug("the job output has been written to the cache.")
     # finish the job
-    Queue().finish_job(job_id=job_info["job_id"])
+    job_priority = Queue().finish_job(job_id=job_info["job_id"])
+    if job_priority:
+        job_info["priority"] = job_priority
+        # ^ change the priority of children jobs if the priority was updated during the job
     logging.debug("the job has been finished.")
     # trigger the next steps
     plan = AfterJobPlan(job_info=job_info, processing_graph=processing_graph, failed_runs=failed_runs)

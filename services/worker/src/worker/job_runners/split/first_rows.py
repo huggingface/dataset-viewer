@@ -27,7 +27,7 @@ from libcommon.viewer_utils.rows import create_first_rows_response
 from worker.config import AppConfig, FirstRowsConfig
 from worker.dtos import CompleteJobResult
 from worker.job_runners.split.split_job_runner import SplitJobRunnerWithDatasetsCache
-from worker.utils import get_rows_or_raise, resolve_trust_remote_code
+from worker.utils import get_rows_or_raise, raise_if_long_column_name, resolve_trust_remote_code
 
 
 def compute_first_rows_from_parquet_response(
@@ -177,7 +177,6 @@ def compute_first_rows_from_streaming_response(
             List of datasets for which we support dataset scripts.
             Unix shell-style wildcards also work in the dataset name for namespaced datasets,
             for example `some_namespace/*` to refer to all the datasets in the `some_namespace` namespace.
-            The keyword `{{ALL_DATASETS_WITH_NO_NAMESPACE}}` refers to all the datasets without namespace.
         max_size_fallback (`int`, *optional*): **DEPRECATED**
             The maximum number of bytes of the split to fallback to normal mode if the streaming mode fails.
             This argument is now hard-coded to 100MB, and will be removed in a future version.
@@ -205,6 +204,8 @@ def compute_first_rows_from_streaming_response(
           If the split rows could not be obtained using the datasets library in normal mode.
         [~`libcommon.exceptions.DatasetWithScriptNotSupportedError`]:
             If the dataset has a dataset script and is not in the allow list.
+        [~`libcommon.exceptions.TooLongColumnNameError`]:
+            If one of the columns' name is too long (> 500 characters)
 
     Returns:
         `SplitFirstRowsResponse`: The list of first rows of the split.
@@ -252,6 +253,7 @@ def compute_first_rows_from_streaming_response(
             ) from err
     else:
         features = info.features
+    raise_if_long_column_name(features)
 
     def get_rows_content(rows_max_number: int) -> RowsContent:
         return get_rows_or_raise(

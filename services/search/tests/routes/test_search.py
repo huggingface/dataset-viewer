@@ -9,6 +9,7 @@ import pandas as pd
 import pyarrow as pa
 import pytest
 from libapi.duckdb import get_download_folder
+from libcommon.constants import ROW_IDX_COLUMN
 from libcommon.storage import StrPath
 
 from search.routes.search import full_text_search
@@ -29,7 +30,7 @@ def test_get_download_folder(duckdb_index_cache_directory: StrPath) -> None:
             0,
             100,
             {
-                "__hf_index_id": [0, 4, 2],
+                ROW_IDX_COLUMN: [0, 4, 2],
                 "text": [
                     "Grand Moff Tarkin and Lord Vader are interrupted in their discussion by the buzz of the comlink",
                     "The wingman spots the pirateship coming at him and warns the Dark Lord",
@@ -43,7 +44,7 @@ def test_get_download_folder(duckdb_index_cache_directory: StrPath) -> None:
             1,
             2,
             {
-                "__hf_index_id": [4, 2],
+                ROW_IDX_COLUMN: [4, 2],
                 "text": [
                     "The wingman spots the pirateship coming at him and warns the Dark Lord",
                     "Vader turns round and round in circles as his ship spins into space.",
@@ -51,9 +52,9 @@ def test_get_download_folder(duckdb_index_cache_directory: StrPath) -> None:
             },
             3,
         ),
-        ("non existing text", 0, 100, {"__hf_index_id": [], "text": []}, 0),
-        (";DROP TABLE data;", 0, 100, {"__hf_index_id": [], "text": []}, 0),
-        ("some text'); DROP TABLE data; --", 0, 100, {"__hf_index_id": [], "text": []}, 0),
+        ("non existing text", 0, 100, {ROW_IDX_COLUMN: [], "text": []}, 0),
+        (";DROP TABLE data;", 0, 100, {ROW_IDX_COLUMN: [], "text": []}, 0),
+        ("some text'); DROP TABLE data; --", 0, 100, {ROW_IDX_COLUMN: [], "text": []}, 0),
     ],
 )
 def test_full_text_search(
@@ -79,19 +80,22 @@ def test_full_text_search(
         },
         dtype=pd.StringDtype(storage="python"),
     )
-    create_command_sql = "CREATE OR REPLACE TABLE data AS SELECT nextval('serial') AS __hf_index_id, * FROM sample_df"
+    features = ["__hf_index_id", "text"]
+    create_command_sql = (
+        f"CREATE OR REPLACE TABLE data AS SELECT nextval('serial') AS {ROW_IDX_COLUMN}, * FROM sample_df"
+    )
     con.sql(create_command_sql)
     con.execute(query="SELECT COUNT(*) FROM data;").fetchall()
     assert sample_df.size == con.execute(query="SELECT COUNT(*) FROM data;").fetchall()[0][0]
-    con.sql("PRAGMA create_fts_index('data', '__hf_index_id', '*', overwrite=1);")
+    con.sql(f"PRAGMA create_fts_index('data', '{ROW_IDX_COLUMN}', '*', overwrite=1);")
     con.close()
 
-    fields = [pa.field("__hf_index_id", pa.int64()), pa.field("text", pa.string())]
+    fields = [pa.field(ROW_IDX_COLUMN, pa.int64()), pa.field("text", pa.string())]
     filtered_df = pd.DataFrame(expected_result)
     expected_table = pa.Table.from_pandas(filtered_df, schema=pa.schema(fields), preserve_index=False)
 
     # assert search results
-    (num_rows_total, pa_table) = full_text_search(index_file_location, query, offset, length)
+    (num_rows_total, pa_table) = full_text_search(index_file_location, features, query, offset, length)
     assert num_rows_total is not None
     assert pa_table is not None
     assert num_rows_total == expected_num_rows_total

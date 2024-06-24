@@ -4,7 +4,7 @@
 from collections.abc import Iterator
 from pathlib import Path
 
-from libcommon.queue import _clean_queue_database
+from libcommon.queue.utils import _clean_queue_database
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import _clean_cache_database
 from libcommon.storage import (
@@ -106,6 +106,17 @@ def app_config(set_env_vars: MonkeyPatch) -> Iterator[AppConfig]:
     if "test" not in app_config.cache.mongo_database or "test" not in app_config.queue.mongo_database:
         raise ValueError("Test must be launched on a test mongo database")
     yield app_config
+
+
+@fixture
+def app_config_prod(set_env_vars: MonkeyPatch) -> Iterator[AppConfig]:
+    mp = MonkeyPatch()
+    mp.setenv("COMMON_HF_ENDPOINT", "https://huggingface.co")
+    app_config = AppConfig.from_env()
+    if "test" not in app_config.cache.mongo_database or "test" not in app_config.queue.mongo_database:
+        raise ValueError("Test must be launched on a test mongo database")
+    yield app_config
+    mp.undo()
 
 
 @fixture

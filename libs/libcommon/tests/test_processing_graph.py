@@ -90,7 +90,9 @@ def test_graph() -> None:
         ),
         (
             "dataset-split-names",
-            [],
+            [
+                "dataset-presidio-entities-count",
+            ],
             [
                 "dataset-config-names",
                 "config-split-names",
@@ -123,7 +125,7 @@ def test_graph() -> None:
         ),
         (
             "config-parquet-metadata",
-            ["split-first-rows", "split-duckdb-index", "split-descriptive-statistics"],
+            ["split-first-rows", "split-duckdb-index", "split-descriptive-statistics", "split-presidio-scan"],
             ["config-parquet"],
             ["dataset-config-names", "config-parquet-and-info", "config-parquet"],
         ),
@@ -166,8 +168,8 @@ def test_graph() -> None:
         (
             "dataset-modalities",
             ["dataset-hub-cache"],
-            ["dataset-info"],
-            ["dataset-config-names", "config-parquet-and-info", "config-info", "dataset-info"],
+            ["dataset-info", "dataset-filetypes"],
+            ["dataset-config-names", "config-parquet-and-info", "config-info", "dataset-info", "dataset-filetypes"],
         ),
         (
             "dataset-is-valid",
@@ -272,6 +274,32 @@ def test_graph() -> None:
             ],
         ),
         (
+            "split-presidio-scan",
+            ["dataset-presidio-entities-count"],
+            ["config-parquet-metadata"],
+            [
+                "config-parquet",
+                "config-parquet-and-info",
+                "config-parquet-metadata",
+                "dataset-config-names",
+            ],
+        ),
+        (
+            "dataset-presidio-entities-count",
+            [],
+            ["dataset-split-names", "split-presidio-scan"],
+            [
+                "config-info",
+                "config-parquet",
+                "config-parquet-and-info",
+                "config-parquet-metadata",
+                "config-split-names",
+                "dataset-config-names",
+                "dataset-split-names",
+                "split-presidio-scan",
+            ],
+        ),
+        (
             "split-duckdb-index",
             ["config-duckdb-index-size", "split-is-valid"],
             ["config-parquet-metadata"],
@@ -335,6 +363,7 @@ def test_graph() -> None:
                 "config-size",
                 "config-split-names",
                 "dataset-config-names",
+                "dataset-filetypes",
                 "dataset-info",
                 "dataset-is-valid",
                 "dataset-compatible-libraries",
@@ -387,6 +416,12 @@ def test_graph() -> None:
             ["dataset-info"],
             ["dataset-config-names", "config-parquet-and-info", "config-info", "dataset-info"],
         ),
+        (
+            "dataset-filetypes",
+            ["dataset-modalities"],
+            [],
+            [],
+        ),
     ],
 )
 def test_default_graph_steps(
@@ -396,5 +431,5 @@ def test_default_graph_steps(
 
 
 def test_default_graph_first_steps() -> None:
-    roots = ["dataset-config-names"]
+    roots = ["dataset-config-names", "dataset-filetypes"]
     assert_lists_are_equal(processing_graph.get_first_processing_steps(), roots)

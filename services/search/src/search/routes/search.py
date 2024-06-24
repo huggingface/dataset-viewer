@@ -24,7 +24,6 @@ from libapi.request import (
     get_request_parameter_length,
     get_request_parameter_offset,
 )
-from libapi.response import ROW_IDX_COLUMN
 from libapi.utils import (
     Endpoint,
     get_json_api_error_response,
@@ -32,7 +31,7 @@ from libapi.utils import (
     get_json_ok_response,
     to_rows_list,
 )
-from libcommon.constants import MAX_NUM_ROWS_PER_PAGE
+from libcommon.constants import HF_FTS_SCORE, MAX_NUM_ROWS_PER_PAGE, ROW_IDX_COLUMN
 from libcommon.dtos import PaginatedResponse
 from libcommon.duckdb_utils import duckdb_index_is_partial
 from libcommon.prometheus import StepProfiler
@@ -49,14 +48,15 @@ from search.duckdb_connection import duckdb_connect
 
 logger = logging.getLogger(__name__)
 
-FTS_STAGE_TABLE_COMMAND = "SELECT * FROM (SELECT __hf_index_id, fts_main_data.match_bm25(__hf_index_id, ?) AS __hf_fts_score FROM data) A WHERE __hf_fts_score IS NOT NULL;"
-JOIN_STAGE_AND_DATA_COMMAND = (
-    "SELECT data.* FROM fts_stage_table JOIN data USING(__hf_index_id) ORDER BY fts_stage_table.__hf_fts_score DESC;"
-)
+FTS_STAGE_TABLE_COMMAND = f"SELECT * FROM (SELECT {ROW_IDX_COLUMN}, fts_main_data.match_bm25({ROW_IDX_COLUMN}, ?) AS {HF_FTS_SCORE} FROM data) A WHERE {HF_FTS_SCORE} IS NOT NULL;"  # nosec
+JOIN_STAGE_AND_DATA_COMMAND = "SELECT {columns} FROM fts_stage_table JOIN data USING({row_idx_column}) ORDER BY fts_stage_table.{hf_fts_score} DESC;"  # nosec
+# ^ "no sec" to remove https://bandit.readthedocs.io/en/1.7.5/plugins/b608_hardcoded_sql_expressions.html
+# the string substitutions here are constants, not user inputs
 
 
 def full_text_search(
     index_file_location: str,
+    columns: list[str],
     query: str,
     offset: int,
     length: int,
@@ -66,8 +66,13 @@ def full_text_search(
         fts_stage_table = con.execute(query=FTS_STAGE_TABLE_COMMAND, parameters=[query]).arrow()
         num_rows_total = fts_stage_table.num_rows
         logging.info(f"got {num_rows_total=} results for {query=} using {offset=} {length=}")
-        fts_stage_table = fts_stage_table.sort_by([("__hf_fts_score", "descending")]).slice(offset, length)
-        pa_table = con.execute(query=JOIN_STAGE_AND_DATA_COMMAND).arrow()
+        fts_stage_table = fts_stage_table.sort_by([(HF_FTS_SCORE, "descending")]).slice(offset, length)
+        join_stage_and_data_query = JOIN_STAGE_AND_DATA_COMMAND.format(
+            columns=",".join([f'"{column}"' for column in columns]),
+            row_idx_column=ROW_IDX_COLUMN,
+            hf_fts_score=HF_FTS_SCORE,
+        )
+        pa_table = con.execute(query=join_stage_and_data_query).arrow()
     return num_rows_total, pa_table
 
 
@@ -80,15 +85,12 @@ async def create_response(
     storage_client: StorageClient,
     offset: int,
     features: Features,
+    unsupported_columns: list[str],
     num_rows_total: int,
     partial: bool,
 ) -> PaginatedResponse:
     features_without_key = features.copy()
     features_without_key.pop(ROW_IDX_COLUMN, None)
-
-    _, unsupported_columns = get_supported_unsupported_columns(
-        features,
-    )
     pa_table = pa_table.drop(unsupported_columns)
     logging.info(f"create response for {dataset=} {config=} {split=}")
 
@@ -199,12 +201,18 @@ def create_search_endpoint(
                         target_revision=target_revision,
                         hf_token=hf_token,
                     )
-
+                with StepProfiler(method="search_endpoint", step="get features"):
+                    features = Features.from_dict(duckdb_index_cache_entry["content"]["features"])
+                with StepProfiler(method="search_endpoint", step="get supported and unsupported columns"):
+                    supported_columns, unsupported_columns = get_supported_unsupported_columns(
+                        features,
+                    )
                 with StepProfiler(method="search_endpoint", step="perform FTS command"):
                     logging.debug(f"connect to index file {index_file_location}")
                     num_rows_total, pa_table = await anyio.to_thread.run_sync(
                         full_text_search,
                         index_file_location,
+                        supported_columns,
                         query,
                         offset,
                         length,
@@ -219,16 +227,6 @@ def create_search_endpoint(
                                 expiredTimeIntervalSeconds,
                             )
                 with StepProfiler(method="search_endpoint", step="create response"):
-                    # Features can be missing in old cache entries,
-                    # but in this case it's ok to get them from the Arrow schema.
-                    # Indded at one point we refreshed all the datasets that need the features
-                    # to be cached (i.e. image and audio datasets).
-                    if "features" in duckdb_index_cache_entry["content"] and isinstance(
-                        duckdb_index_cache_entry["content"]["features"], dict
-                    ):
-                        features = Features.from_dict(duckdb_index_cache_entry["content"]["features"])
-                    else:
-                        features = Features.from_arrow_schema(pa_table.schema)
                     response = await create_response(
                         pa_table=pa_table,
                         dataset=dataset,
@@ -237,7 +235,8 @@ def create_search_endpoint(
                         split=split,
                         storage_client=cached_assets_storage_client,
                         offset=offset,
-                        features=features,
+                        features=features or Features.from_arrow_schema(pa_table.schema),
+                        unsupported_columns=unsupported_columns,
                         num_rows_total=num_rows_total,
                         partial=partial,
                     )

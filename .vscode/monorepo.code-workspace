@@ -58,12 +58,12 @@
       "path": "../services/sse-api"
     },
     {
-      "name": "services/storage-admin",
-      "path": "../services/storage-admin"
-    },
-    {
       "name": "services/worker",
       "path": "../services/worker"
+    },
+    {
+      "name": "services/webhook",
+      "path": "../services/webhook"
     }
   ],
   "settings": {

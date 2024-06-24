@@ -601,7 +601,7 @@ specification: ProcessingGraphSpecification = {
             "config-split-names",  # required in case the config has no splits (error in previous step)
             "split-is-valid",
         ],
-        "job_runner_version": 3,
+        "job_runner_version": 4,
         "difficulty": 20,
     },
     "dataset-is-valid": {
@@ -610,7 +610,7 @@ specification: ProcessingGraphSpecification = {
             "dataset-config-names",  # required in case the dataset has no configs (error in previous step)
             "config-is-valid",
         ],
-        "job_runner_version": 7,
+        "job_runner_version": 8,
         "difficulty": 20,
     },
     "split-image-url-columns": {
@@ -649,10 +649,25 @@ specification: ProcessingGraphSpecification = {
         "job_runner_version": 2,
         "difficulty": 20,
     },
+    "split-presidio-scan": {
+        "input_type": "split",
+        "triggered_by": "config-parquet-metadata",
+        "job_runner_version": 1,
+        "difficulty": 70,
+    },
+    "dataset-presidio-entities-count": {
+        "input_type": "dataset",
+        "triggered_by": [
+            "dataset-split-names",  # required in case the dataset has no configs (error in previous step)
+            "split-presidio-scan",
+        ],
+        "job_runner_version": 1,
+        "difficulty": 20,
+    },
     "split-duckdb-index": {
         "input_type": "split",
         "triggered_by": "config-parquet-metadata",
-        "job_runner_version": 2,
+        "job_runner_version": 3,
         "difficulty": 70,
         "bonus_difficulty_if_dataset_is_big": 20,
     },
@@ -682,7 +697,7 @@ specification: ProcessingGraphSpecification = {
             "dataset-compatible-libraries",
             "dataset-modalities",
         ],
-        "job_runner_version": 2,
+        "job_runner_version": 3,
         "difficulty": 20,
     },
     "dataset-compatible-libraries": {
@@ -693,8 +708,8 @@ specification: ProcessingGraphSpecification = {
     },
     "dataset-modalities": {
         "input_type": "dataset",
-        "triggered_by": "dataset-info",
-        "job_runner_version": 1,
+        "triggered_by": ["dataset-info", "dataset-filetypes"],
+        "job_runner_version": 2,
         "difficulty": 20,
     },
     "dataset-croissant-crumbs": {
@@ -702,6 +717,12 @@ specification: ProcessingGraphSpecification = {
         "triggered_by": "dataset-info",
         "job_runner_version": 1,
         "difficulty": 20,
+    },
+    "dataset-filetypes": {
+        "input_type": "dataset",
+        # no "triggered_by" <- this is a root step
+        "job_runner_version": 1,
+        "difficulty": 50,
     },
 }
 

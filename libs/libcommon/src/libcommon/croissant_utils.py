@@ -31,6 +31,6 @@ def truncate_features_from_croissant_crumbs_response(content: Mapping[str, Any])
             ):
                 num_columns = len(record["field"])
                 record["field"] = record["field"][:MAX_COLUMNS]
-                record[
-                    "description"
-                ] += f"\n- {num_columns - MAX_COLUMNS} skipped column{'s' if num_columns - MAX_COLUMNS > 1 else ''} (max number of columns reached)"
+                record["description"] += (
+                    f"\n- {num_columns - MAX_COLUMNS} skipped column{'s' if num_columns - MAX_COLUMNS > 1 else ''} (max number of columns reached)"
+                )

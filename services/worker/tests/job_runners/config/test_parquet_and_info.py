@@ -3,6 +3,7 @@
 
 import io
 import os
+import zipfile
 from collections.abc import Callable, Iterator, Mapping
 from dataclasses import replace
 from fnmatch import fnmatch
@@ -15,11 +16,12 @@ from unittest.mock import patch
 import datasets.builder
 import datasets.config
 import datasets.info
+import fsspec
 import pandas as pd
 import pyarrow.parquet as pq
 import pytest
 import requests
-from datasets import Audio, Features, Image, Value, load_dataset, load_dataset_builder
+from datasets import Audio, Features, Image, StreamingDownloadManager, Value, load_dataset, load_dataset_builder
 from datasets.packaged_modules.generator.generator import (
     Generator as ParametrizedGeneratorBasedBuilder,
 )
@@ -29,7 +31,7 @@ from libcommon.dtos import JobInfo, JobParams, Priority
 from libcommon.exceptions import (
     DatasetManualDownloadError,
 )
-from libcommon.queue import Queue
+from libcommon.queue.jobs import Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import upsert_response
 
@@ -47,6 +49,7 @@ from worker.job_runners.config.parquet_and_info import (
     create_commits,
     fill_builder_info,
     get_delete_operations,
+    get_urlpaths_in_gen_kwargs,
     get_writer_batch_size_from_info,
     get_writer_batch_size_from_row_group_size,
     limit_parquet_writes,
@@ -54,6 +57,7 @@ from worker.job_runners.config.parquet_and_info import (
     parse_repo_filename,
     raise_if_requires_manual_download,
     stream_convert_to_parquet,
+    track_reads,
 )
 from worker.job_runners.dataset.config_names import DatasetConfigNamesJobRunner
 from worker.resources import LibrariesResource
@@ -64,6 +68,7 @@ from ...fixtures.hub import HubDatasetTest
 from ..utils import REVISION_NAME
 
 GetJobRunner = Callable[[str, str, AppConfig], ConfigParquetAndInfoJobRunner]
+streaming_dl_manager = StreamingDownloadManager()
 
 
 @pytest.fixture
@@ -107,7 +112,12 @@ def get_job_runner(
 
 def assert_content_is_equal(content: Any, expected: Any) -> None:
     print(content)
-    assert set(content) == {"parquet_files", "dataset_info", "partial"}, f"keys: {set(content)}"
+    assert set(content) == {
+        "parquet_files",
+        "dataset_info",
+        "estimated_dataset_info",
+        "partial",
+    }, f"keys: {set(content)}"
     assert content["parquet_files"] == expected["parquet_files"], f"parquet files: {content['parquet_files']}"
     assert len(content["dataset_info"]) == len(
         expected["dataset_info"]
@@ -120,6 +130,20 @@ def assert_content_is_equal(content: Any, expected: Any) -> None:
     for key in content_value.keys():
         if key != "download_checksums":
             assert content_value[key] == expected_value[key], f"content of dataset_info['{key}']: {content_value[key]}"
+    if content["estimated_dataset_info"] is not None or expected["estimated_dataset_info"] is not None:
+        assert len(content["estimated_dataset_info"]) == len(
+            expected["estimated_dataset_info"]
+        ), f"length of estimated_dataset_info: {content['estimated_dataset_info']}"
+        content_value = content["estimated_dataset_info"]
+        expected_value = expected["estimated_dataset_info"]
+        assert set(content_value.keys()) == set(
+            expected_value.keys()
+        ), f"keys of estimated_dataset_info: {set(content_value.keys())}"
+        for key in content_value.keys():
+            if key != "download_checksums":
+                assert (
+                    content_value[key] == expected_value[key]
+                ), f"content of estimated_dataset_info['{key}']: {content_value[key]}"
     assert content["partial"] == expected["partial"], f"partial: {content['partial']}"
 
 
@@ -690,12 +714,13 @@ def test_stream_convert_to_parquet_arrowbasedbuilder(
     )
     with patch("worker.job_runners.config.parquet_and_info.get_writer_batch_size_from_info", lambda ds_config_info: 1):
         with patch.object(datasets.config, "MAX_SHARD_SIZE", 1):
-            parquet_operations, partial = stream_convert_to_parquet(
+            parquet_operations, partial, estimated_dataset_info = stream_convert_to_parquet(
                 builder, max_dataset_size_bytes=max_dataset_size_bytes
             )
     num_shards = len(parquet_operations)
     assert num_shards == expected_num_shards
     assert partial == (expected_num_shards < num_data_files)
+    assert partial == (estimated_dataset_info is not None)
     assert all(isinstance(op.path_or_fileobj, str) for op in parquet_operations)
     parquet_files = list_generated_parquet_files(builder, partial=partial)
     assert len(parquet_files) == expected_num_shards
@@ -732,12 +757,13 @@ def test_stream_convert_to_parquet_generatorbasedbuilder(
     builder = ParametrizedGeneratorBasedBuilder(generator=long_generator, cache_dir=cache_dir)
     with patch("worker.job_runners.config.parquet_and_info.get_writer_batch_size_from_info", lambda ds_config_info: 1):
         with patch.object(datasets.config, "MAX_SHARD_SIZE", 1):
-            parquet_operations, partial = stream_convert_to_parquet(
+            parquet_operations, partial, estimated_dataset_info = stream_convert_to_parquet(
                 builder, max_dataset_size_bytes=max_dataset_size_bytes
             )
     num_shards = len(parquet_operations)
     assert num_shards == expected_num_shards
     assert partial == (expected_num_shards < num_rows)
+    assert estimated_dataset_info is None  # no file to read to estimate num_rows
     assert all(isinstance(op.path_or_fileobj, str) for op in parquet_operations)
     parquet_files = list_generated_parquet_files(builder, partial=partial)
     assert len(parquet_files) == expected_num_shards
@@ -749,6 +775,117 @@ def test_stream_convert_to_parquet_generatorbasedbuilder(
             sum(pq.ParquetFile(parquet_file.local_file).read().nbytes for parquet_file in parquet_files)
             < expected_max_dataset_size_bytes
         )
+
+
+@pytest.mark.parametrize(
+    "gen_kwargs,expected",
+    [
+        (
+            {
+                "files": [
+                    streaming_dl_manager.iter_files("tmp://data"),
+                    streaming_dl_manager.iter_files("zip://::tmp://data.zip"),
+                ]
+            },
+            ["tmp://data", "tmp://data.zip"],
+        ),  # arrow, csv, json, parquet, text builders
+        (
+            {
+                "metadata_files": {"tmp://metadata"},
+                "split_name": "train",
+                "add_metadata": True,
+                "add_labels": False,
+                "files": [
+                    ("tmp://data", streaming_dl_manager.iter_files("tmp://data")),
+                    (None, streaming_dl_manager.iter_files("zip://::tmp://data.zip")),
+                ],
+            },
+            ["tmp://data", "tmp://data.zip"],
+        ),  # audiofolder, imagefolder builders
+        (
+            {
+                "tar_paths": [
+                    "tmp://data.tar",
+                ],
+                "tar_iterators": [
+                    streaming_dl_manager.iter_archive("tmp://data.tar"),
+                ],
+            },
+            ["tmp://data.tar"],
+        ),  # arrow, csv, json, parquet, text builders
+    ],
+)
+def test_get_urlpaths_in_gen_kwargs(
+    gen_kwargs: dict[str, Any],
+    expected: list[str],
+    tmpfs: fsspec.AbstractFileSystem,
+    csv_path: str,
+    zip_file: str,
+    tar_file: str,
+) -> None:
+    tmpfs.put(csv_path, "data")
+    tmpfs.put(zip_file, "data.zip")
+    tmpfs.put(tar_file, "data.tar")
+    assert sorted(get_urlpaths_in_gen_kwargs(gen_kwargs)) == sorted(expected)
+
+
+def test_stream_convert_to_parquet_estimate_info(tmp_path: Path, csv_path: str) -> None:
+    expected_estimated_num_rows = 54
+
+    def generate_from_text(text_files: list[str]) -> Iterator[dict[str, int]]:
+        for text_file in text_files:
+            with fsspec.open(text_file, "r") as f:  # we track fsspec reads to estimate
+                yield {"text": f.read()}
+
+    cache_dir = str(tmp_path / "test_limit_parquet_writes_cache_dir")
+    gen_kwargs = {"text_files": [csv_path]}
+    builder = ParametrizedGeneratorBasedBuilder(
+        generator=generate_from_text, cache_dir=cache_dir, gen_kwargs=gen_kwargs
+    )
+    with patch("worker.job_runners.config.parquet_and_info.get_writer_batch_size_from_info", lambda ds_config_info: 1):
+        with patch.object(datasets.config, "MAX_SHARD_SIZE", 1):
+            parquet_operations, partial, estimated_dataset_info = stream_convert_to_parquet(
+                builder, max_dataset_size_bytes=1
+            )
+    assert partial
+    assert len(parquet_operations) == 1
+    assert "train" in builder.info.splits
+    assert builder.info.splits["train"].num_examples == 1
+    assert estimated_dataset_info is not None
+    assert "dataset_size" in estimated_dataset_info
+    assert estimated_dataset_info["dataset_size"] == expected_estimated_num_rows
+
+
+def test_stream_convert_to_parquet_estimate_info_zipped(tmp_path: Path, csv_path: str) -> None:
+    num_rows = 100
+    expected_estimated_num_rows = 140
+
+    def generate_from_text(text_files: list[str]) -> Iterator[dict[str, int]]:
+        for text_file in text_files:
+            with fsspec.open(text_file, "r").open() as f:  # we track fsspec reads to estimate
+                yield {"text": f.read()}
+
+    cache_dir = str(tmp_path / "test_limit_parquet_writes_cache_dir")
+    zip_path = str(tmp_path / "test_stream_convert_to_parquet_estimate_info_zipped.zip")
+    with zipfile.ZipFile(zip_path, "w") as zip_file:
+        for i in range(num_rows):
+            zip_file.write(csv_path, arcname=f"data{i}.csv")
+    gen_kwargs = {"text_files": [f"zip://data{i}.csv::{zip_path}" for i in range(num_rows)]}
+    builder = ParametrizedGeneratorBasedBuilder(
+        generator=generate_from_text, cache_dir=cache_dir, gen_kwargs=gen_kwargs
+    )
+    with patch("worker.job_runners.config.parquet_and_info.get_writer_batch_size_from_info", lambda ds_config_info: 1):
+        with patch.object(datasets.config, "MAX_SHARD_SIZE", 1):
+            parquet_operations, partial, estimated_dataset_info = stream_convert_to_parquet(
+                builder, max_dataset_size_bytes=1
+            )
+    assert partial
+    assert len(parquet_operations) == 1
+    assert "train" in builder.info.splits
+    assert builder.info.splits["train"].num_examples == 1
+    assert estimated_dataset_info is not None
+    assert "dataset_size" in estimated_dataset_info
+    assert estimated_dataset_info["dataset_size"] == expected_estimated_num_rows
 
 
 def test_limit_parquet_writes(tmp_path: Path) -> None:
@@ -832,6 +969,22 @@ def test_fill_builder_info_multiple_parquets(
         assert split_info.num_bytes == pytest.approx(actual_info.splits[split_name].num_bytes, 300)
 
 
+def test_fill_builder_info_empty_rows(
+    hub_public_parquet_splits_empty_rows: str,
+    app_config: AppConfig,
+    tmp_path: Path,
+) -> None:
+    cache_dir = str(tmp_path / "test_fill_builder_info_empty_rows")
+    name = hub_public_parquet_splits_empty_rows
+    builder = load_dataset_builder(name, cache_dir=cache_dir)
+    builder.info = datasets.info.DatasetInfo()
+    validate = ParquetFileValidator(max_row_group_byte_size=100_000).validate
+    fill_builder_info(builder, hf_endpoint=app_config.common.hf_endpoint, hf_token=None, validate=validate)
+    assert "train" in builder.info.splits
+    assert builder.info.splits["train"].num_examples == 0
+    assert builder.info.splits["train"].num_bytes == 0
+
+
 def test_fill_builder_info_multiple_splits(
     hub_public_three_parquet_splits_builder: str,
     app_config: AppConfig,
@@ -886,20 +1039,8 @@ def test_get_writer_batch_size_from_row_group_size(
 
 def test_resolve_trust_remote_code() -> None:
     assert resolve_trust_remote_code("lhoestq/demo1", allow_list=[]) is False
-    assert resolve_trust_remote_code("lhoestq/demo1", allow_list=["{{ALL_DATASETS_WITH_NO_NAMESPACE}}"]) is False
-    assert (
-        resolve_trust_remote_code("lhoestq/demo1", allow_list=["{{ALL_DATASETS_WITH_NO_NAMESPACE}}", "lhoestq/d*"])
-        is True
-    )
-    assert resolve_trust_remote_code("mnist", allow_list=[]) is False
-    assert resolve_trust_remote_code("mnist", allow_list=["{{ALL_DATASETS_WITH_NO_NAMESPACE}}"]) is True
-    assert resolve_trust_remote_code("mnist", allow_list=["{{ALL_DATASETS_WITH_NO_NAMESPACE}}", "lhoestq/s*"]) is True
-    assert (
-        resolve_trust_remote_code(
-            "lhoestq/custom_mnist", allow_list=["{{ALL_DATASETS_WITH_NO_NAMESPACE}}", "lhoestq/d*"]
-        )
-        is False
-    )
+    assert resolve_trust_remote_code("lhoestq/demo1", allow_list=["lhoestq/d*"]) is True
+    assert resolve_trust_remote_code("lhoestq/custom_mnist", allow_list=["lhoestq/d*"]) is False
 
 
 @pytest.mark.parametrize(
@@ -927,3 +1068,31 @@ def test_parquet_file_path_in_repo(
     else:
         with pytest.raises(ValueError):
             ParquetFile(config=config, split=split, shard_idx=shard_idx, num_shards=num_shards, partial=partial)
+
+
+def test_track_reads_single_compressed_file(text_file: str, gz_file: str) -> None:
+    with track_reads() as tracker:
+        with (
+            fsspec.open(gz_file, compression="gzip") as f,
+            open(gz_file, "rb") as compressed_f,
+            open(text_file, "rb") as uncompressed_f,
+        ):
+            expected_read_size = len(compressed_f.read())
+            expected_output_size = len(uncompressed_f.read())
+            assert len(f.read()) == expected_output_size
+            assert "file://" + gz_file in tracker.files
+            assert tracker.files["file://" + gz_file]["read"] == expected_read_size
+
+
+def test_track_reads_zip_file(text_file: str, zip_file: str) -> None:
+    with track_reads() as tracker:
+        with (
+            fsspec.open(f"zip://{os.path.basename(text_file)}::{zip_file}") as f,
+            open(text_file, "rb") as uncompressed_f,
+        ):
+            expected_output_size = len(uncompressed_f.read())
+            assert tracker.files["file://" + zip_file]["read"] > 0  # open does read metadata
+            assert tracker.files["file://" + zip_file]["metadata_read"] > 0
+            assert len(f.read()) == expected_output_size
+            assert "file://" + zip_file in tracker.files
+            assert tracker.files["file://" + zip_file]["read"] != expected_output_size

@@ -16,7 +16,7 @@ ENV PYTHONFAULTHANDLER=1 \
 
 # System deps:
 RUN apt-get update \
-    && apt-get install -y unzip wget procps htop ffmpeg libavcodec-extra libsndfile1 \
+    && apt-get install -y gcc g++ unzip wget procps htop ffmpeg libavcodec-extra libsndfile1 \
     && rm -rf /var/lib/apt/lists/*
 
 RUN pip install -U pip
@@ -38,6 +38,7 @@ WORKDIR /src/services/worker/
 RUN --mount=type=cache,target=/home/.cache/pypoetry/cache \
     --mount=type=cache,target=/home/.cache/pypoetry/artifacts \
     poetry install --no-root
+RUN poetry run python -m spacy download en_core_web_lg
 
 # FOR LOCAL DEVELOPMENT ENVIRONMENT
 # Install the worker package.

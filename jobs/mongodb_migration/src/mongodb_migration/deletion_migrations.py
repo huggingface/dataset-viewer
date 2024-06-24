@@ -5,7 +5,7 @@ import logging
 from collections.abc import Mapping
 from typing import Any, Optional
 
-from libcommon.queue import JobDocument
+from libcommon.queue.jobs import JobDocument
 from libcommon.simple_cache import CachedResponseDocument
 from mongoengine.connection import get_db
 
@@ -125,6 +125,32 @@ class MigrationQueueDeleteTTLIndex(BaseQueueMigration):
         ttl_index_names = get_index_names(index_information=collection.index_information(), field_name=self.field_name)
         if len(ttl_index_names) > 0:
             raise ValueError(f"Found TTL index for field {self.field_name}")
+
+
+class MigrationDeleteIndex(Migration):
+    def __init__(self, version: str, description: str, database: str, collection: str, index_name: str):
+        super().__init__(version=version, description=description)
+        self.database = database
+        self.collection = collection
+        self.index_name = index_name
+
+    def up(self) -> None:
+        logging.info(f"Delete ttl index {self.index_name}.")
+
+        db = get_db(self.database)
+        collection = db[self.collection]
+        collection.drop_index(self.index_name)
+
+    def down(self) -> None:
+        raise IrreversibleMigrationError("This migration does not support rollback")
+
+    def validate(self) -> None:
+        logging.info("Check that the index does not exists anymore")
+
+        db = get_db(self.database)
+        collection = db[self.collection]
+        if self.index_name in collection.index_information():
+            raise ValueError(f"Index still exists: {self.index_name}")
 
 
 class MigrationDeleteJobsByStatus(BaseQueueMigration):

@@ -14,13 +14,13 @@ from huggingface_hub.hf_api import DatasetInfo, HfApi
 from huggingface_hub.utils import HfHubHTTPError
 from requests import Response
 
-from libcommon.constants import CONFIG_SPLIT_NAMES_KIND, DATASET_CONFIG_NAMES_KIND
-from libcommon.dtos import JobResult
+from libcommon.constants import CONFIG_SPLIT_NAMES_KIND, DATASET_CONFIG_NAMES_KIND, TAG_NFAA_SYNONYMS
 from libcommon.exceptions import (
     DatasetInBlockListError,
     NotSupportedDisabledRepositoryError,
     NotSupportedPrivateRepositoryError,
     NotSupportedRepositoryNotFoundError,
+    NotSupportedTagNFAAError,
 )
 from libcommon.operations import (
     CustomHfApi,
@@ -31,7 +31,7 @@ from libcommon.operations import (
 )
 from libcommon.orchestrator import finish_job
 from libcommon.processing_graph import specification
-from libcommon.queue import Queue
+from libcommon.queue.jobs import Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import get_cache_entries_df, has_some_cache, upsert_response
 from libcommon.storage_client import StorageClient
@@ -85,7 +85,7 @@ def test_whoisthis(name: str, expected_pro: Optional[bool], expected_enterprise:
 
 
 @contextmanager
-def tmp_dataset(namespace: str, token: str, private: bool) -> Iterator[str]:
+def tmp_dataset(namespace: str, token: str, private: bool, tags: Optional[list[str]] = None) -> Iterator[str]:
     # create a test dataset in hub-ci, then delete it
     hf_api = HfApi(endpoint=CI_HUB_ENDPOINT, token=token)
     prefix = "private" if private else "public"
@@ -95,6 +95,15 @@ def tmp_dataset(namespace: str, token: str, private: bool) -> Iterator[str]:
         private=private,
         repo_type="dataset",
     )
+    if tags:
+        README = "---\n" + "tags:\n" + "".join(f"- {tag}\n" for tag in tags) + "---"
+        hf_api.upload_file(
+            path_or_fileobj=README.encode(),
+            path_in_repo="README.md",
+            repo_id=dataset,
+            token=token,
+            repo_type="dataset",
+        )
     try:
         yield dataset
     finally:
@@ -162,6 +171,33 @@ def test_update_non_existent_raises(
         update_dataset(dataset="this-dataset-does-not-exists", hf_endpoint=CI_HUB_ENDPOINT, hf_token=CI_APP_TOKEN)
 
 
+@pytest.mark.parametrize(
+    "tags,raises",
+    [
+        (None, False),
+        ([], False),
+        (["perfectly-fine-tag"], False),
+        (["perfectly-fine-tag", "another-fine-tag"], False),
+        ([TAG_NFAA_SYNONYMS[0]], True),
+        ([TAG_NFAA_SYNONYMS[1]], True),
+        (TAG_NFAA_SYNONYMS, True),
+        (["perfectly-fine-tag", TAG_NFAA_SYNONYMS[0]], True),
+    ],
+)
+def test_update_dataset_with_nfaa_tag_raises(
+    queue_mongo_resource: QueueMongoResource,
+    cache_mongo_resource: CacheMongoResource,
+    tags: Optional[list[str]],
+    raises: bool,
+) -> None:
+    with tmp_dataset(namespace=NORMAL_USER, token=NORMAL_USER_TOKEN, private=False, tags=tags) as dataset:
+        if raises:
+            with pytest.raises(NotSupportedTagNFAAError):
+                update_dataset(dataset=dataset, hf_endpoint=CI_HUB_ENDPOINT, hf_token=CI_APP_TOKEN)
+        else:
+            update_dataset(dataset=dataset, hf_endpoint=CI_HUB_ENDPOINT, hf_token=CI_APP_TOKEN)
+
+
 def test_update_disabled_dataset_raises_way_1(
     queue_mongo_resource: QueueMongoResource,
     cache_mongo_resource: CacheMongoResource,
@@ -199,6 +235,16 @@ def test_update_disabled_dataset_raises_way_2(
 
 
 @pytest.mark.parametrize(
+    "tags",
+    [
+        None,
+        [],
+        ["perfectly-fine-tag"],
+        TAG_NFAA_SYNONYMS,
+    ],
+    # ^ for Pro and Enterprise Hub, *private* NFAA datasets are allowed
+)
+@pytest.mark.parametrize(
     "token,namespace",
     [
         (PRO_USER_TOKEN, PRO_USER),
@@ -208,11 +254,45 @@ def test_update_disabled_dataset_raises_way_2(
 def test_update_private(
     queue_mongo_resource: QueueMongoResource,
     cache_mongo_resource: CacheMongoResource,
+    tags: Optional[list[str]],
     token: str,
     namespace: str,
 ) -> None:
-    with tmp_dataset(namespace=namespace, token=token, private=True) as dataset:
+    with tmp_dataset(namespace=namespace, token=token, private=True, tags=tags) as dataset:
         update_dataset(dataset=dataset, hf_endpoint=CI_HUB_ENDPOINT, hf_token=CI_APP_TOKEN)
+
+
+@pytest.mark.parametrize(
+    "tags,raises",
+    [
+        (None, False),
+        ([], False),
+        (["perfectly-fine-tag"], False),
+        (TAG_NFAA_SYNONYMS, True),
+    ],
+    # ^ for Pro and Enterprise Hub, *public* NFAA datasets are disallowed
+)
+@pytest.mark.parametrize(
+    "token,namespace",
+    [
+        (PRO_USER_TOKEN, PRO_USER),
+        (ENTERPRISE_USER_TOKEN, ENTERPRISE_ORG),
+    ],
+)
+def test_update_public_nfaa(
+    queue_mongo_resource: QueueMongoResource,
+    cache_mongo_resource: CacheMongoResource,
+    tags: Optional[list[str]],
+    raises: bool,
+    token: str,
+    namespace: str,
+) -> None:
+    with tmp_dataset(namespace=namespace, token=token, private=False, tags=tags) as dataset:
+        if raises:
+            with pytest.raises(NotSupportedTagNFAAError):
+                update_dataset(dataset=dataset, hf_endpoint=CI_HUB_ENDPOINT, hf_token=CI_APP_TOKEN)
+        else:
+            update_dataset(dataset=dataset, hf_endpoint=CI_HUB_ENDPOINT, hf_token=CI_APP_TOKEN)
 
 
 @pytest.mark.parametrize(
@@ -309,66 +389,65 @@ def test_delete_obsolete_cache(
     assert not Queue().has_pending_jobs(dataset=dataset)
 
 
-def test_2274_only_one_entry(
+def test_2274_only_first_steps(
     queue_mongo_resource: QueueMongoResource,
     cache_mongo_resource: CacheMongoResource,
 ) -> None:
     JOB_RUNNER_VERSION = 1
-    FIRST_CACHE_KIND = "dataset-config-names"
+    FIRST_CACHE_KINDS = ["dataset-config-names", "dataset-filetypes"]
 
     # see https://github.com/huggingface/dataset-viewer/issues/2274
     with tmp_dataset(namespace=NORMAL_USER, token=NORMAL_USER_TOKEN, private=False) as dataset:
         queue = Queue()
 
-        # first update: one job is created
+        # first update: two jobs are created
         update_dataset(dataset=dataset, hf_endpoint=CI_HUB_ENDPOINT, hf_token=CI_APP_TOKEN)
 
         pending_jobs_df = queue.get_pending_jobs_df(dataset=dataset)
         cache_entries_df = get_cache_entries_df(dataset=dataset)
 
-        assert len(pending_jobs_df) == 1
-        assert pending_jobs_df.iloc[0]["type"] == FIRST_CACHE_KIND
+        assert len(pending_jobs_df) == 2
+        assert pending_jobs_df.iloc[0]["type"] in FIRST_CACHE_KINDS
         assert cache_entries_df.empty
 
-        # start the first (and only) job
-        job_info = queue.start_job()
+        # process the first two jobs
+        for _ in range(2):
+            finish_job(
+                job_result={
+                    "job_info": queue.start_job(),
+                    "job_runner_version": JOB_RUNNER_VERSION,
+                    "is_success": True,
+                    "output": {
+                        "content": {},
+                        "http_status": HTTPStatus.OK,
+                        "error_code": None,
+                        "details": None,
+                        "progress": 1.0,
+                    },
+                }
+            )
 
-        # finish the started job
-        job_result: JobResult = {
-            "job_info": job_info,
-            "job_runner_version": JOB_RUNNER_VERSION,
-            "is_success": True,
-            "output": {
-                "content": {},
-                "http_status": HTTPStatus.OK,
-                "error_code": None,
-                "details": None,
-                "progress": 1.0,
-            },
-        }
-        finish_job(job_result=job_result)
-
-        assert len(queue.get_pending_jobs_df(dataset=dataset)) == 7
-        assert len(get_cache_entries_df(dataset=dataset)) == 1
+        assert len(queue.get_pending_jobs_df(dataset=dataset)) == 8
+        assert len(get_cache_entries_df(dataset=dataset)) == 2
 
         # let's delete all the jobs, to get in the same state as the bug
         queue.delete_dataset_waiting_jobs(dataset=dataset)
 
         assert queue.get_pending_jobs_df(dataset=dataset).empty
-        assert len(get_cache_entries_df(dataset=dataset)) == 1
+        assert len(get_cache_entries_df(dataset=dataset)) == 2
 
         # try to reproduce the bug in #2375 by update at this point: no
         update_dataset(dataset=dataset, hf_endpoint=CI_HUB_ENDPOINT, hf_token=CI_APP_TOKEN)
 
         assert queue.get_pending_jobs_df(dataset=dataset).empty
-        assert len(get_cache_entries_df(dataset=dataset)) == 1
+        assert len(get_cache_entries_df(dataset=dataset)) == 2
 
         # THE BUG IS REPRODUCED: the jobs should have been recreated at that point.
 
         backfill_dataset(dataset=dataset, hf_endpoint=CI_HUB_ENDPOINT, hf_token=CI_APP_TOKEN)
 
         assert not queue.get_pending_jobs_df(dataset=dataset).empty
-        assert len(get_cache_entries_df(dataset=dataset)) == 1
+        assert len(get_cache_entries_df(dataset=dataset)) == 2
 
 
 @pytest.mark.parametrize(

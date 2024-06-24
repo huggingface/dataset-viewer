@@ -19,15 +19,15 @@ spec:
                   name: http
             path: /search
             pathType: Prefix
-  {{- if include "hf.common.ingress.certManagerRequest" ( dict "annotations" $annotations ) }}
-  tls:
-    - hosts:
-        - {{ include "datasetsServer.ingress.hostname" . }}
-      secretName: {{ printf "%s-tls" (include "datasetsServer.ingress.hostname" .) }}
-  {{- else if .Values.ingress.tls -}}
-  {{- with .Values.ingress.tls }}
-  tls:
-    {{- tpl (toYaml .) $ | nindent 4 }}
-  {{- end }}
-  {{- end }}
+    - host: {{ include "datasetsServer.ingress.hostname" . }}
+      http:
+        paths:
+          - backend:
+              service:
+                name: "{{ include "name" . }}-search"
+                port:
+                  name: http
+            path: /filter
+            pathType: Prefix
+{{- include "ingress.tls" (merge (dict "annotations" $annotations) $ ) | indent 2}}
 {{- end }}

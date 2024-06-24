@@ -26,9 +26,10 @@ from datasets import (
 )
 from datasets.features.features import FeatureType
 
-from .descriptive_statistics_dataset import (
+from .statistics_dataset import (
     audio_dataset,
     image_dataset,
+    null_column,
     statistics_dataset,
     statistics_not_supported_dataset,
     statistics_string_text_dataset,
@@ -161,20 +162,76 @@ def datasets() -> Mapping[str, Dataset]:
                 dtype=pd.StringDtype(storage="python"),
             )
         ),
-        "duckdb_index": Dataset.from_pandas(
+        "presidio_scan": Dataset.from_pandas(
             pd.DataFrame(
                 {
-                    "text": SEARCH_TEXT_CONTENT,
-                    "column with spaces": [
-                        "a",
-                        "b",
-                        "c",
-                        "d",
-                        "e",
-                    ],
+                    "col": [
+                        "My name is Giovanni Giorgio",
+                        "but everyone calls me Giorgio",
+                        "My IP address is 192.168.0.1",
+                        "My SSN is 345-67-8901",
+                        "My email is giovanni.giorgio@daftpunk.com",
+                        None,
+                    ]
                 },
                 dtype=pd.StringDtype(storage="python"),
             )
+        ),
+        "duckdb_index": Dataset.from_dict(
+            {
+                "text": SEARCH_TEXT_CONTENT,
+                "text_all_null": null_column(5),
+                "column with spaces": [
+                    "a",
+                    "b",
+                    "c",
+                    "d",
+                    "e",
+                ],
+                "list": [
+                    [1],
+                    [1, 2],
+                    None,
+                    [1, 2, 3, 4],
+                    [1, 2, 3, 4, 5],
+                ],
+                "list_all_null": null_column(5),
+                "sequence_list": [
+                    [1],
+                    [1, 2],
+                    None,
+                    [1, 2, 3, 4],
+                    [1, 2, 3, 4, 5],
+                ],
+                "sequence_list_all_null": null_column(5),
+                "sequence_struct": [
+                    [],
+                    [{"author": "cat", "likes": 5}],
+                    [{"author": "cat", "likes": 5}, {"author": "cat", "likes": 5}],
+                    [{"author": "cat", "likes": 5}, {"author": "cat", "likes": 5}, {"author": "cat", "likes": 5}],
+                    None,
+                ],
+                "audio": audio_dataset["audio"] + [None],
+                "audio_all_null": null_column(5),
+                "image": image_dataset["image"] + [None],
+                "image_all_null": null_column(5),
+            },
+            features=Features(
+                {
+                    "text": Value(dtype="string"),
+                    "text_all_null": Value(dtype="string"),
+                    "column with spaces": Value(dtype="string"),
+                    "list": [Value(dtype="int32")],
+                    "list_all_null": [Value(dtype="int32")],
+                    "sequence_list": Sequence(Value(dtype="int32")),
+                    "sequence_list_all_null": Sequence(Value(dtype="int32")),
+                    "sequence_struct": Sequence({"author": Value("string"), "likes": Value("int32")}),
+                    "audio": Audio(sampling_rate=1600, decode=False),
+                    "audio_all_null": Audio(sampling_rate=1600, decode=False),
+                    "image": Image(decode=False),
+                    "image_all_null": Image(decode=False),
+                }
+            ),
         ),
         "descriptive_statistics": statistics_dataset,
         "descriptive_statistics_string_text": statistics_string_text_dataset,

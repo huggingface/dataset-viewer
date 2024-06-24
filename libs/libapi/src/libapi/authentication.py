@@ -96,7 +96,6 @@ async def auth_check(
         with StepProfiler(
             method="auth_check",
             step="requests.get",
-            context=f"external_auth_url={external_auth_url} timeout={hf_timeout_seconds}",
         ):
             try:
                 logging.debug(

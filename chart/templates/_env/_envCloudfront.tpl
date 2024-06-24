@@ -8,7 +8,7 @@
   {{- if .Values.secrets.cloudfront.keyPairId.fromSecret }}
   valueFrom:
     secretKeyRef:
-      name: {{ .Values.secrets.cloudfront.keyPairId.secretName | quote }}
+      name: {{ .Values.secrets.cloudfront.keyPairId.secretName | default (include "datasetsServer.infisical.secretName" $) | quote }}
       key: CLOUDFRONT_KEY_PAIR_ID
       optional: false
   {{- else }}
@@ -18,7 +18,7 @@
   {{- if .Values.secrets.cloudfront.privateKey.fromSecret }}
   valueFrom:
     secretKeyRef:
-      name: {{ .Values.secrets.cloudfront.privateKey.secretName | quote }}
+      name: {{ .Values.secrets.cloudfront.privateKey.secretName | default (include "datasetsServer.infisical.secretName" $) | quote }}
       key: CLOUDFRONT_PRIVATE_KEY
       optional: false
   {{- else }}

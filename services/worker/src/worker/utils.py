@@ -3,21 +3,25 @@
 
 import itertools
 import logging
+import os
 import sys
 import traceback
 import warnings
+from collections.abc import Iterable
+from dataclasses import dataclass, field
 from fnmatch import fnmatch
-from typing import Optional, Union
+from itertools import count, islice
+from typing import Literal, Optional, TypeVar, Union, overload
 from urllib.parse import quote
 
 import PIL
 import requests
-from datasets import Dataset, DatasetInfo, DownloadConfig, IterableDataset, load_dataset
-from datasets.utils.file_utils import get_authentication_headers_for_url
-from fsspec.implementations.http import HTTPFileSystem
+from datasets import Dataset, DatasetInfo, DownloadConfig, Features, IterableDataset, load_dataset
+from datasets.utils.file_utils import SINGLE_FILE_COMPRESSION_EXTENSION_TO_PROTOCOL
+from huggingface_hub import HfFileSystem, HfFileSystemFile
 from huggingface_hub.hf_api import HfApi
 from huggingface_hub.utils._errors import RepositoryNotFoundError
-from libcommon.constants import CONFIG_SPLIT_NAMES_KIND, EXTERNAL_DATASET_SCRIPT_PATTERN
+from libcommon.constants import CONFIG_SPLIT_NAMES_KIND, EXTERNAL_DATASET_SCRIPT_PATTERN, MAX_COLUMN_NAME_LENGTH
 from libcommon.dtos import RowsContent
 from libcommon.exceptions import (
     ConfigNotFoundError,
@@ -27,10 +31,11 @@ from libcommon.exceptions import (
     PreviousStepFormatError,
     SplitNotFoundError,
     StreamingRowsError,
+    TooLongColumnNameError,
 )
 from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.utils import retry
-from pyarrow.parquet import ParquetFile
+from pyarrow import ArrowInvalid
 
 MAX_IMAGE_PIXELS = 10_000_000_000
 # ^ see https://pillow.readthedocs.io/en/stable/reference/Image.html#PIL.Image.MAX_IMAGE_PIXELS
@@ -139,9 +144,25 @@ def hf_hub_url(repo_id: str, filename: str, hf_endpoint: str, revision: str, url
     return (hf_endpoint + url_template) % (repo_id, quote(revision, safe=""), filename)
 
 
-def get_parquet_file(url: str, fs: HTTPFileSystem, hf_token: Optional[str]) -> ParquetFile:
-    headers = get_authentication_headers_for_url(url, token=hf_token)
-    return ParquetFile(fs.open(url, headers=headers))
+def hffs_parquet_url(repo_id: str, config: str, split_directory: str, filename: str) -> str:
+    """Construct url of a parquet file on the Hub, to be used with HfFileSystem."""
+    return f"hf://datasets/{repo_id}/{config}/{split_directory}/{filename}"
+
+
+def hf_hub_open_file(
+    file_url: str, hf_endpoint: str, hf_token: Optional[str], revision: Optional[str] = None
+) -> HfFileSystemFile:
+    """Open file with the HfFileSystem."""
+    fs = HfFileSystem(endpoint=hf_endpoint, token=hf_token)
+    return fs.open(file_url, revision=revision)
+
+
+# used by `config-parquet-and-info` and `config-parquet-metadata` steps
+@retry(on=[ArrowInvalid], sleeps=[0.2, 1, 1, 10, 10, 10])
+def retry_on_arrow_invalid_open_file(
+    file_url: str, hf_endpoint: str, hf_token: Optional[str], revision: Optional[str] = None
+) -> HfFileSystemFile:
+    return hf_hub_open_file(file_url=file_url, hf_endpoint=hf_endpoint, hf_token=hf_token, revision=revision)
 
 
 DATASET_TYPE = "dataset"
@@ -223,8 +244,90 @@ def is_dataset_script_error() -> bool:
 
 def resolve_trust_remote_code(dataset: str, allow_list: list[str]) -> bool:
     for allowed_pattern in allow_list:
-        if (allowed_pattern == "{{ALL_DATASETS_WITH_NO_NAMESPACE}}" and "/" not in dataset) or fnmatch(
-            dataset, allowed_pattern
-        ):
+        if fnmatch(dataset, allowed_pattern):
             return True
     return False
+
+
+def raise_if_long_column_name(features: Optional[Features]) -> None:
+    if features is None:
+        return
+    for feature_name in features:
+        if len(feature_name) > MAX_COLUMN_NAME_LENGTH:
+            short_name = feature_name[: MAX_COLUMN_NAME_LENGTH - 3] + "..."
+            raise TooLongColumnNameError(
+                f"Column name '{short_name}' is too long. It should be less than {MAX_COLUMN_NAME_LENGTH} characters."
+            )
+
+
+T = TypeVar("T")
+
+
+@overload
+def batched(it: Iterable[T], n: int) -> Iterable[list[T]]: ...
+
+
+@overload
+def batched(it: Iterable[T], n: int, with_indices: Literal[False]) -> Iterable[list[T]]: ...
+
+
+@overload
+def batched(it: Iterable[T], n: int, with_indices: Literal[True]) -> Iterable[tuple[list[int], list[T]]]: ...
+
+
+def batched(
+    it: Iterable[T], n: int, with_indices: bool = False
+) -> Union[Iterable[list[T]], Iterable[tuple[list[int], list[T]]]]:
+    it, indices = iter(it), count()
+    while batch := list(islice(it, n)):
+        yield (list(islice(indices, len(batch))), batch) if with_indices else batch
+
+
+FileExtensionTuple = tuple[str, Optional[str]]
+
+
+@dataclass
+class FileExtension:
+    extension: str
+    uncompressed_extension: Optional[str] = field(default=None)
+
+    def get_tuples(self) -> list[FileExtensionTuple]:
+        """
+        Get the extension and the archived extension if it exists.
+
+        The list contains two entries if the uncompressed extension exists (for the compressed and the uncompressed files),
+          otherwise one entry.
+        """
+        if self.uncompressed_extension:
+            return [
+                (self.extension, None),
+                (self.uncompressed_extension, self.extension),
+            ]
+        return [(self.extension, None)]
+
+
+def get_file_extension(filename: str, recursive: bool = True, clean: bool = True) -> FileExtension:
+    """
+    Get the extension of a file.
+
+    In the case of .tar.gz or other "double extensions", the uncompressed file extension is set in the uncompressed_extension field
+
+    Args:
+        filename (`str`): The name of the file.
+        recursive (`bool`, *optional*): Whether to recursively extract the extension of the archive.
+        clean (`bool`, *optional*): Whether to clean the extension by removing special characters.
+
+    Returns:
+        FileExtension: the extension of the file
+    """
+    [base, extension] = os.path.splitext(filename)
+    extension = extension.lower()
+    # special cases we find in datasets (gz?dl=1 -> gz, txt_1 -> txt, txt-00000-of-00100-> txt)
+    # https://github.com/huggingface/datasets/blob/af3acfdfcf76bb980dbac871540e30c2cade0cf9/src/datasets/utils/file_utils.py#L795
+    if clean:
+        for symb in "?-_":
+            extension = extension.split(symb)[0]
+    if recursive and extension.lstrip(".") in SINGLE_FILE_COMPRESSION_EXTENSION_TO_PROTOCOL:
+        uncompressed_extension = get_file_extension(base, recursive=False, clean=False)
+        return FileExtension(extension=extension, uncompressed_extension=uncompressed_extension.extension)
+    return FileExtension(extension=extension)

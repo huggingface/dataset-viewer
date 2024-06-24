@@ -46,13 +46,13 @@
     failureThreshold: 30
     periodSeconds: 5
     httpGet:
-      path: /healthcheck
+      path: /admin/healthcheck
       port: {{ .Values.admin.uvicornPort }}
   livenessProbe:
     failureThreshold: 30
     periodSeconds: 5
     httpGet:
-      path: /healthcheck
+      path: /admin/healthcheck
       port: {{ .Values.admin.uvicornPort }}
   ports:
   - containerPort: {{ .Values.admin.uvicornPort }}

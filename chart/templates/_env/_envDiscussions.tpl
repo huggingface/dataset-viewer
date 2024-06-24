@@ -8,7 +8,7 @@
   {{- if .Values.secrets.appParquetConverterHfToken.fromSecret }}
   valueFrom:
     secretKeyRef:
-      name: {{ .Values.secrets.appParquetConverterHfToken.secretName | quote }}
+      name: {{ .Values.secrets.appParquetConverterHfToken.secretName | default (include "datasetsServer.infisical.secretName" $) | quote }}
       key: PARQUET_CONVERTER_HF_TOKEN
       optional: false
   {{- else }}

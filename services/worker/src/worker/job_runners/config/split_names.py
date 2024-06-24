@@ -11,6 +11,7 @@ from libcommon.dtos import FullSplitItem
 from libcommon.exceptions import (
     DatasetManualDownloadError,
     DatasetWithScriptNotSupportedError,
+    DatasetWithTooManySplitsError,
     EmptyDatasetError,
     PreviousStepFormatError,
     SplitNamesFromStreamingError,
@@ -25,6 +26,7 @@ from worker.utils import resolve_trust_remote_code
 def compute_split_names_from_streaming_response(
     dataset: str,
     config: str,
+    max_number: int,
     dataset_scripts_allow_list: list[str],
     hf_token: Optional[str] = None,
 ) -> SplitsList:
@@ -44,9 +46,10 @@ def compute_split_names_from_streaming_response(
             List of datasets for which we support dataset scripts.
             Unix shell-style wildcards also work in the dataset name for namespaced datasets,
             for example `some_namespace/*` to refer to all the datasets in the `some_namespace` namespace.
-            The keyword `{{ALL_DATASETS_WITH_NO_NAMESPACE}}` refers to all the datasets without namespace.
         hf_token (`str`, *optional*):
             An authentication token (See https://huggingface.co/settings/token)
+        max_number (`str`):
+            Maximum number of splits.
 
     Raises:
         [~`libcommon.exceptions.DatasetManualDownloadError`]:
@@ -57,6 +60,10 @@ def compute_split_names_from_streaming_response(
           If the list of splits could not be obtained using the datasets library.
         [~`libcommon.exceptions.DatasetWithScriptNotSupportedError`]:
             If the dataset has a dataset script and is not in the allow list.
+        [~`libcommon.exceptions.SplitNamesFromStreamingError`]:
+            If the split names could not be obtained using the datasets library.
+        [~`libcommon.exceptions.DatasetWithTooManySplitsError`]:
+            If the config has too many splits.
 
     Returns:
         `SplitsList`: An object with the list of split names for the dataset and config.
@@ -83,10 +90,17 @@ def compute_split_names_from_streaming_response(
             f"Cannot get the split names for the config '{config}' of the dataset.",
             cause=err,
         ) from err
+    if len(split_name_items) > max_number:
+        split_examples = ", ".join([split_name_item["split"] for split_name_item in split_name_items[:5]])
+        raise DatasetWithTooManySplitsError(
+            f"The {config} config contains {len(split_name_items)} while it should generally contain 3 splits maximum (train/validation/test). "
+            f"If the splits {split_examples}... are not used to differentiate between training and evaluation, please consider defining configs of this dataset instead. "
+            "You can find how to define configs instead of splits here: https://huggingface.co/docs/hub/datasets-data-files-configuration"
+        )
     return SplitsList(splits=split_name_items)
 
 
-def compute_split_names_from_info_response(dataset: str, config: str) -> SplitsList:
+def compute_split_names_from_info_response(dataset: str, config: str, max_number: int) -> SplitsList:
     """
     Get the response of 'config-split-names' for one specific dataset and config on huggingface.co
     computed from cached response in dataset-info step.
@@ -97,6 +111,8 @@ def compute_split_names_from_info_response(dataset: str, config: str) -> SplitsL
             by a `/`.
         config (`str`):
             A configuration name.
+        max_number (`str`):
+            Maximum number of splits.
 
     Raises:
         [~`libcommon.simple_cache.CachedArtifactError`]:
@@ -105,6 +121,8 @@ def compute_split_names_from_info_response(dataset: str, config: str) -> SplitsL
           If the previous step has not been computed yet.
         [~`libcommon.exceptions.PreviousStepFormatError`]:
           If the content of the previous step has not the expected format
+        [~`libcommon.exceptions.DatasetWithTooManySplitsError`]:
+            If the config has too many splits.
 
     Returns:
         `SplitsList`: An object with the list of split names for the dataset and config.
@@ -120,7 +138,13 @@ def compute_split_names_from_info_response(dataset: str, config: str) -> SplitsL
     split_name_items: list[FullSplitItem] = [
         {"dataset": dataset, "config": config, "split": str(split)} for split in splits_content
     ]
-
+    if len(split_name_items) > max_number:
+        split_examples = ", ".join([split_name_item["split"] for split_name_item in split_name_items[:5]])
+        raise DatasetWithTooManySplitsError(
+            f"The {config} config contains {len(split_name_items)} while it should generally contain 3 splits maximum (train/validation/test). "
+            f"If the splits {split_examples}... are not used to differentiate between training and evaluation, please consider defining configs of this dataset instead. "
+            "You can find how to define configs instead of splits here: https://huggingface.co/docs/hub/datasets-data-files-configuration"
+        )
     return SplitsList(splits=split_name_items)
 
 
@@ -131,7 +155,11 @@ class ConfigSplitNamesJobRunner(ConfigJobRunnerWithDatasetsCache):
 
     def compute(self) -> CompleteJobResult:
         try:
-            return CompleteJobResult(compute_split_names_from_info_response(dataset=self.dataset, config=self.config))
+            return CompleteJobResult(
+                compute_split_names_from_info_response(
+                    dataset=self.dataset, config=self.config, max_number=self.app_config.split_names.max_number
+                )
+            )
         except (CachedArtifactError, CachedArtifactNotFoundError):
             logging.info(
                 f"Cannot compute 'config-split-names' from config-info for {self.dataset=} {self.config=}. "
@@ -141,6 +169,7 @@ class ConfigSplitNamesJobRunner(ConfigJobRunnerWithDatasetsCache):
                 compute_split_names_from_streaming_response(
                     dataset=self.dataset,
                     config=self.config,
+                    max_number=self.app_config.split_names.max_number,
                     hf_token=self.app_config.common.hf_token,
                     dataset_scripts_allow_list=self.app_config.common.dataset_scripts_allow_list,
                 )

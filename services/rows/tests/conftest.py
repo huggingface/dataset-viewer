@@ -4,7 +4,7 @@
 from collections.abc import Iterator
 
 from libapi.config import UvicornConfig
-from libcommon.queue import _clean_queue_database
+from libcommon.queue.utils import _clean_queue_database
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import _clean_cache_database
 from pytest import MonkeyPatch, TempPathFactory, fixture

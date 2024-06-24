@@ -3,6 +3,7 @@
 
 import csv
 import json
+import os
 
 import pandas as pd
 import pytest
@@ -46,6 +47,51 @@ def jsonl_path(tmp_path_factory: pytest.TempPathFactory) -> str:
     path = str(tmp_path_factory.mktemp("data") / "dataset.jsonl")
     with open(path, "w", newline="") as f:
         f.writelines(json.dumps(o) for o in JSONL)
+    return path
+
+
+FILE_CONTENT = """\
+    Text data.
+    Second line of data."""
+
+
+@pytest.fixture(scope="session")
+def text_file(tmp_path_factory: pytest.TempPathFactory) -> str:
+    path = str(tmp_path_factory.mktemp("data") / "file.txt")
+    data = bytes(FILE_CONTENT, "utf-8")
+    with open(path, "wb") as f:
+        f.write(data)
+    return path
+
+
+@pytest.fixture(scope="session")
+def gz_file(tmp_path_factory: pytest.TempPathFactory) -> str:
+    import gzip
+
+    path = str(tmp_path_factory.mktemp("data") / "file.txt.gz")
+    data = bytes(FILE_CONTENT, "utf-8")
+    with gzip.open(path, "wb") as f:
+        f.write(data)
+    return path
+
+
+@pytest.fixture(scope="session")
+def zip_file(tmp_path_factory: pytest.TempPathFactory, text_file: str) -> str:
+    import zipfile
+
+    path = str(tmp_path_factory.mktemp("data") / "file.txt.zip")
+    with zipfile.ZipFile(path, "w") as f:
+        f.write(text_file, arcname=os.path.basename(text_file))
+    return path
+
+
+@pytest.fixture(scope="session")
+def tar_file(tmp_path_factory: pytest.TempPathFactory, text_file: str) -> str:
+    import tarfile
+
+    path = str(tmp_path_factory.mktemp("data") / "file.txt.tar")
+    with tarfile.TarFile(path, "w") as f:
+        f.add(text_file, arcname=os.path.basename(text_file))
     return path
 
 

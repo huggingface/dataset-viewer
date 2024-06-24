@@ -7,7 +7,7 @@ The main feature of the dataset viewer is to auto-convert all the [Hub datasets]
 As datasets increase in size and data type richness, the cost of preprocessing (storage and compute) these datasets can be challenging and time-consuming.
 To help users access these modern datasets, The dataset viewer runs a server behind the scenes to generate the API responses ahead of time and stores them in a database so they are instantly returned when you make a query through the API.
 
-Let the dataset viewer take care of the heavy lifting so you can use a simple **REST API** on any of the **30,000+ datasets on Hugging Face** to:
+Let the dataset viewer take care of the heavy lifting so you can use a simple **REST API** on any of the **100,000+ datasets on Hugging Face** to:
 
 - List the **dataset splits, column names and data types**
 - Get the **dataset size** (in number of rows or bytes)

@@ -14,12 +14,12 @@ global:
       type: ClusterIP
       ports:
         datasetsServer:
-          proxy: 30020
           admin: 30021
           api: 30022
           rows: 30023
           search: 30024
           sseApi: 30025
+          webhook: 30026
 
 images:
   pullPolicy: IfNotPresent
@@ -66,24 +66,23 @@ images:
       useGlobalRegistry: false
       repository: datasets-server-services-sse-api
       tag: sha-fb3399a
-    storageAdmin:
-      registry: huggingface
-      useGlobalRegistry: false
-      repository: datasets-server-services-storage-admin
-      tag: sha-fb3399a
     worker:
       registry: huggingface
       useGlobalRegistry: false
       repository: datasets-server-services-worker
       tag: sha-fb3399a
+    webhook:
+      registry: huggingface
+      useGlobalRegistry: false
+      repository: datasets-server-services-webhook
+      tag: sha-fb3399a
 
 common:
   # Comma-separated list of blocked datasets. No jobs will be processed for those datasets.
-  blockedDatasets: "open-llm-leaderboard/*,lunaluan/*,atom-in-the-universe/*,cot-leaderboard/cot-eval-traces,mitermix/yt-links,mcding-org/*"
+  blockedDatasets: "open-llm-leaderboard/details_*,open-llm-leaderboard-old/details_*,lunaluan/*,atom-in-the-universe/*,cot-leaderboard/cot-eval-traces,mitermix/yt-links,mcding-org/*"
   # Comma-separated list of the datasets for which we support dataset scripts.
   # Unix shell-style wildcards also work in the dataset name for namespaced datasets, for example `some_namespace/*` to refer to all the datasets in the `some_namespace` namespace.
-  # The keyword `{{ALL_DATASETS_WITH_NO_NAMESPACE}}` refers to all the datasets without namespace.
-  datasetScriptsAllowList: "{{ALL_DATASETS_WITH_NO_NAMESPACE}},hf-internal-testing/dataset_with_script,togethercomputer/RedPajama-Data-1T,togethercomputer/RedPajama-Data-V2,gaia-benchmark/GAIA,poloclub/diffusiondb,pufanyi/MIMICIT,mozilla-foundation/common_voice_*,google/fleurs,speechcolab/gigaspeech,espnet/yodas"
+  datasetScriptsAllowList: "hf-internal-testing/dataset_with_script,togethercomputer/RedPajama-Data-1T,togethercomputer/RedPajama-Data-V2,gaia-benchmark/GAIA,poloclub/diffusiondb,mozilla-foundation/common_voice_*,google/fleurs,speechcolab/gigaspeech,espnet/yodas,ylecun/mnist,zalando-datasets/fashion_mnist"
   # URL of the HuggingFace Hub
   hfEndpoint: ""
 
@@ -94,11 +93,14 @@ log:
 # --- common parameters ---
 
 secrets:
-  externalSecret:
+  infisical:
     enabled: false
-    secretName: ""
-    secretStoreName: ""
-    parameters: {}
+    env: ""
+    project: "datasets-server-n5x-l"
+    url: ""
+    resyncInterval: 60
+    operatorSecretName: "datasets-server-operator-secrets"
+    operatorSecretNamespace: "datasets-server"
   mongoUrl:
     fromSecret: false
     secretName: "mongo-url"
@@ -124,14 +126,14 @@ secrets:
     value: ""
   spawningToken:
     fromSecret: true
-    secretName: "spawning-token"
+    secretName: ""
   s3:
     accessKeyId:
       fromSecret: true
-      secretName: "aws-access-key-id"
+      secretName: ""
     secretAccessKey:
       fromSecret: true
-      secretName: "aws-secret-access-key"
+      secretName: ""
   cloudfront:
     keyPairId:
       fromSecret: false
@@ -374,42 +376,7 @@ cacheMetricsCollector:
       cpu: 0
   tolerations: []
 
-# --- storage admin (to manually inspect the storage, in /data) ---
-
-storageAdmin:
-  nodeSelector: {}
-  replicas: 1
-  resources:
-    requests:
-      cpu: 0
-    limits:
-      cpu: 0
-  service:
-    type: ""
-    annotations: {}
-  tolerations: []
-
-# --- reverse proxy ---
-
-reverseProxy:
-  nameOverride: datasets-server-mongodb
-  host: localhost
-  port: 8080
-  nginxTemplateFile: "nginx-templates/default.conf.template"
-  openapiFile: "docs/source/openapi.json"
-  error404File: "nginx-templates/404.html"
-
-  nodeSelector: {}
-  replicas: 1
-  resources:
-    requests:
-      cpu: 0
-    limits:
-      cpu: 0
-  service:
-    type: ""
-    annotations: {}
-  tolerations: []
+# --- ALB ---
 
 ingress:
   enabled: true
@@ -451,6 +418,9 @@ admin:
   service:
     type: ""
     annotations: {}
+  ingress:
+    enabled: true
+    annotations: {}
   tolerations: []
 
 hf:
@@ -491,6 +461,9 @@ api:
   service:
     type: ""
     annotations: {}
+  ingress:
+    enabled: true
+    annotations: {}
   tolerations: []
 
 rows:
@@ -517,6 +490,9 @@ rows:
       cpu: 0
   service:
     type: ""
+    annotations: {}
+  ingress:
+    enabled: true
     annotations: {}
   tolerations: []
 
@@ -575,6 +551,9 @@ sseApi:
   service:
     type: ""
     annotations: {}
+  ingress:
+    enabled: true
+    annotations: {}
   tolerations: []
 
 workers:
@@ -607,3 +586,33 @@ workers:
       limits:
         cpu: 0
     tolerations: []
+
+webhook:
+  # Number of seconds to set in the `max-age` header on data endpoints
+  maxAgeLong: "120"
+  # Number of seconds to set in the `max-age` header on technical endpoints
+  maxAgeShort: "10"
+  # Directory where the uvicorn workers will write the prometheus metrics
+  # see https://github.com/prometheus/client_python#multiprocess-mode-eg-gunicorn
+  prometheusMultiprocDirectory: "/tmp"
+  # Hostname - it must not be set to localhost to work in Kube!
+  uvicornHostname: "0.0.0.0"
+  # Number of uvicorn workers for running the application
+  uvicornNumWorkers: "1"
+  # Application endpoint port
+  uvicornPort: 8080
+
+  nodeSelector: {}
+  replicas: 1
+  resources:
+    requests:
+      cpu: 0
+    limits:
+      cpu: 0
+  service:
+    type: ""
+    annotations: {}
+  ingress:
+    enabled: true
+    annotations: {}
+  tolerations: []

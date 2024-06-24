@@ -17,7 +17,7 @@ from datasets import Dataset
 from libcommon.dtos import JobInfo, Priority, RowsContent
 from libcommon.orchestrator import DatasetBackfillPlan, SmartDatasetUpdatePlan
 from libcommon.processing_graph import Artifact, ProcessingGraph
-from libcommon.queue import JobTotalMetricDocument, Queue, WorkerSizeJobsCountDocument
+from libcommon.queue.jobs import Queue
 from libcommon.simple_cache import upsert_response
 from libcommon.storage_client import StorageClient
 from libcommon.viewer_utils.rows import GetRowsContent
@@ -475,18 +475,6 @@ def artifact_id_to_job_info(artifact_id: str) -> JobInfo:
         priority=Priority.NORMAL,
         difficulty=DIFFICULTY,
     )
-
-
-def assert_metric(job_type: str, status: str, total: int) -> None:
-    metric = JobTotalMetricDocument.objects(job_type=job_type, status=status).first()
-    assert metric is not None
-    assert metric.total == total
-
-
-def assert_worker_size_jobs_count(worker_size: str, jobs_count: int) -> None:
-    metric = WorkerSizeJobsCountDocument.objects(worker_size=worker_size).first()
-    assert metric is not None, metric
-    assert metric.jobs_count == jobs_count, metric.jobs_count
 
 
 def get_rows_content(rows_max_number: int, dataset: Dataset) -> RowsContent:

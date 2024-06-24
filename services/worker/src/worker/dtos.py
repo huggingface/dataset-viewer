@@ -71,6 +71,95 @@ class OptInOutUrlsScanResponse(OptInOutUrlsCountResponse):
     opt_out_urls: list[OptUrl]
 
 
+class PresidioEntity(TypedDict):
+    text: str
+    type: str
+    row_idx: int
+    column_name: str
+
+
+class PresidioAllEntitiesCountResponse(TypedDict):
+    scanned_columns: list[str]
+    num_in_vehicle_registration_entities: int
+    num_organization_entities: int
+    num_sg_nric_fin_entities: int
+    num_person_entities: int
+    num_credit_card_entities: int
+    num_medical_license_entities: int
+    num_nrp_entities: int
+    num_us_ssn_entities: int
+    num_crypto_entities: int
+    num_date_time_entities: int
+    num_location_entities: int
+    num_us_driver_license_entities: int
+    num_phone_number_entities: int
+    num_url_entities: int
+    num_us_passport_entities: int
+    num_age_entities: int
+    num_au_acn_entities: int
+    num_email_address_entities: int
+    num_in_pan_entities: int
+    num_ip_address_entities: int
+    num_id_entities: int
+    num_us_bank_number_entities: int
+    num_in_aadhaar_entities: int
+    num_us_itin_entities: int
+    num_au_medicare_entities: int
+    num_iban_code_entities: int
+    num_au_tfn_entities: int
+    num_uk_nhs_entities: int
+    num_email_entities: int
+    num_au_abn_entities: int
+    num_rows_with_in_vehicle_registration_entities: int
+    num_rows_with_organization_entities: int
+    num_rows_with_sg_nric_fin_entities: int
+    num_rows_with_person_entities: int
+    num_rows_with_credit_card_entities: int
+    num_rows_with_medical_license_entities: int
+    num_rows_with_nrp_entities: int
+    num_rows_with_us_ssn_entities: int
+    num_rows_with_crypto_entities: int
+    num_rows_with_date_time_entities: int
+    num_rows_with_location_entities: int
+    num_rows_with_us_driver_license_entities: int
+    num_rows_with_phone_number_entities: int
+    num_rows_with_url_entities: int
+    num_rows_with_us_passport_entities: int
+    num_rows_with_age_entities: int
+    num_rows_with_au_acn_entities: int
+    num_rows_with_email_address_entities: int
+    num_rows_with_in_pan_entities: int
+    num_rows_with_ip_address_entities: int
+    num_rows_with_id_entities: int
+    num_rows_with_us_bank_number_entities: int
+    num_rows_with_in_aadhaar_entities: int
+    num_rows_with_us_itin_entities: int
+    num_rows_with_au_medicare_entities: int
+    num_rows_with_iban_code_entities: int
+    num_rows_with_au_tfn_entities: int
+    num_rows_with_uk_nhs_entities: int
+    num_rows_with_email_entities: int
+    num_rows_with_au_abn_entities: int
+    num_scanned_rows: int
+    has_scanned_columns: bool
+    full_scan: Union[bool, None]
+
+
+class PresidioEntitiesScanResponse(PresidioAllEntitiesCountResponse):
+    entities: list[PresidioEntity]
+
+
+class PresidioEntitiesCountResponse(TypedDict):
+    scanned_columns: list[str]
+    num_rows_with_person_entities: int
+    num_rows_with_phone_number_entities: int
+    num_rows_with_email_address_entities: int
+    num_rows_with_sensitive_pii: int
+    num_scanned_rows: int
+    has_scanned_columns: bool
+    full_scan: Union[bool, None]
+
+
 class ImageUrlColumnsResponse(TypedDict):
     columns: list[str]
 
@@ -83,6 +172,7 @@ class ConfigInfoResponse(TypedDict):
 class ConfigParquetAndInfoResponse(TypedDict):
     parquet_files: list[SplitHubFile]
     dataset_info: dict[str, Any]
+    estimated_dataset_info: Optional[dict[str, Any]]
     partial: bool
 
 
@@ -244,7 +334,7 @@ class DatasetCompatibleLibrariesResponse(TypedDict):
     formats: list[DatasetFormat]
 
 
-DatasetModality = Literal["image", "audio", "text"]
+DatasetModality = Literal["image", "audio", "text", "video", "geospatial", "3d", "tabular", "timeseries"]
 
 
 class DatasetModalitiesResponse(TypedDict):
@@ -255,11 +345,25 @@ class DatasetHubCacheResponse(TypedDict):
     preview: bool
     viewer: bool
     partial: bool
-    num_rows: int
+    num_rows: Optional[int]
     tags: list[DatasetTag]
     libraries: list[DatasetLibrary]
     modalities: list[DatasetModality]
     formats: list[DatasetFormat]
+
+
+class _Filetype(TypedDict):
+    extension: str
+    count: int
+
+
+class Filetype(_Filetype, total=False):
+    archived_in: str
+    compressed_in: str
+
+
+class DatasetFiletypesResponse(TypedDict):
+    filetypes: list[Filetype]
 
 
 class DatasetParquetResponse(TypedDict):

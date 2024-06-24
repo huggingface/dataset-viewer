@@ -7,7 +7,7 @@ from http import HTTPStatus
 from libcommon.constants import CONFIG_SPLIT_NAMES_KIND
 from libcommon.dtos import FullConfigItem, FullSplitItem
 from libcommon.exceptions import PreviousStepFormatError
-from libcommon.simple_cache import get_previous_step_or_raise, get_response_or_missing_error
+from libcommon.simple_cache import CachedArtifactNotFoundError, get_previous_step_or_raise, get_response
 
 from worker.dtos import (
     DatasetSplitNamesResponse,
@@ -55,8 +55,9 @@ def compute_dataset_split_names_response(dataset: str) -> tuple[DatasetSplitName
         total = 0
         for config in config_names:
             total += 1
-            response = get_response_or_missing_error(CONFIG_SPLIT_NAMES_KIND, dataset=dataset, config=config)
-            if response["error_code"] == "CachedResponseNotFound":
+            try:
+                response = get_response(CONFIG_SPLIT_NAMES_KIND, dataset=dataset, config=config)
+            except CachedArtifactNotFoundError:
                 logging.debug(
                     "No response (successful or erroneous) found in cache for the previous step"
                     f" '{CONFIG_SPLIT_NAMES_KIND}' for this dataset."

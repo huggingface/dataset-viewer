@@ -6,7 +6,7 @@ from http import HTTPStatus
 
 from libcommon.exceptions import PreviousStepFormatError
 from libcommon.simple_cache import (
-    CacheEntryDoesNotExistError,
+    CachedArtifactNotFoundError,
     get_previous_step_or_raise,
     get_response,
 )
@@ -31,16 +31,23 @@ def compute_is_valid_response(dataset: str) -> tuple[IsValidResponse, float]:
     """
     logging.info(f"compute 'dataset-is-valid' response for {dataset=}")
 
-    config_names_response = get_previous_step_or_raise(kind="dataset-config-names", dataset=dataset)
-    content = config_names_response["content"]
-    if "config_names" not in content:
-        raise PreviousStepFormatError("Previous step did not return the expected content: 'config_names'.")
-
     preview = False
     viewer = False
     search = False
     filter = False
     statistics = False
+
+    try:
+        config_names_response = get_previous_step_or_raise(kind="dataset-config-names", dataset=dataset)
+    except Exception:
+        return (
+            IsValidResponse(preview=preview, viewer=viewer, search=search, filter=filter, statistics=statistics),
+            0.0,
+        )
+    content = config_names_response["content"]
+    if "config_names" not in content:
+        raise PreviousStepFormatError("Previous step did not return the expected content: 'config_names'.")
+
     try:
         total = 0
         pending = 0
@@ -49,7 +56,7 @@ def compute_is_valid_response(dataset: str) -> tuple[IsValidResponse, float]:
             total += 1
             try:
                 response = get_response(kind="config-is-valid", dataset=dataset, config=config)
-            except CacheEntryDoesNotExistError:
+            except CachedArtifactNotFoundError:
                 logging.debug("No response found in previous step for this dataset: 'config-is-valid'.")
                 pending += 1
                 continue

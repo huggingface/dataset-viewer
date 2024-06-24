@@ -39,7 +39,7 @@
   {{- if .Values.secrets.appParquetConverterHfToken.fromSecret }}
   valueFrom:
     secretKeyRef:
-      name: {{ .Values.secrets.appParquetConverterHfToken.secretName | quote }}
+      name: {{ .Values.secrets.appParquetConverterHfToken.secretName | default (include "datasetsServer.infisical.secretName" $) | quote }}
       key: PARQUET_CONVERTER_HF_TOKEN
       optional: false
   {{- else }}
@@ -70,7 +70,7 @@
   {{- if .Values.secrets.spawningToken.fromSecret }}
   valueFrom:
     secretKeyRef:
-      name: {{ .Values.secrets.spawningToken.secretName | quote }}
+      name: {{ .Values.secrets.spawningToken.secretName | default (include "datasetsServer.infisical.secretName" $) | quote }}
       key: SPAWNING_TOKEN
       optional: false
   {{- else }}
@@ -89,7 +89,7 @@
   {{- if .Values.secrets.appParquetConverterHfToken.fromSecret }}
   valueFrom:
     secretKeyRef:
-      name: {{ .Values.secrets.appParquetConverterHfToken.secretName | quote }}
+      name: {{ .Values.secrets.appParquetConverterHfToken.secretName | default (include "datasetsServer.infisical.secretName" $) | quote }}
       key: PARQUET_CONVERTER_HF_TOKEN
       optional: false
   {{- else }}

@@ -1,0 +1,23 @@
+{{- if and .Values.global.huggingface.ingress.enabled .Values.ingress.enabled .Values.sseApi.ingress.enabled -}}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  {{- $annotations := fromYaml (include "datasetsServer.instance.ingress.annotations" (dict "instance" .Values.sseApi "context" $ )) }}
+  annotations: {{ toYaml $annotations | nindent 4}}
+  labels: {{ include "labels.sseApi" . | nindent 4 }}
+  name: "{{ include "name" . }}-sse-api"
+  namespace: {{ .Release.Namespace }}
+spec:
+  rules:
+    - host: {{ include "datasetsServer.ingress.hostname" . }}
+      http:
+        paths:
+          - backend:
+              service:
+                name: "{{ include "name" . }}-sse-api"
+                port:
+                  name: http
+            path: /sse
+            pathType: Prefix
+{{- include "ingress.tls" (merge (dict "annotations" $annotations) $ ) | indent 2}}
+{{- end }}
