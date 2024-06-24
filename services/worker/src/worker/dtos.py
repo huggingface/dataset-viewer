@@ -348,6 +348,7 @@ class DatasetHubCacheResponse(TypedDict):
     viewer: bool
     partial: bool
     num_rows: Optional[int]
+    num_rows_source: Optional[Literal["full-exact", "partial-exact", "full-estimated"]]
     tags: list[DatasetTag]
     libraries: list[DatasetLibrary]
     modalities: list[DatasetModality]
