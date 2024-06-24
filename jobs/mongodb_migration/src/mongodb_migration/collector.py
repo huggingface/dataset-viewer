@@ -81,6 +81,9 @@ from mongodb_migration.migrations._20240221160800_cache_set_updated_at_to_root_s
 from mongodb_migration.migrations._20240619124500_cache_add_estimated_dataset_info_field_parquet_and_info import (
     MigrationAddEstimatedDatasetInfoToParquetAndInfoCacheResponse,
 )
+from mongodb_migration.migrations._20240624153300_cache_add_stemmer_in_split_duckdb_index import (
+    MigrationAddStemmerToSplitDuckdbIndexCacheResponse,
+)
 from mongodb_migration.renaming_migrations import (
     CacheRenamingMigration,
     QueueRenamingMigration,
@@ -384,5 +387,9 @@ class MigrationsCollector:
                 database=QUEUE_MONGOENGINE_ALIAS,
                 collection=QUEUE_COLLECTION_DATASET_BLOCKAGES,
                 index_name="DATASET_BLOCKAGE_EXPIRE_AFTER_SECONDS",
+            ),
+            MigrationAddStemmerToSplitDuckdbIndexCacheResponse(
+                version="20240624153300",
+                description="add 'stemmer' field for 'split-duckdb-index' cache records",
             ),
         ]
