@@ -819,12 +819,6 @@ class Queue:
         )
         return df
 
-    def get_pending_jobs_df_old(self, dataset: str, job_types: Optional[list[str]] = None) -> pd.DataFrame:
-        filters = {}
-        if job_types:
-            filters["type__in"] = job_types
-        return self._get_df([job.flat_info() for job in JobDocument.objects(**filters, dataset=dataset)])
-
     def has_pending_jobs(self, dataset: str, job_types: Optional[list[str]] = None) -> bool:
         filters = {}
         if job_types:

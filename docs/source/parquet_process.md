@@ -7,6 +7,7 @@ For private datasets, the feature is provided if the repository is owned by a [P
 There are several different libraries you can use to work with the published Parquet files:
 
 - [ClickHouse](https://clickhouse.com/docs/en/intro), a column-oriented database management system for online analytical processing
+- [cuDF](https://docs.rapids.ai/api/cudf/stable/), a Python GPU DataFrame library
 - [DuckDB](https://duckdb.org/docs/), a high-performance SQL database for analytical queries
 - [Pandas](https://pandas.pydata.org/docs/index.html), a data analysis tool for working with data structures
 - [Polars](https://pola-rs.github.io/polars-book/user-guide/), a Rust based DataFrame library
