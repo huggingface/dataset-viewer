@@ -127,6 +127,32 @@ class MigrationQueueDeleteTTLIndex(BaseQueueMigration):
             raise ValueError(f"Found TTL index for field {self.field_name}")
 
 
+class MigrationDeleteIndex(Migration):
+    def __init__(self, version: str, description: str, database: str, collection: str, index_name: str):
+        super().__init__(version=version, description=description)
+        self.database = database
+        self.collection = collection
+        self.index_name = index_name
+
+    def up(self) -> None:
+        logging.info(f"Delete ttl index {self.index_name}.")
+
+        db = get_db(self.database)
+        collection = db[self.collection]
+        collection.drop_index(self.index_name)
+
+    def down(self) -> None:
+        raise IrreversibleMigrationError("This migration does not support rollback")
+
+    def validate(self) -> None:
+        logging.info("Check that the index does not exists anymore")
+
+        db = get_db(self.database)
+        collection = db[self.collection]
+        if self.index_name in collection.index_information():
+            raise ValueError(f"Index still exists: {self.index_name}")
+
+
 class MigrationDeleteJobsByStatus(BaseQueueMigration):
     def __init__(self, status_list: list[str], version: str, description: str):
         super().__init__(version=version, description=description)
