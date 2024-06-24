@@ -269,13 +269,6 @@ def test_get_pending_jobs_df() -> None:
     assert pending_jobs_df.shape == (250, 9)
 
 
-@pytest.mark.limit_memory("1.6 MB")  # Will fail, it uses ~1.6 MB
-def test_get_pending_jobs_df_old() -> None:
-    populate_queue()
-    pending_jobs_df = Queue().get_pending_jobs_df_old(dataset=DATASET_NAME)
-    assert pending_jobs_df.shape == (250, 9)
-
-
 @pytest.mark.parametrize(
     "processing_graph,first_artifacts",
     [
