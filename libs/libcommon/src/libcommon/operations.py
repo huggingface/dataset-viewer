@@ -221,7 +221,7 @@ def update_dataset(
     hf_timeout_seconds: Optional[float] = None,
     priority: Priority = Priority.LOW,
     storage_clients: Optional[list[StorageClient]] = None,
-) -> TasksStatistics:
+) -> None:
     """
       blocked_datasets (`list[str]`): The list of blocked datasets. Supports Unix shell-style wildcards in the dataset
     name, e.g. "open-llm-leaderboard/*" to block all the datasets in the `open-llm-leaderboard` namespace. They
@@ -240,7 +240,7 @@ def update_dataset(
         logging.warning(f"Dataset {dataset} is not supported ({type(e)}). Let's delete the dataset.")
         delete_dataset(dataset=dataset, storage_clients=storage_clients)
         raise
-    return set_revision(
+    set_revision(
         dataset=dataset,
         revision=revision,
         priority=priority,
@@ -251,12 +251,12 @@ def smart_update_dataset(
     dataset: str,
     revision: str,
     hf_endpoint: str,
-    old_revision: Optional[str] = None,
+    old_revision: str,
     blocked_datasets: Optional[list[str]] = None,
     hf_token: Optional[str] = None,
     hf_timeout_seconds: Optional[float] = None,
     storage_clients: Optional[list[StorageClient]] = None,
-) -> TasksStatistics:
+) -> None:
     """
       blocked_datasets (`list[str]`): The list of blocked datasets. Supports Unix shell-style wildcards in the dataset
     name, e.g. "open-llm-leaderboard/*" to block all the datasets in the `open-llm-leaderboard` namespace. They
@@ -275,7 +275,7 @@ def smart_update_dataset(
         logging.warning(f"Dataset {dataset} is not supported ({type(e)}). Let's delete the dataset.")
         delete_dataset(dataset=dataset, storage_clients=storage_clients)
         raise
-    return smart_set_revision(
+    smart_set_revision(
         dataset=dataset,
         revision=revision,
         old_revision=old_revision,

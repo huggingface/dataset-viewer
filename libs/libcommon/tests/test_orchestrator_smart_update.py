@@ -43,6 +43,22 @@ index 0000000000000000000000000000000000000000..6ea47cd9c61754a4838b07f479b376cb
 +# Dataset Card for {DATASET_NAME}
 """
 
+ADD_INITIAL_README_WITH_CONFIG_DIFF = f"""
+diff --git a/README.md b/README.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..6ea47cd9c61754a4838b07f479b376cb431f2270
+--- /dev/null
++++ b/README.md
+@@ -0,0 +1,7 @@
++---
++configs:
++- config_name: foo
++  data_files: foo.csv
++---
++
++# Dataset Card for {DATASET_NAME}
+"""
+
 ADD_CONFIG_DIFF = """
 diff --git a/README.md b/README.md
 new file mode 100644
@@ -156,6 +172,14 @@ def test_add_initial_readme_commit() -> None:
             updated_yaml_fields_in_dataset_card=[],
             tasks=["UpdateRevisionOfDatasetCacheEntriesTask,1"],
         )
+
+
+def test_add_initial_readme_with_config_commit() -> None:
+    # Add README.md commit: update the revision of the cache entries
+    put_cache(step=STEP_DA, dataset=DATASET_NAME, revision=OTHER_REVISION_NAME)
+    with put_diff(ADD_INITIAL_README_WITH_CONFIG_DIFF), put_readme(ONE_CONFIG_README):
+        with pytest.raises(SmartUpdateImpossibleBecauseOfUpdatedYAMLField):
+            get_smart_dataset_update_plan(processing_graph=PROCESSING_GRAPH_TWO_STEPS)
 
 
 def test_add_data() -> None:

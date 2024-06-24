@@ -11,9 +11,8 @@ from pathlib import Path
 from typing import Optional, Union
 
 import pandas as pd
-import requests
 from huggingface_hub import DatasetCard, hf_hub_download
-from huggingface_hub.utils import build_hf_headers
+from huggingface_hub.utils import build_hf_headers, get_session
 
 from libcommon.constants import (
     CONFIG_INFO_KIND,
@@ -256,7 +255,7 @@ class DeleteDatasetStorageTask(Task):
 
     def __post_init__(self) -> None:
         # for debug and testing
-        self.id = f"DeleteDatasetStorageTask,{self.dataset},1"
+        self.id = f"DeleteDatasetStorageTask,{self.dataset},{self.storage_client.protocol}://{self.storage_client.storage_root}"
         self.long_id = self.id
 
     def run(self) -> TasksStatistics:
@@ -284,7 +283,7 @@ class UpdateRevisionOfDatasetStorageTask(Task):
 
     def __post_init__(self) -> None:
         # for debug and testing
-        self.id = f"UpdateRevisionOfDatasetStorageTask,{self.dataset},{self.storage_client}"
+        self.id = f"UpdateRevisionOfDatasetStorageTask,{self.dataset},{self.storage_client.protocol}://{self.storage_client.storage_root}"
         self.long_id = self.id
 
     def run(self) -> TasksStatistics:
@@ -823,7 +822,7 @@ class SmartDatasetUpdatePlan(Plan):
     dataset: str
     revision: str
     hf_endpoint: str
-    old_revision: Optional[str] = None
+    old_revision: str
     processing_graph: ProcessingGraph = field(default=processing_graph)
     storage_clients: Optional[list[StorageClient]] = None
     hf_token: Optional[str] = None
@@ -839,7 +838,7 @@ class SmartDatasetUpdatePlan(Plan):
             processing_step.cache_kind for processing_step in self.processing_graph.get_first_processing_steps()
         ]
         # Try to be robust to a burst of webhooks or out-of-order webhooks
-        # by waiting up to 2 seconds for a coherent state 
+        # by waiting up to 2 seconds for a coherent state
         for retry in range(3):
             cache_entries_df = get_cache_entries_df(
                 dataset=self.dataset,
@@ -865,7 +864,11 @@ class SmartDatasetUpdatePlan(Plan):
             )
         self.diff = self.get_diff()
         self.files_impacted_by_commit = self.get_impacted_files()
-        if self.files_impacted_by_commit - {"README.md", ".gitattributes", ".gitignore"}:
+        if self.files_impacted_by_commit - {
+            "README.md",
+            ".gitattributes",
+            ".gitignore",
+        }:  # TODO: maybe support .huggingface.yaml later
             raise SmartUpdateImpossibleBecauseOfUpdatedFiles(", ".join(self.files_impacted_by_commit)[:1000])
         self.updated_yaml_fields_in_dataset_card = self.get_updated_yaml_fields_in_dataset_card()
         if "dataset_info" in self.updated_yaml_fields_in_dataset_card:
@@ -892,7 +895,7 @@ class SmartDatasetUpdatePlan(Plan):
 
     def get_diff(self) -> str:
         headers = build_hf_headers(token=self.hf_token, library_name="dataset-viewer")
-        resp = requests.get(
+        resp = get_session().get(
             self.hf_endpoint + f"/datasets/{self.dataset}/commit/{self.revision}.diff", timeout=10, headers=headers
         )
         resp.raise_for_status()
@@ -1028,7 +1031,7 @@ def smart_set_revision(
     dataset: str,
     revision: str,
     hf_endpoint: str,
-    old_revision: Optional[str] = None,
+    old_revision: str,
     processing_graph: ProcessingGraph = processing_graph,
     storage_clients: Optional[list[StorageClient]] = None,
     hf_token: Optional[str] = None,
@@ -1043,7 +1046,7 @@ def smart_set_revision(
       dataset viewer) part of README.md has been modified in the last
       commit, update the cache entries and assets to the last revision
       without recomputing.
-    Else: raise. 
+    Else: raise.
 
     Args:
         dataset (`str`): The name of the dataset.

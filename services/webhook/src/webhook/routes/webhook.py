@@ -47,6 +47,12 @@ class MoonWebhookV2PayloadRepo(_MoonWebhookV2PayloadRepo, total=False):
     headSha: Optional[str]
 
 
+class UpdatedRefDict(TypedDict):
+    ref: str
+    oldSha: Optional[str]
+    newSha: Optional[str]
+
+
 class MoonWebhookV2Payload(TypedDict):
     """
     Payload from a moon-landing webhook call, v2.
@@ -56,7 +62,7 @@ class MoonWebhookV2Payload(TypedDict):
     movedTo: Optional[str]
     repo: MoonWebhookV2PayloadRepo
     scope: str
-    updatedRefs: Optional[list[dict[str, Any]]]
+    updatedRefs: Optional[list[UpdatedRefDict]]
 
 
 def parse_payload(json: Any) -> MoonWebhookV2Payload:
@@ -72,7 +78,7 @@ def process_payload(
     hf_token: Optional[str] = None,
     hf_timeout_seconds: Optional[float] = None,
     storage_clients: Optional[list[StorageClient]] = None,
-) -> Optional[TasksStatistics]:
+) -> None:
     if payload["repo"]["type"] != "dataset" or payload["scope"] not in ("repo", "repo.content", "repo.config"):
         # ^ it filters out the webhook calls for non-dataset repos and discussions in dataset repos
         return None
@@ -100,14 +106,14 @@ def process_payload(
             ref_new_sha = updated_ref.get("newSha")
             ref_old_sha = updated_ref.get("oldSha")
             if ref == "refs/heads/main" and isinstance(ref_new_sha, str) and isinstance(ref_old_sha, str):
+                if revision != ref_new_sha:
+                    logging.info(f"headSha {revision} is different from newSha {ref_new_sha}")
                 revision = ref_new_sha
                 old_revision = ref_old_sha
-        delete_dataset(dataset=dataset, storage_clients=storage_clients)
-        # ^ delete the old contents (cache + jobs + assets) to avoid mixed content
         new_dataset = (event == "move" and payload["movedTo"]) or dataset
-        if revision and dataset.startswith("datasets-maintainers/"):  # TODO(QL): enable smart updates on more datasets
+        if event == "update" and revision and old_revision and dataset.startswith("datasets-maintainers/"):  # TODO(QL): enable smart updates on more datasets
             try:
-                return smart_update_dataset(
+                smart_update_dataset(
                     dataset=new_dataset,
                     revision=revision,
                     old_revision=old_revision,
@@ -117,9 +123,12 @@ def process_payload(
                     hf_timeout_seconds=hf_timeout_seconds,
                     storage_clients=storage_clients,
                 )
+                return None
             except Exception as err:
                 logging.error(f"smart_update_dataset failed with {type(err).__name__}: {err}")
-        return update_dataset(
+        delete_dataset(dataset=dataset, storage_clients=storage_clients)
+        # ^ delete the old contents (cache + jobs + assets) to avoid mixed content
+        update_dataset(
             dataset=new_dataset,
             priority=Priority.NORMAL,
             blocked_datasets=blocked_datasets,
