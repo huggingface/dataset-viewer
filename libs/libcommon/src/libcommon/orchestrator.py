@@ -840,6 +840,8 @@ class SmartDatasetUpdatePlan(Plan):
         cache_kinds = [
             processing_step.cache_kind for processing_step in self.processing_graph.get_first_processing_steps()
         ]
+        # Try to be robust to a burst of webhooks or out-of-order webhooks
+        # by waiting up to 2 seconds for a coherent state 
         for retry in range(3):
             cache_entries_df = get_cache_entries_df(
                 dataset=self.dataset,
@@ -1039,8 +1041,11 @@ def smart_set_revision(
     /!\ This logic is WIP and hsould only be used on a subset of datasets for now.
 
     If the revision is already set to the same value, this is a no-op.
-    Else: one job is created for every step that need to be recomputed,
-    and for the other step it updates its revision without recomputing.
+    Else, if only .gitignore, .gitattributes, or a non-significant (for the
+      dataset viewer) part of README.md has been modified in the last
+      commit, update the cache entries and assets to the last revision
+      without recomputing.
+    Else: raise. 
 
     Args:
         dataset (`str`): The name of the dataset.
