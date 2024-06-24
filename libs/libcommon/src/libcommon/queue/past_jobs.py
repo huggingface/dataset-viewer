@@ -34,14 +34,14 @@ class QuerySetManager(Generic[U]):
 
 # END monkey patching ### hack ###
 
-# we allow 2 hours of compute (parallel jobs) every hour, i.e. 2 dedicated machines
-MAX_MACHINES = 2
+# we allow 30 minutes of compute (parallel jobs) every hour, i.e. 0.5 dedicated machines
+MAX_MACHINES = 0.5
 # we look at the last 6 hours to decide to rate-limit a dataset
-RATE_LIMIT_WINDOW_SECONDS = 6 * 60 * 60
+RATE_LIMIT_WINDOW_SECONDS = 6 * 60 * 60  # if we change this value, we have to delete the TTL index
 # total jobs duration that triggers rate-limiting a dataset
 DATASET_BLOCKAGE_THRESHOLD_SECONDS = MAX_MACHINES * RATE_LIMIT_WINDOW_SECONDS
 # don't check for rate-limiting if the duration is super short
-JOB_DURATION_CHECK_MIN_SECONDS = 5 * 60
+JOB_DURATION_CHECK_MIN_SECONDS = 2 * 60
 # don't record short durations, because they will not have impact, but can clutter the collection
 JOB_DURATION_MIN_SECONDS = 30
 

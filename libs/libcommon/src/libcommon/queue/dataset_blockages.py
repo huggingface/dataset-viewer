@@ -34,7 +34,7 @@ class QuerySetManager(Generic[U]):
 # END monkey patching ### hack ###
 
 # delete the dataset blockage (ie. potentially unblock it) after 1 hour
-DATASET_BLOCKAGE_EXPIRE_AFTER_SECONDS = 1 * 60 * 60
+DATASET_BLOCKAGE_EXPIRE_AFTER_SECONDS = 1 * 60 * 60  # if we change this value, we have to delete the TTL index
 
 
 class DatasetBlockageDocument(Document):
