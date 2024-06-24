@@ -260,7 +260,7 @@ def expected_data(datasets: Mapping[str, Dataset]) -> dict[str, list[Any]]:
         (None, "porter"),
     ],
 )
-def test_get_monolingual_stemmer(card_data: DatasetCardData, expected_stemmer: str):
+def test_get_monolingual_stemmer(card_data: DatasetCardData, expected_stemmer: str) -> None:
     stemmer = get_monolingual_stemmer(card_data)
     assert stemmer is not None and stemmer == expected_stemmer
 
