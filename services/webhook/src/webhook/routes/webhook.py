@@ -9,7 +9,6 @@ from libapi.utils import Endpoint, get_response
 from libcommon.dtos import Priority
 from libcommon.exceptions import CustomError
 from libcommon.operations import delete_dataset, get_current_revision, smart_update_dataset, update_dataset
-from libcommon.orchestrator import TasksStatistics
 from libcommon.prometheus import StepProfiler
 from libcommon.storage_client import StorageClient
 from starlette.requests import Request
@@ -111,7 +110,9 @@ def process_payload(
                 revision = ref_new_sha
                 old_revision = ref_old_sha
         new_dataset = (event == "move" and payload["movedTo"]) or dataset
-        if event == "update" and revision and old_revision and dataset.startswith("datasets-maintainers/"):  # TODO(QL): enable smart updates on more datasets
+        if (
+            event == "update" and revision and old_revision and dataset.startswith("datasets-maintainers/")
+        ):  # TODO(QL): enable smart updates on more datasets
             try:
                 smart_update_dataset(
                     dataset=new_dataset,
