@@ -70,6 +70,14 @@ UPSTREAM_RESPONSE_SIZE_NO_PROGRESS: UpstreamResponse = UpstreamResponse(
     content={"size": {"dataset": {"num_rows": 1000, "estimated_num_rows": None}}, "partial": True},
     progress=None,
 )
+UPSTREAM_RESPONSE_SIZE_ESTIMATED: UpstreamResponse = UpstreamResponse(
+    kind="dataset-size",
+    dataset=DATASET,
+    dataset_git_revision=REVISION_NAME,
+    http_status=HTTPStatus.OK,
+    content={"size": {"dataset": {"num_rows": 1000, "estimated_num_rows": 1337}}, "partial": True},
+    progress=1.0,
+)
 UPSTREAM_RESPONSE_COMPATIBLE_LIBRARIES_OK: UpstreamResponse = UpstreamResponse(
     kind="dataset-compatible-libraries",
     dataset=DATASET,
@@ -108,6 +116,7 @@ EXPECTED_ALL_OK: tuple[DatasetHubCacheResponse, float] = (
         "preview": True,
         "partial": False,
         "num_rows": 1000,
+        "num_rows_source": "full-exact",
         "tags": [TAG],
         "libraries": [LIBRARY],
         "modalities": [MODALITY],
@@ -121,6 +130,7 @@ EXPECTED_IS_VALID_AND_SIZE: tuple[DatasetHubCacheResponse, float] = (
         "preview": True,
         "partial": False,
         "num_rows": 1000,
+        "num_rows_source": "full-exact",
         "tags": [],
         "libraries": [],
         "modalities": [],
@@ -134,6 +144,7 @@ EXPECTED_NO_SIZE: tuple[DatasetHubCacheResponse, float] = (
         "preview": True,
         "partial": False,
         "num_rows": None,
+        "num_rows_source": None,
         "tags": [],
         "libraries": [],
         "modalities": [],
@@ -147,6 +158,7 @@ EXPECTED_OK_WITH_LIBRARIES_AND_FORMATS: tuple[DatasetHubCacheResponse, float] = 
         "preview": True,
         "partial": False,
         "num_rows": 1000,
+        "num_rows_source": "full-exact",
         "tags": [TAG],
         "libraries": [LIBRARY],
         "modalities": [],
@@ -160,6 +172,7 @@ EXPECTED_NO_PROGRESS: tuple[DatasetHubCacheResponse, float] = (
         "preview": True,
         "partial": True,
         "num_rows": 1000,
+        "num_rows_source": "partial-exact",
         "tags": [TAG],
         "libraries": [LIBRARY],
         "modalities": [MODALITY],
@@ -167,12 +180,27 @@ EXPECTED_NO_PROGRESS: tuple[DatasetHubCacheResponse, float] = (
     },
     0.0,
 )
+EXPECTED_ESTIMATED: tuple[DatasetHubCacheResponse, float] = (
+    {
+        "viewer": False,
+        "preview": True,
+        "partial": True,
+        "num_rows": 1337,
+        "num_rows_source": "full-estimated",
+        "tags": [TAG],
+        "libraries": [LIBRARY],
+        "modalities": [MODALITY],
+        "formats": [FORMAT],
+    },
+    0.5,
+)
 EXPECTED_OK_WITH_MODALITIES: tuple[DatasetHubCacheResponse, float] = (
     {
         "viewer": False,
         "preview": True,
         "partial": False,
         "num_rows": 1000,
+        "num_rows_source": "full-exact",
         "tags": [],
         "libraries": [],
         "modalities": [MODALITY],
@@ -186,6 +214,7 @@ EXPECTED_EMPTY: tuple[DatasetHubCacheResponse, float] = (
         "preview": False,
         "partial": False,
         "num_rows": None,
+        "num_rows_source": None,
         "tags": [],
         "libraries": [],
         "modalities": [],
@@ -199,6 +228,7 @@ EXPECTED_ONLY_SIZE: tuple[DatasetHubCacheResponse, float] = (
         "preview": False,
         "partial": False,
         "num_rows": 1000,
+        "num_rows_source": "full-exact",
         "tags": [],
         "libraries": [],
         "modalities": [],
@@ -212,6 +242,7 @@ EXPECTED_ONLY_MODALITIES: tuple[DatasetHubCacheResponse, float] = (
         "preview": False,
         "partial": False,
         "num_rows": None,
+        "num_rows_source": None,
         "tags": [],
         "libraries": [],
         "modalities": [MODALITY],
@@ -269,6 +300,15 @@ def get_job_runner(
                 UPSTREAM_RESPONSE_MODALITIES_OK,
             ],
             EXPECTED_NO_PROGRESS,
+        ),
+        (
+            [
+                UPSTREAM_RESPONSE_IS_VALID_OK,
+                UPSTREAM_RESPONSE_SIZE_ESTIMATED,
+                UPSTREAM_RESPONSE_COMPATIBLE_LIBRARIES_OK,
+                UPSTREAM_RESPONSE_MODALITIES_OK,
+            ],
+            EXPECTED_ESTIMATED,
         ),
         (
             [
