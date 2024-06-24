@@ -1,11 +1,18 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2023 The HuggingFace Authors.
 
-from libcommon.constants import CACHE_METRICS_COLLECTION, TYPE_AND_STATUS_JOB_COUNTS_COLLECTION
+from libcommon.constants import (
+    CACHE_METRICS_COLLECTION,
+    QUEUE_COLLECTION_DATASET_BLOCKAGES,
+    QUEUE_COLLECTION_PAST_JOBS,
+    QUEUE_MONGOENGINE_ALIAS,
+    TYPE_AND_STATUS_JOB_COUNTS_COLLECTION,
+)
 
 from mongodb_migration.deletion_migrations import (
     CacheDeletionMigration,
     MetricsDeletionMigration,
+    MigrationDeleteIndex,
     MigrationDeleteJobsByStatus,
     MigrationQueueDeleteTTLIndex,
     MigrationRemoveFieldFromCache,
@@ -363,5 +370,19 @@ class MigrationsCollector:
             MigrationAddEstimatedDatasetInfoToParquetAndInfoCacheResponse(
                 version="20240619124500",
                 description="add 'estimated_dataset_info' field to config-parquet-and-info cache records",
+            ),
+            MigrationDeleteIndex(
+                version="20240624120300",
+                description="delete the TTL index in the pastJobs collection",
+                database=QUEUE_MONGOENGINE_ALIAS,
+                collection=QUEUE_COLLECTION_PAST_JOBS,
+                index_name="PAST_JOB_EXPIRE_AFTER_SECONDS",
+            ),
+            MigrationDeleteIndex(
+                version="20240624120301",
+                description="delete the TTL index in the blockedDatasets collection",
+                database=QUEUE_MONGOENGINE_ALIAS,
+                collection=QUEUE_COLLECTION_DATASET_BLOCKAGES,
+                index_name="DATASET_BLOCKAGE_EXPIRE_AFTER_SECONDS",
             ),
         ]

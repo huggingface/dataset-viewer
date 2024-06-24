@@ -29,12 +29,14 @@ from libcommon.constants import (
     QUEUE_MONGOENGINE_ALIAS,
 )
 from libcommon.dtos import FlatJobInfo, JobInfo, Priority, Status, WorkerSize
+from libcommon.queue.dataset_blockages import get_blocked_datasets
 from libcommon.queue.lock import lock, release_lock, release_locks
 from libcommon.queue.metrics import (
     decrease_metric,
     increase_metric,
     update_metrics_for_type,
 )
+from libcommon.queue.past_jobs import create_past_job
 from libcommon.utils import get_datetime, inputs_to_string
 
 # START monkey patching ### hack ###
@@ -112,6 +114,7 @@ class JobQueryFilters(TypedDict, total=False):
     type__in: list[str]
     difficulty__gt: int
     difficulty__lte: int
+    dataset__nin: list[str]
 
 
 PA_SCHEMA = Schema(
@@ -382,7 +385,8 @@ class Queue:
         """Get the next job in the queue for a given priority.
 
         For a given priority, get the waiting job with the oldest creation date:
-        - among the datasets that still have no started job.
+        - among the datasets that are not rate-limited
+        - among the datasets that still have no started job
         - if none, among the datasets that have the least started jobs:
           - ensuring that the unicity_id field is unique among the started jobs.
 
@@ -403,6 +407,9 @@ class Queue:
             f"Getting next waiting job for priority {priority}, blocked types: {job_types_blocked}, only types:"
             f" {job_types_only}"
         )
+        blocked_datasets = get_blocked_datasets()
+        logging.debug(f"Blocked datasets: {blocked_datasets}")
+
         filters: JobQueryFilters = {}
         if job_types_blocked:
             filters["type__nin"] = job_types_blocked
@@ -412,6 +419,8 @@ class Queue:
             filters["difficulty__gt"] = difficulty_min
         if difficulty_max is not None and difficulty_max < DEFAULT_DIFFICULTY_MAX:
             filters["difficulty__lte"] = difficulty_max
+        if blocked_datasets:
+            filters["dataset__nin"] = blocked_datasets
         started_jobs = JobDocument.objects(status=Status.STARTED, **filters)
         logging.debug(f"Number of started jobs: {started_jobs.count()}")
         started_job_namespaces = [job.namespace for job in started_jobs.only("namespace")]
@@ -419,7 +428,10 @@ class Queue:
 
         next_waiting_job = (
             JobDocument.objects(
-                status=Status.WAITING, namespace__nin=set(started_job_namespaces), priority=priority, **filters
+                status=Status.WAITING,
+                namespace__nin=set(started_job_namespaces),
+                priority=priority,
+                **filters,
             )
             .order_by("+created_at")
             .only("type", "dataset", "revision", "config", "split", "priority", "unicity_id")
@@ -435,6 +447,7 @@ class Queue:
         # all the waiting jobs, if any, are for namespaces that already have started jobs.
         #
         # Let's:
+        # - exclude the blocked datasets
         # - exclude the waiting jobs which unicity_id is already in a started job
         # and, among the remaining waiting jobs, let's:
         # - select the oldest waiting job for the namespace with the least number of started jobs
@@ -477,6 +490,7 @@ class Queue:
         """Get the next job in the queue.
 
         Get the waiting job with the oldest creation date with the following criteria:
+        - among the datasets that are not rate-limited,
         - among the highest priority jobs,
         - among the datasets that still have no started job.
         - if none, among the datasets that have the least started jobs:
@@ -685,11 +699,10 @@ class Queue:
     def finish_job(self, job_id: str) -> Optional[Priority]:
         """Finish a job in the queue.
 
-        The job is moved from the started state to the success or error state. The existing locks are released.
+        The job is deleted. The existing locks are released. The duration is saved in pastJobs.
 
         Args:
             job_id (`str`): id of the job
-            is_success (`bool`): whether the job succeeded or not
 
         Returns:
             `Priority`, *optional*: the priority of the job, if the job was successfully finished.
@@ -703,6 +716,12 @@ class Queue:
             logging.error(f"job {job_id} has not the expected format for a started job. Aborting: {e}")
             return None
         decrease_metric(job_type=job.type, status=job.status, difficulty=job.difficulty)
+        if job.started_at is not None:
+            create_past_job(
+                dataset=job.dataset,
+                started_at=pytz.UTC.localize(job.started_at),
+                finished_at=get_datetime(),
+            )
         job_priority = job.priority
         job.delete()
         release_locks(owner=job_id)

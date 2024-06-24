@@ -86,6 +86,16 @@ def zip_file(tmp_path_factory: pytest.TempPathFactory, text_file: str) -> str:
 
 
 @pytest.fixture(scope="session")
+def tar_file(tmp_path_factory: pytest.TempPathFactory, text_file: str) -> str:
+    import tarfile
+
+    path = str(tmp_path_factory.mktemp("data") / "file.txt.tar")
+    with tarfile.TarFile(path, "w") as f:
+        f.add(text_file, arcname=os.path.basename(text_file))
+    return path
+
+
+@pytest.fixture(scope="session")
 def extra_fields_readme(tmp_path_factory: pytest.TempPathFactory) -> str:
     path = str(tmp_path_factory.mktemp("data") / "README.md")
     lines = [
