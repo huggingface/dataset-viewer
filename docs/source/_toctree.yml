@@ -36,6 +36,8 @@
           title: Overview
         - local: clickhouse
           title: ClickHouse
+        - local: cudf
+          title: cuDF
         - local: duckdb
           title: DuckDB
         - local: pandas
