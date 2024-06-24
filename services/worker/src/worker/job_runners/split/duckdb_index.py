@@ -16,6 +16,7 @@ from huggingface_hub._commit_api import (
     CommitOperationDelete,
 )
 from huggingface_hub.hf_api import HfApi
+from huggingface_hub.repocard_data import DatasetCardData
 from huggingface_hub.utils._errors import HfHubHTTPError, RepositoryNotFoundError
 from libcommon.constants import DUCKDB_INDEX_JOB_RUNNER_SUBDIRECTORY, ROW_IDX_COLUMN
 from libcommon.dtos import JobInfo
@@ -79,32 +80,33 @@ SET_EXTENSIONS_DIRECTORY_COMMAND = "SET extension_directory='{directory}';"
 REPO_TYPE = "dataset"
 # Only some languages are supported, see: https://duckdb.org/docs/extensions/full_text_search.html#pragma-create_fts_index
 STEMMER_MAPPING = {
-    "ar": "arabic",
-    "eu": "basque",
-    "ca": "catalan",
-    "da": "danish",
-    "nl": "dutch",
-    "en": "english",
-    "fi": "finnish",
-    "fr": "french",
-    "de": "german",
-    "el": "greek",
-    "hi": "hindi",
-    "hu": "hungarian",
-    "id": "indonesian",
-    "ga": "irish",
-    "it": "italian",
-    "lt": "lithuanian",
-    "ne": "nepali",
-    "no": "norwegian",
-    "pt": "portuguese",
-    "ro": "romanian",
-    "ru": "russian",
-    "sr": "serbian",
-    "es": "spanish",
-    "sv": "swedish",
-    "ta": "tamil",
-    "tr": "turkish",
+    # Stemmer : ["value ISO 639-1", "value ISO 639-2/3"]
+    "arabic": ["ar", "ara"],
+    "basque": ["eu", "eus"],
+    "catalan": ["ca", "cat"],
+    "danish": ["da", "dan"],
+    "dutch": ["nl", "nld"],
+    "english": ["en", "eng"],
+    "finnish": ["fi", "fin"],
+    "french": ["fr", "fra"],
+    "german": ["de", "deu"],
+    "greek": ["el", "ell"],
+    "hindi": ["hi", "hin"],
+    "hungarian": ["hu", "hun"],
+    "indonesian": ["in", "ind"],
+    "irish": ["gl", "gle"],
+    "italian": ["it", "ita"],
+    "lithuanian": ["li", "lit"],
+    "nepali": ["ne", "nep"],
+    "norwegian": ["no", "nor"],
+    "portuguese": ["po", "por"],
+    "romanian": ["ro", "ron"],
+    "russian": ["ru", "rus"],
+    "serbian": ["sr", "srp"],
+    "spanish": ["sp", "spa"],
+    "swedish": ["sw", "swe"],
+    "tamil": ["ta", "tam"],
+    "turkish": ["tu", "tur"],
 }
 
 LengthDtype = Literal["string", "list"]
@@ -128,16 +130,18 @@ def get_indexable_columns(features: Features) -> list[str]:
     return indexable_columns
 
 
-def get_monolingual_stemmer(dataset: str, hf_api: HfApi) -> str:
-    stemmer = DEFAULT_STEMMER
-    try:
-        info = hf_api.dataset_info(repo_id=dataset)
-        card_data = info.card_data
-        if card_data is not None and (all_languages := card_data["language"]) is not None and len(all_languages) == 1:
-            stemmer = STEMMER_MAPPING.get(all_languages[0], DEFAULT_STEMMER)
-    except Exception as err:
-        logging.error(err)
-    return stemmer
+def get_monolingual_stemmer(card_data: DatasetCardData) -> str:
+    if card_data is None:
+        return DEFAULT_STEMMER
+    all_languages = card_data["language"]
+    if isinstance(all_languages, list) and len(all_languages) == 1:
+        first_language = all_languages[0]
+    elif isinstance(all_languages, str):
+        first_language = all_languages
+    else:
+        return DEFAULT_STEMMER
+
+    return next((language for language, codes in STEMMER_MAPPING.items() if first_language in codes), DEFAULT_STEMMER)
 
 
 def compute_length_column(
@@ -351,7 +355,7 @@ def compute_split_duckdb_index_response(
             if extensions_directory is not None:
                 con.execute(SET_EXTENSIONS_DIRECTORY_COMMAND.format(directory=extensions_directory))
             con.execute(INSTALL_AND_LOAD_EXTENSION_COMMAND)
-            stemmer = get_monolingual_stemmer(dataset, hf_api)
+            stemmer = get_monolingual_stemmer(hf_api.dataset_info(repo_id=dataset).card_data)
             create_index_sql = CREATE_INDEX_COMMAND.format(columns=indexable_columns, stemmer=stemmer)
             logging.info(create_index_sql)
             con.sql(create_index_sql)

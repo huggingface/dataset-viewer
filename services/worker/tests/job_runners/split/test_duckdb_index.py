@@ -20,6 +20,7 @@ import requests
 from datasets import Audio, Dataset, Features, Image, Sequence, Translation, TranslationVariableLanguages, Value
 from datasets.packaged_modules.csv.csv import CsvConfig
 from datasets.table import embed_table_storage
+from huggingface_hub.repocard_data import DatasetCardData
 from libcommon.constants import HF_FTS_SCORE, ROW_IDX_COLUMN
 from libcommon.dtos import Priority
 from libcommon.resources import CacheMongoResource, QueueMongoResource
@@ -38,6 +39,7 @@ from worker.job_runners.split.duckdb_index import (
     SplitDuckDbIndexJobRunner,
     get_delete_operations,
     get_indexable_columns,
+    get_monolingual_stemmer,
 )
 from worker.resources import LibrariesResource
 
@@ -244,6 +246,23 @@ def expected_data(datasets: Mapping[str, Dataset]) -> dict[str, list[Any]]:
                 expected[f"{feature_name}.height"] = [480, 1058, 400, 930, None]
     expected["__hf_index_id"] = list(range(ds.num_rows))
     return expected
+
+
+@pytest.mark.parametrize(
+    "card_data, expected_stemmer",
+    [
+        (DatasetCardData(language="spa"), "spanish"),
+        (DatasetCardData(language="other"), "porter"),
+        (DatasetCardData(language="ar"), "arabic"),
+        (DatasetCardData(language=["ar"]), "arabic"),
+        (DatasetCardData(language=["ar", "en"]), "porter"),
+        (DatasetCardData(), "porter"),
+        (None, "porter"),
+    ],
+)
+def test_get_monolingual_stemmer(card_data: DatasetCardData, expected_stemmer: str):
+    stemmer = get_monolingual_stemmer(card_data)
+    assert stemmer is not None and stemmer == expected_stemmer
 
 
 @pytest.mark.parametrize(
