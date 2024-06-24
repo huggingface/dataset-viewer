@@ -317,10 +317,12 @@ def assert_dataset_backfill_plan(
 
 def assert_smart_dataset_update_plan(
     smart_dataset_update_plan: SmartDatasetUpdatePlan,
+    cached_revision: str,
     tasks: list[str],
     files_impacted_by_commit: Optional[list[str]] = None,
     updated_yaml_fields_in_dataset_card: Optional[list[str]] = None,
 ) -> None:
+    assert smart_dataset_update_plan.cached_revision == cached_revision
     if files_impacted_by_commit is not None:
         assert_equality(smart_dataset_update_plan.files_impacted_by_commit, set(files_impacted_by_commit))
     if updated_yaml_fields_in_dataset_card is not None:

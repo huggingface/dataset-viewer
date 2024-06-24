@@ -137,7 +137,7 @@ def test_same_revision() -> None:
     put_cache(step=STEP_DA, dataset=DATASET_NAME, revision=REVISION_NAME)
     # Same revision as cache, do nothing
     plan = get_smart_dataset_update_plan(processing_graph=PROCESSING_GRAPH_TWO_STEPS)
-    assert_smart_dataset_update_plan(plan, tasks=[])
+    assert_smart_dataset_update_plan(plan, cached_revision=REVISION_NAME, tasks=[])
 
 
 def test_cache_revision_is_not_parent_revision_commit() -> None:
@@ -154,6 +154,7 @@ def test_empty_commit() -> None:
         plan = get_smart_dataset_update_plan(processing_graph=PROCESSING_GRAPH_TWO_STEPS)
         assert_smart_dataset_update_plan(
             plan,
+            cached_revision=OTHER_REVISION_NAME,
             files_impacted_by_commit=[],
             tasks=["UpdateRevisionOfDatasetCacheEntriesTask,1"],
         )
@@ -168,6 +169,7 @@ def test_add_initial_readme_commit() -> None:
         plan = get_smart_dataset_update_plan(processing_graph=PROCESSING_GRAPH_TWO_STEPS)
         assert_smart_dataset_update_plan(
             plan,
+            cached_revision=OTHER_REVISION_NAME,
             files_impacted_by_commit=["README.md"],
             updated_yaml_fields_in_dataset_card=[],
             tasks=["UpdateRevisionOfDatasetCacheEntriesTask,1"],
@@ -221,6 +223,7 @@ def test_add_tag_commit() -> None:
         plan = get_smart_dataset_update_plan(processing_graph=PROCESSING_GRAPH_TWO_STEPS)
         assert_smart_dataset_update_plan(
             plan,
+            cached_revision=OTHER_REVISION_NAME,
             files_impacted_by_commit=["README.md"],
             updated_yaml_fields_in_dataset_card=["tags"],
             tasks=["UpdateRevisionOfDatasetCacheEntriesTask,1"],
