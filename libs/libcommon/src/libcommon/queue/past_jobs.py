@@ -34,14 +34,16 @@ class QuerySetManager(Generic[U]):
 
 # END monkey patching ### hack ###
 
-# we allow 30 minutes of compute (parallel jobs) every hour, i.e. 0.5 dedicated machines
-MAX_MACHINES = 0.5
-# we look at the last 6 hours to decide to rate-limit a dataset
-RATE_LIMIT_WINDOW_SECONDS = 6 * 60 * 60  # if we change this value, we have to delete the TTL index
+# we allow 2 hours of compute (parallel jobs) every hour, i.e. 2 dedicated machines
+MAX_MACHINES = 2
+# we look at the last 1 hour to decide to rate-limit a dataset
+RATE_LIMIT_WINDOW_SECONDS = (
+    1 * 60 * 60
+)  # if we change this value, we have to ensure the TTL index is migrated accordingly
 # total jobs duration that triggers rate-limiting a dataset
 DATASET_BLOCKAGE_THRESHOLD_SECONDS = MAX_MACHINES * RATE_LIMIT_WINDOW_SECONDS
 # don't check for rate-limiting if the duration is super short
-JOB_DURATION_CHECK_MIN_SECONDS = 2 * 60
+JOB_DURATION_CHECK_MIN_SECONDS = 30
 # don't record short durations, because they will not have impact, but can clutter the collection
 JOB_DURATION_MIN_SECONDS = 30
 
@@ -60,7 +62,7 @@ class PastJobDocument(Document):
         "db_alias": QUEUE_MONGOENGINE_ALIAS,
         "indexes": [
             {
-                "name": "PAST_JOB_EXPIRE_AFTER_SECONDS",
+                "name": "PAST_JOB_EXPIRE_AFTER_SECONDS_BLUE",  # alternate BLUE/GREEN
                 "fields": ["finished_at"],
                 "expireAfterSeconds": RATE_LIMIT_WINDOW_SECONDS,
             },
