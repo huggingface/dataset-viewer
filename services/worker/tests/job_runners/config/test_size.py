@@ -123,7 +123,7 @@ def get_job_runner(
                     "dataset_size": 20387232,
                     "size_in_bytes": 31981954,
                 },
-                "estimated_info": None,
+                "estimated_dataset_info": None,
                 "partial": False,
             },
             None,
@@ -201,7 +201,7 @@ def get_job_runner(
                     "dataset_size": 2038723,
                     "size_in_bytes": 3198195,
                 },
-                "estimated_info": {
+                "estimated_dataset_info": {
                     "splits": {
                         "train": {
                             "name": "train",

@@ -41,7 +41,7 @@ def compute_config_size_response(dataset: str, config: str) -> ConfigSizeRespons
             "Previous step did not return the expected content.",
             TypeError(f"dataset_info should be a dict, but got {type(content['dataset_info'])}"),
         )
-    if content["estimated_info"] is not None and not isinstance(content["estimated_info"], dict):
+    if content["estimated_dataset_info"] is not None and not isinstance(content["estimated_dataset_info"], dict):
         raise PreviousStepFormatError(
             "Previous step did not return the expected content.",
             TypeError(f"estimated_info should be a dict, but got {type(content['dataset_info'])}"),
@@ -49,7 +49,7 @@ def compute_config_size_response(dataset: str, config: str) -> ConfigSizeRespons
 
     try:
         config_info = content["dataset_info"]
-        config_estimated_info = content["estimated_info"]
+        config_estimated_info = content["estimated_dataset_info"]
         num_columns = len(config_info["features"])
         split_sizes: list[SplitSize] = [
             {
