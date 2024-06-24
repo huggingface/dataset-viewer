@@ -241,7 +241,6 @@ class UpdateRevisionOfDatasetCacheEntriesTask(Task):
         with StepProfiler(
             method="UpdateRevisionOfDatasetCacheEntriesTask.run",
             step="all",
-            context=f"dataset={self.dataset}",
         ):
             return TasksStatistics(
                 num_updated_cache_entries=update_revision_of_dataset_responses(
@@ -298,7 +297,6 @@ class UpdateRevisionOfDatasetStorageTask(Task):
         with StepProfiler(
             method="UpdateRevisionOfDatasetStorageTask.run",
             step="all",
-            context=f"dataset={self.dataset},storage_client={self.storage_client}",
         ):
             return TasksStatistics(
                 num_updated_storage_directories=self.storage_client.update_revision_of_dataset_revision_directory(

@@ -177,8 +177,10 @@ def test_add_config_commit() -> None:
 def test_add_second_config_commit() -> None:
     # Add a second config commit: raise
     put_cache(step=STEP_DA, dataset=DATASET_NAME, revision=OTHER_REVISION_NAME)
-    with put_diff(ADD_SECOND_CONFIG_DIFF), put_readme(ONE_CONFIG_README, revision=OTHER_REVISION_NAME), put_readme(
-        TWO_CONFIGS_README
+    with (
+        put_diff(ADD_SECOND_CONFIG_DIFF),
+        put_readme(ONE_CONFIG_README, revision=OTHER_REVISION_NAME),
+        put_readme(TWO_CONFIGS_README),
     ):
         with pytest.raises(SmartUpdateImpossibleBecauseOfUpdatedYAMLField):
             get_smart_dataset_update_plan(processing_graph=PROCESSING_GRAPH_TWO_STEPS)
@@ -187,8 +189,10 @@ def test_add_second_config_commit() -> None:
 def test_add_tag_commit() -> None:
     # Add tag: update the revision of the cache entries
     put_cache(step=STEP_DA, dataset=DATASET_NAME, revision=OTHER_REVISION_NAME)
-    with put_diff(ADD_TAG_DIFF), put_readme(ONE_CONFIG_README, revision=OTHER_REVISION_NAME), put_readme(
-        ONE_CONFIG_AND_ONE_TAG_README
+    with (
+        put_diff(ADD_TAG_DIFF),
+        put_readme(ONE_CONFIG_README, revision=OTHER_REVISION_NAME),
+        put_readme(ONE_CONFIG_AND_ONE_TAG_README),
     ):
         plan = get_smart_dataset_update_plan(processing_graph=PROCESSING_GRAPH_TWO_STEPS)
         assert_smart_dataset_update_plan(
