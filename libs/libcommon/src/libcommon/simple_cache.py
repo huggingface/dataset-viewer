@@ -868,42 +868,6 @@ def get_cache_entries_df(dataset: str, cache_kinds: Optional[list[str]] = None) 
     return CachedResponseDocument.fetch_as_df(query=filters)
 
 
-def get_cache_entries_df_old(dataset: str, cache_kinds: Optional[list[str]] = None) -> pd.DataFrame:
-    filters = {}
-    if cache_kinds:
-        filters["kind__in"] = cache_kinds
-    return _get_df(
-        [
-            {
-                "kind": response.kind,
-                "dataset": response.dataset,
-                "config": response.config,
-                "split": response.split,
-                "http_status": response.http_status,
-                "error_code": response.error_code,
-                "dataset_git_revision": response.dataset_git_revision,
-                "job_runner_version": response.job_runner_version,
-                "progress": response.progress,
-                "updated_at": response.updated_at,
-                "failed_runs": response.failed_runs,
-            }
-            for response in CachedResponseDocument.objects(dataset=dataset, **filters).only(
-                "kind",
-                "dataset",
-                "config",
-                "split",
-                "http_status",
-                "error_code",
-                "job_runner_version",
-                "dataset_git_revision",
-                "progress",
-                "updated_at",
-                "failed_runs",
-            )
-        ]
-    )
-
-
 def get_cache_count_for_dataset(dataset: str) -> int:
     return CachedResponseDocument.objects(dataset=dataset).count()
 

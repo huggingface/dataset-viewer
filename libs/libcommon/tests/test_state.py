@@ -11,7 +11,6 @@ from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import (
     delete_response,
     get_cache_entries_df,
-    get_cache_entries_df_old,
     upsert_response,
 )
 from libcommon.state import (
@@ -74,13 +73,6 @@ def populate_cache() -> tuple[list[str], int]:
 def test_get_cache_entries_df() -> None:
     cache_kinds, expected_entries = populate_cache()
     entries = get_cache_entries_df(dataset=DATASET_NAME, cache_kinds=cache_kinds)
-    assert entries.shape[0] == expected_entries
-
-
-@pytest.mark.limit_memory("2 MB")  # Will fail, it uses ~2.8 MB
-def test_get_cache_entries_df_old() -> None:
-    cache_kinds, expected_entries = populate_cache()
-    entries = get_cache_entries_df_old(dataset=DATASET_NAME, cache_kinds=cache_kinds)
     assert entries.shape[0] == expected_entries
 
 
