@@ -137,7 +137,7 @@ class CreateJobsTask(Task):
 
 @dataclass
 class DeleteWaitingJobsTask(Task):
-    job_ids: list[str]
+    job_ids: list[str] = field(init=False)
     jobs_df: InitVar[pd.DataFrame]
 
     def __post_init__(self, jobs_df: pd.DataFrame) -> None:
