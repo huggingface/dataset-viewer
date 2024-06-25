@@ -450,9 +450,13 @@ def test_get_jobs_count_by_worker_size() -> None:
     test_type = "test_type"
     test_other_type = "test_other_type"
     test_dataset = "test_dataset"
+    test_blocked_dataset = "blocked_dataset"
     test_revision = "test_revision"
     queue = Queue()
 
+    assert queue.get_jobs_count_by_worker_size() == {"heavy": 0, "medium": 0, "light": 0}
+    block_dataset(test_blocked_dataset)
+    queue.add_job(job_type=test_type, dataset=test_blocked_dataset, revision=test_revision, difficulty=50)
     assert queue.get_jobs_count_by_worker_size() == {"heavy": 0, "medium": 0, "light": 0}
     queue.add_job(job_type=test_type, dataset=test_dataset, revision=test_revision, difficulty=50)
     assert queue.get_jobs_count_by_worker_size() == {"heavy": 0, "medium": 1, "light": 0}
