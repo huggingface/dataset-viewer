@@ -264,6 +264,10 @@ def smart_update_dataset(
     """
     # let's the exceptions bubble up if any
     try:
+        # We don't check the revision itself here.
+        # If there was another commit in the meantime, the smart_update_dataset
+        # can still work if they are called in th order.
+        # Concurrency issues raise errors and fall back on regular update anyway.
         get_latest_dataset_revision_if_supported_or_raise(
             dataset=dataset,
             hf_endpoint=hf_endpoint,
