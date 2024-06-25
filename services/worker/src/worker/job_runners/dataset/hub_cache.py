@@ -81,18 +81,12 @@ def compute_hub_cache_response(dataset: str) -> tuple[DatasetHubCacheResponse, f
                 "Previous step 'dataset-size' did not return the expected content: 'partial' or 'size.dataset.num_rows'."
             )
         partial = content["partial"]
-        if content["size"]["dataset"]["estimated_num_rows"]:
-            num_rows = content["size"]["dataset"]["estimated_num_rows"]
-            num_rows_source = "full-estimated"
-        else:
-            num_rows = content["size"]["dataset"]["num_rows"]
-            num_rows_source = "partial-exact" if partial else "full-exact"
+        num_rows = content["size"]["dataset"]["estimated_num_rows"] or content["size"]["dataset"]["num_rows"]
         progresses.append(size_response["progress"])
     except PreviousStepFormatError:
         raise
     except Exception:
         logging.info(f"Missing 'dataset-size' response for {dataset=}. We let the fields empty.")
-        num_rows_source = None
 
     tags: list[DatasetTag] = []
     libraries: list[DatasetLibrary] = []
@@ -135,7 +129,6 @@ def compute_hub_cache_response(dataset: str) -> tuple[DatasetHubCacheResponse, f
             viewer=viewer,
             partial=partial,
             num_rows=num_rows,
-            num_rows_source=num_rows_source,
             tags=tags,
             libraries=libraries,
             formats=formats,
