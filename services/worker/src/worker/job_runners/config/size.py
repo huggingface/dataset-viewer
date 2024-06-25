@@ -83,7 +83,11 @@ def compute_config_size_response(dataset: str, config: str) -> ConfigSizeRespons
                 "num_bytes_memory": sum(split_size["num_bytes_memory"] for split_size in split_sizes),
                 "num_rows": sum(split_size["num_rows"] for split_size in split_sizes),
                 "num_columns": num_columns,
-                "estimated_num_rows": sum(split_size["estimated_num_rows"] or 0 for split_size in split_sizes) or None,
+                "estimated_num_rows": sum(
+                    split_size["estimated_num_rows"] or split_size["num_rows"] for split_size in split_sizes
+                )
+                if any(split_size["estimated_num_rows"] for split_size in split_sizes)
+                else None,
             }
         )
         partial = content["partial"]
