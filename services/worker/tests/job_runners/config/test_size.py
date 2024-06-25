@@ -123,6 +123,7 @@ def get_job_runner(
                     "dataset_size": 20387232,
                     "size_in_bytes": 31981954,
                 },
+                "estimated_dataset_info": None,
                 "partial": False,
             },
             None,
@@ -136,6 +137,7 @@ def get_job_runner(
                         "num_bytes_memory": 20387232,
                         "num_rows": 70000,
                         "num_columns": 2,
+                        "estimated_num_rows": None,
                     },
                     "splits": [
                         {
@@ -146,6 +148,7 @@ def get_job_runner(
                             "num_bytes_memory": 17470800,
                             "num_rows": 60000,
                             "num_columns": 2,
+                            "estimated_num_rows": None,
                         },
                         {
                             "dataset": "dataset_ok",
@@ -155,10 +158,193 @@ def get_job_runner(
                             "num_bytes_memory": 2916432,
                             "num_rows": 10000,
                             "num_columns": 2,
+                            "estimated_num_rows": None,
                         },
                     ],
                 },
                 "partial": False,
+            },
+            False,
+        ),
+        (  # partial generation: sue estimated_dataset_info
+            "dataset_ok",
+            "config_1",
+            HTTPStatus.OK,
+            {
+                "parquet_files": [
+                    {"dataset": "dataset_ok", "config": "config_1", "split": "train", "size": 1428118},
+                    {"dataset": "dataset_ok", "config": "config_1", "split": "test", "size": 238390},
+                ],
+                "dataset_info": {
+                    "features": {
+                        "image": {"_type": "Image"},
+                        "label": {
+                            "names": ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"],
+                            "_type": "ClassLabel",
+                        },
+                    },
+                    "splits": {
+                        "train": {
+                            "name": "train",
+                            "num_bytes": 1747080,
+                            "num_examples": 6000,
+                            "dataset_name": "dataset_ok",
+                        },
+                        "test": {
+                            "name": "test",
+                            "num_bytes": 291643,
+                            "num_examples": 1000,
+                            "dataset_name": "dataset_ok",
+                        },
+                    },
+                    "download_size": 1159472,
+                    "dataset_size": 2038723,
+                    "size_in_bytes": 3198195,
+                },
+                "estimated_dataset_info": {
+                    "splits": {
+                        "train": {
+                            "name": "train",
+                            "num_bytes": 17470800,
+                            "num_examples": 60000,
+                            "dataset_name": "dataset_ok",
+                        },
+                        "test": {
+                            "name": "test",
+                            "num_bytes": 2916432,
+                            "num_examples": 10000,
+                            "dataset_name": "dataset_ok",
+                        },
+                    },
+                    "dataset_size": 20387232,
+                },
+                "partial": True,
+            },
+            None,
+            {
+                "size": {
+                    "config": {
+                        "dataset": "dataset_ok",
+                        "config": "config_1",
+                        "num_bytes_original_files": 1159472,
+                        "num_bytes_parquet_files": 1666508,
+                        "num_bytes_memory": 2038723,
+                        "num_rows": 7000,
+                        "num_columns": 2,
+                        "estimated_num_rows": 70000,
+                    },
+                    "splits": [
+                        {
+                            "dataset": "dataset_ok",
+                            "config": "config_1",
+                            "split": "train",
+                            "num_bytes_parquet_files": 1428118,
+                            "num_bytes_memory": 1747080,
+                            "num_rows": 6000,
+                            "num_columns": 2,
+                            "estimated_num_rows": 60000,
+                        },
+                        {
+                            "dataset": "dataset_ok",
+                            "config": "config_1",
+                            "split": "test",
+                            "num_bytes_parquet_files": 238390,
+                            "num_bytes_memory": 291643,
+                            "num_rows": 1000,
+                            "num_columns": 2,
+                            "estimated_num_rows": 10000,
+                        },
+                    ],
+                },
+                "partial": True,
+            },
+            False,
+        ),
+        (  # only train is partial: use mix of estimated_dataset_info and dataset_info
+            "dataset_ok",
+            "config_1",
+            HTTPStatus.OK,
+            {
+                "parquet_files": [
+                    {"dataset": "dataset_ok", "config": "config_1", "split": "train", "size": 1428118},
+                    {"dataset": "dataset_ok", "config": "config_1", "split": "test", "size": 2383903},
+                ],
+                "dataset_info": {
+                    "features": {
+                        "image": {"_type": "Image"},
+                        "label": {
+                            "names": ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"],
+                            "_type": "ClassLabel",
+                        },
+                    },
+                    "splits": {
+                        "train": {
+                            "name": "train",
+                            "num_bytes": 1747080,
+                            "num_examples": 6000,
+                            "dataset_name": "dataset_ok",
+                        },
+                        "test": {
+                            "name": "test",
+                            "num_bytes": 2916432,
+                            "num_examples": 10000,
+                            "dataset_name": "dataset_ok",
+                        },
+                    },
+                    "download_size": 1159472,
+                    "dataset_size": 2038723,
+                    "size_in_bytes": 3198195,
+                },
+                "estimated_dataset_info": {
+                    "splits": {
+                        "train": {
+                            "name": "train",
+                            "num_bytes": 17470800,
+                            "num_examples": 60000,
+                            "dataset_name": "dataset_ok",
+                        },
+                    },
+                    "dataset_size": 20387232,
+                },
+                "partial": True,
+            },
+            None,
+            {
+                "size": {
+                    "config": {
+                        "dataset": "dataset_ok",
+                        "config": "config_1",
+                        "num_bytes_original_files": 1159472,
+                        "num_bytes_parquet_files": 3812021,
+                        "num_bytes_memory": 4663512,
+                        "num_rows": 16000,
+                        "num_columns": 2,
+                        "estimated_num_rows": 70000,
+                    },
+                    "splits": [
+                        {
+                            "dataset": "dataset_ok",
+                            "config": "config_1",
+                            "split": "train",
+                            "num_bytes_parquet_files": 1428118,
+                            "num_bytes_memory": 1747080,
+                            "num_rows": 6000,
+                            "num_columns": 2,
+                            "estimated_num_rows": 60000,
+                        },
+                        {
+                            "dataset": "dataset_ok",
+                            "config": "config_1",
+                            "split": "test",
+                            "num_bytes_parquet_files": 2383903,
+                            "num_bytes_memory": 2916432,
+                            "num_rows": 10000,
+                            "num_columns": 2,
+                            "estimated_num_rows": None,
+                        },
+                    ],
+                },
+                "partial": True,
             },
             False,
         ),

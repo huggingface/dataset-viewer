@@ -51,7 +51,7 @@ UPSTREAM_RESPONSE_SIZE_OK: UpstreamResponse = UpstreamResponse(
     dataset=DATASET,
     dataset_git_revision=REVISION_NAME,
     http_status=HTTPStatus.OK,
-    content={"size": {"dataset": {"num_rows": 1000}}, "partial": False},
+    content={"size": {"dataset": {"num_rows": 1000, "estimated_num_rows": None}}, "partial": False},
     progress=0.2,
 )
 UPSTREAM_RESPONSE_SIZE_ERROR: UpstreamResponse = UpstreamResponse(
@@ -67,7 +67,7 @@ UPSTREAM_RESPONSE_SIZE_NO_PROGRESS: UpstreamResponse = UpstreamResponse(
     dataset=DATASET,
     dataset_git_revision=REVISION_NAME,
     http_status=HTTPStatus.OK,
-    content={"size": {"dataset": {"num_rows": 1000}}, "partial": True},
+    content={"size": {"dataset": {"num_rows": 1000, "estimated_num_rows": None}}, "partial": True},
     progress=None,
 )
 UPSTREAM_RESPONSE_COMPATIBLE_LIBRARIES_OK: UpstreamResponse = UpstreamResponse(
