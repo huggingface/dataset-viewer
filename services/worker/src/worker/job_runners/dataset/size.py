@@ -105,7 +105,11 @@ def compute_sizes_response(dataset: str) -> tuple[DatasetSizeResponse, float]:
             "num_bytes_parquet_files": sum(config_size["num_bytes_parquet_files"] for config_size in config_sizes),
             "num_bytes_memory": sum(config_size["num_bytes_memory"] for config_size in config_sizes),
             "num_rows": sum(config_size["num_rows"] for config_size in config_sizes),
-            "estimated_num_rows": sum(config_size["estimated_num_rows"] or 0 for config_size in config_sizes) or None,
+            "estimated_num_rows": sum(
+                config_size["estimated_num_rows"] or config_size["num_rows"] for config_size in config_sizes
+            )
+            if any(config_size["estimated_num_rows"] for config_size in config_sizes)
+            else None,
         }
     except Exception as e:
         raise PreviousStepFormatError("Previous step did not return the expected content.", e) from e
