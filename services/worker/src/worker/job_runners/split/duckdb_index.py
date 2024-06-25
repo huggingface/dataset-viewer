@@ -58,7 +58,7 @@ from worker.utils import (
 )
 
 DATASET_TYPE = "dataset"
-DEFAULT_STEMMER = "none" # Exact word matches
+DEFAULT_STEMMER = "none"  # Exact word matches
 DUCKDB_DEFAULT_INDEX_FILENAME = "index.duckdb"
 DUCKDB_DEFAULT_PARTIAL_INDEX_FILENAME = "partial-index.duckdb"
 CREATE_INDEX_COMMAND = (
