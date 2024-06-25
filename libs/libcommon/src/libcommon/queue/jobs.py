@@ -348,7 +348,9 @@ class Queue:
                 for job_info in job_infos
             ]
             for job in jobs:
-                increase_metric(dataset=job.dataset, job_type=job.type, status=Status.WAITING, difficulty=job.difficulty)
+                increase_metric(
+                    dataset=job.dataset, job_type=job.type, status=Status.WAITING, difficulty=job.difficulty
+                )
             job_ids = JobDocument.objects.insert(jobs, load_bulk=False)
             return len(job_ids)
         except Exception:
