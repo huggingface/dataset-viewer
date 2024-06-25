@@ -1051,7 +1051,12 @@ def smart_set_revision(
     Args:
         dataset (`str`): The name of the dataset.
         revision (`str`): The new revision of the dataset.
+        hf_endpoint (`str`): the Hub endpoint
+        old_revision (`str`): The commit sha of the previous revision
+            For example the "oldSha" in `UpdatedRefDict` from the webhook payload.
         processing_graph (`ProcessingGraph`, *optional*): The processing graph.
+        storage_clients (`list[StorageClient]`, *optional*): the list of storage clients
+        hf_token (`str`, *optional*): the Hugging Face token
 
     Returns:
         `TasksStatistics`: The statistics of the set_revision.
