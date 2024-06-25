@@ -296,7 +296,7 @@ class Queue:
         Returns:
             `JobDocument`: the new job added to the queue
         """
-        increase_metric(job_type=job_type, status=Status.WAITING, difficulty=difficulty)
+        increase_metric(dataset=dataset, job_type=job_type, status=Status.WAITING, difficulty=difficulty)
         return JobDocument(
             type=job_type,
             dataset=dataset,
@@ -348,7 +348,7 @@ class Queue:
                 for job_info in job_infos
             ]
             for job in jobs:
-                increase_metric(job_type=job.type, status=Status.WAITING, difficulty=job.difficulty)
+                increase_metric(dataset=job.dataset, job_type=job.type, status=Status.WAITING, difficulty=job.difficulty)
             job_ids = JobDocument.objects.insert(jobs, load_bulk=False)
             return len(job_ids)
         except Exception:
@@ -368,7 +368,7 @@ class Queue:
         try:
             existing = JobDocument.objects(pk__in=job_ids, status=Status.WAITING)
             for job in existing.all():
-                decrease_metric(job_type=job.type, status=job.status, difficulty=job.difficulty)
+                decrease_metric(dataset=job.dataset, job_type=job.type, status=job.status, difficulty=job.difficulty)
             deleted_jobs = existing.delete()
             return 0 if deleted_jobs is None else deleted_jobs
         except Exception:
@@ -569,6 +569,7 @@ class Queue:
                 ):
                     raise AlreadyStartedJobError(f"job {job.unicity_id} has been started by another worker")
                 update_metrics_for_type(
+                    dataset=first_job.dataset,
                     job_type=first_job.type,
                     previous_status=Status.WAITING,
                     new_status=Status.STARTED,
@@ -715,7 +716,7 @@ class Queue:
         except StartedJobError as e:
             logging.error(f"job {job_id} has not the expected format for a started job. Aborting: {e}")
             return None
-        decrease_metric(job_type=job.type, status=job.status, difficulty=job.difficulty)
+        decrease_metric(dataset=job.dataset, job_type=job.type, status=job.status, difficulty=job.difficulty)
         if job.started_at is not None:
             create_past_job(
                 dataset=job.dataset,
@@ -740,7 +741,7 @@ class Queue:
         """
         existing_waiting_jobs = JobDocument.objects(dataset=dataset, status=Status.WAITING)
         for job in existing_waiting_jobs.no_cache():
-            decrease_metric(job_type=job.type, status=job.status, difficulty=job.difficulty)
+            decrease_metric(dataset=job.dataset, job_type=job.type, status=job.status, difficulty=job.difficulty)
             release_lock(key=job.unicity_id)
         num_deleted_jobs = existing_waiting_jobs.delete()
         return 0 if num_deleted_jobs is None else num_deleted_jobs
@@ -827,16 +828,18 @@ class Queue:
 
     # special reports
     def get_jobs_total_by_type_and_status(self) -> JobsTotalByTypeAndStatus:
-        """Count the number of jobs by job type and status.
+        """Count the number of jobs by job type and status, excluding jobs belonging to blocked datasets.
 
         Returns:
             an object with the total of jobs by job type and status.
             Keys are a tuple (job_type, status), and values are the total of jobs.
         """
+        blocked_datasets = get_blocked_datasets()
         return {
             (metric["job_type"], metric["status"]): metric["total"]
             for metric in JobDocument.objects().aggregate(
                 [
+                    {"$match": {"dataset": {"$nin": blocked_datasets}}},
                     {"$sort": {"type": 1, "status": 1}},
                     {
                         "$group": {

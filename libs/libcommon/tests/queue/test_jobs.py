@@ -435,10 +435,14 @@ def test_get_jobs_total_by_type_and_status() -> None:
     test_type = "test_type"
     test_other_type = "test_other_type"
     test_dataset = "test_dataset"
+    test_blocked_dataset = "blocked_dataset"
     test_revision = "test_revision"
     test_difficulty = 50
     queue = Queue()
 
+    assert queue.get_jobs_total_by_type_and_status() == {}
+    queue.add_job(job_type=test_type, dataset=test_blocked_dataset, revision=test_revision, difficulty=test_difficulty)
+    block_dataset(test_blocked_dataset)
     assert queue.get_jobs_total_by_type_and_status() == {}
     queue.add_job(job_type=test_type, dataset=test_dataset, revision=test_revision, difficulty=test_difficulty)
     assert queue.get_jobs_total_by_type_and_status() == {(test_type, "waiting"): 1}

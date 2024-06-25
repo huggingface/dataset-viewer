@@ -104,7 +104,8 @@ class WorkerSizeJobsCountDocument(Document):
     objects = QuerySetManager["WorkerSizeJobsCountDocument"]()
 
 
-def _update_metrics(job_type: str, status: str, increase_by: int, difficulty: int) -> None:
+def _update_metrics(dataset:str, job_type: str, status: str, increase_by: int, difficulty: int) -> None:
+    # blocked_datasets = get_blocked_datasets()
     JobTotalMetricDocument.objects(job_type=job_type, status=status).update(
         upsert=True,
         write_concern={"w": "majority", "fsync": True},
@@ -121,16 +122,16 @@ def _update_metrics(job_type: str, status: str, increase_by: int, difficulty: in
         )
 
 
-def increase_metric(job_type: str, status: str, difficulty: int) -> None:
-    _update_metrics(job_type=job_type, status=status, increase_by=DEFAULT_INCREASE_AMOUNT, difficulty=difficulty)
+def increase_metric(dataset:str, job_type: str, status: str, difficulty: int) -> None:
+    _update_metrics(dataset=dataset, job_type=job_type, status=status, increase_by=DEFAULT_INCREASE_AMOUNT, difficulty=difficulty)
 
 
-def decrease_metric(job_type: str, status: str, difficulty: int) -> None:
-    _update_metrics(job_type=job_type, status=status, increase_by=DEFAULT_DECREASE_AMOUNT, difficulty=difficulty)
+def decrease_metric(dataset:str, job_type: str, status: str, difficulty: int) -> None:
+    _update_metrics(dataset=dataset, job_type=job_type, status=status, increase_by=DEFAULT_DECREASE_AMOUNT, difficulty=difficulty)
 
 
-def update_metrics_for_type(job_type: str, previous_status: str, new_status: str, difficulty: int) -> None:
+def update_metrics_for_type(dataset:str, job_type: str, previous_status: str, new_status: str, difficulty: int) -> None:
     if job_type is not None:
-        decrease_metric(job_type=job_type, status=previous_status, difficulty=difficulty)
-        increase_metric(job_type=job_type, status=new_status, difficulty=difficulty)
+        decrease_metric(dataset=dataset, job_type=job_type, status=previous_status, difficulty=difficulty)
+        increase_metric(dataset=dataset, job_type=job_type, status=new_status, difficulty=difficulty)
         # ^ this does not affect WorkerSizeJobsCountDocument, so we don't pass the job difficulty
