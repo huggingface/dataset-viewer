@@ -252,12 +252,12 @@ def expected_data(datasets: Mapping[str, Dataset]) -> dict[str, list[Any]]:
     "card_data, expected_stemmer",
     [
         (DatasetCardData(language="spa"), "spanish"),
-        (DatasetCardData(language="other"), "porter"),
+        (DatasetCardData(language="other"), DEFAULT_STEMMER),
         (DatasetCardData(language="ar"), "arabic"),
         (DatasetCardData(language=["ar"]), "arabic"),
-        (DatasetCardData(language=["ar", "en"]), "porter"),
-        (DatasetCardData(), "porter"),
-        (None, "porter"),
+        (DatasetCardData(language=["ar", "en"]), DEFAULT_STEMMER),
+        (DatasetCardData(), DEFAULT_STEMMER),
+        (None, DEFAULT_STEMMER),
     ],
 )
 def test_get_monolingual_stemmer(card_data: DatasetCardData, expected_stemmer: str) -> None:
