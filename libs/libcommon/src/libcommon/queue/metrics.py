@@ -113,7 +113,7 @@ def _update_metrics(dataset: str, job_type: str, status: str, increase_by: int, 
         inc__total=increase_by,
     )
     if status == Status.WAITING:
-        # Do not consider blocked datasets for autoscaling metrics
+        # Do not consider blocked datasets for auto-scaling metrics
         blocked_datasets = get_blocked_datasets()
         if dataset not in blocked_datasets:
             worker_size = WorkerSizeJobsCountDocument.get_worker_size(difficulty=difficulty)
