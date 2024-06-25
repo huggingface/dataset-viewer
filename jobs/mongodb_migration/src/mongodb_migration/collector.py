@@ -82,7 +82,7 @@ from mongodb_migration.migrations._20240619124500_cache_add_estimated_dataset_in
     MigrationAddEstimatedDatasetInfoToParquetAndInfoCacheResponse,
 )
 from mongodb_migration.migrations._20240624144000_cache_add_estimated_num_rows_field_in_size import (
-    MigrationAddEstimatedNumRowsToSizeCacheResponse
+    MigrationAddEstimatedNumRowsToSizeCacheResponse,
 )
 from mongodb_migration.renaming_migrations import (
     CacheRenamingMigration,
@@ -391,5 +391,5 @@ class MigrationsCollector:
             MigrationAddEstimatedNumRowsToSizeCacheResponse(
                 version="20240624144000",
                 description="add 'estimated_num_rows' field to config-size and dataset-size cache records",
-            )
+            ),
         ]
