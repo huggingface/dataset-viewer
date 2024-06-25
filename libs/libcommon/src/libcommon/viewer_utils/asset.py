@@ -4,12 +4,10 @@
 from io import BytesIO
 from tempfile import NamedTemporaryFile
 from typing import Optional, TypedDict
-from urllib import parse
 
 from PIL import Image, ImageOps
 from pydub import AudioSegment  # type:ignore
 
-from libcommon.constants import DATASET_SEPARATOR
 from libcommon.storage_client import StorageClient
 
 SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE = {".wav": "audio/wav", ".mp3": "audio/mpeg", ".opus": "audio/opus"}
@@ -27,13 +25,6 @@ class AudioSource(TypedDict):
     type: str
 
 
-def generate_object_key(
-    dataset: str, revision: str, config: str, split: str, row_idx: int, column: str, filename: str
-) -> str:
-    # same pattern as in storage_client.py
-    return f"{parse.quote(dataset)}/{DATASET_SEPARATOR}/{revision}/{DATASET_SEPARATOR}/{parse.quote(config)}/{parse.quote(split)}/{str(row_idx)}/{parse.quote(column)}/{filename}"
-
-
 def create_image_file(
     dataset: str,
     revision: str,
@@ -46,7 +37,7 @@ def create_image_file(
     format: str,
     storage_client: StorageClient,
 ) -> ImageSource:
-    object_key = generate_object_key(
+    object_key = storage_client.generate_object_key(
         dataset=dataset,
         revision=revision,
         config=config,
@@ -77,7 +68,7 @@ def create_audio_file(
     filename: str,
     storage_client: StorageClient,
 ) -> list[AudioSource]:
-    object_key = generate_object_key(
+    object_key = storage_client.generate_object_key(
         dataset=dataset,
         revision=revision,
         config=config,

@@ -144,5 +144,11 @@ class StorageClient:
             )
             return 0
 
+    @staticmethod
+    def generate_object_key(
+        dataset: str, revision: str, config: str, split: str, row_idx: int, column: str, filename: str
+    ) -> str:
+        return f"{parse.quote(dataset)}/{DATASET_SEPARATOR}/{revision}/{DATASET_SEPARATOR}/{parse.quote(config)}/{parse.quote(split)}/{str(row_idx)}/{parse.quote(column)}/{filename}"
+
     def __str__(self) -> str:
         return f"StorageClient(protocol={self.protocol}, storage_root={self.storage_root}, base_url={self.base_url}, overwrite={self.overwrite}, url_signer={self.url_signer})"

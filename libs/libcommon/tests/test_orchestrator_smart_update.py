@@ -16,7 +16,6 @@ from libcommon.orchestrator import (
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import get_cache_entries_df
 from libcommon.storage_client import StorageClient
-from libcommon.viewer_utils.asset import generate_object_key
 
 from .utils import (
     DATASET_NAME,
@@ -249,7 +248,7 @@ def test_run() -> None:
 
 def test_run_with_storage_clients(storage_client: StorageClient) -> None:
     filename = "object.asset"
-    previous_key = generate_object_key(
+    previous_key = storage_client.generate_object_key(
         dataset=DATASET_NAME,
         revision=OTHER_REVISION_NAME,
         config="default",
@@ -277,7 +276,7 @@ def test_run_with_storage_clients(storage_client: StorageClient) -> None:
     cache_entry = cache_entries_df.to_dict(orient="records")[0]
     assert cache_entry["dataset_git_revision"] == REVISION_NAME
 
-    updated_key = generate_object_key(
+    updated_key = storage_client.generate_object_key(
         dataset=DATASET_NAME,
         revision=REVISION_NAME,
         config="default",

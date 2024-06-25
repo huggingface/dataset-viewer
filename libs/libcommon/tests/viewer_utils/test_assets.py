@@ -11,7 +11,6 @@ from libcommon.viewer_utils.asset import (
     SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE,
     create_audio_file,
     create_image_file,
-    generate_object_key,
 )
 
 from ..constants import (
@@ -91,10 +90,10 @@ def test_create_audio_file(
         ("dataset", "config?<script>alert('XSS');</script>&", "split", "column?"),
     ],
 )
-def test_src_is_sanitized(dataset: str, config: str, split: str, column: str) -> None:
+def test_src_is_sanitized(storage_client: StorageClient, dataset: str, config: str, split: str, column: str) -> None:
     base_url = "https://datasets-server.huggingface.co/assets"
     filename = "image.jpg"
-    object_key = generate_object_key(
+    object_key = storage_client.generate_object_key(
         dataset=dataset,
         revision="revision",
         config=config,
