@@ -697,7 +697,7 @@ specification: ProcessingGraphSpecification = {
             "dataset-compatible-libraries",
             "dataset-modalities",
         ],
-        "job_runner_version": 4,
+        "job_runner_version": 3,
         "difficulty": 20,
     },
     "dataset-compatible-libraries": {
