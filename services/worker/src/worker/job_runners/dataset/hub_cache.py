@@ -2,7 +2,7 @@
 # Copyright 2023 The HuggingFace Authors.
 
 import logging
-from typing import Literal, Optional
+from typing import Optional
 
 from libcommon.exceptions import PreviousStepFormatError
 from libcommon.simple_cache import CachedArtifactNotFoundError, get_previous_step_or_raise
@@ -62,7 +62,6 @@ def compute_hub_cache_response(dataset: str) -> tuple[DatasetHubCacheResponse, f
 
     partial = False
     num_rows: Optional[int] = None
-    num_rows_source: Optional[Literal["full-exact", "partial-exact", "full-estimated"]] = None
     try:
         size_response = get_previous_step_or_raise(kind="dataset-size", dataset=dataset)
         content = size_response["content"]
@@ -93,6 +92,7 @@ def compute_hub_cache_response(dataset: str) -> tuple[DatasetHubCacheResponse, f
         raise
     except Exception:
         logging.info(f"Missing 'dataset-size' response for {dataset=}. We let the fields empty.")
+        num_rows_source = None
 
     tags: list[DatasetTag] = []
     libraries: list[DatasetLibrary] = []
