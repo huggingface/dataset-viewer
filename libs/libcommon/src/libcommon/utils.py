@@ -15,7 +15,7 @@ from typing import Any, Optional, TypeVar, Union, cast
 import orjson
 import pandas as pd
 from huggingface_hub import constants, hf_hub_download
-from requests.exceptions import ReadTimeout  # type: ignore
+from requests.exceptions import ReadTimeout
 
 from libcommon.exceptions import DatasetInBlockListError
 
