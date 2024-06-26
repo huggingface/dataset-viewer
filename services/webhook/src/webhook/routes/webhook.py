@@ -112,9 +112,7 @@ def process_payload(
                 revision = ref_new_sha
                 old_revision = ref_old_sha
         new_dataset = (event == "move" and payload["movedTo"]) or dataset
-        if (
-            event == "update" and revision and old_revision and dataset.startswith("datasets-maintainers/")
-        ):  # TODO(QL): enable smart updates on more datasets
+        if event == "update" and revision and old_revision:
             try:
                 smart_update_dataset(
                     dataset=new_dataset,
