@@ -106,7 +106,7 @@ def process_payload(
             ref_old_sha = updated_ref.get("oldSha")
             if ref == "refs/heads/main" and isinstance(ref_new_sha, str) and isinstance(ref_old_sha, str):
                 if revision != ref_new_sha:
-                    logging.info(f"headSha {revision} is different from newSha {ref_new_sha}")
+                    logging.warning(f"Unexpected headSha {revision} is different from newSha {ref_new_sha}. Processing webhook payload anyway.")
                 revision = ref_new_sha
                 old_revision = ref_old_sha
         new_dataset = (event == "move" and payload["movedTo"]) or dataset

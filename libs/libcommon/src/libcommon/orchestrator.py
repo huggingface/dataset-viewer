@@ -817,6 +817,10 @@ class SmartUpdateImpossibleBecauseCachedRevisionIsNotParentOfNewRevision(Excepti
     pass
 
 
+class SmartUpdateImpossibleBecauseCacheHasMultipleRevisions(Exception):
+    pass
+
+
 @dataclass
 class SmartDatasetUpdatePlan(Plan):
     dataset: str
@@ -846,6 +850,12 @@ class SmartDatasetUpdatePlan(Plan):
             )
             if len(cache_entries_df) == 0:
                 raise SmartUpdateImpossibleBecauseCacheIsEmpty(f"Failed to smart update to {self.revision[:7]}")
+            cached_git_revisions = cache_entries_df["dataset_git_revision"].unique()
+            if len(cached_git_revisions) > 1:
+                raise SmartUpdateImpossibleBecauseCacheHasMultipleRevisions(
+                    f"Expected only 1 revision in the cache but got {len(cached_git_revisions)}: "
+                    + ", ".join(cached_git_revisions)
+                )
             self.cached_revision = cache_entries_df.sort_values("updated_at").iloc[-1]["dataset_git_revision"]
             if self.cached_revision == self.revision:
                 return
@@ -877,6 +887,9 @@ class SmartDatasetUpdatePlan(Plan):
             raise SmartUpdateImpossibleBecauseOfUpdatedYAMLField("configs")
         if "viewer" in self.updated_yaml_fields_in_dataset_card:
             raise SmartUpdateImpossibleBecauseOfUpdatedYAMLField("viewer")
+        # We update the cache entries and the storage (assets + cached assets)
+        # We don't update the jobs because they might be creating artifacts that won't be updated by this code,
+        # so we let them finish and restart later.
         self.add_task(
             UpdateRevisionOfDatasetCacheEntriesTask(
                 dataset=self.dataset, old_revision=self.old_revision, new_revision=self.revision
@@ -925,7 +938,7 @@ class SmartDatasetUpdatePlan(Plan):
                 )
             ).open(mode="r", newline="", encoding="utf-8") as f:
                 dataset_card_data_dict = DatasetCard(f.read()).data.to_dict()
-        except Exception:
+        except Exception:  # catch file not found but also any parsing error
             dataset_card_data_dict = {}
         try:
             with Path(
@@ -939,7 +952,7 @@ class SmartDatasetUpdatePlan(Plan):
                 )
             ).open(mode="r", newline="", encoding="utf-8") as f:
                 old_dataset_card_data_dict = DatasetCard(f.read()).data.to_dict()
-        except Exception:
+        except Exception:  # catch file not found but also any parsing error
             old_dataset_card_data_dict = {}
         return [
             yaml_field
