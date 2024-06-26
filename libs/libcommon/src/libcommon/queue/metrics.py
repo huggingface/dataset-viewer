@@ -15,7 +15,7 @@ from libcommon.constants import (
     WORKER_TYPE_JOB_COUNTS_COLLECTION,
 )
 from libcommon.dtos import Status, WorkerSize
-from libcommon.queue.dataset_blockages import get_blocked_datasets
+from libcommon.queue.dataset_blockages import is_blocked
 from libcommon.utils import get_datetime
 
 # START monkey patching ### hack ###
@@ -114,8 +114,7 @@ def _update_metrics(dataset: str, job_type: str, status: str, increase_by: int, 
     )
     if status == Status.WAITING:
         # Do not consider blocked datasets for auto-scaling metrics
-        blocked_datasets = get_blocked_datasets()
-        if dataset not in blocked_datasets:
+        if not is_blocked(dataset):
             worker_size = WorkerSizeJobsCountDocument.get_worker_size(difficulty=difficulty)
             WorkerSizeJobsCountDocument.objects(worker_size=worker_size).update(
                 upsert=True,
