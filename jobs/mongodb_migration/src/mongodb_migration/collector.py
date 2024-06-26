@@ -84,6 +84,9 @@ from mongodb_migration.migrations._20240619124500_cache_add_estimated_dataset_in
 from mongodb_migration.migrations._20240624144000_cache_add_estimated_num_rows_field_in_size import (
     MigrationAddEstimatedNumRowsToSizeCacheResponse,
 )
+from mongodb_migration.migrations._20240626095000_cache_add_stemmer_in_split_duckdb_index import (
+    MigrationAddStemmerToSplitDuckdbIndexCacheResponse,
+)
 from mongodb_migration.renaming_migrations import (
     CacheRenamingMigration,
     QueueRenamingMigration,
@@ -391,5 +394,9 @@ class MigrationsCollector:
             MigrationAddEstimatedNumRowsToSizeCacheResponse(
                 version="20240624144000",
                 description="add 'estimated_num_rows' field to config-size and dataset-size cache records",
+            ),
+            MigrationAddStemmerToSplitDuckdbIndexCacheResponse(
+                version="20240626095000",
+                description="add 'stemmer' field for 'split-duckdb-index' cache records",
             ),
         ]

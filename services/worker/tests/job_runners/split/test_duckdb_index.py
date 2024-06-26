@@ -20,6 +20,7 @@ import requests
 from datasets import Audio, Dataset, Features, Image, Sequence, Translation, TranslationVariableLanguages, Value
 from datasets.packaged_modules.csv.csv import CsvConfig
 from datasets.table import embed_table_storage
+from huggingface_hub.repocard_data import DatasetCardData
 from libcommon.constants import HF_FTS_SCORE, ROW_IDX_COLUMN
 from libcommon.dtos import Priority
 from libcommon.resources import CacheMongoResource, QueueMongoResource
@@ -34,9 +35,11 @@ from worker.job_runners.split.duckdb_index import (
     CREATE_INDEX_COMMAND,
     CREATE_INDEX_ID_COLUMN_COMMANDS,
     CREATE_TABLE_COMMAND,
+    DEFAULT_STEMMER,
     SplitDuckDbIndexJobRunner,
     get_delete_operations,
     get_indexable_columns,
+    get_monolingual_stemmer,
 )
 from worker.resources import LibrariesResource
 
@@ -246,6 +249,23 @@ def expected_data(datasets: Mapping[str, Dataset]) -> dict[str, list[Any]]:
 
 
 @pytest.mark.parametrize(
+    "card_data, expected_stemmer",
+    [
+        (DatasetCardData(language="spa"), "spanish"),
+        (DatasetCardData(language="other"), DEFAULT_STEMMER),
+        (DatasetCardData(language="ar"), "arabic"),
+        (DatasetCardData(language=["ar"]), "arabic"),
+        (DatasetCardData(language=["ar", "en"]), DEFAULT_STEMMER),
+        (DatasetCardData(), DEFAULT_STEMMER),
+        (None, DEFAULT_STEMMER),
+    ],
+)
+def test_get_monolingual_stemmer(card_data: DatasetCardData, expected_stemmer: str) -> None:
+    stemmer = get_monolingual_stemmer(card_data)
+    assert stemmer is not None and stemmer == expected_stemmer
+
+
+@pytest.mark.parametrize(
     "hub_dataset_name,max_split_size_bytes,expected_rows_count,expected_has_fts,expected_partial,expected_error_code",
     [
         ("duckdb_index", None, 5, True, False, None),
@@ -374,6 +394,7 @@ def test_compute(
         features = content["features"]
         has_fts = content["has_fts"]
         partial = content["partial"]
+        stemmer = content["stemmer"]
         assert isinstance(has_fts, bool)
         assert has_fts == expected_has_fts
         assert isinstance(url, str)
@@ -417,6 +438,7 @@ def test_compute(
             assert sorted(columns) == sorted(expected_columns)
 
         if has_fts:
+            assert stemmer == DEFAULT_STEMMER
             # perform a search to validate fts feature
             query = "Lord Vader"
             result = con.execute(
@@ -552,7 +574,7 @@ def test_index_command(df: pd.DataFrame, query: str, expected_ids: list[int]) ->
     con = duckdb.connect()
     con.sql(CREATE_TABLE_COMMAND.format(columns=columns, source="df"))
     con.sql(CREATE_INDEX_ID_COLUMN_COMMANDS)
-    con.sql(CREATE_INDEX_COMMAND.format(columns=columns))
+    con.sql(CREATE_INDEX_COMMAND.format(columns=columns, stemmer=DEFAULT_STEMMER))
     result = con.execute(FTS_COMMAND, parameters=[query]).df()
     assert list(result.__hf_index_id) == expected_ids
 

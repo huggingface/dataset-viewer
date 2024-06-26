@@ -16,6 +16,7 @@ from huggingface_hub._commit_api import (
     CommitOperationDelete,
 )
 from huggingface_hub.hf_api import HfApi
+from huggingface_hub.repocard_data import DatasetCardData
 from huggingface_hub.utils._errors import HfHubHTTPError, RepositoryNotFoundError
 from libcommon.constants import DUCKDB_INDEX_JOB_RUNNER_SUBDIRECTORY, ROW_IDX_COLUMN
 from libcommon.dtos import JobInfo
@@ -57,9 +58,12 @@ from worker.utils import (
 )
 
 DATASET_TYPE = "dataset"
+DEFAULT_STEMMER = "none"  # Exact word matches
 DUCKDB_DEFAULT_INDEX_FILENAME = "index.duckdb"
 DUCKDB_DEFAULT_PARTIAL_INDEX_FILENAME = "partial-index.duckdb"
-CREATE_INDEX_COMMAND = f"PRAGMA create_fts_index('data', '{ROW_IDX_COLUMN}', {{columns}}, overwrite=1);"
+CREATE_INDEX_COMMAND = (
+    f"PRAGMA create_fts_index('data', '{ROW_IDX_COLUMN}', {{columns}}, stemmer='{{stemmer}}', overwrite=1);"
+)
 CREATE_TABLE_COMMAND = "CREATE OR REPLACE TABLE data AS SELECT {columns} FROM '{source}';"
 CREATE_TABLE_JOIN_WITH_TRANSFORMED_DATA_COMMAND = """
     CREATE OR REPLACE TABLE data AS 
@@ -74,6 +78,36 @@ CREATE_INDEX_ID_COLUMN_COMMANDS = CREATE_SEQUENCE_COMMAND + ALTER_TABLE_BY_ADDIN
 INSTALL_AND_LOAD_EXTENSION_COMMAND = "INSTALL 'fts'; LOAD 'fts';"
 SET_EXTENSIONS_DIRECTORY_COMMAND = "SET extension_directory='{directory}';"
 REPO_TYPE = "dataset"
+# Only some languages are supported, see: https://duckdb.org/docs/extensions/full_text_search.html#pragma-create_fts_index
+STEMMER_MAPPING = {
+    # Stemmer : ["value ISO 639-1", "value ISO 639-2/3"]
+    "arabic": ["ar", "ara"],
+    "basque": ["eu", "eus"],
+    "catalan": ["ca", "cat"],
+    "danish": ["da", "dan"],
+    "dutch": ["nl", "nld"],
+    "english": ["en", "eng"],
+    "finnish": ["fi", "fin"],
+    "french": ["fr", "fra"],
+    "german": ["de", "deu"],
+    "greek": ["el", "ell"],
+    "hindi": ["hi", "hin"],
+    "hungarian": ["hu", "hun"],
+    "indonesian": ["in", "ind"],
+    "irish": ["gl", "gle"],
+    "italian": ["it", "ita"],
+    "lithuanian": ["li", "lit"],
+    "nepali": ["ne", "nep"],
+    "norwegian": ["no", "nor"],
+    "portuguese": ["po", "por"],
+    "romanian": ["ro", "ron"],
+    "russian": ["ru", "rus"],
+    "serbian": ["sr", "srp"],
+    "spanish": ["sp", "spa"],
+    "swedish": ["sw", "swe"],
+    "tamil": ["ta", "tam"],
+    "turkish": ["tu", "tur"],
+}
 
 LengthDtype = Literal["string", "list"]
 
@@ -94,6 +128,20 @@ def get_indexable_columns(features: Features) -> list[str]:
         if indexable:
             indexable_columns.append(column)
     return indexable_columns
+
+
+def get_monolingual_stemmer(card_data: DatasetCardData) -> str:
+    if card_data is None:
+        return DEFAULT_STEMMER
+    all_languages = card_data["language"]
+    if isinstance(all_languages, list) and len(all_languages) == 1:
+        first_language = all_languages[0]
+    elif isinstance(all_languages, str):
+        first_language = all_languages
+    else:
+        return DEFAULT_STEMMER
+
+    return next((language for language, codes in STEMMER_MAPPING.items() if first_language in codes), DEFAULT_STEMMER)
 
 
 def compute_length_column(
@@ -281,6 +329,9 @@ def compute_split_duckdb_index_response(
     db_path = duckdb_index_file_directory.resolve() / index_filename
     con = duckdb.connect(str(db_path.resolve()))
 
+    hf_api = HfApi(endpoint=hf_endpoint, token=hf_token)
+    stemmer = None
+
     try:
         if transformed_df is not None:
             logging.debug(transformed_df.head())
@@ -304,9 +355,8 @@ def compute_split_duckdb_index_response(
             if extensions_directory is not None:
                 con.execute(SET_EXTENSIONS_DIRECTORY_COMMAND.format(directory=extensions_directory))
             con.execute(INSTALL_AND_LOAD_EXTENSION_COMMAND)
-            # TODO: by default, 'porter' stemmer is being used, use a specific one by dataset language in the future
-            # see https://duckdb.org/docs/extensions/full_text_search.html for more details about 'stemmer' parameter
-            create_index_sql = CREATE_INDEX_COMMAND.format(columns=indexable_columns)
+            stemmer = get_monolingual_stemmer(hf_api.dataset_info(repo_id=dataset).card_data)
+            create_index_sql = CREATE_INDEX_COMMAND.format(columns=indexable_columns, stemmer=stemmer)
             logging.info(create_index_sql)
             con.sql(create_index_sql)
 
@@ -314,7 +364,6 @@ def compute_split_duckdb_index_response(
         con.close()
 
     logging.info(f"about to push index file to {target_revision}")
-    hf_api = HfApi(endpoint=hf_endpoint, token=hf_token)
     committer_hf_api = HfApi(endpoint=hf_endpoint, token=committer_hf_token)
     index_file_location = f"{config}/{split_directory}/{index_filename}"
 
@@ -416,6 +465,7 @@ def compute_split_duckdb_index_response(
         num_rows=num_rows,
         num_bytes=num_bytes,
         duckdb_version=duckdb.__version__,
+        stemmer=stemmer,
     )
 
 
