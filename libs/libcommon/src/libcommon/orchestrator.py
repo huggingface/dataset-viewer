@@ -7,12 +7,11 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from functools import lru_cache
 from http import HTTPStatus
-from pathlib import Path
 from typing import Optional, Union
 
 import pandas as pd
-from huggingface_hub import DatasetCard, hf_hub_download
-from huggingface_hub.utils import EntryNotFoundError, build_hf_headers, get_session
+from huggingface_hub import DatasetCard, HfFileSystem
+from huggingface_hub.utils import build_hf_headers, get_session
 
 from libcommon.constants import (
     CONFIG_INFO_KIND,
@@ -926,33 +925,24 @@ class SmartDatasetUpdatePlan(Plan):
     def get_updated_yaml_fields_in_dataset_card(self) -> list[str]:
         if "README.md" not in self.files_impacted_by_commit:
             return []
+        fs = HfFileSystem(endpoint=self.hf_endpoint, token=self.hf_token)
         try:
-            with Path(
-                hf_hub_download(
-                    self.dataset,
-                    "README.md",
-                    repo_type="dataset",
-                    token=self.hf_token,
-                    revision=self.revision,
-                    endpoint=self.hf_endpoint,
-                )
-            ).open(mode="r", newline="", encoding="utf-8") as f:
+            with fs.open(
+                f"datasets/{self.dataset}/README.md", revision=self.revision, mode="r", newline="", encoding="utf-8"
+            ) as f:
                 dataset_card_data_dict = DatasetCard(f.read()).data.to_dict()
-        except EntryNotFoundError:  # catch file not found but raise on parsing error
+        except FileNotFoundError:  # catch file not found but raise on parsing error
             dataset_card_data_dict = {}
         try:
-            with Path(
-                hf_hub_download(
-                    self.dataset,
-                    "README.md",
-                    repo_type="dataset",
-                    token=self.hf_token,
-                    revision=self.old_revision,
-                    endpoint=self.hf_endpoint,
-                )
-            ).open(mode="r", newline="", encoding="utf-8") as f:
+            with fs.open(
+                f"datasets/{self.dataset}/README.md",
+                revision=self.old_revision,
+                mode="r",
+                newline="",
+                encoding="utf-8",
+            ) as f:
                 old_dataset_card_data_dict = DatasetCard(f.read()).data.to_dict()
-        except EntryNotFoundError:  # catch file not found but raise on parsing error
+        except FileNotFoundError:  # catch file not found but raise on parsing error
             old_dataset_card_data_dict = {}
         return [
             yaml_field
