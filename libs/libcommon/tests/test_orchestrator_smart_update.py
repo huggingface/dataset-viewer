@@ -149,7 +149,7 @@ def test_cache_revision_is_not_parent_revision_commit() -> None:
 def test_empty_commit() -> None:
     # Empty commit: update the revision of the cache entries
     put_cache(step=STEP_DA, dataset=DATASET_NAME, revision=OTHER_REVISION_NAME)
-    with put_diff(EMPTY_DIFF):
+    with put_diff(EMPTY_DIFF), put_readme(None):
         plan = get_smart_dataset_update_plan(processing_graph=PROCESSING_GRAPH_TWO_STEPS)
         assert_smart_dataset_update_plan(
             plan,
@@ -186,7 +186,7 @@ def test_add_initial_readme_with_config_commit() -> None:
 def test_add_data() -> None:
     # Add data.txt commit: raise
     put_cache(step=STEP_DA, dataset=DATASET_NAME, revision=OTHER_REVISION_NAME)
-    with put_diff(ADD_DATA_DIFF):
+    with put_diff(ADD_DATA_DIFF), put_readme(None):
         with pytest.raises(SmartUpdateImpossibleBecauseOfUpdatedFiles):
             get_smart_dataset_update_plan(processing_graph=PROCESSING_GRAPH_TWO_STEPS)
 
@@ -231,7 +231,7 @@ def test_add_tag_commit() -> None:
 
 def test_run() -> None:
     put_cache(step=STEP_DA, dataset=DATASET_NAME, revision=OTHER_REVISION_NAME)
-    with put_diff(EMPTY_DIFF):
+    with put_diff(EMPTY_DIFF), put_readme(None):
         tasks_stats = get_smart_dataset_update_plan(processing_graph=PROCESSING_GRAPH_TWO_STEPS).run()
     assert tasks_stats.num_created_jobs == 0
     assert tasks_stats.num_updated_cache_entries == 1
@@ -260,7 +260,7 @@ def test_run_with_storage_clients(storage_client: StorageClient) -> None:
     storage_client._fs.touch(storage_client.get_full_path(previous_key))
     assert storage_client.exists(previous_key)
     put_cache(step=STEP_DA, dataset=DATASET_NAME, revision=OTHER_REVISION_NAME)
-    with put_diff(EMPTY_DIFF):
+    with put_diff(EMPTY_DIFF), put_readme(None):
         tasks_stats = get_smart_dataset_update_plan(
             processing_graph=PROCESSING_GRAPH_TWO_STEPS, storage_clients=[storage_client]
         ).run()
@@ -291,7 +291,12 @@ def test_run_with_storage_clients(storage_client: StorageClient) -> None:
 @pytest.mark.parametrize("out_of_order", [False, True])
 def test_run_two_commits(out_of_order: bool) -> None:
     put_cache(step=STEP_DA, dataset=DATASET_NAME, revision="initial_revision")
-    with put_diff(ADD_TAG_DIFF, revision=REVISION_NAME), put_diff(ADD_TAG_DIFF, revision=OTHER_REVISION_NAME):
+    with (
+        put_diff(ADD_TAG_DIFF, revision=REVISION_NAME),
+        put_diff(ADD_TAG_DIFF, revision=OTHER_REVISION_NAME),
+        put_readme(None, revision=REVISION_NAME),
+        put_readme(None, revision=OTHER_REVISION_NAME),
+    ):
 
         def run_plan(revisions: tuple[str, str]) -> TasksStatistics:
             old_revision, revision = revisions
