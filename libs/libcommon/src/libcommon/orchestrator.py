@@ -12,7 +12,7 @@ from typing import Optional, Union
 
 import pandas as pd
 from huggingface_hub import DatasetCard, hf_hub_download
-from huggingface_hub.utils import build_hf_headers, get_session
+from huggingface_hub.utils import EntryNotFoundError, build_hf_headers, get_session
 
 from libcommon.constants import (
     CONFIG_INFO_KIND,
@@ -938,7 +938,7 @@ class SmartDatasetUpdatePlan(Plan):
                 )
             ).open(mode="r", newline="", encoding="utf-8") as f:
                 dataset_card_data_dict = DatasetCard(f.read()).data.to_dict()
-        except Exception:  # catch file not found but also any parsing error
+        except EntryNotFoundError:  # catch file not found but raise on parsing error
             dataset_card_data_dict = {}
         try:
             with Path(
@@ -952,7 +952,7 @@ class SmartDatasetUpdatePlan(Plan):
                 )
             ).open(mode="r", newline="", encoding="utf-8") as f:
                 old_dataset_card_data_dict = DatasetCard(f.read()).data.to_dict()
-        except Exception:  # catch file not found but also any parsing error
+        except EntryNotFoundError:  # catch file not found but raise on parsing error
             old_dataset_card_data_dict = {}
         return [
             yaml_field
