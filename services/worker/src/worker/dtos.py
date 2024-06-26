@@ -206,6 +206,7 @@ class ConfigSize(TypedDict):
     num_bytes_memory: int
     num_rows: int
     num_columns: int
+    estimated_num_rows: Optional[int]
 
 
 class SplitSize(TypedDict):
@@ -216,6 +217,7 @@ class SplitSize(TypedDict):
     num_bytes_memory: int
     num_rows: int
     num_columns: int
+    estimated_num_rows: Optional[int]
 
 
 class ConfigSizeContent(TypedDict):
@@ -380,6 +382,7 @@ class DatasetSize(TypedDict):
     num_bytes_parquet_files: int
     num_bytes_memory: int
     num_rows: int
+    estimated_num_rows: Optional[int]
 
 
 class DatasetSizeContent(TypedDict):

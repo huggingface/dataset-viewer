@@ -6,7 +6,7 @@ from libcommon.constants import CACHE_COLLECTION_RESPONSES, CACHE_MONGOENGINE_AL
 from libcommon.resources import MongoResource
 from mongoengine.connection import get_db
 
-from mongodb_migration.migrations._20240624153300_cache_add_stemmer_in_split_duckdb_index import (
+from mongodb_migration.migrations._20240626095000_cache_add_stemmer_in_split_duckdb_index import (
     MigrationAddStemmerToSplitDuckdbIndexCacheResponse,
 )
 
@@ -87,7 +87,7 @@ def test_cache_add_stemmer(mongo_host: str) -> None:
         db[CACHE_COLLECTION_RESPONSES].insert_many(cache)
 
         migration = MigrationAddStemmerToSplitDuckdbIndexCacheResponse(
-            version="20240624153300",
+            version="20240626095000",
             description="add 'stemmer' field to split-duckdb-index",
         )
         migration.up()
