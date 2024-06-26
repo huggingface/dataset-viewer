@@ -399,24 +399,32 @@ def put_diff(
 
 @contextmanager
 def put_readme(
-    readme: str,
+    readme: Optional[str],
     dataset: str = DATASET_NAME,
     revision: str = REVISION_NAME,
 ) -> Iterator[None]:
+    from huggingface_hub import HfFileSystem
+
     mocked_revision = revision
-    from libcommon.orchestrator import hf_hub_download as original_hf_hub_download  # type: ignore[attr-defined]
+    original_open = HfFileSystem.open
 
     with NamedTemporaryFile() as temp_file:
-        Path(temp_file.name).write_text(readme, encoding="utf-8")
+        if readme is not None:
+            Path(temp_file.name).write_text(readme, encoding="utf-8")
 
-        def mock_hf_hub_download(repo_id: str, filename: str, revision: str, **kwargs: Any) -> str:
-            if filename == "README.md" and dataset == repo_id and mocked_revision == revision:
-                return temp_file.name
-            out = original_hf_hub_download(repo_id, filename, revision=revision, **kwargs)
-            assert isinstance(out, str)
-            return out
+        def maybe_open_readme(self: HfFileSystem, path: str, mode: str, **kwargs: Any) -> Any:
+            revision = kwargs.pop("revision")
+            if path == "datasets/" + dataset + "/README.md":
+                if readme is not None and mocked_revision == revision:
+                    return open(temp_file.name, mode, **kwargs)
+                else:
+                    try:
+                        return original_open(self, path, mode, revision=revision, **kwargs)
+                    except Exception:
+                        pass
+            raise FileNotFoundError(path + f" at {revision=}")
 
-        with patch("libcommon.orchestrator.hf_hub_download", mock_hf_hub_download):
+        with patch("libcommon.orchestrator.HfFileSystem.open", maybe_open_readme):
             yield
 
 
