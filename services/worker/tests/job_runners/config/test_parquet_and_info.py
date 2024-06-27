@@ -636,7 +636,7 @@ def test_concurrency(
     )
     queue = Queue()
     queue.create_jobs([job_info])
-    job_info = queue.start_job(job_types_only=["dataset-config-names"])
+    job_info = queue.start_job()
     job_manager = JobManager(
         job_info=job_info,
         app_config=app_config,

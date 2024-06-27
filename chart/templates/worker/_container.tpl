@@ -22,10 +22,6 @@
     value: {{ .workerValues.workerDifficultyMax | quote }}
   - name: WORKER_DIFFICULTY_MIN
     value: {{ .workerValues.workerDifficultyMin | quote }}
-  - name: WORKER_JOB_TYPES_BLOCKED
-    value: {{ .workerValues.workerJobTypesBlocked | quote }}
-  - name: WORKER_JOB_TYPES_ONLY
-    value: {{ .workerValues.workerJobTypesOnly | quote }}
   - name: ROWS_INDEX_MAX_ARROW_DATA_IN_MEMORY
     value: {{ .Values.rowsIndex.maxArrowDataInMemory | quote }}
   # prometheus

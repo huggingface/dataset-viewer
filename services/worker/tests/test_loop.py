@@ -1,5 +1,3 @@
-from dataclasses import replace
-
 from libcommon.dtos import JobInfo
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 
@@ -40,8 +38,6 @@ def test_process_next_job(
     queue_mongo_resource: QueueMongoResource,
     worker_state_file_path: str,
 ) -> None:
-    app_config = replace(app_config, worker=replace(app_config.worker, job_types_only=[JOB_TYPE]))
-
     factory = DummyJobRunnerFactory(app_config=app_config)
 
     loop = Loop(

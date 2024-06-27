@@ -130,7 +130,7 @@ def test_plan_job_creation_and_termination() -> None:
     )
 
     # we simulate the job for "dataset-config-names,dataset,revision" has finished
-    job_info = Queue().start_job(job_types_only=["dataset-config-names"])
+    job_info = Queue().start_job()
     upsert_response(
         kind=job_info["type"],
         dataset=job_info["params"]["dataset"],
