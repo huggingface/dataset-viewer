@@ -6,8 +6,9 @@ from http import HTTPStatus
 import pytest
 
 from libcommon.constants import CONFIG_SPLIT_NAMES_KIND, DATASET_CONFIG_NAMES_KIND
+from libcommon.dtos import Priority
 from libcommon.processing_graph import processing_graph, specification
-from libcommon.queue.jobs import Queue
+from libcommon.queue.jobs import JobDocument, Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import upsert_response
 from libcommon.state import UnexceptedConfigNamesError, UnexceptedSplitNamesError
@@ -130,6 +131,7 @@ def test_plan_job_creation_and_termination() -> None:
     )
 
     # we simulate the job for "dataset-config-names,dataset,revision" has finished
+    JobDocument.objects(type="dataset-config-names").update(priority=Priority.HIGH)
     job_info = Queue().start_job()
     upsert_response(
         kind=job_info["type"],
