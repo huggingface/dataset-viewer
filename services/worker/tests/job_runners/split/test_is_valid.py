@@ -52,7 +52,7 @@ UPSTREAM_RESPONSE_SPLIT_DUCKDB_INDEX: UpstreamResponse = UpstreamResponse(
     config=CONFIG,
     split=SPLIT,
     http_status=HTTPStatus.OK,
-    content={"has_fts": True},
+    content={"stemmer": "porter"},
 )
 UPSTREAM_RESPONSE_SPLIT_DUCKDB_INDEX_ONLY_DATA: UpstreamResponse = UpstreamResponse(
     kind="split-duckdb-index",
@@ -61,7 +61,7 @@ UPSTREAM_RESPONSE_SPLIT_DUCKDB_INDEX_ONLY_DATA: UpstreamResponse = UpstreamRespo
     config=CONFIG,
     split=SPLIT,
     http_status=HTTPStatus.OK,
-    content={"has_fts": False},
+    content={"stemmer": None},
 )
 UPSTREAM_RESPONSE_SPLIT_DESCRIPTIVE_STATISTICS: UpstreamResponse = UpstreamResponse(
     kind="split-descriptive-statistics",

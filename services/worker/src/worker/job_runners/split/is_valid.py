@@ -62,7 +62,7 @@ def compute_is_valid_response(dataset: str, config: str, split: str) -> IsValidR
         )
         search_content = duckdb_response["content"]
         filter = True
-        search = search_content["has_fts"]
+        search = search_content["stemmer"] is not None
     except Exception:
         filter = False
         search = False

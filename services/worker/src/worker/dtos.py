@@ -232,12 +232,12 @@ class ConfigSizeResponse(TypedDict):
 
 class SplitDuckdbIndex(SplitHubFile):
     features: Optional[dict[str, Any]]
-    has_fts: bool
     # The following fields can be None in old cache entries
     partial: Optional[bool]
     num_rows: Optional[int]
     num_bytes: Optional[int]
     duckdb_version: str
+    # If present and not None, it supports FTS
     stemmer: Optional[str]
 
 

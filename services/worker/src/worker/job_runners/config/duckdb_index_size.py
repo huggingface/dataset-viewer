@@ -78,7 +78,7 @@ def compute_config_duckdb_index_size_response(dataset: str, config: str) -> Conf
                         dataset=dataset,
                         config=config,
                         split=split,
-                        has_fts=split_duckdb_index["has_fts"],
+                        has_fts=split_duckdb_index["stemmer"] is not None,
                         num_rows=split_duckdb_index["num_rows"],
                         num_bytes=split_duckdb_index["num_bytes"],
                     )
@@ -91,7 +91,7 @@ def compute_config_duckdb_index_size_response(dataset: str, config: str) -> Conf
                         dataset=dataset,
                         config=config,
                         split=split,
-                        has_fts=split_duckdb_index["has_fts"],
+                        has_fts=split_duckdb_index["stemmer"] is not None,
                         num_rows=split_info["num_rows"],
                         num_bytes=split_info["num_examples"],
                     )

@@ -179,7 +179,7 @@ def create_search_endpoint(
                             error_code=duckdb_index_cache_entry["error_code"],
                             revision=revision,
                         )
-                    if duckdb_index_cache_entry["content"]["has_fts"] is not True:
+                    if duckdb_index_cache_entry["content"]["stemmer"] is None:
                         raise SearchFeatureNotAvailableError("The split does not have search feature enabled.")
 
                     # check if the index is on the full dataset or if it's partial
