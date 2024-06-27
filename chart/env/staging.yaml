@@ -256,7 +256,6 @@ workers:
     uvicornPort: 8080
     workerDifficultyMax: 100
     workerDifficultyMin: 0
-    workerJobTypesOnly: ""
     replicas: 1
     autoscaling:
       enabled: true
@@ -283,7 +282,6 @@ workers:
     uvicornPort: 8080
     workerDifficultyMax: 40
     workerDifficultyMin: 0
-    workerJobTypesOnly: ""
     replicas: 1
     autoscaling:
       enabled: true

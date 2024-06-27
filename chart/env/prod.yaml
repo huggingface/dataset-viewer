@@ -428,7 +428,6 @@ workers:
     uvicornPort: 8080
     workerDifficultyMax: 100
     workerDifficultyMin: 70
-    workerJobTypesOnly: ""
     nodeSelector:
       role-datasets-server-worker: "true"
     tolerations:
@@ -458,7 +457,6 @@ workers:
     uvicornPort: 8080
     workerDifficultyMax: 70
     workerDifficultyMin: 40
-    workerJobTypesOnly: ""
     nodeSelector:
       role-datasets-server-worker: "true"
     tolerations:
@@ -488,7 +486,6 @@ workers:
     uvicornPort: 8080
     workerDifficultyMax: 40
     workerDifficultyMin: 0
-    workerJobTypesOnly: ""
     nodeSelector:
       role-datasets-server-worker-light: "true"
     tolerations:

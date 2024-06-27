@@ -491,7 +491,7 @@ def test_queue_heartbeat() -> None:
         split="split1",
         difficulty=test_difficulty,
     )
-    queue.start_job(job_types_only=[job_type])
+    queue.start_job()
     assert job.last_heartbeat is None
     queue.heartbeat(job.pk)
     job.reload()
@@ -513,7 +513,7 @@ def test_queue_get_zombies() -> None:
             split="split1",
             difficulty=test_difficulty,
         )
-        queue.start_job(job_types_only=[job_type])
+        queue.start_job()
     queue.add_job(
         job_type=job_type,
         dataset="dataset1",
@@ -522,7 +522,7 @@ def test_queue_get_zombies() -> None:
         split="split2",
         difficulty=test_difficulty,
     )
-    queue.start_job(job_types_only=[job_type])
+    queue.start_job()
     assert queue.get_zombies(max_seconds_without_heartbeat=10) == [zombie.info()]
     assert queue.get_zombies(max_seconds_without_heartbeat=-1) == []
     assert queue.get_zombies(max_seconds_without_heartbeat=0) == []

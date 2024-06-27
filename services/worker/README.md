@@ -26,7 +26,6 @@ Set environment variables to configure the worker.
 - `WORKER_DIFFICULTY_MAX`: the maximum difficulty (included) of the jobs to process. Difficulty will always be a strictly positive integer, and its max value is 100. Defaults to None.
 - `WORKER_DIFFICULTY_MIN`: the minimum difficulty (excluded) of the jobs to process. Difficulty will always be a strictly positive integer, and its max value is 100. Defaults to None.
 - `WORKER_HEARTBEAT_INTERVAL_SECONDS`: the time interval between two heartbeats. Each heartbeat updates the job "last_heartbeat" field in the queue. Defaults to `60` (1 minute).
-- `WORKER_JOB_TYPES_ONLY`: comma-separated list of the non-blocked job types to process, e.g. "dataset-config-names,dataset-split-names". If empty, the worker processes all the non-blocked jobs. Defaults to empty.
 - `WORKER_KILL_LONG_JOB_INTERVAL_SECONDS`: the time interval at which the worker looks for long jobs to kill them. Defaults to `60` (1 minute).
 - `WORKER_KILL_ZOMBIES_INTERVAL_SECONDS`: the time interval at which the worker looks for zombie jobs to kill them. Defaults to `600` (10 minutes).
 - `WORKER_MAX_JOB_DURATION_SECONDS`: the maximum duration allowed for a job to run. If the job runs longer, it is killed (see `WORKER_KILL_LONG_JOB_INTERVAL_SECONDS`). Defaults to `1200` (20 minutes).

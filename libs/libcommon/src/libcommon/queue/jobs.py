@@ -110,7 +110,6 @@ class StartedJobError(Exception):
 
 
 class JobQueryFilters(TypedDict, total=False):
-    type__in: list[str]
     difficulty__gt: int
     difficulty__lte: int
     dataset__nin: list[str]
@@ -380,7 +379,6 @@ class Queue:
         priority: Priority,
         difficulty_min: Optional[int] = None,
         difficulty_max: Optional[int] = None,
-        job_types_only: Optional[list[str]] = None,
     ) -> JobDocument:
         """Get the next job in the queue for a given priority.
 
@@ -394,7 +392,6 @@ class Queue:
             priority (`Priority`): The priority of the job.
             difficulty_min (`int`, *optional*): if not None, only jobs with a difficulty greater or equal to this value are considered.
             difficulty_max (`int`, *optional*): if not None, only jobs with a difficulty lower or equal to this value are considered.
-            job_types_only (`list[str]`, *optional*): if not None, only jobs of the given types are considered.
 
         Raises:
             [`EmptyQueueError`]: if there is no waiting job in the queue that satisfies the restrictions above.
@@ -402,13 +399,11 @@ class Queue:
         Returns:
             `JobDocument`: the next waiting job for priority
         """
-        logging.debug(f"Getting next waiting job for priority {priority}, only types:" f" {job_types_only}")
+        logging.debug(f"Getting next waiting job for priority {priority}")
         blocked_datasets = get_blocked_datasets()
         logging.debug(f"Blocked datasets: {blocked_datasets}")
 
         filters: JobQueryFilters = {}
-        if job_types_only:
-            filters["type__in"] = job_types_only
         if difficulty_min is not None and difficulty_min > DEFAULT_DIFFICULTY_MIN:
             filters["difficulty__gt"] = difficulty_min
         if difficulty_max is not None and difficulty_max < DEFAULT_DIFFICULTY_MAX:
@@ -478,7 +473,6 @@ class Queue:
         self,
         difficulty_min: Optional[int] = None,
         difficulty_max: Optional[int] = None,
-        job_types_only: Optional[list[str]] = None,
     ) -> JobDocument:
         """Get the next job in the queue.
 
@@ -492,7 +486,6 @@ class Queue:
         Args:
             difficulty_min (`int`, *optional*): if not None, only jobs with a difficulty greater or equal to this value are considered.
             difficulty_max (`int`, *optional*): if not None, only jobs with a difficulty lower or equal to this value are considered.
-            job_types_only (`list[str]`, *optional*): if not None, only jobs of the given types are considered.
 
         Raises:
             [`EmptyQueueError`]: if there is no waiting job in the queue that satisfies the restrictions above.
@@ -504,7 +497,6 @@ class Queue:
             with contextlib.suppress(EmptyQueueError):
                 return self._get_next_waiting_job_for_priority(
                     priority=priority,
-                    job_types_only=job_types_only,
                     difficulty_min=difficulty_min,
                     difficulty_max=difficulty_max,
                 )
@@ -578,7 +570,6 @@ class Queue:
         self,
         difficulty_min: Optional[int] = None,
         difficulty_max: Optional[int] = None,
-        job_types_only: Optional[list[str]] = None,
     ) -> JobInfo:
         """Start the next job in the queue.
 
@@ -588,7 +579,6 @@ class Queue:
         Args:
             difficulty_min: if not None, only jobs with a difficulty greater or equal to this value are considered.
             difficulty_max: if not None, only jobs with a difficulty lower or equal to this value are considered.
-            job_types_only: if not None, only jobs of the given types are considered.
 
         Raises:
             [`EmptyQueueError`]: if there is no job in the queue, within the limit of the maximum number of started jobs
@@ -600,18 +590,13 @@ class Queue:
             `JobInfo`: the job id, the type, the input arguments: dataset, revision, config and split
         """
 
-        logging.debug(f"looking for a job to start, only types: {job_types_only}")
+        logging.debug("looking for a job to start")
         next_waiting_job = self.get_next_waiting_job(
-            job_types_only=job_types_only,
             difficulty_min=difficulty_min,
             difficulty_max=difficulty_max,
         )
         logging.debug(f"job found: {next_waiting_job}")
         # ^ can raise EmptyQueueError
-        if job_types_only and next_waiting_job.type not in job_types_only:
-            raise RuntimeError(
-                f"The job type {next_waiting_job.type} is not in the list of allowed job types {job_types_only}"
-            )
         started_job = self._start_newest_job_and_delete_others(job=next_waiting_job)
         return started_job.info()
 
