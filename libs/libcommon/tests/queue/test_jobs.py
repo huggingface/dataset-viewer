@@ -347,48 +347,6 @@ def test_priority_logic_priority_order() -> None:
 
 
 @pytest.mark.parametrize(
-    "job_types_blocked,job_types_only,should_raise",
-    [
-        (None, None, False),
-        (None, ["test_type"], False),
-        (["other_type"], None, False),
-        (["other_type"], ["test_type"], False),
-        (None, ["other_type"], True),
-        (["test_type"], None, True),
-        (["test_type"], ["test_type"], True),
-        (["other_type", "test_type"], None, True),
-        (["other_type"], ["other_type"], True),
-        (["other_type", "test_type"], ["other_type", "test_type"], True),
-    ],
-)
-def test_job_types_only(
-    job_types_blocked: Optional[list[str]], job_types_only: Optional[list[str]], should_raise: bool
-) -> None:
-    job_type = "test_type"
-    test_dataset = "test_dataset"
-    test_revision = "test_revision"
-    test_difficulty = 50
-    queue = Queue()
-    queue.add_job(
-        job_type=job_type,
-        dataset=test_dataset,
-        revision=test_revision,
-        config=None,
-        split=None,
-        difficulty=test_difficulty,
-    )
-    assert queue.is_job_in_process(
-        job_type=job_type, dataset=test_dataset, revision=test_revision, config=None, split=None
-    )
-    if should_raise:
-        with pytest.raises(EmptyQueueError):
-            queue.start_job(job_types_blocked=job_types_blocked, job_types_only=job_types_only)
-    else:
-        job_info = queue.start_job(job_types_blocked=job_types_blocked, job_types_only=job_types_only)
-        assert job_info["params"]["dataset"] == test_dataset
-
-
-@pytest.mark.parametrize(
     "difficulty_min,difficulty_max,should_raise",
     [
         (None, None, False),

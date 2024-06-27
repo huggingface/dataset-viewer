@@ -113,7 +113,6 @@ class Loop:
                 job_info = self.queue.start_job(
                     difficulty_min=self.app_config.worker.difficulty_min,
                     difficulty_max=self.app_config.worker.difficulty_max,
-                    job_types_blocked=self.app_config.worker.job_types_blocked,
                     job_types_only=self.app_config.worker.job_types_only,
                 )
                 self.set_worker_state(current_job_info=job_info)

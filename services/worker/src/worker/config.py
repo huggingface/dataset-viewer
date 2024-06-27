@@ -62,7 +62,6 @@ class WorkerConfig:
     difficulty_max: Optional[int] = WORKER_DIFFICULTY_MAX
     difficulty_min: Optional[int] = WORKER_DIFFICULTY_MIN
     heartbeat_interval_seconds: float = WORKER_HEARTBEAT_INTERVAL_SECONDS
-    job_types_blocked: list[str] = field(default_factory=get_empty_str_list)
     job_types_only: list[str] = field(default_factory=get_empty_str_list)
     kill_long_job_interval_seconds: float = WORKER_KILL_LONG_JOB_INTERVAL_SECONDS
     kill_zombies_interval_seconds: float = WORKER_KILL_ZOMBIES_INTERVAL_SECONDS
@@ -84,7 +83,6 @@ class WorkerConfig:
                 heartbeat_interval_seconds=env.float(
                     name="HEARTBEAT_INTERVAL_SECONDS", default=WORKER_HEARTBEAT_INTERVAL_SECONDS
                 ),
-                job_types_blocked=env.list(name="JOB_TYPES_BLOCKED", default=get_empty_str_list()),
                 job_types_only=env.list(name="JOB_TYPES_ONLY", default=get_empty_str_list()),
                 kill_long_job_interval_seconds=env.float(
                     name="KILL_LONG_JOB_INTERVAL_SECONDS", default=WORKER_KILL_LONG_JOB_INTERVAL_SECONDS
