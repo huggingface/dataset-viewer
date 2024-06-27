@@ -199,7 +199,7 @@ def test_add_data() -> None:
 
 
 def test_rename_file() -> None:
-    # Add data.txt commit: raise
+    # Rename train.csv -> test.csv commit: raise
     put_cache(step=STEP_DA, dataset=DATASET_NAME, revision=OTHER_REVISION_NAME)
     with put_diff(RENAME_FILE_DIFF), put_readme(None):
         with pytest.raises(SmartUpdateImpossibleBecauseOfUpdatedFiles):
