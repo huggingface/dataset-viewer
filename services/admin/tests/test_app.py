@@ -73,6 +73,13 @@ def test_pending_jobs(client: TestClient) -> None:
         assert json[processing_step.job_type] == {"waiting": [], "started": []}
 
 
+def test_blocked_datasets(client: TestClient) -> None:
+    response = client.request("get", "/admin/blocked-datasets")
+    assert response.status_code == 200
+    json = response.json()
+    assert json["blocked_datasets"] == []
+
+
 def test_dataset_status(client: TestClient) -> None:
     response = client.request("get", "/admin/dataset-status")
     assert response.status_code == 422

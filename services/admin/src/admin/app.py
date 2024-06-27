@@ -18,6 +18,7 @@ from starlette.routing import Mount, Route
 from starlette_prometheus import PrometheusMiddleware
 
 from admin.config import AppConfig, UvicornConfig
+from admin.routes.blocked_datasets import create_blocked_datasets_endpoint
 from admin.routes.cache_reports import create_cache_reports_endpoint
 from admin.routes.cache_reports_with_content import (
     create_cache_reports_with_content_endpoint,
@@ -88,6 +89,15 @@ def create_app() -> Starlette:
         Route(
             "/pending-jobs",
             endpoint=create_pending_jobs_endpoint(
+                max_age=app_config.admin.max_age,
+                external_auth_url=app_config.admin.external_auth_url,
+                organization=app_config.admin.hf_organization,
+                hf_timeout_seconds=app_config.admin.hf_timeout_seconds,
+            ),
+        ),
+        Route(
+            "/blocked-datasets",
+            endpoint=create_blocked_datasets_endpoint(
                 max_age=app_config.admin.max_age,
                 external_auth_url=app_config.admin.external_auth_url,
                 organization=app_config.admin.hf_organization,

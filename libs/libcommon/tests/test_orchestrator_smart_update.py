@@ -108,6 +108,13 @@ index 6ea47cd9c61754a4838b07f479b376cb431f2271..6ea47cd9c61754a4838b07f479b376cb
 +1,bar
 """
 
+RENAME_FILE_DIFF = """
+diff --git a/train.csv b/test.csv
+similarity index 100%
+rename from train.csv
+rename to test.csv
+"""
+
 INITIAL_README = f"# Dataset Card for {DATASET_NAME}"
 ONE_CONFIG_README = (
     f"---\nconfigs:\n- config_name: foo\n  data_files: foo.csv\n---\n\n# Dataset Card for {DATASET_NAME}"
@@ -187,6 +194,14 @@ def test_add_data() -> None:
     # Add data.txt commit: raise
     put_cache(step=STEP_DA, dataset=DATASET_NAME, revision=OTHER_REVISION_NAME)
     with put_diff(ADD_DATA_DIFF), put_readme(None):
+        with pytest.raises(SmartUpdateImpossibleBecauseOfUpdatedFiles):
+            get_smart_dataset_update_plan(processing_graph=PROCESSING_GRAPH_TWO_STEPS)
+
+
+def test_rename_file() -> None:
+    # Rename train.csv -> test.csv commit: raise
+    put_cache(step=STEP_DA, dataset=DATASET_NAME, revision=OTHER_REVISION_NAME)
+    with put_diff(RENAME_FILE_DIFF), put_readme(None):
         with pytest.raises(SmartUpdateImpossibleBecauseOfUpdatedFiles):
             get_smart_dataset_update_plan(processing_graph=PROCESSING_GRAPH_TWO_STEPS)
 
