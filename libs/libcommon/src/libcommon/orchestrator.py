@@ -917,9 +917,12 @@ class SmartDatasetUpdatePlan(Plan):
 
     def get_impacted_files(self) -> set[str]:
         return set(
-            line[len("--- a/") :]
+            line.split(" ", 2)[2] if line.startswith("rename ") else line.split("/", 1)[1]
             for line in self.diff.split("\n")
-            if line.startswith("--- a/") or line.startswith("+++ b/")
+            if line.startswith("--- a/")
+            or line.startswith("+++ b/")
+            or line.startswith("rename from ")
+            or line.startswith("rename to ")
         )
 
     def get_updated_yaml_fields_in_dataset_card(self) -> list[str]:
