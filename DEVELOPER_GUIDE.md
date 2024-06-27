@@ -105,6 +105,14 @@ The following environments contain all the modules: reverse proxy, API server, a
 | Development | https://datasets-server.us.dev.moon.huggingface.tech | Helm / Kubernetes | `make upgrade-dev` in [chart](./chart)  |
 | Local build | http://localhost:8100                                | Docker compose    | `make start` (builds docker images)     |
 
+## Jobs queue
+
+The following diagram represents the logic when a worker pulls a job from the queue:
+
+![Jobs queue](jobs.png)
+
+Source: https://www.figma.com/board/Yymk75rQTYpZuIwTqffyKQ/Queues-in-dataset-viewer
+
 ## Quality
 
 The CI checks the quality of the code through a [GitHub action](./.github/workflows/_quality-python.yml). To manually format the code of a job, library, service or worker:
