@@ -17,6 +17,7 @@ from libcommon.simple_cache import (
 
 from worker.config import AppConfig
 from worker.job_runners.config.duckdb_index_size import ConfigDuckdbIndexSizeJobRunner
+from worker.job_runners.split.duckdb_index import DEFAULT_STEMMER
 
 from ..utils import REVISION_NAME
 
@@ -83,7 +84,7 @@ def get_job_runner(
                     "filename": "index.duckdb",
                     "size": 1234,
                     "features": {},
-                    "has_fts": True,
+                    "stemmer": DEFAULT_STEMMER,
                     "partial": False,
                     "num_rows": 5,
                     "num_bytes": 40,
@@ -96,7 +97,7 @@ def get_job_runner(
                     "filename": "index.duckdb",
                     "size": 5678,
                     "features": {},
-                    "has_fts": True,
+                    "stemmer": DEFAULT_STEMMER,
                     "partial": False,
                     "num_rows": 2,
                     "num_bytes": 16,
@@ -108,7 +109,7 @@ def get_job_runner(
                     "config": {
                         "dataset": "dataset_ok",
                         "config": "config_1",
-                        "has_fts": True,
+                        "stemmer": DEFAULT_STEMMER,
                         "num_rows": 7,
                         "num_bytes": 56,
                     },
@@ -117,7 +118,7 @@ def get_job_runner(
                             "dataset": "dataset_ok",
                             "config": "config_1",
                             "split": "train",
-                            "has_fts": True,
+                            "stemmer": DEFAULT_STEMMER,
                             "num_rows": 5,
                             "num_bytes": 40,
                         },
@@ -125,7 +126,7 @@ def get_job_runner(
                             "dataset": "dataset_ok",
                             "config": "config_1",
                             "split": "test",
-                            "has_fts": True,
+                            "stemmer": DEFAULT_STEMMER,
                             "num_rows": 2,
                             "num_bytes": 16,
                         },
