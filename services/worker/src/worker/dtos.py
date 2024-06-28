@@ -237,7 +237,7 @@ class SplitDuckdbIndex(SplitHubFile):
     num_rows: Optional[int]
     num_bytes: Optional[int]
     duckdb_version: str
-    # If present and not None, it supports FTS
+    # None means that full-text search is not supported
     stemmer: Optional[str]
 
 
