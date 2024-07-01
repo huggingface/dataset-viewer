@@ -392,10 +392,10 @@ def test_compute(
         url = content["url"]
         file_name = content["filename"]
         features = content["features"]
-        has_fts = content["has_fts"]
+        stemmer = content["stemmer"]
+        has_fts = stemmer is not None
         partial = content["partial"]
         stemmer = content["stemmer"]
-        assert isinstance(has_fts, bool)
         assert has_fts == expected_has_fts
         assert isinstance(url, str)
         if partial_parquet_export:

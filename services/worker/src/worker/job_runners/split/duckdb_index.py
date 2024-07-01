@@ -350,7 +350,7 @@ def compute_split_duckdb_index_response(
         logging.debug(con.sql("SELECT * FROM data LIMIT 5;"))
         logging.debug(con.sql("SELECT count(*) FROM data;"))
 
-        if is_indexable := len(indexable_columns) > 0:
+        if len(indexable_columns) > 0:
             # configure duckdb extensions
             if extensions_directory is not None:
                 con.execute(SET_EXTENSIONS_DIRECTORY_COMMAND.format(directory=extensions_directory))
@@ -460,7 +460,6 @@ def compute_split_duckdb_index_response(
         filename=Path(repo_file.rfilename).name,
         size=repo_file.size,
         features=features,
-        has_fts=is_indexable,
         partial=partial,
         num_rows=num_rows,
         num_bytes=num_bytes,
