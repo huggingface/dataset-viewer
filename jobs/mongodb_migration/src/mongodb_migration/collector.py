@@ -410,7 +410,6 @@ class MigrationsCollector:
                 description="remove 'has_fts' field from 'split-duckdb-index' cache records",
             ),
             MigrationAddDurationToCacheResponse(
-                version="20240703160300",
-                description="add 'duration' field to cache records"
-            )
+                version="20240703160300", description="add 'duration' field to cache records"
+            ),
         ]
