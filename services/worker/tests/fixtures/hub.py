@@ -16,9 +16,9 @@ from datasets import Dataset, DatasetBuilder, Features, Value, load_dataset_buil
 from huggingface_hub.constants import REPO_TYPES, REPO_TYPES_URL_PREFIXES
 from huggingface_hub.hf_api import HfApi
 from huggingface_hub.utils._errors import hf_raise_for_status
+from libcommon.viewer_utils.asset import DATASET_GIT_REVISION_PLACEHOLDER
 
 from ..constants import ASSETS_BASE_URL, CI_HUB_ENDPOINT, CI_URL_TEMPLATE, CI_USER, CI_USER_TOKEN
-from ..job_runners.utils import REVISION_NAME
 
 DATASET = "dataset"
 hf_api = HfApi(endpoint=CI_HUB_ENDPOINT)
@@ -767,13 +767,13 @@ AUDIO_cols = {
 }
 
 
-def get_AUDIO_rows(dataset: str) -> Any:
+def get_AUDIO_first_rows_response(dataset: str) -> Any:
     config, split = get_default_config_split()
     return [
         {
             "col": [
                 {
-                    "src": f"http://localhost/assets/{dataset}/--/{REVISION_NAME}/--/{config}/{split}/0/col/audio.wav",
+                    "src": f"http://localhost/assets/{dataset}/--/{DATASET_GIT_REVISION_PLACEHOLDER}/--/{config}/{split}/0/col/audio.wav",
                     "type": "audio/wav",
                 },
             ]
@@ -786,12 +786,12 @@ IMAGE_cols = {
 }
 
 
-def get_IMAGE_rows(dataset: str) -> Any:
+def get_IMAGE_first_rows_response(dataset: str) -> Any:
     config, split = get_default_config_split()
     return [
         {
             "col": {
-                "src": f"http://localhost/assets/{dataset}/--/{REVISION_NAME}/--/{config}/{split}/0/col/image.jpg",
+                "src": f"http://localhost/assets/{dataset}/--/{DATASET_GIT_REVISION_PLACEHOLDER}/--/{config}/{split}/0/col/image.jpg",
                 "height": 480,
                 "width": 640,
             },
@@ -804,21 +804,21 @@ IMAGES_LIST_cols = {
 }
 
 
-def get_IMAGES_LIST_rows(dataset: str) -> Any:
+def get_IMAGES_LIST_first_rows_response(dataset: str) -> Any:
     config, split = get_default_config_split()
     return [
         {
             "col": [
                 {
                     "src": (
-                        f"{ASSETS_BASE_URL}/{dataset}/--/{REVISION_NAME}/--/{config}/{split}/0/col/image-1d100e9.jpg"
+                        f"{ASSETS_BASE_URL}/{dataset}/--/{DATASET_GIT_REVISION_PLACEHOLDER}/--/{config}/{split}/0/col/image-1d100e9.jpg"
                     ),
                     "height": 480,
                     "width": 640,
                 },
                 {
                     "src": (
-                        f"{ASSETS_BASE_URL}/{dataset}/--/{REVISION_NAME}/--/{config}/{split}/0/col/image-1d300ea.jpg"
+                        f"{ASSETS_BASE_URL}/{dataset}/--/{DATASET_GIT_REVISION_PLACEHOLDER}/--/{config}/{split}/0/col/image-1d300ea.jpg"
                     ),
                     "height": 480,
                     "width": 640,
@@ -984,7 +984,7 @@ def hub_responses_audio(hub_public_audio: str) -> HubDatasetTest:
         "config_names_response": create_config_names_response(hub_public_audio),
         "splits_response": create_splits_response(hub_public_audio),
         "first_rows_response": create_first_rows_response(
-            hub_public_audio, AUDIO_cols, get_AUDIO_rows(hub_public_audio)
+            hub_public_audio, AUDIO_cols, get_AUDIO_first_rows_response(hub_public_audio)
         ),
         "parquet_and_info_response": create_parquet_and_info_response(dataset=hub_public_audio, data_type="audio"),
     }
@@ -997,7 +997,7 @@ def hub_responses_image(hub_public_image: str) -> HubDatasetTest:
         "config_names_response": create_config_names_response(hub_public_image),
         "splits_response": create_splits_response(hub_public_image),
         "first_rows_response": create_first_rows_response(
-            hub_public_image, IMAGE_cols, get_IMAGE_rows(hub_public_image)
+            hub_public_image, IMAGE_cols, get_IMAGE_first_rows_response(hub_public_image)
         ),
         "parquet_and_info_response": None,
     }
@@ -1010,7 +1010,7 @@ def hub_responses_images_list(hub_public_images_list: str) -> HubDatasetTest:
         "config_names_response": create_config_names_response(hub_public_images_list),
         "splits_response": create_splits_response(hub_public_images_list),
         "first_rows_response": create_first_rows_response(
-            hub_public_images_list, IMAGES_LIST_cols, get_IMAGES_LIST_rows(hub_public_images_list)
+            hub_public_images_list, IMAGES_LIST_cols, get_IMAGES_LIST_first_rows_response(hub_public_images_list)
         ),
         "parquet_and_info_response": None,
     }
