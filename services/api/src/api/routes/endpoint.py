@@ -164,7 +164,9 @@ def create_endpoint(
                 if http_status == HTTPStatus.OK:
                     if endpoint_name == "/first-rows" and assets_storage_client.url_preparator:
                         with StepProfiler(method=method, step="prepare assets urls"):
-                            assets_storage_client.url_preparator.prepare_urls_in_first_rows_in_place(content, revision=revision)
+                            assets_storage_client.url_preparator.prepare_urls_in_first_rows_in_place(
+                                content, revision=revision
+                            )
                     elif endpoint_name == "/croissant-crumbs" and not full:
                         with StepProfiler(
                             method=method,
