@@ -13,7 +13,7 @@ from typing import Any, Optional, Union
 import orjson
 from filelock import FileLock
 from libcommon.queue.jobs import Queue
-from libcommon.utils import get_datetime
+from libcommon.utils import get_datetime, get_duration
 from mirakuru import OutputExecutor, ProcessExitedWithError, TCPExecutor
 
 from worker import start_web_app, start_worker_loop
@@ -169,7 +169,7 @@ class WorkerExecutor:
             last_updated = worker_state["last_updated"]
             coefficient = 10 if long_job["params"]["dataset"] == "cerebras/SlimPajama-627B" else 1
             if last_updated + timedelta(seconds=coefficient * self.max_job_duration_seconds) <= get_datetime():
-                _duration_seconds = int((get_datetime() - last_updated).total_seconds())
+                _duration_seconds = get_duration(last_updated)
                 logging.warning(
                     f"Job {long_job} exceeded maximum duration of"
                     f" {self.max_job_duration_seconds} seconds ({_duration_seconds} seconds)."
