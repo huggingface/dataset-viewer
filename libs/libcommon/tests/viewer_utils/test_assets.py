@@ -8,6 +8,7 @@ from PIL import Image as PILImage
 
 from libcommon.storage_client import StorageClient
 from libcommon.viewer_utils.asset import (
+    DATASET_GIT_REVISION_PLACEHOLDER,
     SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE,
     create_audio_file,
     create_image_file,
@@ -24,7 +25,9 @@ from ..constants import (
 from ..types import DatasetFixture
 
 
-def test_create_image_file(storage_client: StorageClient, datasets_fixtures: Mapping[str, DatasetFixture]) -> None:
+def test_create_image_file(
+    storage_client_with_url_preparator: StorageClient, datasets_fixtures: Mapping[str, DatasetFixture]
+) -> None:
     dataset_name = "image"
     dataset_fixture = datasets_fixtures[dataset_name]
     value = create_image_file(
@@ -37,13 +40,14 @@ def test_create_image_file(storage_client: StorageClient, datasets_fixtures: Map
         filename="image.jpg",
         row_idx=DEFAULT_ROW_IDX,
         format="JPEG",
-        storage_client=storage_client,
+        storage_client=storage_client_with_url_preparator,
     )
     assert value == dataset_fixture.expected_cell
     image_key = value["src"].removeprefix(f"{ASSETS_BASE_URL}/")
-    assert storage_client.exists(image_key)
+    image_path = image_key.replace(DATASET_GIT_REVISION_PLACEHOLDER, DEFAULT_REVISION)
+    assert storage_client_with_url_preparator.exists(image_path)
 
-    image = PILImage.open(storage_client.get_full_path(image_key))
+    image = PILImage.open(storage_client_with_url_preparator.get_full_path(image_path))
     assert image is not None
 
 
@@ -55,7 +59,7 @@ def test_create_audio_file(
     audio_file_extension: str,
     filename_extension: str,
     shared_datadir: Path,
-    storage_client: StorageClient,
+    storage_client_with_url_preparator: StorageClient,
 ) -> None:
     audio_file_extension = os.path.splitext(audio_file_name)[1] if audio_file_extension == "WITH_EXTENSION" else ""
     audio_file_bytes = (shared_datadir / audio_file_name).read_bytes()
@@ -71,7 +75,7 @@ def test_create_audio_file(
         audio_file_bytes=audio_file_bytes,
         column="col",
         filename=filename,
-        storage_client=storage_client,
+        storage_client=storage_client_with_url_preparator,
     )
     audio_key = "dataset/--/revision/--/config/split/7/col/" + filename
     assert value == [
@@ -80,7 +84,7 @@ def test_create_audio_file(
             "type": mime_type,
         },
     ]
-    assert storage_client.exists(audio_key)
+    assert storage_client_with_url_preparator.exists(audio_key)
 
 
 @pytest.mark.parametrize(
