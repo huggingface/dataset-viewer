@@ -523,7 +523,7 @@ def test_queue_get_zombies() -> None:
         difficulty=test_difficulty,
     )
     queue.start_job()
-    assert queue.get_zombies(max_seconds_without_heartbeat=10) == [zombie.info()]
+    assert queue.get_zombies(max_seconds_without_heartbeat=10) == [zombie.reload().info()]
     assert queue.get_zombies(max_seconds_without_heartbeat=-1) == []
     assert queue.get_zombies(max_seconds_without_heartbeat=0) == []
     assert queue.get_zombies(max_seconds_without_heartbeat=9999999) == []
