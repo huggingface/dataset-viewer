@@ -93,8 +93,8 @@ def get_datetime(days: Optional[float] = None) -> datetime:
 
 
 def get_duration(started_at: datetime) -> int:
-    """Get time in seconds that has passed from `started_at` until now."""
-    return int((get_datetime() - started_at).total_seconds())
+    """Get time in seconds that has passed from `started_at` until now. """
+    return int((get_datetime().replace(tzinfo=None) - started_at.replace(tzinfo=None)).total_seconds())
 
 
 def get_expires(seconds: float) -> datetime:
