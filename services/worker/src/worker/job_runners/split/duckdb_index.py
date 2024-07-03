@@ -5,16 +5,18 @@ import copy
 import logging
 import re
 from pathlib import Path
-from typing import Any, Literal, Optional
+from typing import Any, Literal, Optional, Union
 
 import duckdb
 import polars as pl
 from datasets.features.features import Features, FeatureType, Translation, TranslationVariableLanguages, Value, _visit
+from huggingface_hub import get_discussion_details, get_repo_discussions
 from huggingface_hub._commit_api import (
     CommitOperation,
     CommitOperationAdd,
     CommitOperationDelete,
 )
+from huggingface_hub.community import DiscussionCommit
 from huggingface_hub.hf_api import HfApi
 from huggingface_hub.repocard_data import DatasetCardData
 from huggingface_hub.utils._errors import HfHubHTTPError, RepositoryNotFoundError
@@ -38,7 +40,7 @@ from libcommon.parquet_utils import (
 from libcommon.queue.lock import lock
 from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.storage import StrPath
-from libcommon.utils import HF_HUB_HTTP_ERROR_RETRY_SLEEPS, download_file_from_hub, retry
+from libcommon.utils import HF_HUB_HTTP_ERROR_RETRY_SLEEPS, download_file_from_hub, get_diff, retry
 
 from worker.config import AppConfig, DuckDbIndexConfig
 from worker.dtos import CompleteJobResult, SplitDuckdbIndex
@@ -130,14 +132,53 @@ def get_indexable_columns(features: Features) -> list[str]:
     return indexable_columns
 
 
-def get_monolingual_stemmer(card_data: DatasetCardData) -> str:
-    if card_data is None:
-        return DEFAULT_STEMMER
-    all_languages = card_data["language"]
-    if isinstance(all_languages, list) and len(all_languages) == 1:
-        first_language = all_languages[0]
-    elif isinstance(all_languages, str):
-        first_language = all_languages
+def get_dataset_languages(
+    card_data: DatasetCardData, hf_token: Optional[str], hf_endpoint: str, dataset: str
+) -> Union[list[str], str]:
+    # get language from card_data
+    if card_data is not None and card_data.language is not None:
+        return card_data.language  # type: ignore
+    # try to get language from librarian-bot open PR
+    all_discussions = list(get_repo_discussions(repo_id=dataset, repo_type="dataset"))
+    language_discussion = next(
+        (
+            discussion
+            for discussion in all_discussions
+            if discussion.is_pull_request
+            and discussion.status == "open"
+            and discussion.title == "Librarian Bot: Add language metadata for dataset"
+            and discussion.author == "librarian-bot"
+        ),
+        None,
+    )
+    logging.info(f"Language bot discussion: {language_discussion}")
+    if not language_discussion:  # no open librarian-bot PR identified
+        logging.info("No language bot discussion identified")
+        return []
+    discussion_detail = get_discussion_details(
+        repo_id=dataset, discussion_num=language_discussion.num, repo_type="dataset"
+    )
+    commit: DiscussionCommit = next(
+        (event for event in discussion_detail.events if isinstance(event, DiscussionCommit)), None
+    )
+    logging.info(f"Commit {commit}")
+    diff_content = get_diff(hf_token=hf_token, hf_endpoint=hf_endpoint, dataset=dataset, revision=commit.oid)  # type: ignore
+    logging.info(diff_content)
+    language_regex = re.compile(r"\+language:\n((?:\+- .*\n)+)")
+    match = language_regex.search(diff_content)
+    if not match:
+        logging.info("No regex matches on the diff")
+        return []
+    # Extract the languages and clean up the results
+    languages_block = match.group(1)
+    return [line.strip("+- ") for line in languages_block.split("\n") if line.strip()]
+
+
+def get_monolingual_stemmer(languages: Union[list[str], str]) -> str:
+    if isinstance(languages, list) and len(languages) == 1:
+        first_language = languages[0]
+    elif isinstance(languages, str):
+        first_language = languages
     else:
         return DEFAULT_STEMMER
 
@@ -355,7 +396,12 @@ def compute_split_duckdb_index_response(
             if extensions_directory is not None:
                 con.execute(SET_EXTENSIONS_DIRECTORY_COMMAND.format(directory=extensions_directory))
             con.execute(INSTALL_AND_LOAD_EXTENSION_COMMAND)
-            stemmer = get_monolingual_stemmer(hf_api.dataset_info(repo_id=dataset).card_data)
+            dataset_languages = get_dataset_languages(
+                hf_api.dataset_info(repo_id=dataset).card_data, hf_token, hf_endpoint, dataset
+            )
+            logging.info(f"{dataset_languages=}")
+            stemmer = get_monolingual_stemmer(dataset_languages)
+            logging.info(f"{dataset=} {dataset_languages=} {stemmer=}")
             create_index_sql = CREATE_INDEX_COMMAND.format(columns=indexable_columns, stemmer=stemmer)
             logging.info(create_index_sql)
             con.sql(create_index_sql)

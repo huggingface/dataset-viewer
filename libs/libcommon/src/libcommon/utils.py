@@ -15,6 +15,7 @@ from typing import Any, Optional, TypeVar, Union, cast
 import orjson
 import pandas as pd
 from huggingface_hub import constants, hf_hub_download
+from huggingface_hub.utils import build_hf_headers, get_session
 from requests.exceptions import ReadTimeout
 
 from libcommon.exceptions import DatasetInBlockListError
@@ -219,3 +220,12 @@ def download_file_from_hub(
         cache_dir=cache_dir,
         resume_download=resume_download,
     )
+
+
+def get_diff(hf_token: Optional[str], hf_endpoint: str, dataset: str, revision: str) -> str:
+    headers = build_hf_headers(token=hf_token, library_name="dataset-viewer")
+    resp = get_session().get(hf_endpoint + f"/datasets/{dataset}/commit/{revision}.diff", timeout=10, headers=headers)
+    resp.raise_for_status()
+    if not isinstance(resp.content, bytes):  # for mypy
+        raise RuntimeError(f"failed reading /datasets/{dataset}/commit/{revision}.diff")
+    return resp.content.decode("utf-8")

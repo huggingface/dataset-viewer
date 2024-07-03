@@ -9,7 +9,7 @@ from http import HTTPStatus
 from pathlib import Path
 from typing import Any, Optional
 from unittest.mock import patch
-
+from typing import Union
 import datasets.config
 import duckdb
 import pandas as pd
@@ -249,19 +249,19 @@ def expected_data(datasets: Mapping[str, Dataset]) -> dict[str, list[Any]]:
 
 
 @pytest.mark.parametrize(
-    "card_data, expected_stemmer",
+    "languages, expected_stemmer",
     [
-        (DatasetCardData(language="spa"), "spanish"),
-        (DatasetCardData(language="other"), DEFAULT_STEMMER),
-        (DatasetCardData(language="ar"), "arabic"),
-        (DatasetCardData(language=["ar"]), "arabic"),
-        (DatasetCardData(language=["ar", "en"]), DEFAULT_STEMMER),
-        (DatasetCardData(), DEFAULT_STEMMER),
+        ("spa", "spanish"),
+        ("other", DEFAULT_STEMMER),
+        ("ar", "arabic"),
+        (["ar"], "arabic"),
+        (["ar", "en"], DEFAULT_STEMMER),
+        ([], DEFAULT_STEMMER),
         (None, DEFAULT_STEMMER),
     ],
 )
-def test_get_monolingual_stemmer(card_data: DatasetCardData, expected_stemmer: str) -> None:
-    stemmer = get_monolingual_stemmer(card_data)
+def test_get_monolingual_stemmer(languages: Union[list[str], str], expected_stemmer: str) -> None:
+    stemmer = get_monolingual_stemmer(languages)
     assert stemmer is not None and stemmer == expected_stemmer
 
 

@@ -11,7 +11,6 @@ from typing import Optional, Union
 
 import pandas as pd
 from huggingface_hub import DatasetCard, HfFileSystem
-from huggingface_hub.utils import build_hf_headers, get_session
 
 from libcommon.constants import (
     CONFIG_INFO_KIND,
@@ -36,6 +35,7 @@ from libcommon.simple_cache import (
 )
 from libcommon.state import ArtifactState, DatasetState, FirstStepsDatasetState
 from libcommon.storage_client import StorageClient
+from libcommon.utils import get_diff
 
 # TODO: clean dangling cache entries
 
@@ -871,7 +871,7 @@ class SmartDatasetUpdatePlan(Plan):
             raise SmartUpdateImpossibleBecauseCachedRevisionIsNotParentOfNewRevision(
                 f"Failed to smart update {self.dataset} to {self.revision[:7]} because the cached revision {self.cached_revision[:7]} is not its parent"
             )
-        self.diff = self.get_diff()
+        self.diff = get_diff(self.hf_token, self.hf_endpoint, self.dataset, self.revision)
         self.files_impacted_by_commit = self.get_impacted_files()
         if self.files_impacted_by_commit - {
             "README.md",
@@ -904,16 +904,6 @@ class SmartDatasetUpdatePlan(Plan):
                         storage_client=storage_client,
                     )
                 )
-
-    def get_diff(self) -> str:
-        headers = build_hf_headers(token=self.hf_token, library_name="dataset-viewer")
-        resp = get_session().get(
-            self.hf_endpoint + f"/datasets/{self.dataset}/commit/{self.revision}.diff", timeout=10, headers=headers
-        )
-        resp.raise_for_status()
-        if not isinstance(resp.content, bytes):  # for mypy
-            raise RuntimeError(f"failed reading /datasets/{self.dataset}/commit/{self.revision}.diff")
-        return resp.content.decode("utf-8")
 
     def get_impacted_files(self) -> set[str]:
         return set(

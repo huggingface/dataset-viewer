@@ -20,6 +20,7 @@ from libcommon.processing_graph import Artifact, ProcessingGraph
 from libcommon.queue.jobs import Queue
 from libcommon.simple_cache import upsert_response
 from libcommon.storage_client import StorageClient
+from libcommon.utils import get_diff
 from libcommon.viewer_utils.rows import GetRowsContent
 
 DATASET_NAME = "dataset"
@@ -386,12 +387,10 @@ def put_diff(
     dataset: str = DATASET_NAME,
     revision: str = REVISION_NAME,
 ) -> Iterator[None]:
-    original_get_diff = SmartDatasetUpdatePlan.get_diff
-
     def mock_get_diff(self: SmartDatasetUpdatePlan) -> str:
         if self.dataset == dataset and self.revision == revision:
             return diff
-        return original_get_diff(self)
+        return get_diff(self)
 
     with patch.object(SmartDatasetUpdatePlan, "get_diff", mock_get_diff):
         yield

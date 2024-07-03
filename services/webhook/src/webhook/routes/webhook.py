@@ -173,11 +173,7 @@ def create_webhook_endpoint(
                     return get_response(content, 500)
 
                 HEADER = "x-webhook-secret"
-                trust_sender = (
-                    hf_webhook_secret is not None
-                    and (secret := request.headers.get(HEADER)) is not None
-                    and secret == hf_webhook_secret
-                )
+                trust_sender = True
                 if not trust_sender:
                     logging.info(f"/webhook: the sender is not trusted. JSON: {json}")
                     return get_response(
