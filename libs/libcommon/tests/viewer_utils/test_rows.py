@@ -32,7 +32,9 @@ from ..utils import get_dataset_rows_content
 
 @pytest.mark.parametrize("dataset_name", DATASETS_NAMES)
 def test_create_first_rows_response(
-    storage_client: StorageClient, datasets_fixtures: Mapping[str, DatasetFixture], dataset_name: str
+    storage_client_with_url_preparator: StorageClient,
+    datasets_fixtures: Mapping[str, DatasetFixture],
+    dataset_name: str,
 ) -> None:
     dataset_fixture = datasets_fixtures[dataset_name]
     dataset = dataset_fixture.dataset
@@ -42,7 +44,7 @@ def test_create_first_rows_response(
         revision=DEFAULT_REVISION,
         config=DEFAULT_CONFIG,
         split=DEFAULT_SPLIT,
-        storage_client=storage_client,
+        storage_client=storage_client_with_url_preparator,
         features=dataset.features,
         get_rows_content=get_dataset_rows_content(dataset=dataset),
         min_cell_bytes=DEFAULT_MIN_CELL_BYTES,
