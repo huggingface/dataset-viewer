@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2024 The HuggingFace Authors.
 
-from abc import ABC, abstractmethod
+from abc import ABC
 from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Any, Callable, Literal, Optional, Union
@@ -9,7 +9,9 @@ from typing import Any, Callable, Literal, Optional, Union
 from datasets import Audio, Features, Image
 from datasets.features.features import FeatureType, Sequence
 
+from libcommon.cloudfront import CloudFrontSigner
 from libcommon.dtos import FeatureItem
+from libcommon.viewer_utils.asset import replace_dataset_git_revision_placeholder
 
 
 class InvalidFirstRowsError(ValueError):
@@ -74,15 +76,26 @@ def get_asset_url_paths(features: Features) -> list[AssetUrlPath]:
     return asset_url_paths
 
 
-class URLSigner(ABC):
-    @abstractmethod
-    def sign_url(self, url: str) -> str:
-        pass
+class URLPreparator(ABC):
+    def __init__(self, url_signer: Optional[CloudFrontSigner]) -> None:
+        self.url_signer = url_signer
+
+    def prepare_url(self, url: str, revision: str) -> str:
+        # Set the right revision in the URL e.g.
+        # Before: https://datasets-server.huggingface.co/assets/vidore/syntheticDocQA_artificial_intelligence_test/--/{dataset_git_revision}/--/default/test/0/image/image.jpg
+        # After:  https://datasets-server.huggingface.co/assets/vidore/syntheticDocQA_artificial_intelligence_test/--/5fe59d7e52732b86d11ee0e9c4a8cdb0e8ba7a6e/--/default/test/0/image/image.jpg
+        url = replace_dataset_git_revision_placeholder(url, revision)
+        # Sign the URL since the assets require authentication to be accessed
+        # Before:  https://datasets-server.huggingface.co/assets/vidore/syntheticDocQA_artificial_intelligence_test/--/5fe59d7e52732b86d11ee0e9c4a8cdb0e8ba7a6e/--/default/test/0/image/image.jpg
+        # After: https://datasets-server.huggingface.co/assets/vidore/syntheticDocQA_artificial_intelligence_test/--/5fe59d7e52732b86d11ee0e9c4a8cdb0e8ba7a6e/--/default/test/0/image/image.jpg?Expires=1...4&Signature=E...A__&Key-Pair-Id=K...3
+        if self.url_signer:
+            url = self.url_signer.sign_url(url)
+        return url
 
     def __str__(self) -> str:
-        return self.__class__.__name__
+        return f"{self.__class__.__name__}(url_signer={self.url_signer})"
 
-    def _sign_asset_url_path_in_place(self, cell: Any, asset_url_path: AssetUrlPath) -> Any:
+    def _prepare_asset_url_path_in_place(self, cell: Any, asset_url_path: AssetUrlPath, revision: str) -> Any:
         if not cell:
             return cell
         elif len(asset_url_path.path) == 0:
@@ -91,21 +104,25 @@ class URLSigner(ABC):
             src = cell.get("src")
             if not isinstance(src, str):
                 raise InvalidFirstRowsError('Expected cell["src"] to be a string')
-            cell["src"] = self.sign_url(url=src)
-            # ^ sign the url in place
+            cell["src"] = self.prepare_url(src, revision=revision)
+            # ^ prepare the url in place
         else:
             key = asset_url_path.path[0]
             if key == 0:
-                # it's a list, we have to sign each element
+                # it's a list, we have to prepare each element
                 if not isinstance(cell, list):
                     raise InvalidFirstRowsError("Expected the cell to be a list")
                 for cell_item in cell:
-                    self._sign_asset_url_path_in_place(cell=cell_item, asset_url_path=asset_url_path.enter())
+                    self._prepare_asset_url_path_in_place(
+                        cell=cell_item, asset_url_path=asset_url_path.enter(), revision=revision
+                    )
             else:
-                # it's a dict, we have to sign the value of the key
+                # it's a dict, we have to prepare the value of the key
                 if not isinstance(cell, dict):
                     raise InvalidFirstRowsError("Expected the cell to be a dict")
-                self._sign_asset_url_path_in_place(cell=cell[key], asset_url_path=asset_url_path.enter())
+                self._prepare_asset_url_path_in_place(
+                    cell=cell[key], asset_url_path=asset_url_path.enter(), revision=revision
+                )
 
     def _get_asset_url_paths_from_first_rows(self, first_rows: Mapping[str, Any]) -> list[AssetUrlPath]:
         # parse the features to find the paths to assets URLs
@@ -116,11 +133,11 @@ class URLSigner(ABC):
         features = Features.from_dict(features_dict)
         return get_asset_url_paths(features)
 
-    def sign_urls_in_first_rows_in_place(self, first_rows: Mapping[str, Any]) -> None:
+    def prepare_urls_in_first_rows_in_place(self, first_rows: Mapping[str, Any], revision: str) -> None:
         asset_url_paths = self._get_asset_url_paths_from_first_rows(first_rows=first_rows)
         if not asset_url_paths:
             return
-        # sign the URLs
+        # prepare the URLs (set revision + sign)
         row_items = first_rows.get("rows")
         if not isinstance(row_items, list):
             raise InvalidFirstRowsError('Expected response["rows"] to be a list')
@@ -135,6 +152,6 @@ class URLSigner(ABC):
                 raise InvalidFirstRowsError('Expected response["rows"][i]["row"] to be a dict')
             for asset_url_path in asset_url_paths:
                 if isinstance(asset_url_path.path[0], str) and asset_url_path.path[0] in truncated_cells:
-                    # the cell has been truncated, nothing to sign in it
+                    # the cell has been truncated, nothing to prepare in it
                     continue
-                self._sign_asset_url_path_in_place(cell=row, asset_url_path=asset_url_path)
+                self._prepare_asset_url_path_in_place(cell=row, asset_url_path=asset_url_path, revision=revision)

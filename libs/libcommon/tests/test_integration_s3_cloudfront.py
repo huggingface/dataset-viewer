@@ -10,6 +10,7 @@ import pytest
 from libcommon.cloudfront import get_cloudfront_signer
 from libcommon.config import AssetsConfig, CloudFrontConfig, S3Config
 from libcommon.storage_client import StorageClient
+from libcommon.url_preparator import URLPreparator
 
 BUCKET = "hf-datasets-server-statics-test"
 CLOUDFRONT_KEY_PAIR_ID = "K3814DK2QUJ71H"
@@ -33,6 +34,7 @@ def test_real_cloudfront(monkeypatch: pytest.MonkeyPatch) -> None:
         storage_root=f"{BUCKET}/assets",
     )
     url_signer = get_cloudfront_signer(cloudfront_config=cloudfront_config)
+    url_preparator = URLPreparator(url_signer=url_signer)
     if not s3_config.access_key_id or not s3_config.secret_access_key or not url_signer:
         pytest.skip("the S3 and/or CloudFront credentials are not set in environment variables, so we skip the test")
 
@@ -42,7 +44,7 @@ def test_real_cloudfront(monkeypatch: pytest.MonkeyPatch) -> None:
         base_url=assets_config.base_url,
         overwrite=True,
         s3_config=s3_config,
-        url_signer=url_signer,
+        url_preparator=url_preparator,
     )
     DATASET = datetime.now().strftime("%Y%m%d-%H%M%S")
     # ^ we could delete them, or simply set a TTL in the bucket
@@ -69,14 +71,14 @@ def test_real_cloudfront(monkeypatch: pytest.MonkeyPatch) -> None:
         assert f.read() == "hello world"
 
     # cannot access the file through the normal url
-    unsigned_url = storage_client.get_unsigned_url(path)
-    assert unsigned_url == f"{assets_config.base_url}/{path}"
+    unprepared_url = storage_client.get_unprepared_url(path)
+    assert unprepared_url == f"{assets_config.base_url}/{path}"
 
-    response = httpx.get(unsigned_url)
+    response = httpx.get(unprepared_url)
     assert response.status_code == 403
 
     # can access the file through the signed url
-    signed_url = storage_client.get_url(path)
+    signed_url = storage_client.get_url(path, revision="a_revision")
     assert signed_url != f"{assets_config.base_url}/{path}"
     assert signed_url.startswith(f"{assets_config.base_url}/{path}?Expires=")
     assert "&Signature=" in signed_url

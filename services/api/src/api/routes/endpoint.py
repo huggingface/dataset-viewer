@@ -162,9 +162,9 @@ def create_endpoint(
                 error_code = result["error_code"]
                 revision = result["dataset_git_revision"]
                 if http_status == HTTPStatus.OK:
-                    if endpoint_name == "/first-rows" and assets_storage_client.url_signer:
-                        with StepProfiler(method=method, step="sign assets urls"):
-                            assets_storage_client.url_signer.sign_urls_in_first_rows_in_place(content)
+                    if endpoint_name == "/first-rows" and assets_storage_client.url_preparator:
+                        with StepProfiler(method=method, step="prepare assets urls"):
+                            assets_storage_client.url_preparator.prepare_urls_in_first_rows_in_place(content, revision=revision)
                     elif endpoint_name == "/croissant-crumbs" and not full:
                         with StepProfiler(
                             method=method,

@@ -6,7 +6,7 @@ from typing import Any
 
 from datasets import Dataset
 
-from libcommon.url_signer import AssetUrlPath
+from libcommon.url_preparator import AssetUrlPath
 
 
 @dataclass

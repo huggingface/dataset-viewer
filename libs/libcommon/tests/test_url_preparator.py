@@ -7,10 +7,11 @@ from typing import Literal
 
 import pytest
 
+from libcommon.cloudfront import CloudFrontSigner
 from libcommon.constants import MAX_NUM_ROWS_PER_PAGE
 from libcommon.dtos import RowsContent
 from libcommon.storage_client import StorageClient
-from libcommon.url_signer import URLSigner, get_asset_url_paths, to_features_dict
+from libcommon.url_preparator import URLPreparator, get_asset_url_paths, to_features_dict
 from libcommon.viewer_utils.features import to_features_list
 from libcommon.viewer_utils.rows import create_first_rows_response
 
@@ -49,7 +50,7 @@ def test_get_asset_url_paths(datasets_fixtures: Mapping[str, DatasetFixture], da
 FAKE_SIGNING_PREFIX = "?signed"
 
 
-class FakeUrlSigner(URLSigner):
+class FakeUrlSigner(CloudFrontSigner):
     def __init__(self) -> None:
         self.counter = 0
 
@@ -59,14 +60,15 @@ class FakeUrlSigner(URLSigner):
 
 
 @pytest.mark.parametrize("dataset_name", DATASETS_NAMES)
-def test__sign_asset_url_path_in_place(datasets_fixtures: Mapping[str, DatasetFixture], dataset_name: str) -> None:
+def test__prepare_asset_url_path_in_place(datasets_fixtures: Mapping[str, DatasetFixture], dataset_name: str) -> None:
     dataset_fixture = datasets_fixtures[dataset_name]
     url_signer = FakeUrlSigner()
+    url_preparator = URLPreparator(url_signer=url_signer)
     for asset_url_path in dataset_fixture.expected_asset_url_paths:
         cell_asset_url_path = asset_url_path.enter()
         # ^ remove the column name, as we will sign the cell, not the row
-        url_signer._sign_asset_url_path_in_place(
-            cell=deepcopy(dataset_fixture.expected_cell), asset_url_path=cell_asset_url_path
+        url_preparator._prepare_asset_url_path_in_place(
+            cell=deepcopy(dataset_fixture.expected_cell), asset_url_path=cell_asset_url_path, revision="a_revision"
         )
 
     assert url_signer.counter == dataset_fixture.expected_num_asset_urls
@@ -99,13 +101,14 @@ def test__get_asset_url_paths_from_first_rows(
     )
 
     url_signer = FakeUrlSigner()
-    asset_url_paths = url_signer._get_asset_url_paths_from_first_rows(first_rows=first_rows)
+    url_preparator = URLPreparator(url_signer=url_signer)
+    asset_url_paths = url_preparator._get_asset_url_paths_from_first_rows(first_rows=first_rows)
 
     assert asset_url_paths == dataset_fixture.expected_asset_url_paths
 
 
 @pytest.mark.parametrize("dataset_name", DATASETS_NAMES)
-def test_sign_urls_in_first_rows_in_place(
+def test_prepare_urls_in_first_rows_in_place(
     storage_client: StorageClient, datasets_fixtures: Mapping[str, DatasetFixture], dataset_name: str
 ) -> None:
     dataset_fixture = datasets_fixtures[dataset_name]
@@ -127,7 +130,8 @@ def test_sign_urls_in_first_rows_in_place(
     )
 
     url_signer = FakeUrlSigner()
-    url_signer.sign_urls_in_first_rows_in_place(first_rows=first_rows)
+    url_preparator = URLPreparator(url_signer=url_signer)
+    url_preparator.prepare_urls_in_first_rows_in_place(first_rows=first_rows, revision=DEFAULT_REVISION)
 
     assert url_signer.counter == dataset_fixture.expected_num_asset_urls
 
@@ -142,7 +146,7 @@ def test_sign_urls_in_first_rows_in_place(
         ("audios_list", 447 + SOME_BYTES, "complete"),
         ("images_sequence", 484 + SOME_BYTES, "complete"),
         ("audios_sequence", 476 + SOME_BYTES, "complete"),
-        ("dict_of_audios_and_images", 797 + SOME_BYTES, "complete"),
+        ("dict_of_audios_and_images", 897 + SOME_BYTES, "complete"),
         # with rows_max_bytes < response size, the response is:
         # - not truncated for top-level Audio and Image features
         # - truncated for nested Audio and Image features
@@ -152,10 +156,10 @@ def test_sign_urls_in_first_rows_in_place(
         ("audios_list", 447 - SOME_BYTES, "truncated_cells"),
         ("images_sequence", 484 - SOME_BYTES, "truncated_cells"),
         ("audios_sequence", 476 - SOME_BYTES, "truncated_cells"),
-        ("dict_of_audios_and_images", 797 - SOME_BYTES, "truncated_cells"),
+        ("dict_of_audios_and_images", 897 - SOME_BYTES, "truncated_cells"),
     ],
 )
-def test_sign_urls_in_first_rows_in_place_with_truncated_cells(
+def test_prepare_urls_in_first_rows_in_place_with_truncated_cells(
     storage_client: StorageClient,
     datasets_fixtures: Mapping[str, DatasetFixture],
     dataset_name: str,
@@ -181,7 +185,8 @@ def test_sign_urls_in_first_rows_in_place_with_truncated_cells(
     )
 
     url_signer = FakeUrlSigner()
-    url_signer.sign_urls_in_first_rows_in_place(first_rows=first_rows)
+    url_preparator = URLPreparator(url_signer=url_signer)
+    url_preparator.prepare_urls_in_first_rows_in_place(first_rows=first_rows, revision=DEFAULT_REVISION)
 
     if expected == "complete":
         assert len(first_rows["rows"][0]["truncated_cells"]) == 0

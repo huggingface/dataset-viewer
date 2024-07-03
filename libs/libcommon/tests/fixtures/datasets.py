@@ -26,7 +26,7 @@ from datasets import (
 )
 from datasets.features.features import FeatureType
 
-from libcommon.url_signer import AssetUrlPath
+from libcommon.url_preparator import AssetUrlPath
 
 from ..constants import (
     ASSETS_BASE_URL,
