@@ -223,6 +223,7 @@ class JobDocument(Document):
                 },
                 "priority": self.priority,
                 "difficulty": self.difficulty,
+                "started_at": self.started_at,
             }
         )
 

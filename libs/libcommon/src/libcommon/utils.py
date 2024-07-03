@@ -92,6 +92,11 @@ def get_datetime(days: Optional[float] = None) -> datetime:
     return date
 
 
+def get_duration(started_at: datetime) -> int:
+    """Get time in seconds passed from `started_at` until now."""
+    return int((get_datetime() - started_at).total_seconds())
+
+
 def get_expires(seconds: float) -> datetime:
     # see https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/private-content-creating-signed-url-canned-policy.html
     return datetime.now(timezone.utc) + timedelta(seconds=seconds)
