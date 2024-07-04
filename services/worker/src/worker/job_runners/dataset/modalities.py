@@ -248,11 +248,15 @@ def detect_modalities_from_filetypes(dataset: str) -> set[DatasetModality]:
         has_multi_rows_files = any(
             filetype["count"] for filetype in content["filetypes"] if filetype["extension"] in MULTI_ROWS_EXTENSIONS
         )
-        min_count = round(0.1 * total_count)
-        min_count_for_image = 10 if has_multi_rows_files else 1
+        min_count = round(0.1 * total_count)  # ignore files that are <10% of the data files to avoid false positives
+        min_count_for_image = (
+            10 if has_multi_rows_files else 1
+        )  # images are often used as figures in README, so we also add this threshold
         for filetype in content["filetypes"]:
             # we condition by a number of files (filetype["count"] > threshold) to avoid false positives
-            if filetype["count"] < (min_count_for_image if filetype["extension"] in IMAGE_EXTENSIONS else min_count):
+            if filetype["count"] < min_count:
+                continue
+            elif filetype["extension"] in IMAGE_EXTENSIONS and filetype["count"] < min_count_for_image:
                 continue
             if filetype["extension"] in IMAGE_EXTENSIONS:
                 modalities.add("image")
