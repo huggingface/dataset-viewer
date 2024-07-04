@@ -10,6 +10,7 @@ from collections.abc import Callable, Sequence
 from datetime import datetime, timedelta, timezone
 from fnmatch import fnmatch
 from pathlib import Path
+import pytz
 from typing import Any, Optional, TypeVar, Union, cast
 
 import orjson
@@ -93,8 +94,11 @@ def get_datetime(days: Optional[float] = None) -> datetime:
 
 
 def get_duration(started_at: datetime) -> int:
-    """Get time in seconds that has passed from `started_at` until now. """
-    return int((get_datetime().replace(tzinfo=None) - started_at.replace(tzinfo=None)).total_seconds())
+    """
+    Get time in seconds that has passed from `started_at` until now. `started_at` must be in UTC time zone.
+    `started_at` must be in UTC timezone.
+    """
+    return int((get_datetime() - pytz.UTC.localize(started_at)).total_seconds())
 
 
 def get_expires(seconds: float) -> datetime:
