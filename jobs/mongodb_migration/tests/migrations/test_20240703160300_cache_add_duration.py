@@ -22,7 +22,7 @@ def test_cache_add_retries_to_cache(mongo_host: str) -> None:
                     "kind": "kind",
                     "dataset": "test2",
                     "http_status": 200,
-                    "duration": 10,
+                    "duration": 10.5,
                 },
             ]
         )
@@ -38,7 +38,7 @@ def test_cache_add_retries_to_cache(mongo_host: str) -> None:
 
         result = list(db[CACHE_COLLECTION_RESPONSES].find({"dataset": "test2"}))
         assert len(result) == 1
-        assert result[0]["duration"] == 10
+        assert result[0]["duration"] == 10.5
 
         migration.down()
         result = list(db[CACHE_COLLECTION_RESPONSES].find())

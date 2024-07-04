@@ -77,7 +77,7 @@ class JobResult(TypedDict):
     job_runner_version: int
     is_success: bool
     output: Optional[JobOutput]
-    duration: Optional[int]
+    duration: Optional[float]
 
 
 class SplitHubFile(TypedDict):

@@ -131,7 +131,7 @@ class CachedResponseDocument(Document):
         content (`dict`): The content of the cached response. Can be an error or a valid content.
         details (`dict`, *optional*): Additional details, eg. a detailed error that we don't want to send as a response.
         updated_at (`datetime`): When the cache entry has been last updated.
-        duration (`int`, *optional*): Duration of a corresponding job in seconds.
+        duration (`float`, *optional*): Duration of a corresponding job in seconds.
         job_runner_version (`int`): The version of the job runner that cached the response.
         failed_runs (`int`): The number of failed_runs to get cached result.
         dataset_git_revision (`str`): The commit (of the git dataset repo) used to generate the response.
@@ -154,7 +154,7 @@ class CachedResponseDocument(Document):
     failed_runs = IntField(default=0)
     details = DictField()
     updated_at = DateTimeField(default=get_datetime)
-    duration = IntField()
+    duration = FloatField()
 
     meta = {
         "collection": CACHE_COLLECTION_RESPONSES,
@@ -281,7 +281,7 @@ def upsert_response(
     job_runner_version: Optional[int] = None,
     progress: Optional[float] = None,
     updated_at: Optional[datetime] = None,
-    duration: Optional[int] = None,
+    duration: Optional[float] = None,
     failed_runs: int = 0,
 ) -> None:
     decrease_metric_for_artifact(kind=kind, dataset=dataset, config=config, split=split)
@@ -310,7 +310,7 @@ def upsert_response_params(
     job_runner_version: Optional[int] = None,
     progress: Optional[float] = None,
     updated_at: Optional[datetime] = None,
-    duration: Optional[int] = None,
+    duration: Optional[float] = None,
     failed_runs: int = 0,
 ) -> None:
     dataset, config, split, revision = (

@@ -169,7 +169,7 @@ class WorkerExecutor:
             last_updated = worker_state["last_updated"]
             coefficient = 10 if long_job["params"]["dataset"] == "cerebras/SlimPajama-627B" else 1
             if last_updated + timedelta(seconds=coefficient * self.max_job_duration_seconds) <= get_datetime():
-                _duration_seconds = get_duration(last_updated)
+                _duration_seconds = int(get_duration(last_updated))
                 logging.warning(
                     f"Job {long_job} exceeded maximum duration of"
                     f" {self.max_job_duration_seconds} seconds ({_duration_seconds} seconds)."
