@@ -189,6 +189,20 @@ def test_delete_waiting_jobs_by_job_id_wrong_format() -> None:
     assert JobTotalMetricDocument.objects().count() == 0
 
 
+def test_delete_waiting_jobs_by_job_id_blocked() -> None:
+    queue = Queue()
+    job = queue.add_job(job_type="test_type", dataset="dataset", revision="test_revision", difficulty=50)
+    assert_metric_jobs_per_worker(worker_size=WorkerSize.medium, jobs_count=1)
+    assert queue.delete_waiting_jobs_by_job_id(job_ids=[job.info()["job_id"]]) == 1
+    assert_metric_jobs_per_worker(worker_size=WorkerSize.medium, jobs_count=0)
+
+    job = queue.add_job(job_type="test_type", dataset="dataset", revision="test_revision", difficulty=100)
+    block_dataset("dataset")
+    assert_metric_jobs_per_worker(worker_size=WorkerSize.medium, jobs_count=0)
+    assert queue.delete_waiting_jobs_by_job_id(job_ids=[job.info()["job_id"]]) == 1
+    assert_metric_jobs_per_worker(worker_size=WorkerSize.medium, jobs_count=0)
+
+
 def check_job(queue: Queue, expected_dataset: str, expected_split: str, expected_priority: Priority) -> None:
     job_info = queue.start_job()
     assert job_info["params"]["dataset"] == expected_dataset

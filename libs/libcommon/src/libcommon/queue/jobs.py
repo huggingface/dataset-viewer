@@ -368,7 +368,7 @@ class Queue:
         try:
             existing = JobDocument.objects(pk__in=job_ids, status=Status.WAITING)
             for job in existing.all():
-                decrease_metric(dataset=job.type, job_type=job.type, status=job.status, difficulty=job.difficulty)
+                decrease_metric(dataset=job.dataset, job_type=job.type, status=job.status, difficulty=job.difficulty)
             deleted_jobs = existing.delete()
             return 0 if deleted_jobs is None else deleted_jobs
         except Exception:
