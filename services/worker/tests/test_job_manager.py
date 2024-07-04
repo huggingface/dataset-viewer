@@ -1,3 +1,4 @@
+import time
 from http import HTTPStatus
 
 import pytest
@@ -113,10 +114,13 @@ def test_backfill(priority: Priority, app_config: AppConfig) -> None:
     job_manager = JobManager(job_info=job_info, app_config=app_config, job_runner=job_runner)
     assert job_manager.priority == priority
 
+    time.sleep(1)  # to check that duration is computed reasonably (without sleep these jobs are less than 1 sec)
     job_result = job_manager.run_job()
     assert job_result["is_success"]
     assert job_result["output"] is not None
     assert job_result["output"]["content"] == {"key": "value"}
+    assert job_result["duration"] is not None
+    assert job_result["duration"] >= 1
 
     job_manager.finish(job_result=job_result)
 
