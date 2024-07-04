@@ -95,10 +95,15 @@ def get_datetime(days: Optional[float] = None) -> datetime:
 
 def get_duration(started_at: datetime) -> int:
     """
-    Get time in seconds that has passed from `started_at` until now. `started_at` must be in UTC time zone.
+    Get time in seconds that has passed from `started_at` until now.
     `started_at` must be in UTC timezone.
     """
-    return int((get_datetime() - pytz.UTC.localize(started_at)).total_seconds())
+    started_at = pytz.UTC.localize(started_at) if not started_at.tzinfo else started_at
+    return int((get_datetime() - started_at).total_seconds())
+
+
+def get_duration_or_none(started_at: Optional[datetime]) -> Optional[int]:
+    return get_duration(started_at) if started_at else None
 
 
 def get_expires(seconds: float) -> datetime:
