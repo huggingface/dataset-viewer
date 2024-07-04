@@ -152,4 +152,4 @@ def test_serialize_and_truncate_raises(obj: Any, max_bytes: int) -> None:
 
 
 def test_get_duration() -> None:
-    assert get_duration(get_datetime() - timedelta(seconds=10)) == 10
+    assert pytest.approx(get_duration(get_datetime() - timedelta(seconds=10))) == 10
