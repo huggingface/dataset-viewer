@@ -140,6 +140,20 @@ UPSTREAM_RESPONSE_FILETYPES_TEXT: UpstreamResponse = UpstreamResponse(
     },
     progress=1.0,
 )
+UPSTREAM_RESPONSE_FILETYPES_IMAGE_AND_ONE_TEXT_FILE: UpstreamResponse = UpstreamResponse(
+    kind="dataset-filetypes",
+    dataset=IMAGE_DATASET,
+    dataset_git_revision=REVISION_NAME,
+    http_status=HTTPStatus.OK,
+    content={
+        "filetypes": [
+            {"extension": ".jpg", "count": 20},
+            {"extension": ".txt", "count": 1},  # shouldn't be taken into account since it's <10% of files
+        ],
+        "partial": False,
+    },
+    progress=1.0,
+)
 UPSTREAM_RESPONSE_FILETYPES_ALL: UpstreamResponse = UpstreamResponse(
     kind="dataset-filetypes",
     dataset=TEXT_DATASET,
@@ -287,6 +301,13 @@ def get_job_runner(
             IMAGE_DATASET,
             [
                 UPSTREAM_RESPONSE_INFO_NOT_TABULAR_1,
+            ],
+            EXPECTED_IMAGE,
+        ),
+        (
+            IMAGE_DATASET,
+            [
+                UPSTREAM_RESPONSE_FILETYPES_IMAGE_AND_ONE_TEXT_FILE,
             ],
             EXPECTED_IMAGE,
         ),
