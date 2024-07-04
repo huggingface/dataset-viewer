@@ -34,7 +34,7 @@ from libcommon.constants import (
     ERROR_CODES_TO_RETRY,
 )
 from libcommon.dtos import JobParams
-from libcommon.utils import get_datetime, get_duration
+from libcommon.utils import get_datetime
 
 
 class DateCodec(TypeEncoder):  # type: ignore[misc]
@@ -280,8 +280,8 @@ def upsert_response(
     details: Optional[Mapping[str, Any]] = None,
     job_runner_version: Optional[int] = None,
     progress: Optional[float] = None,
-    started_at: Optional[datetime] = None,
     updated_at: Optional[datetime] = None,
+    duration: Optional[int] = None,
     failed_runs: int = 0,
 ) -> None:
     decrease_metric_for_artifact(kind=kind, dataset=dataset, config=config, split=split)
@@ -295,7 +295,7 @@ def upsert_response(
         updated_at=updated_at or get_datetime(),
         job_runner_version=job_runner_version,
         failed_runs=failed_runs,
-        duration=get_duration(started_at) if started_at else None,
+        duration=duration,
     )
     increase_metric(kind=kind, http_status=http_status, error_code=error_code)
 
@@ -309,8 +309,8 @@ def upsert_response_params(
     details: Optional[Mapping[str, Any]] = None,
     job_runner_version: Optional[int] = None,
     progress: Optional[float] = None,
-    started_at: Optional[datetime] = None,
     updated_at: Optional[datetime] = None,
+    duration: Optional[int] = None,
     failed_runs: int = 0,
 ) -> None:
     dataset, config, split, revision = (
@@ -331,8 +331,8 @@ def upsert_response_params(
         http_status=http_status,
         job_runner_version=job_runner_version,
         progress=progress,
-        started_at=started_at,
         updated_at=updated_at,
+        duration=duration,
         failed_runs=failed_runs,
     )
 

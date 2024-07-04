@@ -1175,7 +1175,7 @@ def finish_job(
         details=output["details"],
         progress=output["progress"],
         failed_runs=failed_runs,
-        started_at=job_info["started_at"],
+        duration=job_result["duration"],
     )
     logging.debug("the job output has been written to the cache.")
     # finish the job
