@@ -204,7 +204,7 @@ _3D_EXTENSIONS = {
 TEXT_EXTENSIONS = {
     ".txt",
 }
-OTHER_EXTENSIONS = {".parquet", ".csv", ".json", ".jsonl", ".arrow"}
+MULTI_ROWS_EXTENSIONS = {".parquet", ".csv", ".json", ".jsonl", ".arrow"}
 ALL_EXTENSIONS = (
     IMAGE_EXTENSIONS
     | AUDIO_EXTENSIONS
@@ -214,7 +214,7 @@ ALL_EXTENSIONS = (
     | GEOSPATIAL_EXTENSIONS
     | _3D_EXTENSIONS
     | TEXT_EXTENSIONS
-    | OTHER_EXTENSIONS
+    | MULTI_ROWS_EXTENSIONS
 )
 
 
@@ -245,10 +245,14 @@ def detect_modalities_from_filetypes(dataset: str) -> set[DatasetModality]:
         total_count = sum(
             filetype["count"] for filetype in content["filetypes"] if filetype["extension"] in ALL_EXTENSIONS
         )
+        has_multi_rows_files = any(
+            filetype["count"] for filetype in content["filetypes"] if filetype["extension"] in MULTI_ROWS_EXTENSIONS
+        )
         min_count = round(0.1 * total_count)
+        min_count_for_image = 10 if has_multi_rows_files else 1
         for filetype in content["filetypes"]:
             # we condition by a number of files (filetype["count"] > threshold) to avoid false positives
-            if filetype["count"] < min_count:
+            if filetype["count"] < (min_count_for_image if filetype["extension"] in IMAGE_EXTENSIONS else min_count):
                 continue
             if filetype["extension"] in IMAGE_EXTENSIONS:
                 modalities.add("image")
