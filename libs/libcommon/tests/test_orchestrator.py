@@ -266,7 +266,7 @@ def populate_queue() -> None:
 def test_get_pending_jobs_df() -> None:
     populate_queue()
     pending_jobs_df = Queue().get_pending_jobs_df(dataset=DATASET_NAME)
-    assert pending_jobs_df.shape == (250, 9)
+    assert pending_jobs_df.shape == (250, 10)
 
 
 @pytest.mark.parametrize(
