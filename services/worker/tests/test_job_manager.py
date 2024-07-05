@@ -90,7 +90,7 @@ def test_check_type(
         Priority.NORMAL,
     ],
 )
-def test_backfill(priority: Priority, app_config: AppConfig) -> None:
+def test_run_job_and_finish(priority: Priority, app_config: AppConfig) -> None:
     queue = Queue()
     assert JobDocument.objects().count() == 0
     queue.add_job(
