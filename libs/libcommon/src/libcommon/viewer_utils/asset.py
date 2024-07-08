@@ -40,7 +40,9 @@ def create_image_file(
     format: str,
     storage_client: "StorageClient",
 ) -> ImageSource:
-    # We use a placeholder revision that will be replaced later by the
+    # We use a placeholder revision in the JSON stored in the database,
+    # while the path of the file stored on the disk/s3 contains the revision.
+    # The placeholder will be replaced later by the
     # dataset_git_revision of cache responses when the data will be accessed.
     # This is useful to allow moving files to a newer revision without having
     # to modify the cached rows content.
