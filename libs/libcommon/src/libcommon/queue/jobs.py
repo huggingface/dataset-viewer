@@ -701,8 +701,8 @@ class Queue:
         # ^ bug: the lock owner is not set to the job id anymore when calling start_job()!
         if was_blocked:
             pending_jobs = self.get_pending_jobs_df(dataset=job.dataset)
-            for _, pendinf_job in pending_jobs.iterrows():
-                decrease_worker_size_metrics(pendinf_job["difficulty"])
+            for _, pending_job in pending_jobs.iterrows():
+                decrease_worker_size_metrics(pending_job["difficulty"])
 
         return job_priority
 
