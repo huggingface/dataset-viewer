@@ -141,6 +141,30 @@ def test_add_job() -> None:
     assert_past_jobs_number(1)
 
 
+def test_finish_job_blocked() -> None:
+    test_type = "test_type"
+    test_dataset = "test_dataset"
+    test_revision = "test_revision"
+    test_difficulty = 50
+
+    queue = Queue()
+    assert WorkerSizeJobsCountDocument.objects().count() == 0
+
+    queue.add_job(job_type=test_type, dataset=test_dataset, revision=test_revision, difficulty=test_difficulty)
+    queue.add_job(job_type="test_type2", dataset=test_dataset, revision=test_revision, difficulty=test_difficulty)
+    queue.add_job(job_type="test_type3", dataset=test_dataset, revision=test_revision, difficulty=test_difficulty)
+    queue.add_job(job_type="test_type4", dataset=test_dataset, revision=test_revision, difficulty=test_difficulty)
+
+    assert_metric_jobs_per_worker(worker_size=WorkerSize.medium, jobs_count=4)
+
+    job_info = queue.start_job()
+    assert_metric_jobs_per_worker(worker_size=WorkerSize.medium, jobs_count=3)
+
+    with patch("libcommon.queue.jobs.create_past_job", return_value=True):
+        queue.finish_job(job_id=job_info["job_id"])
+        assert_metric_jobs_per_worker(worker_size=WorkerSize.medium, jobs_count=0)
+
+
 @pytest.mark.parametrize(
     "jobs_ids,job_ids_to_delete,expected_deleted_number",
     [
