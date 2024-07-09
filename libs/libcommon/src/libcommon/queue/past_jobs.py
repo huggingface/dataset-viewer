@@ -75,7 +75,7 @@ class PastJobDocument(Document):
     objects = QuerySetManager["PastJobDocument"]()
 
 
-def create_past_job(dataset: str, started_at: datetime, finished_at: datetime) -> None:
+def create_past_job(dataset: str, started_at: datetime, finished_at: datetime) -> bool:
     """Create a past job in the mongoDB database.
 
     After creating the entry, we check if it should be rate-limited (if it isn't yet), and if so, we block
@@ -85,12 +85,17 @@ def create_past_job(dataset: str, started_at: datetime, finished_at: datetime) -
         dataset (`str`): The dataset on which to apply the job.
         started_at (`datetime`): The date the job has started.
         finished_at (`datetime`): The date the job has finished.
+
+    Returns:
+        `bool`: If the dataset was blocked.
     """
     duration = int((finished_at - started_at).total_seconds())
     if duration < JOB_DURATION_MIN_SECONDS:
-        return
+        return False
     PastJobDocument(dataset=dataset, duration=duration, finished_at=finished_at).save()
 
     if not is_blocked(dataset) and duration > JOB_DURATION_CHECK_MIN_SECONDS:
         if PastJobDocument.objects(dataset=dataset).sum("duration") > DATASET_BLOCKAGE_THRESHOLD_SECONDS:
             block_dataset(dataset)
+            return True
+    return False

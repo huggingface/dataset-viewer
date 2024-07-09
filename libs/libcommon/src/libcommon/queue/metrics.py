@@ -105,41 +105,47 @@ class WorkerSizeJobsCountDocument(Document):
     objects = QuerySetManager["WorkerSizeJobsCountDocument"]()
 
 
-def _update_metrics(dataset: str, job_type: str, status: str, increase_by: int, difficulty: int) -> None:
+def _update_metrics(job_type: str, status: str, increase_by: int) -> None:
     JobTotalMetricDocument.objects(job_type=job_type, status=status).update(
         upsert=True,
         write_concern={"w": "majority", "fsync": True},
         read_concern={"level": "majority"},
         inc__total=increase_by,
     )
-    if status == Status.WAITING:
-        # Do not consider blocked datasets for auto-scaling metrics
-        if not is_blocked(dataset):
-            worker_size = WorkerSizeJobsCountDocument.get_worker_size(difficulty=difficulty)
-            WorkerSizeJobsCountDocument.objects(worker_size=worker_size).update(
-                upsert=True,
-                write_concern={"w": "majority", "fsync": True},
-                read_concern={"level": "majority"},
-                inc__jobs_count=increase_by,
-            )
+
+
+def _update_worker_size_metrics(increase_by: int, difficulty: int) -> None:
+    worker_size = WorkerSizeJobsCountDocument.get_worker_size(difficulty=difficulty)
+    WorkerSizeJobsCountDocument.objects(worker_size=worker_size).update(
+        upsert=True,
+        write_concern={"w": "majority", "fsync": True},
+        read_concern={"level": "majority"},
+        inc__jobs_count=increase_by,
+    )
 
 
 def increase_metric(dataset: str, job_type: str, status: str, difficulty: int) -> None:
-    _update_metrics(
-        dataset=dataset, job_type=job_type, status=status, increase_by=DEFAULT_INCREASE_AMOUNT, difficulty=difficulty
-    )
+    _update_metrics(job_type=job_type, status=status, increase_by=DEFAULT_INCREASE_AMOUNT)
+
+    # Do not consider blocked datasets for auto-scaling metrics
+    if status == Status.WAITING and not is_blocked(dataset):
+        _update_worker_size_metrics(DEFAULT_INCREASE_AMOUNT, difficulty)
 
 
-def decrease_metric(dataset: str, job_type: str, status: str, difficulty: int) -> None:
-    _update_metrics(
-        dataset=dataset, job_type=job_type, status=status, increase_by=DEFAULT_DECREASE_AMOUNT, difficulty=difficulty
-    )
+def decrease_metric(job_type: str, status: str, difficulty: int) -> None:
+    _update_metrics(job_type=job_type, status=status, increase_by=DEFAULT_DECREASE_AMOUNT)
+    if status == Status.WAITING:
+        _update_worker_size_metrics(DEFAULT_DECREASE_AMOUNT, difficulty)
+
+
+def decrease_worker_size_metrics(difficulty: int) -> None:
+    _update_worker_size_metrics(DEFAULT_DECREASE_AMOUNT, difficulty)
 
 
 def update_metrics_for_type(
     dataset: str, job_type: str, previous_status: str, new_status: str, difficulty: int
 ) -> None:
     if job_type is not None:
-        decrease_metric(dataset=dataset, job_type=job_type, status=previous_status, difficulty=difficulty)
+        decrease_metric(job_type=job_type, status=previous_status, difficulty=difficulty)
         increase_metric(dataset=dataset, job_type=job_type, status=new_status, difficulty=difficulty)
         # ^ this does not affect WorkerSizeJobsCountDocument, so we don't pass the job difficulty

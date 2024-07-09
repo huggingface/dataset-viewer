@@ -25,25 +25,3 @@ jobs:
       - name: Lint chart with prod values
         run: helm lint --values env/prod.yaml
         working-directory: chart
-  helm-diff:
-    name: Diff
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-      - name: Update dependencies
-        run: helm dependencies update
-        working-directory: chart
-      - name: Tailscale
-        uses: tailscale/github-action@main
-        with:
-          authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
-          version: ${{ vars.TAILSCALE_CLIENT_VERSION }}
-      - uses: XciD/argocd-diff-action@master
-        name: ArgoCD Diff
-        with:
-          argocd-server-url: ${{ secrets.ARGO_CD_URL }}
-          argocd-token: ${{ secrets.ARGO_CD_CI_TOKEN }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          argocd-version: v2.6.1
-          argocd-extra-cli-args: --grpc-web --loglevel error
