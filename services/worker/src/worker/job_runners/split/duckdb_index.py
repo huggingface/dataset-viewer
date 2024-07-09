@@ -323,7 +323,11 @@ def compute_split_duckdb_index_response(
     split_parquet_directory = duckdb_index_file_directory / config / split_directory
     all_split_parquets = str(split_parquet_directory / "*.parquet")
 
-    transformed_df = compute_transformed_data(split_parquet_directory, features)
+    transformed_df = None
+    try:
+        transformed_df = compute_transformed_data(split_parquet_directory, features)
+    except Exception as err:
+        logging.debug(f"Unable to compute transformed data {err}, skipping statistics.")
 
     # index all columns
     db_path = duckdb_index_file_directory.resolve() / index_filename
