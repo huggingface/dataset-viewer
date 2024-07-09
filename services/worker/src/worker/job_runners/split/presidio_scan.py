@@ -229,7 +229,7 @@ def compute_presidio_entities_scan_response(
         or "presidio" in dataset
         or "ssn" in dataset
         or "DVUser/" in dataset
-        or dataset in top_2k_most_liked_datasets
+        or dataset in enabled_datasets
     ):
         raise PresidioScanNotEnabledForThisDataset(dataset)
     logging.info(f"compute 'split-presidio-scan' for {dataset=} {config=} {split=}")
@@ -669,3 +669,5 @@ top_2k_most_liked_datasets = {
     "RUCAIBox/Story-Generation", "jonathanli/law-stack-exchange", "ai-forever/school_notebooks_RU", "ashraq/esc50", "waifu-research-department/regularization", "sbx/superlim-2", "ashraq/financial-news", "AluminiumOxide/personal_latent_diffusion", "elenanereiss/german-ler", "Nerfgun3/flower_style",
     "lmqg/qa_harvesting_from_wikipedia", "Nerfgun3/land_style", "NeelNanda/counterfact-tracing", "VietAI/vi_pubmed", "andyyang/stable_diffusion_prompts_2m", "its5Q/yandex-q", "wanng/laion-high-resolution-chinese", "Salesforce/rose", "Jean-Baptiste/financial_news_sentiment", "diltdicker/romance_novel_data-2022",
 }
+other_datasets = {"OpenCo7/UpVoteWeb"}
+enabled_datasets = top_2k_most_liked_datasets | other_datasets
