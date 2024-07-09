@@ -133,7 +133,7 @@ jobs:
         uses: aurelien-baudet/workflow-dispatch@v2
         with:
           workflow: Update application values
-          repo: huggingface-internal/infra-deployments
+          repo: huggingface/infra-deployments
           wait-for-completion: true
           ref: refs/heads/main
           token: ${{ secrets.ARGO_CD_TOKEN }}
