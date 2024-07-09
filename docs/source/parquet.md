@@ -199,9 +199,17 @@ To read and query the Parquet files, take a look at the [Query datasets from the
 
 ## Partially converted datasets
 
-The Parquet version can be partial if the dataset is not already in Parquet format or if it is bigger than 5GB.
+The Parquet version can be partial in two cases:
+- if the dataset is already in Parquet format but it contains row groups bigger than the recommended size (100-300MB uncompressed)
+- if the dataset is not already in Parquet format or if it is bigger than 5GB.
 
 In that case the Parquet files are generated up to 5GB and placed in a split directory prefixed with "partial", e.g. "partial-train" instead of "train".
+
+You can check the row groups size directly on Hugging Face using the Parquet metadata sidebar, for example [here](https://huggingface.co/datasets/HuggingFaceFW/fineweb-edu/tree/main/data/CC-MAIN-2013-20?show_file_info=data%2FCC-MAIN-2013-20%2Ftrain-00000-of-00014.parquet):
+
+![clic-parquet-metadata-sidebar](https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/datasets-server/clic-parquet-metadata-sidebar.png)
+
+![parquet-metadata-sidebar-total-byte-size](https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/datasets-server/parquet-metadata-sidebar-total-byte-size.png)
 
 ## Parquet-native datasets
 
