@@ -90,6 +90,9 @@ from mongodb_migration.migrations._20240626095000_cache_add_stemmer_in_split_duc
 from mongodb_migration.migrations._20240626151600_cache_remove_has_fts_field_in_split_duckdb_index import (
     MigrationRemoveHasFTSFromSplitDuckdbIndexCacheResponse,
 )
+from mongodb_migration.migrations._20240703160300_cache_add_duration import (
+    MigrationAddDurationToCacheResponse,
+)
 from mongodb_migration.renaming_migrations import (
     CacheRenamingMigration,
     QueueRenamingMigration,
@@ -405,5 +408,8 @@ class MigrationsCollector:
             MigrationRemoveHasFTSFromSplitDuckdbIndexCacheResponse(
                 version="20240626151600",
                 description="remove 'has_fts' field from 'split-duckdb-index' cache records",
+            ),
+            MigrationAddDurationToCacheResponse(
+                version="20240703160300", description="add 'duration' field to cache records"
             ),
         ]

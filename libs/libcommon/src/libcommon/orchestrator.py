@@ -519,6 +519,7 @@ class AfterJobPlan(Plan):
                     },
                     "priority": self.priority,
                     "difficulty": difficulty,
+                    "started_at": None,
                 }
             )
 
@@ -787,6 +788,7 @@ class DatasetBackfillPlan(Plan):
                         },
                         "priority": self.priority,
                         "difficulty": difficulty,
+                        "started_at": None,
                     }
                 )
             else:
@@ -1173,6 +1175,7 @@ def finish_job(
         details=output["details"],
         progress=output["progress"],
         failed_runs=failed_runs,
+        duration=job_result["duration"],
     )
     logging.debug("the job output has been written to the cache.")
     # finish the job

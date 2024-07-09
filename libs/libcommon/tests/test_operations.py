@@ -424,6 +424,7 @@ def test_2274_only_first_steps(
                         "details": None,
                         "progress": 1.0,
                     },
+                    "duration": 1,
                 }
             )
 

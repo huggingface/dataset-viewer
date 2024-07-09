@@ -54,6 +54,7 @@ def test_check_type(
         },
         priority=Priority.NORMAL,
         difficulty=50,
+        started_at=None,
     )
     with pytest.raises(ValueError):
         job_runner = DummyJobRunner(
@@ -73,6 +74,7 @@ def test_check_type(
         },
         priority=Priority.NORMAL,
         difficulty=50,
+        started_at=None,
     )
     job_runner = DummyJobRunner(
         job_info=job_info,
@@ -88,7 +90,7 @@ def test_check_type(
         Priority.NORMAL,
     ],
 )
-def test_backfill(priority: Priority, app_config: AppConfig) -> None:
+def test_run_job_and_finish(priority: Priority, app_config: AppConfig) -> None:
     queue = Queue()
     assert JobDocument.objects().count() == 0
     queue.add_job(
@@ -115,6 +117,8 @@ def test_backfill(priority: Priority, app_config: AppConfig) -> None:
     assert job_result["is_success"]
     assert job_result["output"] is not None
     assert job_result["output"]["content"] == {"key": "value"}
+    assert job_result["duration"] is not None
+    assert job_result["duration"] > 0
 
     job_manager.finish(job_result=job_result)
 
