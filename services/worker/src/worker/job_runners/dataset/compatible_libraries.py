@@ -38,7 +38,6 @@ from worker.dtos import (
     DatasetCompatibleLibrariesResponse,
     DatasetFormat,
     DatasetLibrary,
-    DatasetTag,
     LoadingCode,
 )
 from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunnerWithDatasetsCache
@@ -668,7 +667,6 @@ def compute_compatible_libraries_response(
         login_required = not HfFileSystem(token="no_token").isdir("datasets/" + dataset)  # nosec
     except NotImplementedError:  # hfh doesn't implement listing user's datasets
         pass
-    tags: list[DatasetTag] = []
     libraries: list[CompatibleLibrary] = []
     formats: list[DatasetFormat] = []
     infos: list[dict[str, Any]] = []
@@ -701,8 +699,7 @@ def compute_compatible_libraries_response(
         libraries.append(
             get_mlcroissant_compatible_library(dataset, infos, login_required=login_required, partial=partial)
         )
-        tags.append("croissant")
-    return DatasetCompatibleLibrariesResponse(tags=tags, libraries=libraries, formats=formats)
+    return DatasetCompatibleLibrariesResponse(libraries=libraries, formats=formats)
 
 
 class DatasetCompatibleLibrariesJobRunner(DatasetJobRunnerWithDatasetsCache):

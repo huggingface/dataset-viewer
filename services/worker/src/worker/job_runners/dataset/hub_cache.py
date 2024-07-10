@@ -13,7 +13,6 @@ from worker.dtos import (
     DatasetHubCacheResponse,
     DatasetLibrary,
     DatasetModality,
-    DatasetTag,
     JobResult,
 )
 from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
@@ -88,7 +87,6 @@ def compute_hub_cache_response(dataset: str) -> tuple[DatasetHubCacheResponse, f
     except Exception:
         logging.info(f"Missing 'dataset-size' response for {dataset=}. We let the fields empty.")
 
-    tags: list[DatasetTag] = []
     libraries: list[DatasetLibrary] = []
     formats: list[DatasetFormat] = []
     modalities: list[DatasetModality] = []
@@ -96,7 +94,6 @@ def compute_hub_cache_response(dataset: str) -> tuple[DatasetHubCacheResponse, f
         compatible_libraries_response = get_previous_step_or_raise(
             kind="dataset-compatible-libraries", dataset=dataset
         )
-        tags = compatible_libraries_response["content"]["tags"]
         compatible_libraries: list[CompatibleLibrary] = compatible_libraries_response["content"]["libraries"]
         libraries = [compatible_library["library"] for compatible_library in compatible_libraries]
         formats = compatible_libraries_response["content"].get("formats", [])
@@ -105,7 +102,7 @@ def compute_hub_cache_response(dataset: str) -> tuple[DatasetHubCacheResponse, f
         logging.info(f"Missing 'dataset-compatible-libraries' response for {dataset=}")
     except KeyError:
         raise PreviousStepFormatError(
-            "Previous step 'dataset-compatible-libraries' did not return the expected content: 'tags', 'libraries'."
+            "Previous step 'dataset-compatible-libraries' did not return the expected content: 'libraries'."
         )
     except Exception:
         logging.info("Error while parsing 'dataset-compatible-libraries' response. We let the fields empty.")
@@ -129,7 +126,6 @@ def compute_hub_cache_response(dataset: str) -> tuple[DatasetHubCacheResponse, f
             viewer=viewer,
             partial=partial,
             num_rows=num_rows,
-            tags=tags,
             libraries=libraries,
             formats=formats,
             modalities=modalities,
