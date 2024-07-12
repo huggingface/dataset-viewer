@@ -2,12 +2,15 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
+from http import HTTPStatus
 
 from datasets import Audio, Features, Image, Sequence, Translation, TranslationVariableLanguages, Value
 from datasets.features.features import FeatureType, _visit
 from libcommon.exceptions import PreviousStepFormatError
 from libcommon.simple_cache import (
     get_previous_step_or_raise,
+    get_response,
+    CachedArtifactNotFoundError,
 )
 
 from worker.dtos import (
@@ -104,6 +107,53 @@ def detect_modalities_from_features(dataset: str) -> set[DatasetModality]:
         raise PreviousStepFormatError("Previous step did not return the expected content.", e) from e
 
     return modalities
+
+
+def detect_modalities_from_url_columns(dataset: str) -> set[DatasetModality]:
+    """
+    Detect modalities of a dataset using the type of URL columns.
+    E.g. if a column contains URLs of images.
+
+    Args:
+        dataset (`str`):
+            A namespace (user or an organization) and a repo name separated by a `/`.
+
+    Raises:
+        [~`libcommon.simple_cache.CachedArtifactError`]:
+            If the previous step gave an error.
+        [~`libcommon.exceptions.PreviousStepFormatError`]:
+            If the content of the previous step has not the expected format
+
+    Returns:
+        `set[DatasetModality]`: A set of modalities.
+    """
+    config_names_response = get_previous_step_or_raise(kind="dataset-split-names", dataset=dataset)
+    content = config_names_response["content"]
+    if "splits" not in content and not isinstance(content["splits"], list):
+        raise PreviousStepFormatError("Previous step did not return the expected content: 'splits'.")
+
+    try:
+        for split_item in content["splits"][:10]:  # no need to check all the configs
+            config = split_item["config"]
+            split = split_item["config"]
+            try:
+                response = get_response(kind="split-image-url-columns", dataset=dataset, config=config, split=split)
+            except CachedArtifactNotFoundError:
+                logging.debug("No response found in previous step for this dataset: 'split-image-url-columns'.")
+                continue
+            if response["http_status"] != HTTPStatus.OK:
+                logging.debug(f"Previous step gave an error: {response['http_status']}.")
+                continue
+            else:
+                try:
+                    if response["content"]["columns"]:
+                        return {"image"}
+                except Exception:
+                    raise PreviousStepFormatError("Previous step did not return the expected content.", e) from e
+    except Exception as e:
+        raise PreviousStepFormatError("Previous step did not return the expected content.", e) from e
+
+    return set()
 
 
 # from https://developer.mozilla.org/en-US/docs/Web/Media/Formats/Image_types
@@ -300,6 +350,14 @@ def compute_modalities_response(dataset: str) -> DatasetModalitiesResponse:
         raise
     except Exception:
         logging.info(f"failed to detect modalities from features of {dataset=}")
+        pass
+
+    try:
+        modalities.update(detect_modalities_from_url_columns(dataset))
+    except PreviousStepFormatError:
+        raise
+    except Exception:
+        logging.info(f"failed to detect modalities from file types of {dataset=}")
         pass
 
     try:
