@@ -8,9 +8,9 @@ from datasets import Audio, Features, Image, Sequence, Translation, TranslationV
 from datasets.features.features import FeatureType, _visit
 from libcommon.exceptions import PreviousStepFormatError
 from libcommon.simple_cache import (
+    CachedArtifactNotFoundError,
     get_previous_step_or_raise,
     get_response,
-    CachedArtifactNotFoundError,
 )
 
 from worker.dtos import (
@@ -148,7 +148,7 @@ def detect_modalities_from_url_columns(dataset: str) -> set[DatasetModality]:
                 try:
                     if response["content"]["columns"]:
                         return {"image"}
-                except Exception:
+                except Exception as e:
                     raise PreviousStepFormatError("Previous step did not return the expected content.", e) from e
     except Exception as e:
         raise PreviousStepFormatError("Previous step did not return the expected content.", e) from e
