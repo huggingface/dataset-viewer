@@ -634,6 +634,8 @@ get_format_for_builder: dict[str, DatasetFormat] = {
     "parquet": "parquet",
     "imagefolder": "imagefolder",
     "audiofolder": "audiofolder",
+    "text": "text",
+    "arrow": "arrow",
 }
 
 
