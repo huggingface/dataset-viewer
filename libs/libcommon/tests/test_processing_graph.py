@@ -168,8 +168,19 @@ def test_graph() -> None:
         (
             "dataset-modalities",
             ["dataset-hub-cache"],
-            ["dataset-info", "dataset-filetypes"],
-            ["dataset-config-names", "config-parquet-and-info", "config-info", "dataset-info", "dataset-filetypes"],
+            ["dataset-info", "dataset-filetypes", "split-image-url-columns"],
+            [
+                "config-info",
+                "config-parquet",
+                "config-parquet-and-info",
+                "config-parquet-metadata",
+                "config-split-names",
+                "dataset-config-names",
+                "dataset-filetypes",
+                "dataset-info",
+                "split-first-rows",
+                "split-image-url-columns",
+            ],
         ),
         (
             "dataset-is-valid",
@@ -195,7 +206,7 @@ def test_graph() -> None:
         ),
         (
             "split-image-url-columns",
-            ["split-opt-in-out-urls-scan"],
+            ["dataset-modalities", "split-opt-in-out-urls-scan"],
             ["split-first-rows"],
             [
                 "dataset-config-names",
@@ -371,6 +382,7 @@ def test_graph() -> None:
                 "dataset-size",
                 "split-duckdb-index",
                 "split-first-rows",
+                "split-image-url-columns",
                 "split-is-valid",
                 "split-descriptive-statistics",
             ],
