@@ -127,8 +127,8 @@ def detect_modalities_from_url_columns(dataset: str) -> set[DatasetModality]:
     Returns:
         `set[DatasetModality]`: A set of modalities.
     """
-    config_names_response = get_previous_step_or_raise(kind="dataset-split-names", dataset=dataset)
-    content = config_names_response["content"]
+    split_names_response = get_previous_step_or_raise(kind="dataset-split-names", dataset=dataset)
+    content = split_names_response["content"]
     if "splits" not in content and not isinstance(content["splits"], list):
         raise PreviousStepFormatError("Previous step did not return the expected content: 'splits'.")
 
