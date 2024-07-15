@@ -135,7 +135,7 @@ def detect_modalities_from_url_columns(dataset: str) -> set[DatasetModality]:
     try:
         for split_item in content["splits"][:10]:  # no need to check all the configs
             config = split_item["config"]
-            split = split_item["config"]
+            split = split_item["split"]
             try:
                 response = get_response(kind="split-image-url-columns", dataset=dataset, config=config, split=split)
             except CachedArtifactNotFoundError:

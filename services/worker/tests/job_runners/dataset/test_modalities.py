@@ -33,6 +33,7 @@ TABULAR_DATASET = "tabular-dataset"
 IMAGE_TEXT_DATASET = "image-text-dataset"
 IMAGE_DATASET = "image-dataset"
 TIME_SERIES_DATASET = "time-series-dataset"
+IMAGE_URLS_DATASET = "image-urls-dataset"
 ERROR_DATASET = "error-dataset"
 
 text_features = Features({"conversations": [{"from": Value("string"), "value": Value("string")}]})
@@ -174,6 +175,24 @@ UPSTREAM_RESPONSE_FILETYPES_ALL: UpstreamResponse = UpstreamResponse(
     },
     progress=1.0,
 )
+UPSTREAM_RESPONSE_IMAGE_URL_DATASET_SPLITS: UpstreamResponse = UpstreamResponse(
+    kind="dataset-split-names",
+    dataset=IMAGE_URLS_DATASET,
+    dataset_git_revision=REVISION_NAME,
+    http_status=HTTPStatus.OK,
+    content={"splits": [{"dataset": IMAGE_URLS_DATASET, "config": "default", "split": "train"}]},
+    progress=1.0,
+)
+UPSTREAM_RESPONSE_IMAGE_URL_COLUMNS: UpstreamResponse = UpstreamResponse(
+    kind="split-image-url-columns",
+    dataset=IMAGE_URLS_DATASET,
+    config="default",
+    split="train",
+    dataset_git_revision=REVISION_NAME,
+    http_status=HTTPStatus.OK,
+    content={"columns": "image_url"},
+    progress=1.0,
+)
 
 EXPECTED_TEXT: tuple[DatasetModalitiesResponse, float] = (
     {"modalities": ["text"]},
@@ -210,6 +229,10 @@ EXPECTED_EMPTY: tuple[DatasetModalitiesResponse, float] = (
 )
 EXPECTED_TIME_SERIES: tuple[DatasetModalitiesResponse, float] = (
     {"modalities": ["timeseries"]},
+    1.0,
+)
+EXPECTED_IMAGE_URLS: tuple[DatasetModalitiesResponse, float] = (
+    {"modalities": ["image"]},
     1.0,
 )
 
@@ -324,6 +347,14 @@ def get_job_runner(
                 UPSTREAM_RESPONSE_INFO_TIME_SERIES,
             ],
             EXPECTED_TIME_SERIES,
+        ),
+        (
+            IMAGE_URLS_DATASET,
+            [
+                UPSTREAM_RESPONSE_IMAGE_URL_DATASET_SPLITS,
+                UPSTREAM_RESPONSE_IMAGE_URL_COLUMNS,
+            ],
+            EXPECTED_IMAGE_URLS,
         ),
     ],
 )
