@@ -13,6 +13,8 @@ import pytest
 from libcommon.exceptions import DatasetInBlockListError
 from libcommon.utils import (
     SmallerThanMaxBytesError,
+    get_datetime,
+    get_duration,
     get_expires,
     inputs_to_string,
     is_image_url,
@@ -147,3 +149,7 @@ def test_serialize_and_truncate_does_not_raise(obj: Any, max_bytes: int, expecte
 def test_serialize_and_truncate_raises(obj: Any, max_bytes: int) -> None:
     with pytest.raises(SmallerThanMaxBytesError):
         serialize_and_truncate(obj=obj, max_bytes=max_bytes)
+
+
+def test_get_duration() -> None:
+    assert get_duration(get_datetime() - timedelta(seconds=10)) == pytest.approx(10, rel=0.01)

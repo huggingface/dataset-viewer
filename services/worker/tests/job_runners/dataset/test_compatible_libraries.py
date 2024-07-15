@@ -73,7 +73,6 @@ UPSTREAM_RESPONSE_INFO_ERROR: UpstreamResponse = UpstreamResponse(
 )
 EXPECTED_PARQUET = (
     {
-        "tags": ["croissant"],
         "formats": ["parquet"],
         "libraries": [
             {
@@ -135,7 +134,6 @@ EXPECTED_PARQUET = (
 
 EXPECTED_PARQUET_LOGIN_REQUIRED = (
     {
-        "tags": ["croissant"],
         "formats": ["parquet"],
         "libraries": [
             {
@@ -201,7 +199,6 @@ EXPECTED_PARQUET_LOGIN_REQUIRED = (
 )
 EXPECTED_WEBDATASET = (
     {
-        "tags": ["croissant"],
         "formats": ["webdataset"],
         "libraries": [
             {
@@ -320,6 +317,7 @@ def get_job_runner(
                 "job_id": "job_id",
                 "priority": Priority.NORMAL,
                 "difficulty": 20,
+                "started_at": None,
             },
             app_config=app_config,
             hf_datasets_cache=libraries_resource.hf_datasets_cache,

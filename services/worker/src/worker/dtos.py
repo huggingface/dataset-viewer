@@ -312,9 +312,8 @@ class IsValidResponse(TypedDict):
     statistics: bool
 
 
-DatasetTag = Literal["croissant"]
 DatasetLibrary = Literal["mlcroissant", "webdataset", "datasets", "pandas", "dask"]
-DatasetFormat = Literal["json", "csv", "parquet", "imagefolder", "audiofolder", "webdataset", "text"]
+DatasetFormat = Literal["json", "csv", "parquet", "imagefolder", "audiofolder", "webdataset", "text", "arrow"]
 ProgrammingLanguage = Literal["python"]
 
 
@@ -332,7 +331,6 @@ class CompatibleLibrary(TypedDict):
 
 
 class DatasetCompatibleLibrariesResponse(TypedDict):
-    tags: list[DatasetTag]
     libraries: list[CompatibleLibrary]
     formats: list[DatasetFormat]
 
@@ -349,7 +347,6 @@ class DatasetHubCacheResponse(TypedDict):
     viewer: bool
     partial: bool
     num_rows: Optional[int]
-    tags: list[DatasetTag]
     libraries: list[DatasetLibrary]
     modalities: list[DatasetModality]
     formats: list[DatasetFormat]

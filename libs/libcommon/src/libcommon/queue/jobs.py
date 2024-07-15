@@ -33,6 +33,7 @@ from libcommon.queue.dataset_blockages import get_blocked_datasets
 from libcommon.queue.lock import lock, release_lock, release_locks
 from libcommon.queue.metrics import (
     decrease_metric,
+    decrease_worker_size_metrics,
     increase_metric,
     update_metrics_for_type,
 )
@@ -126,6 +127,7 @@ PA_SCHEMA = Schema(
         "priority": pa.string(),
         "status": pa.string(),
         "created_at": pa.timestamp("ms"),
+        "difficulty": pa.int64(),
     }
 )
 
@@ -223,6 +225,7 @@ class JobDocument(Document):
                 },
                 "priority": self.priority,
                 "difficulty": self.difficulty,
+                "started_at": self.started_at,
             }
         )
 
@@ -368,7 +371,7 @@ class Queue:
         try:
             existing = JobDocument.objects(pk__in=job_ids, status=Status.WAITING)
             for job in existing.all():
-                decrease_metric(dataset=job.type, job_type=job.type, status=job.status, difficulty=job.difficulty)
+                decrease_metric(job_type=job.type, status=job.status, difficulty=job.difficulty)
             deleted_jobs = existing.delete()
             return 0 if deleted_jobs is None else deleted_jobs
         except Exception:
@@ -685,9 +688,10 @@ class Queue:
         except StartedJobError as e:
             logging.error(f"job {job_id} has not the expected format for a started job. Aborting: {e}")
             return None
-        decrease_metric(dataset=job.dataset, job_type=job.type, status=job.status, difficulty=job.difficulty)
+        decrease_metric(job_type=job.type, status=job.status, difficulty=job.difficulty)
+        was_blocked = False
         if job.started_at is not None:
-            create_past_job(
+            was_blocked = create_past_job(
                 dataset=job.dataset,
                 started_at=pytz.UTC.localize(job.started_at),
                 finished_at=get_datetime(),
@@ -696,6 +700,11 @@ class Queue:
         job.delete()
         release_locks(owner=job_id)
         # ^ bug: the lock owner is not set to the job id anymore when calling start_job()!
+        if was_blocked:
+            pending_jobs = self.get_pending_jobs_df(dataset=job.dataset)
+            for _, pending_job in pending_jobs.iterrows():
+                decrease_worker_size_metrics(pending_job["difficulty"])
+
         return job_priority
 
     def delete_dataset_waiting_jobs(self, dataset: str) -> int:
@@ -710,7 +719,7 @@ class Queue:
         """
         existing_waiting_jobs = JobDocument.objects(dataset=dataset, status=Status.WAITING)
         for job in existing_waiting_jobs.no_cache():
-            decrease_metric(dataset=job.dataset, job_type=job.type, status=job.status, difficulty=job.difficulty)
+            decrease_metric(job_type=job.type, status=job.status, difficulty=job.difficulty)
             release_lock(key=job.unicity_id)
         num_deleted_jobs = existing_waiting_jobs.delete()
         return 0 if num_deleted_jobs is None else num_deleted_jobs

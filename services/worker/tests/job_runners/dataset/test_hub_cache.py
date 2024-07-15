@@ -11,7 +11,7 @@ from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import upsert_response
 
 from worker.config import AppConfig
-from worker.dtos import DatasetFormat, DatasetHubCacheResponse, DatasetLibrary, DatasetModality, DatasetTag
+from worker.dtos import DatasetFormat, DatasetHubCacheResponse, DatasetLibrary, DatasetModality
 from worker.job_runners.dataset.hub_cache import DatasetHubCacheJobRunner
 
 from ..utils import REVISION_NAME, UpstreamResponse
@@ -26,7 +26,6 @@ def prepare_and_clean_mongo(app_config: AppConfig) -> None:
 GetJobRunner = Callable[[str, AppConfig], DatasetHubCacheJobRunner]
 
 DATASET = "dataset"
-TAG: DatasetTag = "croissant"
 LIBRARY: DatasetLibrary = "mlcroissant"
 FORMAT: DatasetFormat = "json"
 MODALITY: DatasetModality = "image"
@@ -75,7 +74,7 @@ UPSTREAM_RESPONSE_COMPATIBLE_LIBRARIES_OK: UpstreamResponse = UpstreamResponse(
     dataset=DATASET,
     dataset_git_revision=REVISION_NAME,
     http_status=HTTPStatus.OK,
-    content={"tags": [TAG], "libraries": [{"library": LIBRARY}], "formats": [FORMAT]},
+    content={"libraries": [{"library": LIBRARY}], "formats": [FORMAT]},
     progress=1.0,
 )
 UPSTREAM_RESPONSE_COMPATIBLE_LIBRARIES_ERROR: UpstreamResponse = UpstreamResponse(
@@ -91,7 +90,7 @@ UPSTREAM_RESPONSE_MODALITIES_OK: UpstreamResponse = UpstreamResponse(
     dataset=DATASET,
     dataset_git_revision=REVISION_NAME,
     http_status=HTTPStatus.OK,
-    content={"tags": [TAG], "modalities": [MODALITY]},
+    content={"modalities": [MODALITY]},
     progress=1.0,
 )
 UPSTREAM_RESPONSE_MODALITIES_ERROR: UpstreamResponse = UpstreamResponse(
@@ -108,7 +107,6 @@ EXPECTED_ALL_OK: tuple[DatasetHubCacheResponse, float] = (
         "preview": True,
         "partial": False,
         "num_rows": 1000,
-        "tags": [TAG],
         "libraries": [LIBRARY],
         "modalities": [MODALITY],
         "formats": [FORMAT],
@@ -121,7 +119,6 @@ EXPECTED_IS_VALID_AND_SIZE: tuple[DatasetHubCacheResponse, float] = (
         "preview": True,
         "partial": False,
         "num_rows": 1000,
-        "tags": [],
         "libraries": [],
         "modalities": [],
         "formats": [],
@@ -134,7 +131,6 @@ EXPECTED_NO_SIZE: tuple[DatasetHubCacheResponse, float] = (
         "preview": True,
         "partial": False,
         "num_rows": None,
-        "tags": [],
         "libraries": [],
         "modalities": [],
         "formats": [],
@@ -147,7 +143,6 @@ EXPECTED_OK_WITH_LIBRARIES_AND_FORMATS: tuple[DatasetHubCacheResponse, float] = 
         "preview": True,
         "partial": False,
         "num_rows": 1000,
-        "tags": [TAG],
         "libraries": [LIBRARY],
         "modalities": [],
         "formats": [FORMAT],
@@ -160,7 +155,6 @@ EXPECTED_NO_PROGRESS: tuple[DatasetHubCacheResponse, float] = (
         "preview": True,
         "partial": True,
         "num_rows": 1000,
-        "tags": [TAG],
         "libraries": [LIBRARY],
         "modalities": [MODALITY],
         "formats": [FORMAT],
@@ -173,7 +167,6 @@ EXPECTED_OK_WITH_MODALITIES: tuple[DatasetHubCacheResponse, float] = (
         "preview": True,
         "partial": False,
         "num_rows": 1000,
-        "tags": [],
         "libraries": [],
         "modalities": [MODALITY],
         "formats": [],
@@ -186,7 +179,6 @@ EXPECTED_EMPTY: tuple[DatasetHubCacheResponse, float] = (
         "preview": False,
         "partial": False,
         "num_rows": None,
-        "tags": [],
         "libraries": [],
         "modalities": [],
         "formats": [],
@@ -199,7 +191,6 @@ EXPECTED_ONLY_SIZE: tuple[DatasetHubCacheResponse, float] = (
         "preview": False,
         "partial": False,
         "num_rows": 1000,
-        "tags": [],
         "libraries": [],
         "modalities": [],
         "formats": [],
@@ -212,7 +203,6 @@ EXPECTED_ONLY_MODALITIES: tuple[DatasetHubCacheResponse, float] = (
         "preview": False,
         "partial": False,
         "num_rows": None,
-        "tags": [],
         "libraries": [],
         "modalities": [MODALITY],
         "formats": [],
@@ -242,6 +232,7 @@ def get_job_runner(
                 "job_id": "job_id",
                 "priority": Priority.NORMAL,
                 "difficulty": 20,
+                "started_at": None,
             },
             app_config=app_config,
         )

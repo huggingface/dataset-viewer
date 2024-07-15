@@ -14,6 +14,7 @@ from typing import Any, Optional, TypeVar, Union, cast
 
 import orjson
 import pandas as pd
+import pytz
 from huggingface_hub import constants, hf_hub_download
 from requests.exceptions import ReadTimeout
 
@@ -90,6 +91,19 @@ def get_datetime(days: Optional[float] = None) -> datetime:
     if days is not None:
         date = date - timedelta(days=days)
     return date
+
+
+def get_duration(started_at: datetime) -> float:
+    """
+    Get time in seconds that has passed from `started_at` until now.
+    `started_at` must be in UTC timezone.
+    """
+    started_at = pytz.UTC.localize(started_at) if not started_at.tzinfo else started_at
+    return (get_datetime() - started_at).total_seconds()
+
+
+def get_duration_or_none(started_at: Optional[datetime]) -> Optional[float]:
+    return get_duration(started_at) if started_at else None
 
 
 def get_expires(seconds: float) -> datetime:

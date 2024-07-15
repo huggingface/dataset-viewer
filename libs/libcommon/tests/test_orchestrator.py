@@ -178,6 +178,7 @@ def test_finish_job(
             details=None,
             progress=1.0,
         ),
+        duration=1,
     )
     finish_job(job_result=job_result, processing_graph=processing_graph)
 
@@ -233,6 +234,7 @@ def test_finish_job_priority_update(
             details=None,
             progress=1.0,
         ),
+        duration=1,
     )
     # update the priority of the started job before it finishes
     JobDocument(dataset=DATASET_NAME, pk=job_info["job_id"]).update(priority=Priority.HIGH)
@@ -266,7 +268,7 @@ def populate_queue() -> None:
 def test_get_pending_jobs_df() -> None:
     populate_queue()
     pending_jobs_df = Queue().get_pending_jobs_df(dataset=DATASET_NAME)
-    assert pending_jobs_df.shape == (250, 9)
+    assert pending_jobs_df.shape == (250, 10)
 
 
 @pytest.mark.parametrize(
@@ -424,6 +426,7 @@ def run_job(revision: str, http_status: HTTPStatus) -> None:
             details=None,
             progress=1.0,
         ),
+        duration=1,
     )
     finish_job(job_result=job_result, processing_graph=PROCESSING_GRAPH_GENEALOGY)
     # clear generated jobs when finishing jobs

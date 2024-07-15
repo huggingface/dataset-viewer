@@ -23,7 +23,7 @@ from libcommon.simple_cache import (
     CachedArtifactError,
     CachedArtifactNotFoundError,
 )
-from libcommon.utils import orjson_dumps
+from libcommon.utils import get_duration_or_none, orjson_dumps
 
 from worker.config import AppConfig, WorkerConfig
 from worker.job_runner import JobRunner
@@ -107,6 +107,7 @@ class JobManager:
                 "job_runner_version": self.job_runner_version,
                 "is_success": False,
                 "output": None,
+                "duration": get_duration_or_none(self.job_info["started_at"]),
             }
         result_str = "SUCCESS" if job_result["is_success"] else "ERROR"
         self.debug(f"job output with {result_str} - {self}")
@@ -119,6 +120,7 @@ class JobManager:
         self,
     ) -> JobResult:
         self.info(f"compute {self}")
+        started_at = self.job_info["started_at"]
         try:
             try:
                 self.job_runner.pre_compute()
@@ -153,6 +155,7 @@ class JobManager:
                     "details": None,
                     "progress": job_result.progress,
                 },
+                "duration": get_duration_or_none(started_at),
             }
         except DatasetNotFoundError:
             # To avoid filling the cache, we don't save this error. Otherwise, DoS is possible.
@@ -162,6 +165,7 @@ class JobManager:
                 "job_runner_version": self.job_runner_version,
                 "is_success": False,
                 "output": None,
+                "duration": get_duration_or_none(started_at),
             }
         except CachedArtifactError as err:
             # A previous step (cached artifact required by the job runner) is an error. We copy the cached entry,
@@ -180,6 +184,7 @@ class JobManager:
                     "details": err.enhanced_details,
                     "progress": None,
                 },
+                "duration": get_duration_or_none(started_at),
             }
         except Exception as err:
             e = (
@@ -201,6 +206,7 @@ class JobManager:
                     "details": dict(e.as_response_with_cause()),
                     "progress": None,
                 },
+                "duration": get_duration_or_none(started_at),
             }
 
     def set_crashed(self, message: str, cause: Optional[BaseException] = None) -> None:
@@ -222,6 +228,7 @@ class JobManager:
                     "details": dict(error.as_response_with_cause()),
                     "progress": None,
                 },
+                "duration": get_duration_or_none(self.job_info["started_at"]),
             }
         )
 
@@ -244,5 +251,6 @@ class JobManager:
                     "details": dict(error.as_response_with_cause()),
                     "progress": None,
                 },
+                "duration": get_duration_or_none(self.job_info["started_at"]),
             }
         )

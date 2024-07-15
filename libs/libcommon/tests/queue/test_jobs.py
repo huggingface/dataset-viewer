@@ -141,6 +141,30 @@ def test_add_job() -> None:
     assert_past_jobs_number(1)
 
 
+def test_finish_job_blocked() -> None:
+    test_type = "test_type"
+    test_dataset = "test_dataset"
+    test_revision = "test_revision"
+    test_difficulty = 50
+
+    queue = Queue()
+    assert WorkerSizeJobsCountDocument.objects().count() == 0
+
+    queue.add_job(job_type=test_type, dataset=test_dataset, revision=test_revision, difficulty=test_difficulty)
+    queue.add_job(job_type="test_type2", dataset=test_dataset, revision=test_revision, difficulty=test_difficulty)
+    queue.add_job(job_type="test_type3", dataset=test_dataset, revision=test_revision, difficulty=test_difficulty)
+    queue.add_job(job_type="test_type4", dataset=test_dataset, revision=test_revision, difficulty=test_difficulty)
+
+    assert_metric_jobs_per_worker(worker_size=WorkerSize.medium, jobs_count=4)
+
+    job_info = queue.start_job()
+    assert_metric_jobs_per_worker(worker_size=WorkerSize.medium, jobs_count=3)
+
+    with patch("libcommon.queue.jobs.create_past_job", return_value=True):
+        queue.finish_job(job_id=job_info["job_id"])
+        assert_metric_jobs_per_worker(worker_size=WorkerSize.medium, jobs_count=0)
+
+
 @pytest.mark.parametrize(
     "jobs_ids,job_ids_to_delete,expected_deleted_number",
     [
@@ -187,6 +211,20 @@ def test_delete_waiting_jobs_by_job_id_wrong_format() -> None:
 
     assert queue.delete_waiting_jobs_by_job_id(job_ids=["not_a_valid_job_id"]) == 0
     assert JobTotalMetricDocument.objects().count() == 0
+
+
+def test_delete_waiting_jobs_by_job_id_blocked() -> None:
+    queue = Queue()
+    job = queue.add_job(job_type="test_type", dataset="dataset", revision="test_revision", difficulty=50)
+    assert_metric_jobs_per_worker(worker_size=WorkerSize.medium, jobs_count=1)
+    assert queue.delete_waiting_jobs_by_job_id(job_ids=[job.info()["job_id"]]) == 1
+    assert_metric_jobs_per_worker(worker_size=WorkerSize.medium, jobs_count=0)
+
+    job = queue.add_job(job_type="test_type", dataset="dataset", revision="test_revision", difficulty=100)
+    block_dataset("dataset")
+    assert_metric_jobs_per_worker(worker_size=WorkerSize.medium, jobs_count=0)
+    assert queue.delete_waiting_jobs_by_job_id(job_ids=[job.info()["job_id"]]) == 1
+    assert_metric_jobs_per_worker(worker_size=WorkerSize.medium, jobs_count=0)
 
 
 def check_job(queue: Queue, expected_dataset: str, expected_split: str, expected_priority: Priority) -> None:
@@ -523,7 +561,7 @@ def test_queue_get_zombies() -> None:
         difficulty=test_difficulty,
     )
     queue.start_job()
-    assert queue.get_zombies(max_seconds_without_heartbeat=10) == [zombie.info()]
+    assert queue.get_zombies(max_seconds_without_heartbeat=10) == [zombie.reload().info()]
     assert queue.get_zombies(max_seconds_without_heartbeat=-1) == []
     assert queue.get_zombies(max_seconds_without_heartbeat=0) == []
     assert queue.get_zombies(max_seconds_without_heartbeat=9999999) == []

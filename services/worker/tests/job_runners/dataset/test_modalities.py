@@ -33,6 +33,7 @@ TABULAR_DATASET = "tabular-dataset"
 IMAGE_TEXT_DATASET = "image-text-dataset"
 IMAGE_DATASET = "image-dataset"
 TIME_SERIES_DATASET = "time-series-dataset"
+IMAGE_URLS_DATASET = "image-urls-dataset"
 ERROR_DATASET = "error-dataset"
 
 text_features = Features({"conversations": [{"from": Value("string"), "value": Value("string")}]})
@@ -140,6 +141,20 @@ UPSTREAM_RESPONSE_FILETYPES_TEXT: UpstreamResponse = UpstreamResponse(
     },
     progress=1.0,
 )
+UPSTREAM_RESPONSE_FILETYPES_IMAGE_AND_ONE_TEXT_FILE: UpstreamResponse = UpstreamResponse(
+    kind="dataset-filetypes",
+    dataset=IMAGE_DATASET,
+    dataset_git_revision=REVISION_NAME,
+    http_status=HTTPStatus.OK,
+    content={
+        "filetypes": [
+            {"extension": ".jpg", "count": 20},
+            {"extension": ".txt", "count": 1},  # shouldn't be taken into account since it's <10% of files
+        ],
+        "partial": False,
+    },
+    progress=1.0,
+)
 UPSTREAM_RESPONSE_FILETYPES_ALL: UpstreamResponse = UpstreamResponse(
     kind="dataset-filetypes",
     dataset=TEXT_DATASET,
@@ -158,6 +173,24 @@ UPSTREAM_RESPONSE_FILETYPES_ALL: UpstreamResponse = UpstreamResponse(
         ],
         "partial": False,
     },
+    progress=1.0,
+)
+UPSTREAM_RESPONSE_IMAGE_URL_DATASET_SPLITS: UpstreamResponse = UpstreamResponse(
+    kind="dataset-split-names",
+    dataset=IMAGE_URLS_DATASET,
+    dataset_git_revision=REVISION_NAME,
+    http_status=HTTPStatus.OK,
+    content={"splits": [{"dataset": IMAGE_URLS_DATASET, "config": "default", "split": "train"}]},
+    progress=1.0,
+)
+UPSTREAM_RESPONSE_IMAGE_URL_COLUMNS: UpstreamResponse = UpstreamResponse(
+    kind="split-image-url-columns",
+    dataset=IMAGE_URLS_DATASET,
+    config="default",
+    split="train",
+    dataset_git_revision=REVISION_NAME,
+    http_status=HTTPStatus.OK,
+    content={"columns": "image_url"},
     progress=1.0,
 )
 
@@ -198,6 +231,10 @@ EXPECTED_TIME_SERIES: tuple[DatasetModalitiesResponse, float] = (
     {"modalities": ["timeseries"]},
     1.0,
 )
+EXPECTED_IMAGE_URLS: tuple[DatasetModalitiesResponse, float] = (
+    {"modalities": ["image"]},
+    1.0,
+)
 
 
 @pytest.fixture
@@ -222,6 +259,7 @@ def get_job_runner(
                 "job_id": "job_id",
                 "priority": Priority.NORMAL,
                 "difficulty": 20,
+                "started_at": None,
             },
             app_config=app_config,
         )
@@ -290,6 +328,13 @@ def get_job_runner(
             EXPECTED_IMAGE,
         ),
         (
+            IMAGE_DATASET,
+            [
+                UPSTREAM_RESPONSE_FILETYPES_IMAGE_AND_ONE_TEXT_FILE,
+            ],
+            EXPECTED_IMAGE,
+        ),
+        (
             TEXT_DATASET,
             [
                 UPSTREAM_RESPONSE_INFO_NOT_TABULAR_2,
@@ -302,6 +347,14 @@ def get_job_runner(
                 UPSTREAM_RESPONSE_INFO_TIME_SERIES,
             ],
             EXPECTED_TIME_SERIES,
+        ),
+        (
+            IMAGE_URLS_DATASET,
+            [
+                UPSTREAM_RESPONSE_IMAGE_URL_DATASET_SPLITS,
+                UPSTREAM_RESPONSE_IMAGE_URL_COLUMNS,
+            ],
+            EXPECTED_IMAGE_URLS,
         ),
     ],
 )

@@ -19,6 +19,7 @@ from libcommon.constants import (
     DATASET_CONFIG_NAMES_KIND,
     DEFAULT_DIFFICULTY_MAX,
     DIFFICULTY_BONUS_BY_FAILED_RUNS,
+    YAML_FIELDS_TO_CHECK,
 )
 from libcommon.dtos import JobInfo, JobResult, Priority
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep, ProcessingStepDoesNotExist, processing_graph
@@ -519,6 +520,7 @@ class AfterJobPlan(Plan):
                     },
                     "priority": self.priority,
                     "difficulty": difficulty,
+                    "started_at": None,
                 }
             )
 
@@ -787,6 +789,7 @@ class DatasetBackfillPlan(Plan):
                         },
                         "priority": self.priority,
                         "difficulty": difficulty,
+                        "started_at": None,
                     }
                 )
             else:
@@ -880,12 +883,11 @@ class SmartDatasetUpdatePlan(Plan):
         }:  # TODO: maybe support .huggingface.yaml later
             raise SmartUpdateImpossibleBecauseOfUpdatedFiles(", ".join(self.files_impacted_by_commit)[:1000])
         self.updated_yaml_fields_in_dataset_card = self.get_updated_yaml_fields_in_dataset_card()
-        if "dataset_info" in self.updated_yaml_fields_in_dataset_card:
-            raise SmartUpdateImpossibleBecauseOfUpdatedYAMLField("dataset_info")
-        if "configs" in self.updated_yaml_fields_in_dataset_card:
-            raise SmartUpdateImpossibleBecauseOfUpdatedYAMLField("configs")
-        if "viewer" in self.updated_yaml_fields_in_dataset_card:
-            raise SmartUpdateImpossibleBecauseOfUpdatedYAMLField("viewer")
+
+        for yaml_field in YAML_FIELDS_TO_CHECK:
+            if yaml_field in self.updated_yaml_fields_in_dataset_card:
+                raise SmartUpdateImpossibleBecauseOfUpdatedYAMLField(yaml_field)
+
         # We update the cache entries and the storage (assets + cached assets)
         # We don't update the jobs because they might be creating artifacts that won't be updated by this code,
         # so we let them finish and restart later.
@@ -1173,6 +1175,7 @@ def finish_job(
         details=output["details"],
         progress=output["progress"],
         failed_runs=failed_runs,
+        duration=job_result["duration"],
     )
     logging.debug("the job output has been written to the cache.")
     # finish the job

@@ -48,6 +48,7 @@ class JobInfo(TypedDict):
     params: JobParams
     priority: Priority
     difficulty: int
+    started_at: Optional[datetime]
 
 
 class FlatJobInfo(TypedDict):
@@ -76,6 +77,7 @@ class JobResult(TypedDict):
     job_runner_version: int
     is_success: bool
     output: Optional[JobOutput]
+    duration: Optional[float]
 
 
 class SplitHubFile(TypedDict):
