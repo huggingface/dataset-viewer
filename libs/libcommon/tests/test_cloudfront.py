@@ -6,7 +6,7 @@ from unittest.mock import patch
 
 import pytest
 
-from libcommon.cloudfront import CloudFront, InvalidPrivateKeyError
+from libcommon.cloudfront import CloudFrontSigner, InvalidPrivateKeyError
 
 # see https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/private-content-creating-signed-url-canned-policy.html
 EXAMPLE_DATETIME = datetime(2013, 1, 1, 10, 0, 0, tzinfo=timezone.utc)
@@ -42,7 +42,7 @@ EXPECTED_SIGNED_URL = (
 
 def test_cloudfront__sign_url() -> None:
     # can parse the private key and create the signer
-    cloudfront = CloudFront(key_pair_id=KEY_PAIR_ID, private_key=PRIVATE_KEY, expiration_seconds=1)
+    cloudfront = CloudFrontSigner(key_pair_id=KEY_PAIR_ID, private_key=PRIVATE_KEY, expiration_seconds=1)
     # can sign an URL
     signed_url = cloudfront._sign_url(url=URL, date_less_than=EXAMPLE_DATETIME)
 
@@ -56,7 +56,7 @@ def test_cloudfront_sign_url() -> None:
     with patch("libcommon.utils.datetime") as mock_datetime:
         mock_datetime.now.return_value = EXAMPLE_DATETIME_MINUS_TWO_HOURS
         # ^ 2 hours before the example date
-        cloudfront = CloudFront(
+        cloudfront = CloudFrontSigner(
             key_pair_id=KEY_PAIR_ID, private_key=PRIVATE_KEY, expiration_seconds=EXPIRATION_SECONDS
         )
         signed_url = cloudfront.sign_url(url=URL)
@@ -68,4 +68,4 @@ def test_cloudfront_invalid_key() -> None:
     INVALID_PRIVATE_KEY = "not a RSA private key"
     with pytest.raises(InvalidPrivateKeyError):
         # from cryptography/hazmat/backends/openssl/backend.py
-        CloudFront(key_pair_id=KEY_PAIR_ID, private_key=INVALID_PRIVATE_KEY, expiration_seconds=1)
+        CloudFrontSigner(key_pair_id=KEY_PAIR_ID, private_key=INVALID_PRIVATE_KEY, expiration_seconds=1)

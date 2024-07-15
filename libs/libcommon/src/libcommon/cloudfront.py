@@ -5,7 +5,7 @@ import datetime
 from functools import partial
 from typing import Optional
 
-from botocore.signers import CloudFrontSigner
+import botocore.signers
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric.padding import PKCS1v15
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
@@ -13,7 +13,6 @@ from cryptography.hazmat.primitives.hashes import SHA1
 from cryptography.hazmat.primitives.serialization import load_pem_private_key
 
 from libcommon.config import CloudFrontConfig
-from libcommon.url_signer import URLSigner
 from libcommon.utils import get_expires
 
 
@@ -28,7 +27,7 @@ algorithm = SHA1()  # nosec
 #   but CloudFront mandates SHA1
 
 
-class CloudFront(URLSigner):
+class CloudFrontSigner:
     """
     Signs CloudFront URLs using a private key.
 
@@ -38,7 +37,7 @@ class CloudFront(URLSigner):
     """
 
     _expiration_seconds: int
-    _signer: CloudFrontSigner
+    _signer: botocore.signers.CloudFrontSigner
 
     def __init__(self, key_pair_id: str, private_key: str, expiration_seconds: int) -> None:
         """
@@ -55,7 +54,9 @@ class CloudFront(URLSigner):
             raise InvalidPrivateKeyError("Expected an RSA private key")
 
         self._expiration_seconds = expiration_seconds
-        self._signer = CloudFrontSigner(key_pair_id, partial(pk.sign, padding=padding, algorithm=algorithm))
+        self._signer = botocore.signers.CloudFrontSigner(
+            key_pair_id, partial(pk.sign, padding=padding, algorithm=algorithm)
+        )
 
     def _sign_url(self, url: str, date_less_than: datetime.datetime) -> str:
         """
@@ -87,9 +88,9 @@ class CloudFront(URLSigner):
         return self._sign_url(url=url, date_less_than=date_less_than)
 
 
-def get_cloudfront_signer(cloudfront_config: CloudFrontConfig) -> Optional[CloudFront]:
+def get_cloudfront_signer(cloudfront_config: CloudFrontConfig) -> Optional[CloudFrontSigner]:
     return (
-        CloudFront(
+        CloudFrontSigner(
             key_pair_id=cloudfront_config.key_pair_id,
             private_key=cloudfront_config.private_key,
             expiration_seconds=cloudfront_config.expiration_seconds,

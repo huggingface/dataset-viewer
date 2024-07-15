@@ -16,6 +16,7 @@ from urllib3._collections import HTTPHeaderDict  # type: ignore
 
 from libcommon.config import S3Config
 from libcommon.storage_client import StorageClient
+from libcommon.url_preparator import URLPreparator
 from libcommon.viewer_utils.features import (
     get_cell_value,
     get_supported_unsupported_columns,
@@ -53,7 +54,7 @@ def assert_output_has_valid_files(value: Any, storage_client: StorageClient) -> 
 @pytest.mark.parametrize("decoded", [True, False])
 @pytest.mark.parametrize("dataset_name", DATASETS_NAMES)
 def test_get_cell_value_value(
-    storage_client: StorageClient,
+    storage_client_with_url_preparator: StorageClient,
     datasets_fixtures: Mapping[str, DatasetFixture],
     dataset_name: str,
     decoded: bool,
@@ -76,10 +77,10 @@ def test_get_cell_value_value(
         cell=cell,
         featureName=DEFAULT_COLUMN_NAME,
         fieldType=feature,
-        storage_client=storage_client,
+        storage_client=storage_client_with_url_preparator,
     )
     assert value == expected_cell
-    assert_output_has_valid_files(expected_cell, storage_client=storage_client)
+    assert_output_has_valid_files(expected_cell, storage_client=storage_client_with_url_preparator)
 
 
 to_features_list
@@ -146,6 +147,7 @@ def test_ogg_audio_with_s3(
                     secret_access_key="fake_secret_access_key",
                     region_name="us-east-1",
                 ),
+                url_preparator=URLPreparator(url_signer=None),
             )
 
         # patch aiobotocore.endpoint.convert_to_response_dict  because of known issue in aiotbotocore

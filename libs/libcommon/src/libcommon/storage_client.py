@@ -10,7 +10,7 @@ from s3fs import S3FileSystem  # type: ignore
 
 from libcommon.config import S3Config, StorageProtocol
 from libcommon.constants import DATASET_SEPARATOR
-from libcommon.url_signer import URLSigner
+from libcommon.url_preparator import URLPreparator
 
 
 class StorageClientInitializeError(Exception):
@@ -27,7 +27,7 @@ class StorageClient:
         base_url (`str`): The base url for the publicly distributed assets
         overwrite (`bool`, *optional*, defaults to `False`): Whether to overwrite existing files
         s3_config (`S3Config`, *optional*): The S3 configuration to connect to the storage client. Only needed if the protocol is "s3"
-        url_signer (`URLSigner`, *optional*): The url signer to use for signing urls
+        url_preparator (`URLPreparator`, *optional*): The urlpreparator to use for signing urls and replacing revision in url
     """
 
     _fs: Union[LocalFileSystem, S3FileSystem]
@@ -35,7 +35,7 @@ class StorageClient:
     storage_root: str
     base_url: str
     overwrite: bool
-    url_signer: Optional[URLSigner] = None
+    url_preparator: Optional[URLPreparator] = None
 
     def __init__(
         self,
@@ -44,14 +44,14 @@ class StorageClient:
         base_url: str,
         overwrite: bool = False,
         s3_config: Optional[S3Config] = None,
-        url_signer: Optional[URLSigner] = None,
+        url_preparator: Optional[URLPreparator] = None,
     ) -> None:
         logging.info(f"trying to initialize storage client with {protocol=} {storage_root=} {base_url=} {overwrite=}")
         self.storage_root = storage_root
         self.protocol = protocol
         self.base_url = base_url
         self.overwrite = overwrite
-        self.url_signer = url_signer
+        self.url_preparator = url_preparator
         if protocol == "s3":
             if not s3_config:
                 raise StorageClientInitializeError("s3 config is required")
@@ -82,18 +82,18 @@ class StorageClient:
     def exists(self, path: str) -> bool:
         return bool(self._fs.exists(self.get_full_path(path)))
 
-    def get_url(self, path: str) -> str:
-        return self.sign_url_if_available(self.get_unsigned_url(path))
+    def get_url(self, path: str, revision: str) -> str:
+        return self.prepare_url(self.get_unprepared_url(path), revision=revision)
 
-    def get_unsigned_url(self, path: str) -> str:
+    def get_unprepared_url(self, path: str) -> str:
         url = f"{self.base_url}/{path}"
-        logging.debug(f"unsigned url: {url}")
+        logging.debug(f"unprepared url: {url}")
         return url
 
-    def sign_url_if_available(self, url: str) -> str:
-        if self.url_signer:
-            url = self.url_signer.sign_url(url=url)
-            logging.debug(f"signed url: {url}")
+    def prepare_url(self, url: str, revision: str) -> str:
+        if self.url_preparator:
+            url = self.url_preparator.prepare_url(url=url, revision=revision)
+        logging.debug(f"prepared url: {url}")
         return url
 
     def delete_dataset_directory(self, dataset: str) -> int:
@@ -151,4 +151,4 @@ class StorageClient:
         return f"{parse.quote(dataset)}/{DATASET_SEPARATOR}/{revision}/{DATASET_SEPARATOR}/{parse.quote(config)}/{parse.quote(split)}/{str(row_idx)}/{parse.quote(column)}/{filename}"
 
     def __str__(self) -> str:
-        return f"StorageClient(protocol={self.protocol}, storage_root={self.storage_root}, base_url={self.base_url}, overwrite={self.overwrite}, url_signer={self.url_signer})"
+        return f"StorageClient(protocol={self.protocol}, storage_root={self.storage_root}, base_url={self.base_url}, overwrite={self.overwrite}, url_preparator={self.url_preparator})"

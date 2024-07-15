@@ -10,6 +10,7 @@ from libcommon.cloudfront import get_cloudfront_signer
 from libcommon.log import init_logging
 from libcommon.resources import CacheMongoResource, QueueMongoResource, Resource
 from libcommon.storage_client import StorageClient
+from libcommon.url_preparator import URLPreparator
 from starlette.applications import Starlette
 from starlette.middleware import Middleware
 from starlette.middleware.cors import CORSMiddleware
@@ -52,12 +53,13 @@ def create_app_with_config(app_config: AppConfig) -> Starlette:
     )
 
     url_signer = get_cloudfront_signer(cloudfront_config=app_config.cloudfront)
+    url_preparator = URLPreparator(url_signer=url_signer)
     assets_storage_client = StorageClient(
         protocol=app_config.assets.storage_protocol,
         storage_root=app_config.assets.storage_root,
         base_url=app_config.assets.base_url,
         s3_config=app_config.s3,
-        url_signer=url_signer,
+        url_preparator=url_preparator,
     )
     storage_clients = [cached_assets_storage_client, assets_storage_client]
 
