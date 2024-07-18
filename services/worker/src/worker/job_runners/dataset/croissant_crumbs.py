@@ -7,9 +7,9 @@ from collections.abc import Mapping
 from itertools import islice
 from typing import Any
 
-from datasets import ClassLabel, Features, Image, Value
+from datasets import Features
 from libcommon.constants import CROISSANT_MAX_CONFIGS
-from libcommon.croissant_utils import get_record_set, feature_to_croissant_field
+from libcommon.croissant_utils import feature_to_croissant_field, get_record_set
 from libcommon.exceptions import PreviousStepFormatError
 from libcommon.simple_cache import (
     get_previous_step_or_raise,
