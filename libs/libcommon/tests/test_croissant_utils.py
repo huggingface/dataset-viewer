@@ -2,6 +2,7 @@
 # Copyright 2024 The HuggingFace Authors.
 
 
+from typing import Any
 from unittest.mock import patch
 
 import pytest
@@ -69,7 +70,7 @@ def test_truncate_features_from_croissant_crumbs_response(num_columns: int) -> N
         ),
     ],
 )
-def test_feature_to_croissant_field(hf_datasets_feature, croissant_field) -> None:
+def test_feature_to_croissant_field(hf_datasets_feature: Any, croissant_field: Any) -> None:
     assert (
         feature_to_croissant_field("distribution_name", "field_name", "column_name", hf_datasets_feature)
         == croissant_field
