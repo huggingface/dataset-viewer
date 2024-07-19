@@ -29,42 +29,48 @@ def test_truncate_features_from_croissant_crumbs_response(num_columns: int) -> N
         assert "max number of columns reached" in content["recordSet"][0]["description"]
 
 
-@pytest.mark.parametrize(("hf_datasets_feature", "croissant_field"), [
-    (
-        Value(dtype='int32'),
-        {
-            "@type": "cr:Field",
-            "@id": "field_name",
-            "name": "field_name",
-            "description": "Column 'column_name' from the Hugging Face parquet file.",
-            "dataType": "sc:Integer",
-            "source": {"fileSet": {"@id": "distribution_name"}, "extract": {"column": "column_name"}},
-        }
-    ),
-    (
-        Sequence(Value(dtype='int32')),
-        {
-            "@type": "cr:Field",
-            "@id": "field_name",
-            "name": "field_name",
-            "description": "Column 'column_name' from the Hugging Face parquet file.",
-            "dataType": "sc:Integer",
-            "source": {"fileSet": {"@id": "distribution_name"}, "extract": {"column": "column_name"}},
-            "repeated": True,
-        },
-    ),
-    (
-        [Value(dtype='int32')],
-        {
-            "@type": "cr:Field",
-            "@id": "field_name",
-            "name": "field_name",
-            "description": "Column 'column_name' from the Hugging Face parquet file.",
-            "dataType": "sc:Integer",
-            "source": {"fileSet": {"@id": "distribution_name"}, "extract": {"column": "column_name"}},
-            "repeated": True,
-        }
-    )
-])
+@pytest.mark.parametrize(
+    ("hf_datasets_feature", "croissant_field"),
+    [
+        (
+            Value(dtype="int32"),
+            {
+                "@type": "cr:Field",
+                "@id": "field_name",
+                "name": "field_name",
+                "description": "Column 'column_name' from the Hugging Face parquet file.",
+                "dataType": "sc:Integer",
+                "source": {"fileSet": {"@id": "distribution_name"}, "extract": {"column": "column_name"}},
+            },
+        ),
+        (
+            Sequence(Value(dtype="int32")),
+            {
+                "@type": "cr:Field",
+                "@id": "field_name",
+                "name": "field_name",
+                "description": "Column 'column_name' from the Hugging Face parquet file.",
+                "dataType": "sc:Integer",
+                "source": {"fileSet": {"@id": "distribution_name"}, "extract": {"column": "column_name"}},
+                "repeated": True,
+            },
+        ),
+        (
+            [Value(dtype="int32")],
+            {
+                "@type": "cr:Field",
+                "@id": "field_name",
+                "name": "field_name",
+                "description": "Column 'column_name' from the Hugging Face parquet file.",
+                "dataType": "sc:Integer",
+                "source": {"fileSet": {"@id": "distribution_name"}, "extract": {"column": "column_name"}},
+                "repeated": True,
+            },
+        ),
+    ],
+)
 def test_feature_to_croissant_field(hf_datasets_feature, croissant_field) -> None:
-    assert feature_to_croissant_field("distribution_name", "field_name", "column_name", hf_datasets_feature) == croissant_field
+    assert (
+        feature_to_croissant_field("distribution_name", "field_name", "column_name", hf_datasets_feature)
+        == croissant_field
+    )
