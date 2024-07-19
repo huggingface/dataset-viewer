@@ -2,7 +2,7 @@
 # Copyright 2024 The HuggingFace Authors.
 
 from collections.abc import Mapping
-from typing import Any
+from typing import Any, Union
 
 from datasets import ClassLabel, Image, Sequence, Value
 
@@ -33,9 +33,9 @@ def truncate_features_from_croissant_crumbs_response(content: Mapping[str, Any])
             ):
                 num_columns = len(record["field"])
                 record["field"] = record["field"][:MAX_COLUMNS]
-                record[
-                    "description"
-                ] += f"\n- {num_columns - MAX_COLUMNS} skipped column{'s' if num_columns - MAX_COLUMNS > 1 else ''} (max number of columns reached)"
+                record["description"] += (
+                    f"\n- {num_columns - MAX_COLUMNS} skipped column{'s' if num_columns - MAX_COLUMNS > 1 else ''} (max number of columns reached)"
+                )
 
 
 HF_TO_CROISSANT_VALUE_TYPE = {
@@ -53,7 +53,9 @@ HF_TO_CROISSANT_VALUE_TYPE = {
 }
 
 
-def feature_to_croissant_field(distribution_name: str, field_name: str, column: str, feature) -> dict[str, Any] | None:
+def feature_to_croissant_field(
+    distribution_name: str, field_name: str, column: str, feature
+) -> Union[dict[str, Any], None]:
     """Converts a Hugging Face Datasets feature to a Croissant field or None if impossible."""
     if isinstance(feature, Value) and feature.dtype in HF_TO_CROISSANT_VALUE_TYPE:
         return {
