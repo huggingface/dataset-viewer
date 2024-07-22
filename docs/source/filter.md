@@ -13,7 +13,7 @@ Feel free to also try it out with [ReDoc](https://redocly.github.io/redoc/?url=h
 
 The `/filter` endpoint accepts the following query parameters:
 - `dataset`: the dataset name, for example `nyu-mll/glue` or `mozilla-foundation/common_voice_10_0`
-- `config`: the configuration name, for example `cola`
+- `config`: the subset name, for example `cola`
 - `split`: the split name, for example `train`
 - `where`: the filter condition
 - `orderby`: the order-by clause
@@ -44,7 +44,7 @@ either the string "name" column is equal to 'Simone' or the integer "children" c
 The `orderby` parameter must contain the column name (in double quotes) whose values will be sorted (in ascending order by default).
 To sort the rows in descending order, use the DESC keyword, like `orderby="age" DESC`.
 
-For example, let's filter those rows with no_answer=false in the `train` split of the `SelfRC` configuration of the `ibm/duorc` dataset restricting the results to the slice 150-151:
+For example, let's filter those rows with no_answer=false in the `train` split of the `SelfRC` subset of the `ibm/duorc` dataset restricting the results to the slice 150-151:
 
 <inferencesnippet>
 <python>

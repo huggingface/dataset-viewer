@@ -11,7 +11,7 @@
     - local: valid
       title: Check dataset validity
     - local: splits
-      title: List splits and configurations
+      title: List splits and subsets
     - local: info
       title: Get dataset information
     - local: first_rows
@@ -49,7 +49,7 @@
 - title: Conceptual Guides
   sections:
     - local: configs_and_splits
-      title: Splits and configurations
+      title: Splits and subsets
     - local: data_types
       title: Data types
     - local: server

@@ -1292,7 +1292,7 @@
       "X-Error-Code-DatasetWithTooManyConfigsError": {
         "type": "string",
         "const": "DatasetWithTooManyConfigsError",
-        "description": "The number of configs of a dataset exceeded the limit."
+        "description": "The number of subsets of a dataset exceeded the limit."
       },
       "X-Error-Code-ExternalAuthenticatedError": {
         "type": "string",
@@ -1356,8 +1356,8 @@
     },
     "examples": {
       "InexistentConfigError": {
-        "summary": "The response is not found because the config does not exist.",
-        "description": "try with config=inexistent-config.",
+        "summary": "The response is not found because the subset does not exist.",
+        "description": "try with config=inexistent-subset.",
         "value": {
           "error": "Not found."
         }
@@ -1468,7 +1468,7 @@
       "RequiredConfig": {
         "name": "config",
         "in": "query",
-        "description": "The dataset configuration (or subset).",
+        "description": "The dataset subset (also called 'configuration').",
         "required": true,
         "schema": {
           "type": "string"
@@ -1510,7 +1510,7 @@
       "OptionalConfig": {
         "name": "config",
         "in": "query",
-        "description": "The dataset configuration (or subset) on which to filter the response.",
+        "description": "The dataset subset on which to filter the response.",
         "schema": {
           "type": "string"
         },
@@ -1520,7 +1520,7 @@
             "value": "cola"
           },
           "yangdong/ecqa": {
-            "summary": "The default configuration given by the 🤗 Datasets library",
+            "summary": "The default subset given by the 🤗 Datasets library",
             "value": "default"
           }
         }
@@ -1827,8 +1827,8 @@
                       "failed": []
                     }
                   },
-                  "splits for a single config": {
-                    "summary": "dair-ai/emotion has two configs. Setting config=unsplit only returns the splits for this config.",
+                  "splits for a single subset": {
+                    "summary": "dair-ai/emotion has two subsets. Setting config=unsplit only returns the splits for this subset.",
                     "description": "Try with https://datasets-server.huggingface.co/splits?dataset=dair-ai/emotion&config=unsplit.",
                     "value": {
                       "splits": [
@@ -1840,8 +1840,8 @@
                       ]
                     }
                   },
-                  "one of the config has an error": {
-                    "summary": "one of the configs require manual download, and fails to give the split names",
+                  "one of the subsets has an error": {
+                    "summary": "one of the subsets require manual download, and fails to give the split names",
                     "description": "Try with https://datasets-server.huggingface.co/splits?dataset=superb.",
                     "value": {
                       "splits": [
@@ -2023,8 +2023,8 @@
                   "$ref": "#/components/schemas/CustomError"
                 },
                 "examples": {
-                  "too many configs in the dataset": {
-                    "summary": "The dataset has too many configs. The server does not support more than 3,000 configs.",
+                  "too many subsets in the dataset": {
+                    "summary": "The dataset has too many subsets. The server does not support more than 3,000 subsets.",
                     "description": "Try with https://datasets-server.huggingface.co/splits?dataset=facebook/flores",
                     "value": {
                       "error": "The maximum number of configs allowed is 3000, dataset has 41617 configs."
@@ -4774,7 +4774,7 @@
     "/info": {
       "get": {
         "summary": "Get the metadata of a dataset.",
-        "description": "Returns the metadata of the dataset: description, homepage, features, etc. Use the optional config parameter to filter the response.",
+        "description": "Returns the metadata of the dataset: description, homepage, features, etc. Use the optional config parameter to filter the response on a subset.",
         "externalDocs": {
           "description": "The response is a dump of the DatasetInfo object from the datasets library",
           "url": "https://huggingface.co/docs/datasets/en/package_reference/main_classes#datasets.DatasetInfo"
@@ -4815,7 +4815,7 @@
                 },
                 "examples": {
                   "dataset metadata": {
-                    "summary": "metadata of a dataset. It's an object, with one key per config",
+                    "summary": "metadata of a dataset. It's an object, with one key per subset",
                     "description": "Try with https://datasets-server.huggingface.co/info?dataset=mnist",
                     "value": {
                       "dataset_info": {
@@ -4903,7 +4903,7 @@
                     }
                   },
                   "config metadata": {
-                    "summary": "metadata for a dataset config",
+                    "summary": "metadata for a dataset subset",
                     "description": "Try with https://datasets-server.huggingface.co/info?dataset=nyu-mll/glue&config=ax",
                     "value": {
                       "dataset_info": {
@@ -4943,8 +4943,8 @@
                       "partial": false
                     }
                   },
-                  "dataset metadata with failed configs": {
-                    "summary": "metadata of a dataset which has failed configs. The failed configs are listed in 'failed'.",
+                  "dataset metadata with failed subsets": {
+                    "summary": "metadata of a dataset which has failed subsets. The failed subsets are listed in 'failed'.",
                     "description": "Try with https://datasets-server.huggingface.co/info?dataset=atomic",
                     "value": {
                       "dataset_info": {},
@@ -5066,7 +5066,7 @@
     "/size": {
       "get": {
         "summary": "Get the size of a dataset.",
-        "description": "Returns the size (number of rows, storage) of the dataset. Use the optional config parameter to filter the response.",
+        "description": "Returns the size (number of rows, storage) of the dataset. Use the optional config parameter to filter the response on a subset.",
         "externalDocs": {
           "description": "See size in the Hub docs.",
           "url": "https://huggingface.co/docs/datasets-server/size"
@@ -5156,7 +5156,7 @@
                     }
                   },
                   "config size": {
-                    "summary": "size of a dataset config",
+                    "summary": "size of a dataset subset",
                     "description": "Try with https://datasets-server.huggingface.co/size?dataset=nyu-mll/glue&config=ax",
                     "value": {
                       "size": {
@@ -5184,8 +5184,8 @@
                       "partial": false
                     }
                   },
-                  "dataset size with failed configs": {
-                    "summary": "size of a dataset which has failed configs. The failed configs are listed in 'failed'.",
+                  "dataset size with failed subsets": {
+                    "summary": "size of a dataset which has failed subsets. The failed subsets are listed in 'failed'.",
                     "description": "Try with https://datasets-server.huggingface.co/size?dataset=atomic",
                     "value": {
                       "size": {
@@ -5317,7 +5317,7 @@
     "/opt-in-out-urls": {
       "get": {
         "summary": "Get the number of opted-in and opted-out image URLs in a dataset.",
-        "description": "Based on the API of spawning.ai, returns the number of image URLs that have been opted-in and opted-out. Use the optional config and splits parameters to filter the response. Only a sample of the rows is scanned, the first 100K rows at the moment.",
+        "description": "Based on the API of spawning.ai, returns the number of image URLs that have been opted-in and opted-out. Use the optional config and split parameters to filter the response. Only a sample of the rows is scanned, the first 100K rows at the moment.",
         "externalDocs": {
           "description": "See spawning.io (Hub docs). The doc is still missing for the endpoint, see https://github.com/huggingface/dataset-viewer/issues/1664.",
           "url": "https://huggingface.co/docs/datasets-server/"
@@ -5373,8 +5373,8 @@
                       "full_scan": false
                     }
                   },
-                  "number of URLS for a config": {
-                    "summary": "number of URLs for a config.",
+                  "number of URLS for a subset": {
+                    "summary": "number of URLs for a subset.",
                     "description": "Try with https://datasets-server.huggingface.co/opt-in-out-urls?dataset=conceptual_captions&config=labeled",
                     "value": {
                       "urls_columns": ["image_url"],
@@ -6432,29 +6432,11 @@
                             "std": 60.07286,
                             "histogram": {
                               "hist": [
-                                  1734,
-                                  1637,
-                                  1326,
-                                  121,
-                                  10,
-                                  3,
-                                  1,
-                                  3,
-                                  1,
-                                  2
+                                1734, 1637, 1326, 121, 10, 3, 1, 3, 1, 2
                               ],
                               "bin_edges": [
-                                  256,
-                                  318,
-                                  380,
-                                  442,
-                                  504,
-                                  566,
-                                  628,
-                                  690,
-                                  752,
-                                  814,
-                                  873
+                                256, 318, 380, 442, 504, 566, 628, 690, 752,
+                                814, 873
                               ]
                             }
                           }
@@ -6492,7 +6474,7 @@
                             }
                           }
                         }
-                    ],
+                      ],
                       "partial": false
                     }
                   }

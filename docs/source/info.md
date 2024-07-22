@@ -5,7 +5,7 @@ The dataset viewer provides an `/info` endpoint for exploring the general inform
 The `/info` endpoint accepts two query parameters:
 
 - `dataset`: the dataset name
-- `config`: the configuration name
+- `config`: the subset name
 
 <inferencesnippet>
 <python>

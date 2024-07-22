@@ -22,7 +22,7 @@ or [ReDoc](https://redocly.github.io/redoc/?url=https://datasets-server.huggingf
 The `/rows` endpoint accepts five query parameters:
 
 - `dataset`: the dataset name, for example `nyu-mll/glue` or `mozilla-foundation/common_voice_10_0`
-- `config`: the configuration name, for example `cola`
+- `config`: the subset name, for example `cola`
 - `split`: the split name, for example `train`
 - `offset`: the offset of the slice, for example `150`
 - `length`: the length of the slice, for example `10` (maximum: `100`)

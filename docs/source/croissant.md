@@ -54,7 +54,7 @@ curl https://huggingface.co/api/datasets/ibm/duorc/croissant \
 
 Under the hood it uses the `https://datasets-server.huggingface.co/croissant-crumbs` endpoint and enriches it with the Hub metadata.
 
-The endpoint response is a [JSON-LD](https://json-ld.org/) containing the metadata in the Croissant format. For example, the [`ibm/duorc`](https://huggingface.co/datasets/ibm/duorc) dataset has two configurations, `ParaphraseRC` and `SelfRC` (see the [List splits and configurations](./splits) guide for more details about splits and configurations). The metadata links to their Parquet files and describes the type of each of the six columns: `plot_id`, `plot`, `title`, `question_id`, `question`, and `no_answer`:
+The endpoint response is a [JSON-LD](https://json-ld.org/) containing the metadata in the Croissant format. For example, the [`ibm/duorc`](https://huggingface.co/datasets/ibm/duorc) dataset has two subsets, `ParaphraseRC` and `SelfRC` (see the [List splits and subsets](./splits) guide for more details about splits and subsets). The metadata links to their Parquet files and describes the type of each of the six columns: `plot_id`, `plot`, `title`, `question_id`, `question`, and `no_answer`:
 
 ```json
 {
