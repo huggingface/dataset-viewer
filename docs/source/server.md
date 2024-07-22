@@ -15,7 +15,7 @@ The job queue is a list of jobs stored in a Mongo database that should be comple
 
 There are three jobs:
 
-- `/splits` corresponds to the `/splits` endpoint. It refreshes a dataset and then returns that dataset's splits and configurations. For every split in the dataset, it'll create a new job.
+- `/splits` corresponds to the `/splits` endpoint. It refreshes a dataset and then returns that dataset's splits and subsets. For every split in the dataset, it'll create a new job.
 - `/first-rows` corresponds to the `/first-rows` endpoint. It gets the first 100 rows and columns of a dataset split.
 - `/parquet` corresponds to the `/parquet` endpoint. It downloads the whole dataset, converts it to [parquet](https://parquet.apache.org/) and publishes the parquet files to the Hub.
 
@@ -23,7 +23,7 @@ You might've noticed the `/rows` and `/search` endpoints don't have a job in the
 
 ## Workers
 
-Workers are responsible for executing the jobs in the queue. They complete the actual preprocessing requests, such as getting a list of splits and configurations. The workers can be controlled by configurable environment variables, like the minimum or the maximum number of rows returned by a worker or the maximum number of jobs to start per dataset user or organization.
+Workers are responsible for executing the jobs in the queue. They complete the actual preprocessing requests, such as getting a list of splits and subsets. The workers can be controlled by configurable environment variables, like the minimum or the maximum number of rows returned by a worker or the maximum number of jobs to start per dataset user or organization.
 
 Take a look at the [workers configuration](https://github.com/huggingface/dataset-viewer/tree/main/services/worker#configuration) for a complete list of the environment variables if you're interested in learning more.
 

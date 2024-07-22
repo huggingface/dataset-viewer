@@ -44,7 +44,7 @@ curl https://datasets-server.huggingface.co/size?dataset=ibm/duorc \
 </curl>
 </inferencesnippet>
 
-The endpoint response is a JSON containing the size of the dataset, as well as each of its configurations and splits. It provides the number of rows, the number of colums (where applicable) and the size in bytes for the different forms of the data: original files, size in memory (RAM) and auto-converted parquet files. For example, the [ibm/duorc](https://huggingface.co/datasets/ibm/duorc) dataset has 187.213 rows along all its configurations and splits, for a total of 97MB.
+The endpoint response is a JSON containing the size of the dataset, as well as each of its subsets and splits. It provides the number of rows, the number of colums (where applicable) and the size in bytes for the different forms of the data: original files, size in memory (RAM) and auto-converted parquet files. For example, the [ibm/duorc](https://huggingface.co/datasets/ibm/duorc) dataset has 187.213 rows along all its subsets and splits, for a total of 97MB.
 
 ```json
 {

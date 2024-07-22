@@ -5,7 +5,7 @@
 In this quickstart, you'll learn how to use the dataset viewer's REST API to:
 
 - Check whether a dataset on the Hub is functional.
-- Return the configuration and splits of a dataset.
+- Return the subsets and splits of a dataset.
 - Preview the first 100 rows of a dataset.
 - Download slices of rows of a dataset.
 - Search a word in a dataset.
@@ -21,7 +21,7 @@ Each feature is served through an endpoint summarized in the table below:
 | Endpoint                    | Method | Description                                             | Query parameters                                                                                                                                                                                                                                  |
 |-----------------------------|--------|---------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | [/is-valid](./valid)        | GET    | Check whether a specific dataset is valid.              | `dataset`: name of the dataset                                                                                                                                                                                                                    |
-| [/splits](./splits)         | GET    | Get the list of configurations and splits of a dataset. | `dataset`: name of the dataset                                                                                                                                                                                                                    |
+| [/splits](./splits)         | GET    | Get the list of subsets and splits of a dataset. | `dataset`: name of the dataset                                                                                                                                                                                                                    |
 | [/first-rows](./first_rows) | GET    | Get the first rows of a dataset split.                  | - `dataset`: name of the dataset<br>- `config`: name of the config<br>- `split`: name of the split                                                                                                                                                |
 | [/rows](./rows)             | GET    | Get a slice of rows of a dataset split.                 | - `dataset`: name of the dataset<br>- `config`: name of the config<br>- `split`: name of the split<br>- `offset`: offset of the slice<br>- `length`: length of the slice (maximum 100)                                                            |
 | [/search](./search)         | GET    | Search text in a dataset split.                         | - `dataset`: name of the dataset<br>- `config`: name of the config<br>- `split`: name of the split<br>- `query`: text to search for<br>                                                                                                           |
@@ -200,7 +200,7 @@ curl https://datasets-server.huggingface.co/splits?dataset=rotten_tomatoes \
 </curl>
 </inferencesnippet>
 
-This returns the available configuration and splits in the dataset:
+This returns the available subsets and splits in the dataset:
 
 ```json
 {
@@ -220,7 +220,7 @@ This returns the available configuration and splits in the dataset:
 
 ## Preview a dataset
 
-The `/first-rows` endpoint returns a JSON list of the first 100 rows of a dataset. It also returns the types of data features ("columns" data types). You should specify the dataset name, configuration name (you can find out the configuration name from the `/splits` endpoint), and split name of the dataset you'd like to preview:
+The `/first-rows` endpoint returns a JSON list of the first 100 rows of a dataset. It also returns the types of data features ("columns" data types). You should specify the dataset name, subset name (you can find out the subset name from the `/splits` endpoint), and split name of the dataset you'd like to preview:
 
 <inferencesnippet>
 <python>
@@ -305,7 +305,7 @@ This returns the first 100 rows of the dataset:
 
 The `/rows` endpoint returns a JSON list of a slice of rows of a dataset at any given location (offset).
 It also returns the types of data features ("columns" data types).
-You should specify the dataset name, configuration name (you can find out the configuration name from the `/splits` endpoint), the split name and the offset and length of the slice you'd like to download:
+You should specify the dataset name, subset name (you can find out the subset name from the `/splits` endpoint), the split name and the offset and length of the slice you'd like to download:
 
 <inferencesnippet>
 <python>
@@ -392,7 +392,7 @@ The response looks like:
 
 The `/search` endpoint returns a JSON list of a slice of rows of a dataset that match a text query. The text is searched in the columns of type `string`, even if the values are nested in a dictionary.
 It also returns the types of data features ("columns" data types). The response format is the same as the /rows endpoint.
-You should specify the dataset name, configuration name (you can find out the configuration name from the `/splits` endpoint), the split name and the search query you'd like to find in the text columns:
+You should specify the dataset name, subset name (you can find out the subset name from the `/splits` endpoint), the split name and the search query you'd like to find in the text columns:
 
 <inferencesnippet>
 <python>
@@ -554,7 +554,7 @@ This returns a URL to the Parquet file for each split:
 
 ## Get the size of the dataset
 
-The `/size` endpoint returns a JSON with the size (number of rows and size in bytes) of the dataset, and for every configuration and split:
+The `/size` endpoint returns a JSON with the size (number of rows and size in bytes) of the dataset, and for every subset and split:
 
 <inferencesnippet>
 <python>
@@ -594,7 +594,7 @@ curl https://datasets-server.huggingface.co/size?dataset=rotten_tomatoes \
 </curl>
 </inferencesnippet>
 
-This returns the size of the dataset, and for every configuration and split:
+This returns the size of the dataset, and for every subset and split:
 
 ```json
 {

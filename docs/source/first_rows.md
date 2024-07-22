@@ -9,7 +9,7 @@ This guide shows you how to use the dataset viewer's `/first-rows` endpoint to p
 The `/first-rows` endpoint accepts three query parameters:
 
 - `dataset`: the dataset name, for example `nyu-mll/glue` or `mozilla-foundation/common_voice_10_0`
-- `config`: the configuration name, for example `cola`
+- `config`: the subset name, for example `cola`
 - `split`: the split name, for example `train`
 
 <inferencesnippet>

@@ -13,7 +13,7 @@ This structure allows for efficient data reading and querying:
 - entire row groups are skipped if the statistics stored in its metadata do not match the data of interest (automatic filtering)
 - the data is compressed, which reduces the amount of data that needs to be stored and transferred.
 
-A Parquet file contains a single table. If a dataset has multiple tables (e.g. multiple splits or configurations), each table is stored in a separate Parquet file.
+A Parquet file contains a single table. If a dataset has multiple tables (e.g. multiple splits or subsets), each table is stored in a separate Parquet file.
 
 ## Conversion to Parquet
 
@@ -71,7 +71,7 @@ curl https://datasets-server.huggingface.co/parquet?dataset=ibm/duorc \
 </curl>
 </inferencesnippet>
 
-The endpoint response is a JSON containing a list of the dataset's files in the Parquet format. For example, the [`ibm/duorc`](https://huggingface.co/datasets/ibm/duorc) dataset has six Parquet files, which corresponds to the `test`, `train` and `validation` splits of its two configurations, `ParaphraseRC` and `SelfRC` (see the [List splits and configurations](./splits) guide for more details about splits and configurations).
+The endpoint response is a JSON containing a list of the dataset's files in the Parquet format. For example, the [`ibm/duorc`](https://huggingface.co/datasets/ibm/duorc) dataset has six Parquet files, which corresponds to the `test`, `train` and `validation` splits of its two subsets, `ParaphraseRC` and `SelfRC` (see the [List splits and subsets](./splits) guide for more details about splits and subsets).
 
 The endpoint also gives the filename and size of each file:
 
@@ -259,7 +259,7 @@ curl https://huggingface.co/api/datasets/ibm/duorc/parquet \
 </curl>
 </inferencesnippet>
 
-The endpoint response is a JSON containing a list of the dataset's files URLs in the Parquet format for each split and configuration. For example, the [`ibm/duorc`](https://huggingface.co/datasets/ibm/duorc) dataset has one Parquet file for the train split of the "ParaphraseRC" configuration (see the [List splits and configurations](./splits) guide for more details about splits and configurations).
+The endpoint response is a JSON containing a list of the dataset's files URLs in the Parquet format for each split and subset. For example, the [`ibm/duorc`](https://huggingface.co/datasets/ibm/duorc) dataset has one Parquet file for the train split of the "ParaphraseRC" subset (see the [List splits and subsets](./splits) guide for more details about splits and subsets).
 
 ```json
 {
@@ -288,7 +288,7 @@ The endpoint response is a JSON containing a list of the dataset's files URLs in
 }
 ```
 
-Optionally you can specify which configuration name to return, as well as which split:
+Optionally you can specify which subset name to return, as well as which split:
 
 <inferencesnippet>
 <python>

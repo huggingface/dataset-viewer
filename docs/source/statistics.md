@@ -9,10 +9,10 @@ The dataset viewer provides a `/statistics` endpoint for fetching some basic sta
 The `/statistics` endpoint requires three query parameters:
 
 - `dataset`: the dataset name, for example `nyu-mll/glue`
-- `config`: the configuration name, for example `cola`
+- `config`: the subset name, for example `cola`
 - `split`: the split name, for example `train`
 
-Let's get some stats for `nyu-mll/glue` dataset, `cola` config, `train` split:
+Let's get some stats for `nyu-mll/glue` dataset, `cola` subset, `train` split:
 
 <inferencesnippet>
 <python>
