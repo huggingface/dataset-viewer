@@ -24,9 +24,9 @@ Apache Parquet is a popular columnar storage format known for:
 - fast data retrieval and filtering,
 - efficient storage.
 
-**This is what powers the dataset viewer** on each dataset page and every dataset on the Hub can be accessed with the same code (you can use HF Datasets, ClickHouse, DuckDB, Pandas or Polars, [up to you](https://huggingface.co/docs/datasets-server/parquet_process)).
+**This is what powers the dataset viewer** on each dataset page and every dataset on the Hub can be accessed with the same code (you can use HF Datasets, ClickHouse, DuckDB, Pandas or Polars, [up to you](https://huggingface.co/docs/dataset-viewer/parquet_process)).
 
-You can learn more about the advantages associated with Parquet in the [documentation](https://huggingface.co/docs/datasets-server/parquet).
+You can learn more about the advantages associated with Parquet in the [documentation](https://huggingface.co/docs/dataset-viewer/parquet).
 
 ## How to access the Parquet version of the dataset?
 
@@ -38,7 +38,7 @@ When the dataset is already in Parquet format, the data are not converted and th
 
 ## What should I do?
 
-You don't need to do anything. The Parquet version of the dataset is available for you to use. Refer to the [documentation](https://huggingface.co/docs/datasets-server/parquet_process) for examples and code snippets on how to query the Parquet files with ClickHouse, DuckDB, Pandas or Polars.
+You don't need to do anything. The Parquet version of the dataset is available for you to use. Refer to the [documentation](https://huggingface.co/docs/dataset-viewer/parquet_process) for examples and code snippets on how to query the Parquet files with ClickHouse, DuckDB, Pandas or Polars.
 
 If you have any questions or concerns, feel free to ask in the discussion below. You can also close the discussion if you don't have any questions."""
 

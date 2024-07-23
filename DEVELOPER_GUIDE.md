@@ -66,7 +66,7 @@ For now, there are two libraries
     - [libcommon](./libs/libcommon), which contains the common code for the services and workers.
     - [libapi](./libs/libapi/), which contains common code for authentication, http requests, exceptions and other utilities for the services.
 - [services](./services) contains the applications: 
-    - [api](./services/api/), the public API, is a web server that exposes the [API endpoints](https://huggingface.co/docs/datasets-server). All the responses are served from pre-computed responses in Mongo server. That's the main point of this project: generating these responses takes time, and the API server provides this service to the users.
+    - [api](./services/api/), the public API, is a web server that exposes the [API endpoints](https://huggingface.co/docs/dataset-viewer). All the responses are served from pre-computed responses in Mongo server. That's the main point of this project: generating these responses takes time, and the API server provides this service to the users.
     - [webhook](./services/webhook/), exposes the `/webhook` endpoint which is called by the Hub on every creation, update or deletion of a dataset on the Hub. On deletion, the cached responses   are deleted. On creation or update, a new job is appended in the "queue" database.
     - [rows](./services/rows/)
     - [search](./services/search/)

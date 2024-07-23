@@ -1750,7 +1750,7 @@
         "description": "The list of splits of a dataset.",
         "externalDocs": {
           "description": "See Splits (Hub docs)",
-          "url": "https://huggingface.co/docs/datasets-server/splits"
+          "url": "https://huggingface.co/docs/dataset-viewer/splits"
         },
         "operationId": "listSplits",
         "security": [
@@ -2046,7 +2046,7 @@
         "description": "The list of the 100 first rows of a dataset split.",
         "externalDocs": {
           "description": "See First rows (Hub docs)",
-          "url": "https://huggingface.co/docs/datasets-server/first-rows"
+          "url": "https://huggingface.co/docs/dataset-viewer/first-rows"
         },
         "operationId": "listFirstRows",
         "security": [
@@ -2647,7 +2647,7 @@
         "description": "The list of rows of a dataset split at a given slice location (offset). Up to 100 rows are returned, use the length parameter to get less.",
         "externalDocs": {
           "description": "See rows (Hub docs)",
-          "url": "https://huggingface.co/docs/datasets-server/rows"
+          "url": "https://huggingface.co/docs/dataset-viewer/rows"
         },
         "operationId": "listRows",
         "security": [
@@ -3051,7 +3051,7 @@
         "description": "Returns the rows matching the query, ordered by row index. Up to 100 rows are returned. The offset and length parameters allow to navigate the results.",
         "externalDocs": {
           "description": "See search (Hub docs)",
-          "url": "https://huggingface.co/docs/datasets-server/search"
+          "url": "https://huggingface.co/docs/dataset-viewer/search"
         },
         "operationId": "searchRows",
         "security": [
@@ -3456,7 +3456,7 @@
         "description": "Returns the rows matching the filter query, ordered by row index. Up to 100 rows are returned. The offset and length parameters allow to navigate the results.",
         "externalDocs": {
           "description": "See filter (Hub docs).",
-          "url": "https://huggingface.co/docs/datasets-server/filter"
+          "url": "https://huggingface.co/docs/dataset-viewer/filter"
         },
         "operationId": "filterRows",
         "security": [
@@ -4084,7 +4084,7 @@
         "description": "The dataset is converted to the parquet format. The endpoint gives the list of the parquet files. The same split can have multiple parquet files, called shards. They are sorted by their shard index.",
         "externalDocs": {
           "description": "See Parquet (Hub docs)",
-          "url": "https://huggingface.co/docs/datasets-server/parquet"
+          "url": "https://huggingface.co/docs/dataset-viewer/parquet"
         },
         "operationId": "listParquetFiles",
         "security": [
@@ -4624,7 +4624,7 @@
         "description": "Returns the capabilities of the dataset: show a preview of the 100 first rows, show the viewer for all the rows, search/filter the rows, have statistics. Use the optional config and split parameters to filter the response.",
         "externalDocs": {
           "description": "See Valid datasets (Hub docs)",
-          "url": "https://huggingface.co/docs/datasets-server/valid"
+          "url": "https://huggingface.co/docs/dataset-viewer/valid"
         },
         "operationId": "isValidDataset",
         "security": [
@@ -5069,7 +5069,7 @@
         "description": "Returns the size (number of rows, storage) of the dataset. Use the optional config parameter to filter the response on a subset.",
         "externalDocs": {
           "description": "See size in the Hub docs.",
-          "url": "https://huggingface.co/docs/datasets-server/size"
+          "url": "https://huggingface.co/docs/dataset-viewer/size"
         },
         "operationId": "getSize",
         "security": [
@@ -5320,7 +5320,7 @@
         "description": "Based on the API of spawning.ai, returns the number of image URLs that have been opted-in and opted-out. Use the optional config and split parameters to filter the response. Only a sample of the rows is scanned, the first 100K rows at the moment.",
         "externalDocs": {
           "description": "See spawning.io (Hub docs). The doc is still missing for the endpoint, see https://github.com/huggingface/dataset-viewer/issues/1664.",
-          "url": "https://huggingface.co/docs/datasets-server/"
+          "url": "https://huggingface.co/docs/dataset-viewer/"
         },
         "operationId": "getOptInOutUrls",
         "security": [
@@ -5495,7 +5495,7 @@
         "description": "Based on Presidio, returns the number of rows containing names, emails, phone numbers of sensitive PII. Only a sample of the rows is scanned, the first 10K rows at the moment.",
         "externalDocs": {
           "description": "See https://microsoft.github.io/presidio/. The Hub docs are still missing for the endpoint, see https://github.com/huggingface/dataset-viewer/issues/1664.",
-          "url": "https://huggingface.co/docs/datasets-server/"
+          "url": "https://huggingface.co/docs/dataset-viewer/"
         },
         "operationId": "getPresidioEntities",
         "security": [
@@ -5640,7 +5640,7 @@
         "description": "Returns descriptive statistics, such as min, max, average, histogram, of the columns of a split.",
         "externalDocs": {
           "description": "See statistics (Hub docs).",
-          "url": "https://huggingface.co/docs/datasets-server/statistics"
+          "url": "https://huggingface.co/docs/dataset-viewer/statistics"
         },
         "operationId": "getStatistics",
         "security": [

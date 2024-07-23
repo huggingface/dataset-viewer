@@ -14,7 +14,7 @@ See [../../libs/libcommon/README.md](../../libs/libcommon/README.md) for more in
 
 ## Endpoints
 
-See https://huggingface.co/docs/datasets-server
+See https://huggingface.co/docs/dataset-viewer
 
 - /healthcheck: Ensure the app is running
 - /metrics: Return a list of metrics in the Prometheus format
