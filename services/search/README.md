@@ -4,7 +4,7 @@
 >
 > **GET** /filter
 
-See [search](https://huggingface.co/docs/datasets-server/search) and [filter](https://huggingface.co/docs/datasets-server/filter) usage for more details. 
+See [search](https://huggingface.co/docs/dataset-viewer/search) and [filter](https://huggingface.co/docs/dataset-viewer/filter) usage for more details.
 
 ## Configuration
 
@@ -26,7 +26,7 @@ See [../../libs/libcommon/README.md](../../libs/libcommon/README.md) for more in
 
 ## Endpoints
 
-See https://huggingface.co/docs/datasets-server
+See https://huggingface.co/docs/dataset-viewer
 
 - /healthcheck: ensure the app is running
 - /metrics: return a list of metrics in the Prometheus format

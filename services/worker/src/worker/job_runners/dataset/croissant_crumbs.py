@@ -83,7 +83,7 @@ def get_croissant_crumbs_from_dataset_infos(
                     "@type": "cr:FileSet",
                     "@id": distribution_name,
                     "name": distribution_name,
-                    "description": "The underlying Parquet files as converted by Hugging Face (see: https://huggingface.co/docs/datasets-server/parquet).",
+                    "description": "The underlying Parquet files as converted by Hugging Face (see: https://huggingface.co/docs/dataset-viewer/parquet).",
                     "containedIn": {"@id": repo_name},
                     "encodingFormat": "application/x-parquet",
                     "includes": f"{config}/*/*.parquet",

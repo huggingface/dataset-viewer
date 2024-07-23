@@ -2,7 +2,7 @@
 
 > **GET** /rows
 
-See [usage](https://huggingface.co/docs/datasets-server/rows) for more details.
+See [usage](https://huggingface.co/docs/dataset-viewer/rows) for more details.
 
 ## Configuration
 
@@ -18,7 +18,7 @@ See [../../libs/libcommon/README.md](../../libs/libcommon/README.md) for more in
 
 ## Endpoints
 
-See https://huggingface.co/docs/datasets-server
+See https://huggingface.co/docs/dataset-viewer
 
 - /healthcheck: ensure the app is running
 - /metrics: return a list of metrics in the Prometheus format

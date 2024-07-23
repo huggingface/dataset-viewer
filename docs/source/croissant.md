@@ -116,7 +116,7 @@ The endpoint response is a [JSON-LD](https://json-ld.org/) containing the metada
       "@type": "cr:FileSet",
       "@id": "parquet-files-for-config-ParaphraseRC",
       "name": "parquet-files-for-config-ParaphraseRC",
-      "description": "The underlying Parquet files as converted by Hugging Face (see: https://huggingface.co/docs/datasets-server/parquet).",
+      "description": "The underlying Parquet files as converted by Hugging Face (see: https://huggingface.co/docs/dataset-viewer/parquet).",
       "containedIn": {
         "@id": "repo"
       },
@@ -127,7 +127,7 @@ The endpoint response is a [JSON-LD](https://json-ld.org/) containing the metada
       "@type": "cr:FileSet",
       "@id": "parquet-files-for-config-SelfRC",
       "name": "parquet-files-for-config-SelfRC",
-      "description": "The underlying Parquet files as converted by Hugging Face (see: https://huggingface.co/docs/datasets-server/parquet).",
+      "description": "The underlying Parquet files as converted by Hugging Face (see: https://huggingface.co/docs/dataset-viewer/parquet).",
       "containedIn": {
         "@id": "repo"
       },
