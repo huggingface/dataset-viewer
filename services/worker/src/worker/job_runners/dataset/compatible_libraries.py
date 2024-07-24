@@ -619,6 +619,102 @@ def get_compatible_libraries_for_webdataset(
     return {"language": "python", "library": library, "function": function, "loading_codes": loading_codes}
 
 
+def get_polars_compatible_library(
+    builder_name: str, dataset: str, hf_token: Optional[str], login_required: bool
+) -> Optional[CompatibleLibrary]:
+    if builder_name in ["parquet", "csv", "json"]:
+        builder_configs = get_builder_configs_with_simplified_data_files(
+            dataset, module_name=builder_name, hf_token=hf_token
+        )
+
+        for config in builder_configs:
+            if any(len(data_files) != 1 for data_files in config.data_files.values()):
+                raise DatasetWithTooComplexDataFilesPatternsError(
+                    f"Failed to simplify parquet data files pattern: {config.data_files}"
+                )
+
+        loading_codes: list[LoadingCode] = [
+            {
+                "config_name": config.name,
+                "arguments": {
+                    "splits": {str(split): data_files[0] for split, data_files in config.data_files.items()}
+                },
+                "code": "",
+            }
+            for config in builder_configs
+        ]
+
+    compatible_library: CompatibleLibrary = {"language": "python", "library": "polars"}
+
+    def fmt_code(
+        *,
+        read_func: str,
+        splits: dict,
+        args: str,
+        dataset: str = dataset,
+        hf_token: Optional[str] = hf_token,
+        login_required: bool = login_required,
+    ) -> str:
+        if login_required and not hf_token:
+            hf_token = "<your HF token>"
+
+        if hf_token:
+            args = f"{args}, storage_options={{'token': '{hf_token}'}}"
+
+        assert args.startswith(", ") or args == ""
+
+        if len(splits) == 1:
+            path = next(iter(splits.values()))
+            return f"""\
+import polars as pl
+
+df = pl.{read_func}('hf://datasets/{dataset}/{path}'{args})
+"""
+        else:
+            first_split = next(iter(splits))
+            return f"""\
+import polars as pl
+
+splits = {splits}
+df = pl.{read_func}('hf://datasets/{dataset}/' + splits['{first_split}']{args})
+"""
+
+    args = ""
+
+    if builder_name == "parquet":
+        read_func = "read_parquet"
+        compatible_library["function"] = f"pl.{read_func}"
+    elif builder_name == "csv":
+        read_func = "read_csv"
+        compatible_library["function"] = f"pl.{read_func}"
+
+        first_file = next(iter(loading_codes[0]["arguments"]["splits"].values()))
+
+        if ".tsv" in first_file:
+            args = f"{args}, separator='\\t'"
+
+    elif builder_name == "json":
+        first_file = next(iter(loading_codes[0]["arguments"]["splits"].values()))
+        is_json_lines = ".jsonl" in first_file or HfFileSystem(token=hf_token).open(first_file, "r").read(1) != "["
+
+        if is_json_lines:
+            read_func = "read_ndjson"
+        else:
+            read_func = "read_json"
+
+        compatible_library["function"] = f"pl.{read_func}"
+    else:
+        return None
+
+    for loading_code in loading_codes:
+        splits = loading_code["arguments"]["splits"]
+        loading_code["code"] = fmt_code(read_func=read_func, splits=splits, args=args)
+
+    compatible_library["loading_codes"] = loading_codes
+
+    return compatible_library
+
+
 get_compatible_library_for_builder: dict[str, Callable[[str, Optional[str], bool], CompatibleLibrary]] = {
     "webdataset": get_compatible_libraries_for_webdataset,
     "json": get_compatible_libraries_for_json,
@@ -701,6 +797,12 @@ def compute_compatible_libraries_response(
         libraries.append(
             get_mlcroissant_compatible_library(dataset, infos, login_required=login_required, partial=partial)
         )
+        # polars
+        if (
+            v := get_polars_compatible_library(builder_name, dataset, infos=infos, login_required=login_required)
+        ) is not None:
+            libraries.append(v)
+
     return DatasetCompatibleLibrariesResponse(libraries=libraries, formats=formats)
 
 
