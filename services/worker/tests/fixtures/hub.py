@@ -618,12 +618,7 @@ def create_dataset_info_response_for_big_parquet(dataset: str, config: str) -> A
         "dataset_name": dataset_name,
         "version": {"version_str": "0.0.0", "major": 0, "minor": 0, "patch": 0},
         "splits": {
-            "train": {
-                "name": "train",
-                "num_bytes": 5653946,
-                "num_examples": len(BIG_rows),
-                "dataset_name": dataset_name,
-            }
+            "train": {"name": "train", "num_bytes": 5653946, "num_examples": len(BIG_rows), "dataset_name": None}
         },
         "download_size": BIG_PARQUET_FILE,
         "dataset_size": 5653946,
@@ -658,7 +653,7 @@ def create_dataset_info_response_for_audio(dataset: str, config: str) -> Any:
         "config_name": config,
         "dataset_name": dataset_name,
         "version": {"version_str": "0.0.0", "major": 0, "minor": 0, "patch": 0},
-        "splits": {"train": {"name": "train", "num_bytes": 59, "num_examples": 1, "dataset_name": dataset_name}},
+        "splits": {"train": {"name": "train", "num_bytes": 59, "num_examples": 1, "dataset_name": None}},
         "download_size": AUDIO_PARQUET_SIZE,
         "dataset_size": 59,
     }
