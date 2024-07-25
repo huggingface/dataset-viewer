@@ -589,17 +589,18 @@ def create_dataset_info_response_for_partially_generated_big_csv(dataset: str, c
         "config_name": config,
         "dataset_name": dataset_name,
         "version": {"version_str": "0.0.0", "major": 0, "minor": 0, "patch": 0},
-        "splits": {"train": {"name": "train", "num_bytes": 12380, "num_examples": 10, "dataset_name": "csv"}},
+        "splits": {"train": {"name": "train", "num_bytes": 12380, "num_examples": 10, "dataset_name": dataset_name}},
         "dataset_size": 12380,
     }
 
 
-def create_estimated_dataset_info_response_for_partially_generated_big_csv() -> Any:
+def create_estimated_dataset_info_response_for_partially_generated_big_csv(dataset: str) -> Any:
     # Dataset is partially converted to parquet: the first 10KB instead of the full 5MB
     # Estimation is made based on the ratio of data read vs full data
+    dataset_name = dataset.split("/")[-1]
     return {
         "download_size": 5644817,
-        "splits": {"train": {"name": "train", "num_bytes": 266581, "num_examples": 215, "dataset_name": "csv"}},
+        "splits": {"train": {"name": "train", "num_bytes": 266581, "num_examples": 215, "dataset_name": dataset_name}},
         "dataset_size": 266581,
     }
 
@@ -624,7 +625,8 @@ def create_dataset_info_response_for_big_parquet(dataset: str, config: str) -> A
     }
 
 
-def create_dataset_info_response_for_big_parquet_no_info() -> Any:
+def create_dataset_info_response_for_big_parquet_no_info(dataset: str) -> Any:
+    dataset_name = dataset.split("/")[-1]
     return {
         "description": "",
         "citation": "",
@@ -632,7 +634,7 @@ def create_dataset_info_response_for_big_parquet_no_info() -> Any:
         "license": "",
         "features": BIG_cols,
         "splits": {
-            "train": {"name": "train", "num_bytes": 12345, "num_examples": len(BIG_rows), "dataset_name": None}
+            "train": {"name": "train", "num_bytes": 12345, "num_examples": len(BIG_rows), "dataset_name": dataset_name}
         },
         "download_size": BIG_PARQUET_FILE,
         "dataset_size": 12345,
@@ -669,7 +671,7 @@ def create_dataset_info_response_for_presidio_scan(dataset: str, config: str) ->
         "config_name": config,
         "dataset_name": dataset_name,
         "version": {"version_str": "0.0.0", "major": 0, "minor": 0, "patch": 0},
-        "splits": {"train": {"name": "train", "num_bytes": 12345, "num_examples": 6, "dataset_name": None}},
+        "splits": {"train": {"name": "train", "num_bytes": 12345, "num_examples": 6, "dataset_name": dataset_name}},
         "download_size": 12345,
         "dataset_size": 12345,
     }
@@ -702,11 +704,13 @@ def create_parquet_and_info_response(
         if data_type == "big_parquet"
         else create_dataset_info_response_for_presidio_scan(dataset, config)
         if data_type == "presidio-scan"
-        else create_dataset_info_response_for_big_parquet_no_info()
+        else create_dataset_info_response_for_big_parquet_no_info(dataset)
     )
     partial_prefix = "partial-" if partial else ""
     estimated_info = (
-        create_estimated_dataset_info_response_for_partially_generated_big_csv() if data_type == "big-csv" else None
+        create_estimated_dataset_info_response_for_partially_generated_big_csv(dataset)
+        if data_type == "big-csv"
+        else None
     )
     return {
         "parquet_files": [
