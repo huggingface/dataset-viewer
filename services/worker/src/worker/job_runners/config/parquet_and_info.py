@@ -1109,11 +1109,11 @@ def stream_convert_to_parquet(
     dl_manager = StreamingDownloadManager(
         base_path=builder.base_path,
         download_config=DownloadConfig(token=builder.token, storage_options=builder.storage_options),
-        dataset_name=builder.name,
+        dataset_name=builder.dataset_name,
         data_dir=builder.config.data_dir,
     )
     os.makedirs(builder.cache_dir, exist_ok=True)
-    split_dict = SplitDict(dataset_name=builder.name)
+    split_dict = SplitDict(dataset_name=builder.dataset_name)
     splits_generators: dict[str, SplitGenerator] = {sg.name: sg for sg in builder._split_generators(dl_manager)}
     prepare_split_kwargs: dict[str, Any] = (
         {"check_duplicate_keys": True} if isinstance(builder, datasets.builder.GeneratorBasedBuilder) else {}
