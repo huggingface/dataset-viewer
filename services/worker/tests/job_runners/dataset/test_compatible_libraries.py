@@ -127,6 +127,24 @@ EXPECTED_PARQUET = (
                     }
                 ],
             },
+            {
+                "function": "pl.read_parquet",
+                "language": "python",
+                "library": "polars",
+                "loading_codes": [
+                    {
+                        "arguments": {"splits": {"test": "test.parquet", "train": "train.parquet"}},
+                        "code": "import polars as pl\n"
+                        "\n"
+                        "splits = {'test': 'test.parquet', 'train': "
+                        "'train.parquet'}\n"
+                        "df = "
+                        "pl.read_parquet('hf://datasets/nameexhaustion/polars-docs/' "
+                        "+ splits['test'])\n",
+                        "config_name": "default",
+                    }
+                ],
+            },
         ],
     },
     1.0,
@@ -190,6 +208,25 @@ EXPECTED_PARQUET_LOGIN_REQUIRED = (
                             "ds = Dataset(jsonld=jsonld)\n"
                             'records = ds.records("default")'
                         ),
+                    }
+                ],
+            },
+            {
+                "function": "pl.read_parquet",
+                "language": "python",
+                "library": "polars",
+                "loading_codes": [
+                    {
+                        "arguments": {"splits": {"test": "test.parquet", "train": "train.parquet"}},
+                        "code": "import polars as pl\n"
+                        "\n"
+                        "splits = {'test': 'test.parquet', 'train': "
+                        "'train.parquet'}\n"
+                        "df = "
+                        "pl.read_parquet('hf://datasets/nameexhaustion/polars-docs/' "
+                        "+ splits['test'], storage_options={'token': "
+                        "'<your HF token>'})\n",
+                        "config_name": "default",
                     }
                 ],
             },
