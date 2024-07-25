@@ -375,7 +375,7 @@ If the proportion of unique values in a string column within requested split is 
 
 ### string_text
 
-If string column does not satisfy the conditions to be treated as a `string_label`, it is considered to be a column containing texts and response contains statistics over text lengths. The following measures are computed:
+If string column does not satisfy the conditions to be treated as a `string_label`, it is considered to be a column containing texts and response contains statistics over text lengths which are calculated by character number. The following measures are computed:
 
 * minimum, maximum, mean, and standard deviation of text lengths
 * number and proportion of `null` values
