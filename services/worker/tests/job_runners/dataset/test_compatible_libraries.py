@@ -136,11 +136,11 @@ EXPECTED_PARQUET = (
                         "arguments": {"splits": {"test": "test.parquet", "train": "train.parquet"}},
                         "code": "import polars as pl\n"
                         "\n"
-                        "splits = {'test': 'test.parquet', 'train': "
-                        "'train.parquet'}\n"
+                        "splits = {'train': 'train.parquet', 'test': "
+                        "'test.parquet'}\n"
                         "df = "
-                        "pl.read_parquet('hf://datasets/nameexhaustion/polars-docs/' "
-                        "+ splits['test'])\n",
+                        "pl.read_parquet('hf://datasets/parquet-dataset/' "
+                        "+ splits['train'])\n",
                         "config_name": "default",
                     }
                 ],
@@ -220,11 +220,11 @@ EXPECTED_PARQUET_LOGIN_REQUIRED = (
                         "arguments": {"splits": {"test": "test.parquet", "train": "train.parquet"}},
                         "code": "import polars as pl\n"
                         "\n"
-                        "splits = {'test': 'test.parquet', 'train': "
-                        "'train.parquet'}\n"
+                        "splits = {'train': 'train.parquet', 'test': "
+                        "'test.parquet'}\n"
                         "df = "
-                        "pl.read_parquet('hf://datasets/nameexhaustion/polars-docs/' "
-                        "+ splits['test'], storage_options={'token': "
+                        "pl.read_parquet('hf://datasets/parquet-dataset-login_required/' "
+                        "+ splits['train'], storage_options={'token': "
                         "'<your HF token>'})\n",
                         "config_name": "default",
                     }

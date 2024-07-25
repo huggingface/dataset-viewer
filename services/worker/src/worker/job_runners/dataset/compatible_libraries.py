@@ -644,24 +644,32 @@ def get_polars_compatible_library(
             for config in builder_configs
         ]
 
-    compatible_library: CompatibleLibrary = {"language": "python", "library": "polars"}
+    compatible_library: CompatibleLibrary = {
+        "language": "python",
+        "library": "polars",
+        "function": "",
+        "loading_codes": [],
+    }
 
     def fmt_code(
         *,
         read_func: str,
-        splits: dict,
+        splits: dict[str, str],
         args: str,
         dataset: str = dataset,
-        hf_token: Optional[str] = hf_token,
         login_required: bool = login_required,
     ) -> str:
-        if login_required and not hf_token:
-            hf_token = "<your HF token>"
+        hf_token = ""  # nosec
+
+        if login_required:
+            hf_token = "<your HF token>"  # nosec
 
         if hf_token:
             args = f"{args}, storage_options={{'token': '{hf_token}'}}"
 
-        assert args.startswith(", ") or args == ""
+        if not (args.startswith(", ") or args == ""):
+            msg = f"incorrect args format: {args = !s}"
+            raise ValueError(msg)
 
         if len(splits) == 1:
             path = next(iter(splits.values()))
@@ -799,8 +807,14 @@ def compute_compatible_libraries_response(
         )
         # polars
         if (
-            v := get_polars_compatible_library(builder_name, dataset, infos=infos, login_required=login_required)
-        ) is not None:
+            isinstance(builder_name, str)
+            and (
+                v := get_polars_compatible_library(
+                    builder_name, dataset, hf_token=hf_token, login_required=login_required
+                )
+            )
+            is not None
+        ):
             libraries.append(v)
 
     return DatasetCompatibleLibrariesResponse(libraries=libraries, formats=formats)
