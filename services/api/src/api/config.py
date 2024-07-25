@@ -93,6 +93,7 @@ class EndpointConfig:
             "/statistics": {"split": "split-descriptive-statistics"},
             "/compatible-libraries": {"dataset": "dataset-compatible-libraries"},
             "/croissant-crumbs": {"dataset": "dataset-croissant-crumbs"},
+            "/hub-cache": {"dataset": "dataset-hub-cache"},
         }
     )
 
