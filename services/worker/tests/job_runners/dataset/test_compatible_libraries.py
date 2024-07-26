@@ -220,12 +220,13 @@ EXPECTED_PARQUET_LOGIN_REQUIRED = (
                         "arguments": {"splits": {"test": "test.parquet", "train": "train.parquet"}},
                         "code": "import polars as pl\n"
                         "\n"
+                        "# Login using e.g. `huggingface-cli login` to "
+                        "access this dataset\n"
                         "splits = {'train': 'train.parquet', 'test': "
                         "'test.parquet'}\n"
                         "df = "
                         "pl.read_parquet('hf://datasets/parquet-dataset-login_required/' "
-                        "+ splits['train'], storage_options={'token': "
-                        "'<your HF token>'})\n",
+                        "+ splits['train'])\n",
                         "config_name": "default",
                     }
                 ],

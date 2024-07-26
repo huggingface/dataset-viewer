@@ -659,30 +659,24 @@ def get_polars_compatible_library(
         dataset: str = dataset,
         login_required: bool = login_required,
     ) -> str:
-        hf_token = ""  # nosec
-
-        if login_required:
-            hf_token = "<your HF token>"  # nosec
-
-        if hf_token:
-            args = f"{args}, storage_options={{'token': '{hf_token}'}}"
-
         if not (args.startswith(", ") or args == ""):
             msg = f"incorrect args format: {args = !s}"
             raise ValueError(msg)
+
+        login_comment = LOGIN_COMMENT if login_required else ""
 
         if len(splits) == 1:
             path = next(iter(splits.values()))
             return f"""\
 import polars as pl
-
+{login_comment}
 df = pl.{read_func}('hf://datasets/{dataset}/{path}'{args})
 """
         else:
             first_split = next(iter(splits))
             return f"""\
 import polars as pl
-
+{login_comment}
 splits = {splits}
 df = pl.{read_func}('hf://datasets/{dataset}/' + splits['{first_split}']{args})
 """
