@@ -28,9 +28,6 @@ from datasets.packaged_modules.generator.generator import (
 from datasets.utils.py_utils import asdict
 from huggingface_hub.hf_api import CommitOperationAdd, HfApi
 from libcommon.dtos import JobInfo, JobParams, Priority
-from libcommon.exceptions import (
-    DatasetManualDownloadError,
-)
 from libcommon.queue.jobs import Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import upsert_response
@@ -55,7 +52,6 @@ from worker.job_runners.config.parquet_and_info import (
     limit_parquet_writes,
     list_generated_parquet_files,
     parse_repo_filename,
-    raise_if_requires_manual_download,
     stream_convert_to_parquet,
     track_reads,
 )
@@ -226,16 +222,6 @@ def test_compute_legacy_configs(
     }
     assert len(updated_repo_configs) == 1
     assert updated_repo_configs == {"first"}
-
-
-def test_raise_if_requires_manual_download(hub_public_manual_download: str, app_config: AppConfig) -> None:
-    builder = load_dataset_builder(hub_public_manual_download)
-    with pytest.raises(DatasetManualDownloadError):
-        raise_if_requires_manual_download(
-            builder=builder,
-            hf_endpoint=app_config.common.hf_endpoint,
-            hf_token=app_config.common.hf_token,
-        )
 
 
 @pytest.mark.parametrize(
