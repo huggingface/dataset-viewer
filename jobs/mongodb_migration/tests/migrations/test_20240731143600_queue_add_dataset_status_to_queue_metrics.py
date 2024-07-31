@@ -13,7 +13,11 @@ from mongodb_migration.migrations._20240731143600_queue_add_dataset_status_to_qu
 
 
 def test_cache_add_retries_to_cache(mongo_host: str) -> None:
-    with MongoResource(database="test_cache_add_duration_to_cache", host=mongo_host, mongoengine_alias="cache"):
+    with MongoResource(
+        database="test_queue_add_dataset_status_to_queue_metrics",
+        host=mongo_host,
+        mongoengine_alias=QUEUE_MONGOENGINE_ALIAS,
+    ):
         db = get_db(QUEUE_MONGOENGINE_ALIAS)
         db[TYPE_STATUS_AND_DATASET_STATUS_JOB_COUNTS_COLLECTION].insert_many(
             [
