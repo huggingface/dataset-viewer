@@ -26,7 +26,7 @@ import pyarrow.parquet as pq
 import requests
 from datasets import DownloadConfig, Features, load_dataset_builder
 from datasets.arrow_writer import ParquetWriter
-from datasets.builder import DatasetBuilder, ManualDownloadError
+from datasets.builder import DatasetBuilder
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
 from datasets.download import StreamingDownloadManager
 from datasets.packaged_modules.parquet.parquet import Parquet as ParquetBuilder
@@ -66,7 +66,6 @@ from libcommon.exceptions import (
     CreateCommitError,
     DatasetGenerationCastError,
     DatasetGenerationError,
-    DatasetManualDownloadError,
     DatasetNotFoundError,
     DatasetWithScriptNotSupportedError,
     EmptyDatasetError,
@@ -261,41 +260,6 @@ def _is_too_big_from_datasets(
     """
     dataset_size = info.dataset_size if info.dataset_size is not None else 0
     return bool(dataset_size > max_dataset_size_bytes)
-
-
-def raise_if_requires_manual_download(
-    builder: DatasetBuilder,
-    hf_endpoint: str,
-    hf_token: Optional[str],
-) -> None:
-    """
-    Raise an error if the dataset requires manual download.
-
-    Args:
-        builder (`datasets.builder.DatasetBuilder`):
-            A dataset builder instance to check.
-        hf_endpoint (`str`):
-            The Hub endpoint (for example: "https://huggingface.co").
-        hf_token (`str`, *optional*):
-            An app authentication token with read access to all the datasets.
-
-    Raises:
-        [`ValueError`](https://docs.python.org/3/library/exceptions.html#ValueError):
-            If the datasets.config.HF_ENDPOINT is not set to the expected value.
-        [~`libcommon.exceptions.DatasetManualDownloadError`]:
-            If the dataset requires manual download.
-    """
-    if datasets.config.HF_ENDPOINT != hf_endpoint:
-        raise ValueError(
-            f"Invalid datasets.config.HF_ENDPOINT value: '{datasets.config.HF_ENDPOINT}'. Please set it to:"
-            f" '{hf_endpoint}'."
-        )
-    try:
-        builder._check_manual_download(
-            StreamingDownloadManager(base_path=builder.base_path, download_config=DownloadConfig(token=hf_token))
-        )
-    except ManualDownloadError as err:
-        raise DatasetManualDownloadError(f"dataset={builder.repo_id} requires manual download.", cause=err) from err
 
 
 def is_dataset_too_big(
@@ -1442,8 +1406,6 @@ def compute_config_parquet_and_info_response(
             If the previous step gave an error.
         [~`libcommon.exceptions.CreateCommitError`]:
           If one of the commits could not be created on the Hub.
-        [~`libcommon.exceptions.DatasetManualDownloadError`]:
-          If the dataset requires manual download.
         [~`libcommon.exceptions.EmptyDatasetError`]:
           The dataset is empty.
         [~`libcommon.exceptions.ConfigNamesError`]:
@@ -1551,11 +1513,6 @@ def compute_config_parquet_and_info_response(
                     writer_batch_size=writer_batch_size,
                 )
         else:
-            raise_if_requires_manual_download(
-                builder=builder,
-                hf_endpoint=hf_endpoint,
-                hf_token=hf_token,
-            )
             dataset_info = hf_api.dataset_info(repo_id=dataset, revision=source_revision, files_metadata=True)
             if is_dataset_too_big(
                 dataset_info=dataset_info,

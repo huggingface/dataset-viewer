@@ -81,7 +81,6 @@ CacheableErrorCode = Literal[
     "DatasetGenerationError",
     "DatasetGenerationCastError",
     "DatasetInBlockListError",
-    "DatasetManualDownloadError",
     "DatasetModuleNotInstalledError",
     "DatasetNotFoundError",
     "DatasetScriptError",
@@ -198,13 +197,6 @@ class DatasetGenerationCastError(CacheableError):
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "DatasetGenerationCastError", cause, True)
-
-
-class DatasetManualDownloadError(CacheableError):
-    """The dataset requires manual download."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "DatasetManualDownloadError", cause, True)
 
 
 class DatasetModuleNotInstalledError(CacheableError):

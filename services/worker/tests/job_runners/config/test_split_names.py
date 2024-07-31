@@ -8,11 +8,7 @@ from typing import Any
 
 import pytest
 from libcommon.dtos import Priority
-from libcommon.exceptions import (
-    CustomError,
-    DatasetManualDownloadError,
-    PreviousStepFormatError,
-)
+from libcommon.exceptions import CustomError, PreviousStepFormatError
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import (
     CachedArtifactError,
@@ -24,7 +20,6 @@ from worker.config import AppConfig
 from worker.job_runners.config.split_names import (
     ConfigSplitNamesJobRunner,
     compute_split_names_from_info_response,
-    compute_split_names_from_streaming_response,
 )
 from worker.resources import LibrariesResource
 
@@ -229,19 +224,6 @@ def test_compute_split_names_from_streaming_response(
         assert response_dict["cause_exception"] == cause
         assert isinstance(response_dict["cause_traceback"], list)
         assert response_dict["cause_traceback"][0] == "Traceback (most recent call last):\n"
-
-
-def test_compute_split_names_from_streaming_response_raises(
-    hub_public_manual_download: str, app_config: AppConfig
-) -> None:
-    with pytest.raises(DatasetManualDownloadError):
-        compute_split_names_from_streaming_response(
-            hub_public_manual_download,
-            "default",
-            max_number=999,
-            hf_token=app_config.common.hf_token,
-            dataset_scripts_allow_list=[hub_public_manual_download],
-        )
 
 
 def test_compute(app_config: AppConfig, get_job_runner: GetJobRunner, hub_public_csv: str) -> None:
