@@ -27,7 +27,7 @@ def collect_queue_metrics() -> None:
 
     for job_type, status, dataset_status in to_delete:
         JobTotalMetricDocument.objects(job_type=job_type, status=status, dataset_status=dataset_status).delete()
-        logging.info(f"{job_type=} {status=} {dataset_status=} has been deleted")
+        logging.info(f"{job_type=} {status=} {dataset_status=}: has been deleted")
 
     for (job_type, status, dataset_status), total in new_metric_by_id.items():
         JobTotalMetricDocument.objects(job_type=job_type, status=status, dataset_status=dataset_status).upsert_one(
