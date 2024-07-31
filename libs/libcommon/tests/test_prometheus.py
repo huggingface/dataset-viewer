@@ -15,6 +15,7 @@ from libcommon.prometheus import (
     update_responses_in_cache_total,
     update_worker_size_jobs_count,
 )
+from libcommon.queue.dataset_blockages import DATASET_STATUS_NORMAL
 from libcommon.queue.metrics import JobTotalMetricDocument, WorkerSizeJobsCountDocument
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import CacheTotalMetricDocument
@@ -183,7 +184,7 @@ def test_queue_metrics(queue_mongo_resource: QueueMongoResource) -> None:
     metrics = get_metrics()
     key = metrics.forge_metric_key(
         name="queue_jobs_total",
-        content={"queue": "dummy", "status": "waiting"},
+        content={"queue": "dummy", "status": "waiting", "dataset_status": DATASET_STATUS_NORMAL},
     )
     assert key not in metrics.metrics
 

@@ -11,11 +11,11 @@ from mongoengine.queryset.queryset import QuerySet
 
 from libcommon.constants import (
     QUEUE_MONGOENGINE_ALIAS,
-    TYPE_AND_STATUS_JOB_COUNTS_COLLECTION,
+    TYPE_STATUS_AND_DATASET_STATUS_JOB_COUNTS_COLLECTION,
     WORKER_TYPE_JOB_COUNTS_COLLECTION,
 )
 from libcommon.dtos import Status, WorkerSize
-from libcommon.queue.dataset_blockages import is_blocked
+from libcommon.queue.dataset_blockages import DATASET_STATUS_NORMAL, is_blocked
 from libcommon.utils import get_datetime
 
 # START monkey patching ### hack ###
@@ -52,18 +52,20 @@ class JobTotalMetricDocument(Document):
     Args:
         job_type (`str`): job type
         status (`str`): job status see libcommon.queue.jobs.Status
+        dataset_status (`str`): whether the dataset is blocked ("normal", "blocked")
         total (`int`): total of jobs
         created_at (`datetime`): when the metric has been created.
     """
 
     id = ObjectIdField(db_field="_id", primary_key=True, default=ObjectId)
-    job_type = StringField(required=True, unique_with="status")
+    job_type = StringField(required=True, unique_with=["status", "dataset_status"])
     status = StringField(required=True)
+    dataset_status = StringField(required=True, default=DATASET_STATUS_NORMAL)
     total = IntField(required=True, default=0)
     created_at = DateTimeField(default=get_datetime)
 
     meta = {
-        "collection": TYPE_AND_STATUS_JOB_COUNTS_COLLECTION,
+        "collection": TYPE_STATUS_AND_DATASET_STATUS_JOB_COUNTS_COLLECTION,
         "db_alias": QUEUE_MONGOENGINE_ALIAS,
         "indexes": [("job_type", "status")],
     }
@@ -105,8 +107,8 @@ class WorkerSizeJobsCountDocument(Document):
     objects = QuerySetManager["WorkerSizeJobsCountDocument"]()
 
 
-def _update_metrics(job_type: str, status: str, increase_by: int) -> None:
-    JobTotalMetricDocument.objects(job_type=job_type, status=status).update(
+def _update_metrics(job_type: str, status: str, increase_by: int, dataset_status: str = DATASET_STATUS_NORMAL) -> None:
+    JobTotalMetricDocument.objects(job_type=job_type, status=status, dataset_status=dataset_status).update(
         upsert=True,
         write_concern={"w": "majority", "fsync": True},
         read_concern={"level": "majority"},

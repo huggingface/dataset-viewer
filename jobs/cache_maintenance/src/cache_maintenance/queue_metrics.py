@@ -18,18 +18,22 @@ def collect_queue_metrics() -> None:
     """
     logging.info("updating queue metrics")
 
-    new_metric_by_id = Queue().get_jobs_total_by_type_and_status()
+    new_metric_by_id = Queue().get_jobs_total_by_type_status_and_dataset_status()
     new_ids = set(new_metric_by_id.keys())
-    old_ids = set((metric.job_type, metric.status) for metric in JobTotalMetricDocument.objects())
+    old_ids = set(
+        (metric.job_type, metric.status, metric.dataset_status) for metric in JobTotalMetricDocument.objects()
+    )
     to_delete = old_ids - new_ids
 
-    for job_type, status in to_delete:
-        JobTotalMetricDocument.objects(job_type=job_type, status=status).delete()
-        logging.info(f"{job_type=} {status=} has been deleted")
+    for job_type, status, dataset_status in to_delete:
+        JobTotalMetricDocument.objects(job_type=job_type, status=status, dataset_status=dataset_status).delete()
+        logging.info(f"{job_type=} {status=} {dataset_status=}: has been deleted")
 
-    for (job_type, status), total in new_metric_by_id.items():
-        JobTotalMetricDocument.objects(job_type=job_type, status=status).upsert_one(total=total)
-        logging.info(f"{job_type=} {status=}: {total=} has been inserted")
+    for (job_type, status, dataset_status), total in new_metric_by_id.items():
+        JobTotalMetricDocument.objects(job_type=job_type, status=status, dataset_status=dataset_status).upsert_one(
+            total=total
+        )
+        logging.info(f"{job_type=} {status=} {dataset_status=}: {total=} has been inserted")
 
     logging.info("queue metrics have been updated")
 
