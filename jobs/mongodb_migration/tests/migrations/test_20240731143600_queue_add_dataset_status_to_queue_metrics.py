@@ -12,7 +12,7 @@ from mongodb_migration.migrations._20240731143600_queue_add_dataset_status_to_qu
 )
 
 
-def test_cache_add_retries_to_cache(mongo_host: str) -> None:
+def test_queue_add_dataset_status_to_queue_metrics(mongo_host: str) -> None:
     with MongoResource(
         database="test_queue_add_dataset_status_to_queue_metrics",
         host=mongo_host,
