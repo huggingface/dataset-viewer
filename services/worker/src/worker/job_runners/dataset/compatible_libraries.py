@@ -697,6 +697,9 @@ df = pl.{read_func}('hf://datasets/{dataset}/' + splits['{first_split}']{args})
 
     elif builder_name == "json":
         first_file = f"datasets/{dataset}/" + next(iter(loading_codes[0]["arguments"]["splits"].values()))
+        if "*" in first_file:
+            # The pattern 'datasets/[dataset]/**/*' is not supported yet
+            return None
         is_json_lines = ".jsonl" in first_file or HfFileSystem(token=hf_token).open(first_file, "r").read(1) != "["
 
         if is_json_lines:
