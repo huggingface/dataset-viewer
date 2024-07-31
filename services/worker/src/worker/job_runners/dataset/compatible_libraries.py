@@ -412,7 +412,7 @@ def get_compatible_libraries_for_json(
         library = "pandas"
         function = "pd.read_json"
         for loading_code in loading_codes:
-            first_file = next(iter(loading_code["arguments"]["splits"].values()))
+            first_file = f"datasets/{dataset}/" + next(iter(loading_code["arguments"]["splits"].values()))
             if ".jsonl" in first_file or HfFileSystem(token=hf_token).open(first_file, "r").read(1) != "[":
                 args = ", lines=True"
                 loading_code["arguments"]["lines"] = True
@@ -696,7 +696,10 @@ df = pl.{read_func}('hf://datasets/{dataset}/' + splits['{first_split}']{args})
             args = f"{args}, separator='\\t'"
 
     elif builder_name == "json":
-        first_file = next(iter(loading_codes[0]["arguments"]["splits"].values()))
+        first_file = f"datasets/{dataset}/" + next(iter(loading_codes[0]["arguments"]["splits"].values()))
+        if "*" in first_file:
+            # The pattern 'datasets/[dataset]/**/*' is not supported yet
+            return None
         is_json_lines = ".jsonl" in first_file or HfFileSystem(token=hf_token).open(first_file, "r").read(1) != "["
 
         if is_json_lines:

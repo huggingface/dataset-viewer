@@ -5,11 +5,9 @@ import logging
 from typing import Optional
 
 from datasets import get_dataset_split_names
-from datasets.builder import ManualDownloadError
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
 from libcommon.dtos import FullSplitItem
 from libcommon.exceptions import (
-    DatasetManualDownloadError,
     DatasetWithScriptNotSupportedError,
     DatasetWithTooManySplitsError,
     EmptyDatasetError,
@@ -52,8 +50,6 @@ def compute_split_names_from_streaming_response(
             Maximum number of splits.
 
     Raises:
-        [~`libcommon.exceptions.DatasetManualDownloadError`]:
-          If the dataset requires manual download.
         [~`libcommon.exceptions.EmptyDatasetError`]:
           The dataset is empty.
         [~`libcommon.exceptions.SplitsNamesError`]:
@@ -79,8 +75,6 @@ def compute_split_names_from_streaming_response(
                 trust_remote_code=resolve_trust_remote_code(dataset=dataset, allow_list=dataset_scripts_allow_list),
             )
         ]
-    except ManualDownloadError as err:
-        raise DatasetManualDownloadError(f"{dataset=} requires manual download.", cause=err) from err
     except _EmptyDatasetError as err:
         raise EmptyDatasetError("The dataset is empty.", cause=err) from err
     except Exception as err:
