@@ -56,14 +56,19 @@ class ColumnType(str, enum.Enum):
 
 class Histogram(TypedDict):
     hist: list[int]
-    bin_edges: list[Union[int, float, str]]
+    bin_edges: list[Union[int, float]]
+
+
+class DatetimeHistogram(TypedDict):
+    hist: list[int]
+    bin_edges: list[str]  # edges are string representations of dates
 
 
 class NumericalStatisticsItem(TypedDict):
     nan_count: int
     nan_proportion: float
-    min: Optional[float]  # might be None in very rare cases when the whole column is only None values
-    max: Optional[float]
+    min: Optional[Union[int, float]]  # might be None in very rare cases when the whole column is only None values
+    max: Optional[Union[int, float]]
     mean: Optional[float]
     median: Optional[float]
     std: Optional[float]
@@ -78,7 +83,7 @@ class DatetimeStatisticsItem(TypedDict):
     mean: Optional[str]
     median: Optional[str]
     std: Optional[str]  # string representation of timedelta
-    histogram: Optional[Histogram]
+    histogram: Optional[DatetimeHistogram]
 
 
 class CategoricalStatisticsItem(TypedDict):
@@ -730,8 +735,8 @@ class DatetimeColumn(Column):
         return data.select((pl.col(column_name) - min_date).dt.total_seconds().alias(transformed_column_name))
 
     @staticmethod
-    def shift_and_convert_to_string(min_date, seconds) -> str:
-        return datetime_to_string(min_date + datetime.timedelta(seconds=seconds))
+    def shift_and_convert_to_string(base_date: datetime.datetime, seconds: Union[int, float]) -> str:
+        return datetime_to_string(base_date + datetime.timedelta(seconds=seconds))
 
     @classmethod
     def _compute_statistics(
@@ -753,7 +758,7 @@ class DatetimeColumn(Column):
                 histogram=None,
             )
 
-        min_date = data[column_name].min()
+        min_date: datetime.datetime = data[column_name].min()  # type: ignore   # mypy infers type of datetime column .min() incorrectly
         timedelta_column_name = f"{column_name}_timedelta"
         # compute distribution of time passed from min date in **seconds**
         timedelta_df = cls.compute_transformed_data(data, column_name, timedelta_column_name, min_date)
@@ -762,10 +767,14 @@ class DatetimeColumn(Column):
             column_name=timedelta_column_name,
             n_samples=n_samples,
         )
-        for stat in ("max", "mean", "median"):
-            timedelta_stats[stat] = cls.shift_and_convert_to_string(min_date, timedelta_stats[stat])
+        # to assure mypy that there values are not None to pass to conversion functions:
+        assert timedelta_stats["histogram"] is not None
+        assert timedelta_stats["max"] is not None
+        assert timedelta_stats["mean"] is not None
+        assert timedelta_stats["median"] is not None
+        assert timedelta_stats["std"] is not None
 
-        bin_edges = [
+        datetime_bin_edges = [
             cls.shift_and_convert_to_string(min_date, seconds) for seconds in timedelta_stats["histogram"]["bin_edges"]
         ]
 
@@ -773,13 +782,13 @@ class DatetimeColumn(Column):
             nan_count=nan_count,
             nan_proportion=nan_proportion,
             min=datetime_to_string(min_date),
-            max=timedelta_stats["max"],
-            mean=timedelta_stats["mean"],
-            median=timedelta_stats["median"],
-            std=str(timedelta_stats["std"]),
-            histogram=Histogram(
+            max=cls.shift_and_convert_to_string(min_date, timedelta_stats["max"]),
+            mean=cls.shift_and_convert_to_string(min_date, timedelta_stats["mean"]),
+            median=cls.shift_and_convert_to_string(min_date, timedelta_stats["median"]),
+            std=str(datetime.timedelta(seconds=timedelta_stats["std"])),
+            histogram=DatetimeHistogram(
                 hist=timedelta_stats["histogram"]["hist"],
-                bin_edges=bin_edges,
+                bin_edges=datetime_bin_edges,
             ),
         )
 
