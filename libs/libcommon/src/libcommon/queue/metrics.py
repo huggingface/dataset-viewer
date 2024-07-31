@@ -11,7 +11,7 @@ from mongoengine.queryset.queryset import QuerySet
 
 from libcommon.constants import (
     QUEUE_MONGOENGINE_ALIAS,
-    TYPE_AND_STATUS_JOB_COUNTS_COLLECTION,
+    TYPE_STATUS_AND_DATASET_STATUS_JOB_COUNTS_COLLECTION,
     WORKER_TYPE_JOB_COUNTS_COLLECTION,
 )
 from libcommon.dtos import Status, WorkerSize
@@ -65,7 +65,7 @@ class JobTotalMetricDocument(Document):
     created_at = DateTimeField(default=get_datetime)
 
     meta = {
-        "collection": TYPE_AND_STATUS_JOB_COUNTS_COLLECTION,
+        "collection": TYPE_STATUS_AND_DATASET_STATUS_JOB_COUNTS_COLLECTION,
         "db_alias": QUEUE_MONGOENGINE_ALIAS,
         "indexes": [("job_type", "status")],
     }
