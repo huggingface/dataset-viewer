@@ -67,7 +67,7 @@ class JobTotalMetricDocument(Document):
     meta = {
         "collection": TYPE_STATUS_AND_DATASET_STATUS_JOB_COUNTS_COLLECTION,
         "db_alias": QUEUE_MONGOENGINE_ALIAS,
-        "indexes": [("job_type", "status")],
+        "indexes": [("job_type", "status", "dataset_status")],
     }
     objects = QuerySetManager["JobTotalMetricDocument"]()
 
