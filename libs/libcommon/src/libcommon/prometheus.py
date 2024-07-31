@@ -43,7 +43,7 @@ class Prometheus:
 QUEUE_JOBS_TOTAL = Gauge(
     name="queue_jobs_total",
     documentation="Number of jobs in the queue",
-    labelnames=["queue", "status"],
+    labelnames=["queue", "status", "dataset_status"],
     multiprocess_mode="liveall",
 )
 WORKER_SIZE_JOBS_COUNT = Gauge(
@@ -80,7 +80,9 @@ METHOD_LONG_STEPS_PROCESSING_TIME = Histogram(
 
 def update_queue_jobs_total() -> None:
     for job_metric in JobTotalMetricDocument.objects():
-        QUEUE_JOBS_TOTAL.labels(queue=job_metric.job_type, status=job_metric.status).set(job_metric.total)
+        QUEUE_JOBS_TOTAL.labels(
+            queue=job_metric.job_type, status=job_metric.status, dataset_status=job_metric.dataset_status
+        ).set(job_metric.total)
 
 
 def update_worker_size_jobs_count() -> None:

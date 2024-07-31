@@ -10,7 +10,7 @@ import pytz
 
 from libcommon.constants import QUEUE_TTL_SECONDS
 from libcommon.dtos import Priority, Status, WorkerSize
-from libcommon.queue.dataset_blockages import block_dataset
+from libcommon.queue.dataset_blockages import DATASET_STATUS_NORMAL, block_dataset
 from libcommon.queue.jobs import EmptyQueueError, JobDocument, Queue
 from libcommon.queue.metrics import JobTotalMetricDocument, WorkerSizeJobsCountDocument
 from libcommon.queue.past_jobs import JOB_DURATION_MIN_SECONDS, PastJobDocument
@@ -18,8 +18,10 @@ from libcommon.resources import QueueMongoResource
 from libcommon.utils import get_datetime
 
 
-def assert_metric_jobs_per_type(job_type: str, status: str, total: int) -> None:
-    metric = JobTotalMetricDocument.objects(job_type=job_type, status=status).first()
+def assert_metric_jobs_per_type(
+    job_type: str, status: str, total: int, dataset_status: str = DATASET_STATUS_NORMAL
+) -> None:
+    metric = JobTotalMetricDocument.objects(job_type=job_type, status=status, dataset_status=dataset_status).first()
     assert metric is not None
     assert metric.total == total
 
@@ -427,7 +429,7 @@ def test_difficulty(difficulty_min: Optional[int], difficulty_max: Optional[int]
         assert job_info["params"]["dataset"] == test_dataset
 
 
-def test_get_jobs_total_by_type_and_status() -> None:
+def test_get_jobs_total_by_type_status_and_dataset_status() -> None:
     test_type = "test_type"
     test_other_type = "test_other_type"
     test_dataset = "test_dataset"
@@ -435,11 +437,16 @@ def test_get_jobs_total_by_type_and_status() -> None:
     test_difficulty = 50
     queue = Queue()
 
-    assert queue.get_jobs_total_by_type_and_status() == {}
+    assert queue.get_jobs_total_by_type_status_and_dataset_status() == {}
     queue.add_job(job_type=test_type, dataset=test_dataset, revision=test_revision, difficulty=test_difficulty)
-    assert queue.get_jobs_total_by_type_and_status() == {(test_type, "waiting"): 1}
+    assert queue.get_jobs_total_by_type_status_and_dataset_status() == {
+        (test_type, "waiting", DATASET_STATUS_NORMAL): 1
+    }
     queue.add_job(job_type=test_other_type, dataset=test_dataset, revision=test_revision, difficulty=test_difficulty)
-    assert queue.get_jobs_total_by_type_and_status() == {(test_type, "waiting"): 1, (test_other_type, "waiting"): 1}
+    assert queue.get_jobs_total_by_type_status_and_dataset_status() == {
+        (test_type, "waiting", DATASET_STATUS_NORMAL): 1,
+        (test_other_type, "waiting", DATASET_STATUS_NORMAL): 1,
+    }
 
 
 def test_get_jobs_count_by_worker_size() -> None:

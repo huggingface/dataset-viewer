@@ -29,7 +29,7 @@ from libcommon.constants import (
     QUEUE_MONGOENGINE_ALIAS,
 )
 from libcommon.dtos import FlatJobInfo, JobInfo, Priority, Status, WorkerSize
-from libcommon.queue.dataset_blockages import get_blocked_datasets
+from libcommon.queue.dataset_blockages import DATASET_STATUS_BLOCKED, DATASET_STATUS_NORMAL, get_blocked_datasets
 from libcommon.queue.lock import lock, release_lock, release_locks
 from libcommon.queue.metrics import (
     decrease_metric,
@@ -60,7 +60,7 @@ class QuerySetManager(Generic[U]):
 # END monkey patching ### hack ###
 
 
-JobsTotalByTypeAndStatus = Mapping[tuple[str, str], int]
+JobsTotalByTypeStatusAndDatasetStatus = Mapping[tuple[str, str, str], int]
 
 JobsCountByWorkerSize = Mapping[str, int]
 
@@ -805,21 +805,35 @@ class Queue:
         return JobDocument.objects(**filters, dataset=dataset).count() > 0
 
     # special reports
-    def get_jobs_total_by_type_and_status(self) -> JobsTotalByTypeAndStatus:
-        """Count the number of jobs by job type and status.
+    def get_jobs_total_by_type_status_and_dataset_status(self) -> JobsTotalByTypeStatusAndDatasetStatus:
+        """Count the number of jobs by job type, status and dataset status.
 
         Returns:
-            an object with the total of jobs by job type and status.
-            Keys are a tuple (job_type, status), and values are the total of jobs.
+            an object with the total of jobs by job type, status and dataset status.
+            Keys are a tuple (job_type, status, dataset_status), and values are the total of jobs.
         """
+        blocked_datasets = get_blocked_datasets()
+
         return {
-            (metric["job_type"], metric["status"]): metric["total"]
+            (metric["job_type"], metric["status"], metric["dataset_status"]): metric["total"]
             for metric in JobDocument.objects().aggregate(
                 [
                     {"$sort": {"type": 1, "status": 1}},
                     {
+                        # TODO(SL): optimize this part?
+                        "$addFields": {
+                            "dataset_status": {
+                                "$cond": {
+                                    "if": {"$in": ["$dataset", blocked_datasets]},
+                                    "then": DATASET_STATUS_BLOCKED,
+                                    "else": DATASET_STATUS_NORMAL,
+                                }
+                            }
+                        }
+                    },
+                    {
                         "$group": {
-                            "_id": {"type": "$type", "status": "$status"},
+                            "_id": {"type": "$type", "status": "$status", "dataset_status": "$dataset_status"},
                             "total": {"$sum": 1},
                         }
                     },
@@ -827,6 +841,7 @@ class Queue:
                         "$project": {
                             "job_type": "$_id.type",
                             "status": "$_id.status",
+                            "dataset_status": "$_id.dataset_status",
                             "total": "$total",
                         }
                     },
