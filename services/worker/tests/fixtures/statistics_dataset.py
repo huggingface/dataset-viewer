@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2024 The HuggingFace Authors.
 
+from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
@@ -1695,6 +1696,30 @@ image_dataset = Dataset.from_dict(
             "image": Image(decode=False),
             "image_null": Image(decode=False),
             "image_all_null": Image(decode=False),
+        }
+    ),
+)
+
+
+datetime_dataset = Dataset.from_dict(
+    {
+        "datetime": [
+            datetime.strptime("2024-01-01 00:00:00", "%Y-%m-%d %H:%M:%S"),
+            datetime.strptime("2024-01-02 00:00:00", "%Y-%m-%d %H:%M:%S"),
+            datetime.strptime("2024-01-03 00:00:00", "%Y-%m-%d %H:%M:%S"),
+            datetime.strptime("2024-01-04 00:00:00", "%Y-%m-%d %H:%M:%S"),
+            datetime.strptime("2024-01-05 00:00:00", "%Y-%m-%d %H:%M:%S"),
+            datetime.strptime("2024-01-06 00:00:00", "%Y-%m-%d %H:%M:%S"),
+            datetime.strptime("2024-01-07 00:00:00", "%Y-%m-%d %H:%M:%S"),
+            datetime.strptime("2024-01-08 00:00:00", "%Y-%m-%d %H:%M:%S"),
+            datetime.strptime("2024-01-09 00:00:00", "%Y-%m-%d %H:%M:%S"),
+            datetime.strptime("2024-01-10 00:00:00", "%Y-%m-%d %H:%M:%S"),
+            datetime.strptime("2024-01-11 00:00:00", "%Y-%m-%d %H:%M:%S"),
+        ]
+    },
+    features=Features(
+        {
+            "datetime": Value("timestamp[s]"),
         }
     ),
 )

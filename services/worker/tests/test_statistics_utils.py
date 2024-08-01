@@ -1,7 +1,8 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2024 The HuggingFace Authors.
+import datetime
 from collections.abc import Mapping
-from typing import Optional, Union
+from typing import Any, Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -22,6 +23,7 @@ from worker.statistics_utils import (
     BoolColumn,
     ClassLabelColumn,
     ColumnType,
+    DatetimeColumn,
     FloatColumn,
     ImageColumn,
     IntColumn,
@@ -469,4 +471,57 @@ def test_image_statistics(
         column_name=column_name,
         n_samples=4,
     )
+    assert computed == expected
+
+
+def count_expected_statistics_for_datetime() -> dict[str, Any]:
+    seconds_in_day = 24 * 60 * 60
+    timedeltas = pd.Series(range(0, 11 * seconds_in_day, seconds_in_day))
+    std = timedeltas.std()
+    std_str = str(datetime.timedelta(seconds=std))
+    std_str = std_str.split(".")[0]  # check precision up to seconds
+    return {
+        "nan_count": 0,
+        "nan_proportion": 0.0,
+        "min": "2024-01-01 00:00:00",
+        "max": "2024-01-11 00:00:00",
+        "mean": "2024-01-06 00:00:00",
+        "median": "2024-01-06 00:00:00",
+        "std": std_str,
+        "histogram": {
+            "hist": [2, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+            "bin_edges": [
+                "2024-01-01 00:00:00",
+                "2024-01-02 00:00:01",
+                "2024-01-03 00:00:02",
+                "2024-01-04 00:00:03",
+                "2024-01-05 00:00:04",
+                "2024-01-06 00:00:05",
+                "2024-01-07 00:00:06",
+                "2024-01-08 00:00:07",
+                "2024-01-09 00:00:08",
+                "2024-01-10 00:00:09",
+                "2024-01-11 00:00:00",
+            ],
+        },
+    }
+
+
+@pytest.mark.parametrize(
+    "column_name",
+    ["datetime_column"],
+)
+def test_datetime_statistics(
+    column_name: str,
+    datasets: Mapping[str, Dataset],
+) -> None:
+    column_name = "datetime"
+    expected = count_expected_statistics_for_datetime()
+    data = datasets["datetime_statistics"].to_pandas()
+    computed = DatetimeColumn.compute_statistics(
+        data=pl.from_pandas(data),
+        column_name=column_name,
+        n_samples=len(data[column_name]),
+    )
+    assert computed.pop("std").split(".")[0] == expected.pop("std")
     assert computed == expected
