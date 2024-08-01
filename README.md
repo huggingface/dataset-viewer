@@ -1,22 +1,27 @@
 # Dataset viewer
 
-> Integrate into your apps over 100,000 datasets via simple HTTP requests, with pre-processed responses and scalability built-in.
+The dataset page includes a table with the dataset's contents, arranged by pages of 100 rows. You can navigate between pages using the buttons at the bottom of the table, filter, search, look at basic statistics, and more.
 
-Documentation: https://huggingface.co/docs/dataset-viewer
+<img width="1015" alt="screenshot of the dataset viewer, for the dataset 'AI-MO/NuminaMath-CoT' hosted on Hugging Face" src="https://github.com/user-attachments/assets/f4299ba4-8582-4b64-b3f5-eb1feb7b9731">
 
-## Ask for a new feature 🎁
+This repository is the backend that provides the dataset viewer with pre-computed data through an API, for all the datasets on the Hub. The frontend viewer component is not part of this repository and is not open-source, as the rest of the Hub.
 
-The dataset viewer pre-processes the [Hugging Face Hub datasets](https://huggingface.co/datasets) to make them ready to use in your apps using the API: list of the splits, first rows.
+Documentation:
+- dataset viewer: https://huggingface.co/docs/hub/datasets-viewer
+- configuration of the datasets: https://huggingface.co/docs/hub/datasets-data-files-configuration
+- backend's API: https://huggingface.co/docs/dataset-viewer
 
-We plan to [add more features](https://github.com/huggingface/dataset-viewer/issues?q=is%3Aissue+is%3Aopen+label%3A%22feature+request%22) to the server. Please comment there and upvote your favorite requests.
+## You saw a bug 🪲 or want a new feature 🎁
 
-If you think about a new feature, please [open a new issue](https://github.com/huggingface/dataset-viewer/issues/new).
+If the dataset viewer is showing an error on your dataset page, please [open a discussion](https://huggingface.co/docs/hub/repositories-pull-requests-discussions) there, it's the most efficient way to fix it.
+
+If you identify a bigger error and think the dataset viewer has a bug, or if you want to ask for a new feature, please [open a new issue](https://github.com/huggingface/dataset-viewer/issues/new) here.
 
 ## Contribute 🤝
 
 You can help by giving ideas, answering questions, reporting bugs, proposing enhancements, improving the documentation, and fixing bugs. See [CONTRIBUTING.md](./CONTRIBUTING.md) for more details.
 
-To install the server and start contributing to the code, see [DEVELOPER_GUIDE.md](./DEVELOPER_GUIDE.md)
+To install this backend and start contributing to the code, see [DEVELOPER_GUIDE.md](./DEVELOPER_GUIDE.md)
 
 ## Community 🤗
 
