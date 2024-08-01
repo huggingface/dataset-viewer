@@ -13,7 +13,7 @@ Documentation:
 
 ## You saw a bug 🪲 or want a new feature 🎁
 
-If the dataset viewer is showing an error on your dataset page, please [open a discussion](https://huggingface.co/docs/hub/repositories-pull-requests-discussions) there, it's the most efficient way to fix it.
+If the dataset viewer is showing an error on your dataset page, please [open a discussion](https://huggingface.co/docs/hub/repositories-pull-requests-discussions) there, it's the most efficient way to fix it. Tag [`@lhoestq`](https://huggingface.co/lhoestq), [`@polinaeterna`](https://huggingface.co/polinaeterna) or [`@albertvillanova`](https://huggingface.co/albertvillanova) in the discussion to reach the team directly.
 
 If you identify a bigger error and think the dataset viewer has a bug, or if you want to ask for a new feature, please [open a new issue](https://github.com/huggingface/dataset-viewer/issues/new) here.
 
