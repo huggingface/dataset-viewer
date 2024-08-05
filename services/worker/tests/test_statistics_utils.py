@@ -2,7 +2,7 @@
 # Copyright 2024 The HuggingFace Authors.
 import datetime
 from collections.abc import Mapping
-from typing import Any, Optional, Union
+from typing import Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -474,54 +474,87 @@ def test_image_statistics(
     assert computed == expected
 
 
-def count_expected_statistics_for_datetime() -> dict[str, Any]:
+def count_expected_statistics_for_datetime(column: pd.Series, column_name: str) -> dict:  # type: ignore
+    n_samples = column.shape[0]
+    nan_count = column.isna().sum()
+    if nan_count == n_samples:
+        return {
+            "nan_count": n_samples,
+            "nan_proportion": 1.0,
+            "min": None,
+            "max": None,
+            "mean": None,
+            "median": None,
+            "std": None,
+            "histogram": None,
+        }
+
+    # hardcode expected values
+    minv = "2024-01-01 00:00:00"
+    maxv = "2024-01-11 00:00:00"
+    mean = "2024-01-06 00:00:00"
+    median = "2024-01-06 00:00:00"
+    bin_edges = [
+        "2024-01-01 00:00:00",
+        "2024-01-02 00:00:01",
+        "2024-01-03 00:00:02",
+        "2024-01-04 00:00:03",
+        "2024-01-05 00:00:04",
+        "2024-01-06 00:00:05",
+        "2024-01-07 00:00:06",
+        "2024-01-08 00:00:07",
+        "2024-01-09 00:00:08",
+        "2024-01-10 00:00:09",
+        "2024-01-11 00:00:00",
+    ]
+
+    # compute std
     seconds_in_day = 24 * 60 * 60
-    timedeltas = pd.Series(range(0, 11 * seconds_in_day, seconds_in_day))
+    if column_name == "datetime":
+        timedeltas = pd.Series(range(0, 11 * seconds_in_day, seconds_in_day))
+        hist = [2, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+    elif column_name == "datetime_null":
+        timedeltas = pd.Series(range(0, 6 * 2 * seconds_in_day, 2 * seconds_in_day))  # take every second day
+        hist = [1, 1, 0, 1, 0, 1, 0, 1, 0, 1]
+    else:
+        raise ValueError("Incorrect column")
+
     std = timedeltas.std()
     std_str = str(datetime.timedelta(seconds=std))
-    std_str = std_str.split(".")[0]  # check precision up to seconds
+
     return {
-        "nan_count": 0,
-        "nan_proportion": 0.0,
-        "min": "2024-01-01 00:00:00",
-        "max": "2024-01-11 00:00:00",
-        "mean": "2024-01-06 00:00:00",
-        "median": "2024-01-06 00:00:00",
+        "nan_count": nan_count,
+        "nan_proportion": np.round(nan_count / n_samples, DECIMALS).item() if nan_count else 0.0,
+        "min": minv,
+        "max": maxv,
+        "mean": mean,
+        "median": median,
         "std": std_str,
         "histogram": {
-            "hist": [2, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-            "bin_edges": [
-                "2024-01-01 00:00:00",
-                "2024-01-02 00:00:01",
-                "2024-01-03 00:00:02",
-                "2024-01-04 00:00:03",
-                "2024-01-05 00:00:04",
-                "2024-01-06 00:00:05",
-                "2024-01-07 00:00:06",
-                "2024-01-08 00:00:07",
-                "2024-01-09 00:00:08",
-                "2024-01-10 00:00:09",
-                "2024-01-11 00:00:00",
-            ],
+            "hist": hist,
+            "bin_edges": bin_edges,
         },
     }
 
 
 @pytest.mark.parametrize(
     "column_name",
-    ["datetime_column"],
+    ["datetime", "datetime_null", "datetime_all_null"],
 )
 def test_datetime_statistics(
     column_name: str,
     datasets: Mapping[str, Dataset],
 ) -> None:
-    column_name = "datetime"
-    expected = count_expected_statistics_for_datetime()
     data = datasets["datetime_statistics"].to_pandas()
+    expected = count_expected_statistics_for_datetime(data[column_name], column_name)
     computed = DatetimeColumn.compute_statistics(
         data=pl.from_pandas(data),
         column_name=column_name,
         n_samples=len(data[column_name]),
     )
-    assert computed.pop("std").split(".")[0] == expected.pop("std")
+    computed_std, expected_std = computed.pop("std"), expected.pop("std")
+    if computed_std:
+        assert computed_std.split(".")[0] == expected_std.split(".")[0]  # check with precision up to seconds
+    else:
+        assert computed_std == expected_std
     assert computed == expected

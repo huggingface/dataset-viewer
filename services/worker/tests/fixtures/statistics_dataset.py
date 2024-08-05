@@ -1715,11 +1715,27 @@ datetime_dataset = Dataset.from_dict(
             datetime.strptime("2024-01-09 00:00:00", "%Y-%m-%d %H:%M:%S"),
             datetime.strptime("2024-01-10 00:00:00", "%Y-%m-%d %H:%M:%S"),
             datetime.strptime("2024-01-11 00:00:00", "%Y-%m-%d %H:%M:%S"),
-        ]
+        ],
+        "datetime_null": [
+            datetime.strptime("2024-01-01 00:00:00", "%Y-%m-%d %H:%M:%S"),
+            None,
+            datetime.strptime("2024-01-03 00:00:00", "%Y-%m-%d %H:%M:%S"),
+            None,
+            datetime.strptime("2024-01-05 00:00:00", "%Y-%m-%d %H:%M:%S"),
+            None,
+            datetime.strptime("2024-01-07 00:00:00", "%Y-%m-%d %H:%M:%S"),
+            None,
+            datetime.strptime("2024-01-09 00:00:00", "%Y-%m-%d %H:%M:%S"),
+            None,
+            datetime.strptime("2024-01-11 00:00:00", "%Y-%m-%d %H:%M:%S"),
+        ],
+        "datetime_all_null": [None] * 11,
     },
     features=Features(
         {
             "datetime": Value("timestamp[s]"),
+            "datetime_null": Value("timestamp[s]"),
+            "datetime_all_null": Value("timestamp[s]"),
         }
     ),
 )

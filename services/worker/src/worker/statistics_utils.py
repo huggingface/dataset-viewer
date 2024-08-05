@@ -801,13 +801,13 @@ class DatetimeColumn(Column):
         )
 
 
-def datetime_to_string(dt: datetime.datetime, format: str = "%Y-%m-%d %H:%M:%S") -> str:
+def datetime_to_string(dt: datetime.datetime, format: str = "%Y-%m-%d %H:%M:%S%z") -> str:
     """
     Convert a datetime.datetime object to a string.
 
     Args:
         dt (datetime): The datetime object to convert.
-        format (str, optional): The format of the output string. Defaults to "%Y-%m-%d %H:%M:%S".
+        format (str, optional): The format of the output string. Defaults to "%Y-%m-%d %H:%M:%S%z".
 
     Returns:
         str: The datetime object as a string.
