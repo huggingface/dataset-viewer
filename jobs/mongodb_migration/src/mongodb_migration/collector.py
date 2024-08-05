@@ -6,7 +6,7 @@ from libcommon.constants import (
     QUEUE_COLLECTION_DATASET_BLOCKAGES,
     QUEUE_COLLECTION_PAST_JOBS,
     QUEUE_MONGOENGINE_ALIAS,
-    TYPE_AND_STATUS_JOB_COUNTS_COLLECTION,
+    TYPE_STATUS_AND_DATASET_STATUS_JOB_COUNTS_COLLECTION,
 )
 
 from mongodb_migration.deletion_migrations import (
@@ -92,6 +92,9 @@ from mongodb_migration.migrations._20240626151600_cache_remove_has_fts_field_in_
 )
 from mongodb_migration.migrations._20240703160300_cache_add_duration import (
     MigrationAddDurationToCacheResponse,
+)
+from mongodb_migration.migrations._20240731143600_queue_add_dataset_status_to_queue_metrics import (
+    MigrationAddDatasetStatusToQueueMetrics,
 )
 from mongodb_migration.renaming_migrations import (
     CacheRenamingMigration,
@@ -303,7 +306,7 @@ class MigrationsCollector:
                 version="20230814121400",
                 description="drop queue metrics collection",
                 alias="metrics",
-                collection_name=TYPE_AND_STATUS_JOB_COUNTS_COLLECTION,
+                collection_name=TYPE_STATUS_AND_DATASET_STATUS_JOB_COUNTS_COLLECTION,
             ),
             MigrationAddHasFTSToSplitDuckdbIndexCacheResponse(
                 version="20230926095900",
@@ -411,5 +414,8 @@ class MigrationsCollector:
             ),
             MigrationAddDurationToCacheResponse(
                 version="20240703160300", description="add 'duration' field to cache records"
+            ),
+            MigrationAddDatasetStatusToQueueMetrics(
+                version="20240731143600", description="add 'dataset_status' field to the jobs metrics"
             ),
         ]

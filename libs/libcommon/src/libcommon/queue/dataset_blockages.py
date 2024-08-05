@@ -38,6 +38,9 @@ DATASET_BLOCKAGE_EXPIRE_AFTER_SECONDS = (
     6 * 60 * 60
 )  # if we change this value, we have to ensure the TTL index is migrated accordingly
 
+DATASET_STATUS_NORMAL = "normal"
+DATASET_STATUS_BLOCKED = "blocked"
+
 
 class DatasetBlockageDocument(Document):
     """A decision to block (rate-limit) a dataset. The same dataset can be blocked several times.
