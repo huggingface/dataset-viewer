@@ -39,6 +39,7 @@ INTEGER_DTYPES = ["int8", "int16", "int32", "int64", "uint8", "uint16", "uint32"
 FLOAT_DTYPES = ["float16", "float32", "float64"]
 NUMERICAL_DTYPES = INTEGER_DTYPES + FLOAT_DTYPES
 STRING_DTYPES = ["string", "large_string"]
+DATETIME_DTYPES = ["timestamp[s]", "timestamp[ms]", "timestamp[us]", "timestamp[ns]"]
 
 
 class ColumnType(str, enum.Enum):
@@ -768,11 +769,11 @@ class DatetimeColumn(Column):
             n_samples=n_samples,
         )
         # to assure mypy that there values are not None to pass to conversion functions:
-        assert timedelta_stats["histogram"] is not None
-        assert timedelta_stats["max"] is not None
-        assert timedelta_stats["mean"] is not None
-        assert timedelta_stats["median"] is not None
-        assert timedelta_stats["std"] is not None
+        assert timedelta_stats["histogram"] is not None  # nosec
+        assert timedelta_stats["max"] is not None  # nosec
+        assert timedelta_stats["mean"] is not None  # nosec
+        assert timedelta_stats["median"] is not None  # nosec
+        assert timedelta_stats["std"] is not None  # nosec
 
         datetime_bin_edges = [
             cls.shift_and_convert_to_string(min_date, seconds) for seconds in timedelta_stats["histogram"]["bin_edges"]

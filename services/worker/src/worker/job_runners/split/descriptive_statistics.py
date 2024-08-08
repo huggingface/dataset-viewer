@@ -32,6 +32,7 @@ from worker.config import AppConfig, DescriptiveStatisticsConfig
 from worker.dtos import CompleteJobResult
 from worker.job_runners.split.split_job_runner import SplitJobRunnerWithCache
 from worker.statistics_utils import (
+    DATETIME_DTYPES,
     FLOAT_DTYPES,
     INTEGER_DTYPES,
     NUMERICAL_DTYPES,
@@ -39,6 +40,7 @@ from worker.statistics_utils import (
     AudioColumn,
     BoolColumn,
     ClassLabelColumn,
+    DatetimeColumn,
     FloatColumn,
     ImageColumn,
     IntColumn,
@@ -57,7 +59,15 @@ class SplitDescriptiveStatisticsResponse(TypedDict):
 
 
 SupportedColumns = Union[
-    ClassLabelColumn, IntColumn, FloatColumn, StringColumn, BoolColumn, ListColumn, AudioColumn, ImageColumn
+    ClassLabelColumn,
+    IntColumn,
+    FloatColumn,
+    StringColumn,
+    BoolColumn,
+    ListColumn,
+    AudioColumn,
+    ImageColumn,
+    DatetimeColumn,
 ]
 
 
@@ -238,6 +248,9 @@ def compute_descriptive_statistics_response(
 
                 if dataset_feature.get("dtype") == "bool":
                     return BoolColumn(feature_name=dataset_feature_name, n_samples=num_examples)
+
+                if dataset_feature.get("dtype") in DATETIME_DTYPES:
+                    return DatetimeColumn(feature_name=dataset_feature_name, n_samples=num_examples)
         return None
 
     columns: list[SupportedColumns] = []
