@@ -3,7 +3,7 @@
 from collections.abc import Callable, Mapping
 from dataclasses import replace
 from http import HTTPStatus
-from typing import Optional
+from typing import Any, Optional
 
 import pandas as pd
 import polars as pl
@@ -30,6 +30,7 @@ from ...fixtures.hub import HubDatasetTest
 from ...test_statistics_utils import (
     count_expected_statistics_for_bool_column,
     count_expected_statistics_for_categorical_column,
+    count_expected_statistics_for_datetime_column,
     count_expected_statistics_for_list_column,
     count_expected_statistics_for_numerical_column,
     count_expected_statistics_for_string_column,
@@ -215,7 +216,7 @@ def get_parquet_metadata_job_runner(
 
 
 @pytest.fixture
-def descriptive_statistics_expected(datasets: Mapping[str, Dataset]) -> dict:  # type: ignore
+def descriptive_statistics_expected(datasets: Mapping[str, Dataset]) -> dict[str, Any]:
     ds = datasets["descriptive_statistics"]
     df = ds.to_pandas()
     expected_statistics = {}
@@ -253,7 +254,7 @@ def descriptive_statistics_expected(datasets: Mapping[str, Dataset]) -> dict:  #
 
 
 @pytest.fixture
-def descriptive_statistics_string_text_expected(datasets: Mapping[str, Dataset]) -> dict:  # type: ignore
+def descriptive_statistics_string_text_expected(datasets: Mapping[str, Dataset]) -> dict[str, Any]:
     ds = datasets["descriptive_statistics_string_text"]
     df = ds.to_pandas()
     expected_statistics = {}
@@ -270,7 +271,7 @@ def descriptive_statistics_string_text_expected(datasets: Mapping[str, Dataset])
 
 
 @pytest.fixture
-def descriptive_statistics_string_text_partial_expected(datasets: Mapping[str, Dataset]) -> dict:  # type: ignore
+def descriptive_statistics_string_text_partial_expected(datasets: Mapping[str, Dataset]) -> dict[str, Any]:
     ds = datasets["descriptive_statistics_string_text"]
     df = ds.to_pandas()[:50]  # see `fixtures.hub.hub_public_descriptive_statistics_parquet_builder`
     expected_statistics = {}
@@ -287,7 +288,7 @@ def descriptive_statistics_string_text_partial_expected(datasets: Mapping[str, D
 
 
 @pytest.fixture
-def audio_statistics_expected() -> dict:  # type: ignore
+def audio_statistics_expected() -> dict[str, Any]:
     column_names_to_durations = [
         ("audio", [1.0, 2.0, 3.0, 4.0]),  # datasets consists of 4 audio files of 1, 2, 3, 4 seconds lengths
         ("audio_null", [1.0, None, 3.0, None]),  # take first and third audio file for this testcase
@@ -312,7 +313,7 @@ def audio_statistics_expected() -> dict:  # type: ignore
 
 
 @pytest.fixture
-def image_statistics_expected() -> dict:  # type: ignore
+def image_statistics_expected() -> dict[str, Any]:
     column_names_to_widths = [
         ("image", [640, 1440, 520, 1240]),  # datasets consists of 4 image files
         ("image_null", [640, None, 520, None]),  # take first and third image file for this testcase
@@ -332,6 +333,21 @@ def image_statistics_expected() -> dict:  # type: ignore
         "statistics": dataset_statistics,
         "partial": False,
     }
+
+
+@pytest.fixture
+def datetime_statistics_expected(datasets: Mapping[str, Dataset]) -> dict[str, Any]:
+    ds = datasets["datetime_statistics"]
+    df = ds.to_pandas()
+    expected_statistics = {}
+    for column_name in df.columns:
+        statistics = count_expected_statistics_for_datetime_column(column=df[column_name], column_name=column_name)
+        expected_statistics[column_name] = {
+            "column_name": column_name,
+            "column_type": ColumnType.DATETIME,
+            "column_statistics": statistics,
+        }
+    return {"num_examples": df.shape[0], "statistics": expected_statistics, "partial": False}
 
 
 @pytest.fixture
@@ -369,13 +385,14 @@ def test_polars_struct_thread_panic_error(struct_thread_panic_error_parquet_file
 @pytest.mark.parametrize(
     "hub_dataset_name,expected_error_code",
     [
-        ("descriptive_statistics", None),
-        ("descriptive_statistics_string_text", None),
-        ("descriptive_statistics_string_text_partial", None),
-        ("descriptive_statistics_not_supported", "NoSupportedFeaturesError"),
-        ("audio_statistics", None),
-        ("image_statistics", None),
-        ("gated", None),
+        # ("descriptive_statistics", None),
+        # ("descriptive_statistics_string_text", None),
+        # ("descriptive_statistics_string_text_partial", None),
+        # ("descriptive_statistics_not_supported", "NoSupportedFeaturesError"),
+        # ("audio_statistics", None),
+        # ("image_statistics", None),
+        ("datetime_statistics", None),
+        # ("gated", None),
     ],
 )
 def test_compute(
@@ -391,13 +408,15 @@ def test_compute(
     hub_responses_descriptive_statistics_not_supported: HubDatasetTest,
     hub_responses_audio_statistics: HubDatasetTest,
     hub_responses_image_statistics: HubDatasetTest,
+    hub_responses_datetime_statistics: HubDatasetTest,
     hub_dataset_name: str,
     expected_error_code: Optional[str],
-    descriptive_statistics_expected: dict,  # type: ignore
-    descriptive_statistics_string_text_expected: dict,  # type: ignore
-    descriptive_statistics_string_text_partial_expected: dict,  # type: ignore
-    audio_statistics_expected: dict,  # type: ignore
-    image_statistics_expected: dict,  # type: ignore
+    descriptive_statistics_expected: dict[str, Any],
+    descriptive_statistics_string_text_expected: dict[str, Any],
+    descriptive_statistics_string_text_partial_expected: dict[str, Any],
+    audio_statistics_expected: dict[str, Any],
+    image_statistics_expected: dict[str, Any],
+    datetime_statistics_expected: dict[str, Any],
 ) -> None:
     hub_datasets = {
         "descriptive_statistics": hub_responses_descriptive_statistics,
@@ -407,6 +426,7 @@ def test_compute(
         "gated": hub_responses_gated_descriptive_statistics,
         "audio_statistics": hub_responses_audio_statistics,
         "image_statistics": hub_responses_image_statistics,
+        "datetime_statistics": hub_responses_datetime_statistics,
     }
     expected = {
         "descriptive_statistics": descriptive_statistics_expected,
@@ -416,6 +436,7 @@ def test_compute(
         "descriptive_statistics_string_text_partial": descriptive_statistics_string_text_partial_expected,
         "audio_statistics": audio_statistics_expected,
         "image_statistics": image_statistics_expected,
+        "datetime_statistics": datetime_statistics_expected,
     }
     dataset = hub_datasets[hub_dataset_name]["name"]
     splits_response = hub_datasets[hub_dataset_name]["splits_response"]
@@ -533,6 +554,16 @@ def test_compute(
                 assert pytest.approx(
                     column_response_stats.pop("nan_proportion")
                 ) == expected_column_response_stats.pop("nan_proportion")
+                assert column_response_stats == expected_column_response_stats
+            elif column_response["column_type"] is ColumnType.DATETIME:
+                std, expected_std = (
+                    column_response_stats.pop("std"),
+                    expected_column_response_stats.pop("std"),
+                )
+                if std:
+                    assert std.split(".")[0] == expected_std.split(".")[0]
+                else:
+                    assert std == expected_std
                 assert column_response_stats == expected_column_response_stats
             else:
                 raise ValueError("Incorrect data type")

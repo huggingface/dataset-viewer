@@ -474,7 +474,7 @@ def test_image_statistics(
     assert computed == expected
 
 
-def count_expected_statistics_for_datetime(column: pd.Series, column_name: str) -> dict:  # type: ignore
+def count_expected_statistics_for_datetime_column(column: pd.Series, column_name: str) -> dict:  # type: ignore
     n_samples = column.shape[0]
     nan_count = column.isna().sum()
     if nan_count == n_samples:
@@ -546,7 +546,7 @@ def test_datetime_statistics(
     datasets: Mapping[str, Dataset],
 ) -> None:
     data = datasets["datetime_statistics"].to_pandas()
-    expected = count_expected_statistics_for_datetime(data[column_name], column_name)
+    expected = count_expected_statistics_for_datetime_column(data[column_name], column_name)
     computed = DatetimeColumn.compute_statistics(
         data=pl.from_pandas(data),
         column_name=column_name,

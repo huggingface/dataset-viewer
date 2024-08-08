@@ -355,6 +355,13 @@ def hub_public_image_statistics(datasets: Mapping[str, Dataset]) -> Iterator[str
 
 
 @pytest.fixture(scope="session")
+def hub_public_datetime_statistics(datasets: Mapping[str, Dataset]) -> Iterator[str]:
+    repo_id = create_hub_dataset_repo(prefix="datetime_statistics", dataset=datasets["datetime_statistics"])
+    yield repo_id
+    delete_hub_dataset_repo(repo_id=repo_id)
+
+
+@pytest.fixture(scope="session")
 def hub_public_n_configs_with_default(datasets: Mapping[str, Dataset]) -> Iterator[str]:
     default_config_name, _ = get_default_config_split()
     repo_id = create_hub_dataset_repo(
@@ -1202,6 +1209,19 @@ def hub_responses_image_statistics(
         "name": hub_public_image_statistics,
         "config_names_response": create_config_names_response(hub_public_image_statistics),
         "splits_response": create_splits_response(hub_public_image_statistics),
+        "first_rows_response": None,
+        "parquet_and_info_response": None,
+    }
+
+
+@pytest.fixture
+def hub_responses_datetime_statistics(
+    hub_public_datetime_statistics: str,
+) -> HubDatasetTest:
+    return {
+        "name": hub_public_datetime_statistics,
+        "config_names_response": create_config_names_response(hub_public_datetime_statistics),
+        "splits_response": create_splits_response(hub_public_datetime_statistics),
         "first_rows_response": None,
         "parquet_and_info_response": None,
     }
