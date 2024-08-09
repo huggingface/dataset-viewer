@@ -507,10 +507,13 @@ def count_expected_statistics_for_datetime_column(column: pd.Series, column_name
         "2024-01-10 00:00:09",
         "2024-01-11 00:00:00",
     ]
+    if column_name == "datetime_tz":
+        bin_edges = [f"{bin_edge}+0200" for bin_edge in bin_edges]
+        minv, maxv, mean, median = f"{minv}+0200", f"{maxv}+0200", f"{mean}+0200", f"{median}+0200"
 
     # compute std
     seconds_in_day = 24 * 60 * 60
-    if column_name == "datetime":
+    if column_name in ["datetime", "datetime_tz"]:
         timedeltas = pd.Series(range(0, 11 * seconds_in_day, seconds_in_day))
         hist = [2, 1, 1, 1, 1, 1, 1, 1, 1, 1]
     elif column_name == "datetime_null":
@@ -539,7 +542,7 @@ def count_expected_statistics_for_datetime_column(column: pd.Series, column_name
 
 @pytest.mark.parametrize(
     "column_name",
-    ["datetime", "datetime_null", "datetime_all_null"],
+    ["datetime", "datetime_tz", "datetime_null", "datetime_all_null"],
 )
 def test_datetime_statistics(
     column_name: str,

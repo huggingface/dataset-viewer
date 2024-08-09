@@ -385,14 +385,14 @@ def test_polars_struct_thread_panic_error(struct_thread_panic_error_parquet_file
 @pytest.mark.parametrize(
     "hub_dataset_name,expected_error_code",
     [
-        # ("descriptive_statistics", None),
-        # ("descriptive_statistics_string_text", None),
-        # ("descriptive_statistics_string_text_partial", None),
-        # ("descriptive_statistics_not_supported", "NoSupportedFeaturesError"),
-        # ("audio_statistics", None),
-        # ("image_statistics", None),
+        ("descriptive_statistics", None),
+        ("descriptive_statistics_string_text", None),
+        ("descriptive_statistics_string_text_partial", None),
+        ("descriptive_statistics_not_supported", "NoSupportedFeaturesError"),
+        ("audio_statistics", None),
+        ("image_statistics", None),
         ("datetime_statistics", None),
-        # ("gated", None),
+        ("gated", None),
     ],
 )
 def test_compute(

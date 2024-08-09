@@ -1716,6 +1716,19 @@ datetime_dataset = Dataset.from_dict(
             datetime.strptime("2024-01-10 00:00:00", "%Y-%m-%d %H:%M:%S"),
             datetime.strptime("2024-01-11 00:00:00", "%Y-%m-%d %H:%M:%S"),
         ],
+        "datetime_tz": [
+            datetime.strptime("2024-01-01 00:00:00+0200", "%Y-%m-%d %H:%M:%S%z"),
+            datetime.strptime("2024-01-02 00:00:00+0200", "%Y-%m-%d %H:%M:%S%z"),
+            datetime.strptime("2024-01-03 00:00:00+0200", "%Y-%m-%d %H:%M:%S%z"),
+            datetime.strptime("2024-01-04 00:00:00+0200", "%Y-%m-%d %H:%M:%S%z"),
+            datetime.strptime("2024-01-05 00:00:00+0200", "%Y-%m-%d %H:%M:%S%z"),
+            datetime.strptime("2024-01-06 00:00:00+0200", "%Y-%m-%d %H:%M:%S%z"),
+            datetime.strptime("2024-01-07 00:00:00+0200", "%Y-%m-%d %H:%M:%S%z"),
+            datetime.strptime("2024-01-08 00:00:00+0200", "%Y-%m-%d %H:%M:%S%z"),
+            datetime.strptime("2024-01-09 00:00:00+0200", "%Y-%m-%d %H:%M:%S%z"),
+            datetime.strptime("2024-01-10 00:00:00+0200", "%Y-%m-%d %H:%M:%S%z"),
+            datetime.strptime("2024-01-11 00:00:00+0200", "%Y-%m-%d %H:%M:%S%z"),
+        ],
         "datetime_null": [
             datetime.strptime("2024-01-01 00:00:00", "%Y-%m-%d %H:%M:%S"),
             None,
@@ -1734,6 +1747,7 @@ datetime_dataset = Dataset.from_dict(
     features=Features(
         {
             "datetime": Value("timestamp[s]"),
+            "datetime_tz": Value("timestamp[s, tz=+02:00]"),
             "datetime_null": Value("timestamp[s]"),
             "datetime_all_null": Value("timestamp[s]"),
         }

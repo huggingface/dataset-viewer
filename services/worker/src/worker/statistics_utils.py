@@ -39,7 +39,6 @@ INTEGER_DTYPES = ["int8", "int16", "int32", "int64", "uint8", "uint16", "uint32"
 FLOAT_DTYPES = ["float16", "float32", "float64"]
 NUMERICAL_DTYPES = INTEGER_DTYPES + FLOAT_DTYPES
 STRING_DTYPES = ["string", "large_string"]
-DATETIME_DTYPES = ["timestamp[s]", "timestamp[ms]", "timestamp[us]", "timestamp[ns]"]
 
 
 class ColumnType(str, enum.Enum):

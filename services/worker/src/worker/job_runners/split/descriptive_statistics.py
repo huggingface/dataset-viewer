@@ -32,7 +32,6 @@ from worker.config import AppConfig, DescriptiveStatisticsConfig
 from worker.dtos import CompleteJobResult
 from worker.job_runners.split.split_job_runner import SplitJobRunnerWithCache
 from worker.statistics_utils import (
-    DATETIME_DTYPES,
     FLOAT_DTYPES,
     INTEGER_DTYPES,
     NUMERICAL_DTYPES,
@@ -225,31 +224,33 @@ def compute_descriptive_statistics_response(
                 return ListColumn(feature_name=dataset_feature_name, n_samples=num_examples)
 
         if isinstance(dataset_feature, dict):
-            if dataset_feature.get("_type") == "ClassLabel":
+            _type = dataset_feature.get("_type")
+            if _type == "ClassLabel":
                 return ClassLabelColumn(
                     feature_name=dataset_feature_name, n_samples=num_examples, feature_dict=dataset_feature
                 )
 
-            if dataset_feature.get("_type") == "Audio":
+            if _type == "Audio":
                 return AudioColumn(feature_name=dataset_feature_name, n_samples=num_examples)
 
-            if dataset_feature.get("_type") == "Image":
+            if _type == "Image":
                 return ImageColumn(feature_name=dataset_feature_name, n_samples=num_examples)
 
-            if dataset_feature.get("_type") == "Value":
-                if dataset_feature.get("dtype") in INTEGER_DTYPES:
+            if _type == "Value":
+                dtype = dataset_feature.get("dtype", "")
+                if dtype in INTEGER_DTYPES:
                     return IntColumn(feature_name=dataset_feature_name, n_samples=num_examples)
 
-                if dataset_feature.get("dtype") in FLOAT_DTYPES:
+                if dtype in FLOAT_DTYPES:
                     return FloatColumn(feature_name=dataset_feature_name, n_samples=num_examples)
 
-                if dataset_feature.get("dtype") in STRING_DTYPES:
+                if dtype in STRING_DTYPES:
                     return StringColumn(feature_name=dataset_feature_name, n_samples=num_examples)
 
-                if dataset_feature.get("dtype") == "bool":
+                if dtype == "bool":
                     return BoolColumn(feature_name=dataset_feature_name, n_samples=num_examples)
 
-                if dataset_feature.get("dtype") in DATETIME_DTYPES:
+                if dtype.startswith("timestamp"):
                     return DatetimeColumn(feature_name=dataset_feature_name, n_samples=num_examples)
         return None
 
@@ -262,7 +263,7 @@ def compute_descriptive_statistics_response(
     if not columns:
         raise NoSupportedFeaturesError(
             "No columns for statistics computation found. Currently supported feature types are: "
-            f"{NUMERICAL_DTYPES}, {STRING_DTYPES}, ClassLabel, list/Sequence and bool. "
+            f"{NUMERICAL_DTYPES}, {STRING_DTYPES}, ClassLabel, Image, Audio, list/Sequence, datetime and bool. "
         )
 
     column_names_str = ", ".join([column.name for column in columns])
