@@ -1410,8 +1410,6 @@ def compute_config_parquet_and_info_response(
           The dataset is empty.
         [~`libcommon.exceptions.ConfigNamesError`]:
           If the list of configurations could not be obtained using the datasets library.
-        [~`libcommon.exceptions.DatasetWithTooManyExternalFilesError`]:
-            If the dataset has too many external files to be converted to parquet
         [~`libcommon.exceptions.UnsupportedExternalFilesError`]:
             If we failed to get the external files sizes to make sure we can convert the dataset to parquet
         [~`libcommon.exceptions.ExternalFilesSizeRequestHTTPError`]:
