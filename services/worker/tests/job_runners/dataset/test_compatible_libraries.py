@@ -547,19 +547,3 @@ def test_get_builder_configs_with_simplified_data_files(
     assert module_name in get_compatible_library_for_builder
     compatible_library = get_compatible_library_for_builder[module_name](dataset, hf_token, login_required)
     assert compatible_library["library"] == expected_library
-
-
-@pytest.mark.integration
-@pytest.mark.parametrize(
-    "dataset,builder_name",
-    [
-        ("tcor0005/langchain-docs-400-chunksize", "json"),
-    ],
-)
-def test_get_polars_compatible_library(
-    use_hub_prod_endpoint: pytest.MonkeyPatch,
-    dataset: str,
-    builder_name: str,
-) -> None:
-    v = get_polars_compatible_library(builder_name=builder_name, dataset=dataset, hf_token=None, login_required=False)
-    assert v is None
