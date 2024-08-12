@@ -225,7 +225,7 @@ def _is_too_big_from_hub(
     max_dataset_size_bytes: int,
 ) -> bool:
     """
-    Raise an error if the dataset is too big to be converted to parquet, as measured by the sum of the repository
+    Check if the dataset is too big to be converted to parquet, as measured by the sum of the repository
     files sizes given by the Hub.
 
     Args:
@@ -246,7 +246,7 @@ def _is_too_big_from_datasets(
     max_dataset_size_bytes: int,
 ) -> bool:
     """
-    Raise an error if the dataset is too big to be converted to parquet, as measured by the sum of the configs
+    Check if the dataset is too big to be converted to parquet, as measured by the sum of the configs
     sizes given by the datasets library
 
     Args:
@@ -1410,8 +1410,6 @@ def compute_config_parquet_and_info_response(
           The dataset is empty.
         [~`libcommon.exceptions.ConfigNamesError`]:
           If the list of configurations could not be obtained using the datasets library.
-        [~`libcommon.exceptions.DatasetWithTooManyExternalFilesError`]:
-            If the dataset has too many external files to be converted to parquet
         [~`libcommon.exceptions.UnsupportedExternalFilesError`]:
             If we failed to get the external files sizes to make sure we can convert the dataset to parquet
         [~`libcommon.exceptions.ExternalFilesSizeRequestHTTPError`]:
