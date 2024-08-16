@@ -46,8 +46,8 @@
           title: Polars
         - local: mlcroissant
           title: mlcroissant
-        - local: PySpark
-          title: pyspark
+        - local: pyspark
+          title: PySpark
 - title: Conceptual Guides
   sections:
     - local: configs_and_splits
