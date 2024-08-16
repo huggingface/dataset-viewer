@@ -140,6 +140,6 @@ Some cases where a dataset is not valid are:
 - the dataset contains no data or the data format is not supported
 
 <Tip>
-  Remember if a dataset is <a href="./quick_start#gated-datasets">gated</a>,
+  Remember if a dataset is <a href="./quick_start#private-and-gated-datasets">gated</a>,
   you'll need to provide your user token to submit a successful query!
 </Tip>
