@@ -30,7 +30,7 @@ def test_metrics() -> None:
         # eg. 'queue_jobs_total{pid="10",queue="split-first-rows",status="started"}'
         assert has_metric(
             name="queue_jobs_total",
-            labels={"pid": "[0-9]*", "queue": queue, "status": "started"},
+            labels={"dataset_status": "normal", "pid": "[0-9]*", "queue": queue, "status": "started"},
             metric_names=metric_names,
         ), f"queue_jobs_total - queue={queue} found in {metrics}"
 
