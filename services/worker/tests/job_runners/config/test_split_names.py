@@ -173,7 +173,7 @@ def test_doesnotexist(
         # should we really test the following cases?
         # The assumption is that the dataset exists and is accessible with the token
         ("does_not_exist", False, "SplitNamesFromStreamingError", "DatasetNotFoundError"),
-        ("gated", False, "SplitNamesFromStreamingError", "DatasetNotFoundError"),
+        ("gated", False, "SplitNamesFromStreamingError", "ConnectionError"),  # See: huggingface/datasets#7109
         ("private", False, "SplitNamesFromStreamingError", "DatasetNotFoundError"),
     ],
 )
