@@ -14,7 +14,7 @@ from starlette.applications import Starlette
 from starlette.middleware import Middleware
 from starlette.middleware.cors import CORSMiddleware
 from starlette.middleware.gzip import GZipMiddleware
-from starlette.routing import Mount, Route
+from starlette.routing import Route
 from starlette_prometheus import PrometheusMiddleware
 
 from admin.config import AppConfig, UvicornConfig
@@ -79,15 +79,18 @@ def create_app() -> Starlette:
     ]
     routes = [
         Route("/healthcheck", endpoint=healthcheck_endpoint),
+        # ^ called by ALB
+        Route("/admin/healthcheck", endpoint=healthcheck_endpoint),
+        # ^ called by Kubernetes
         Route(
-            "/metrics",
+            "/admin/metrics",
             endpoint=create_metrics_endpoint(
                 parquet_metadata_directory=parquet_metadata_directory,
             ),
         ),
         # used in a browser tab to monitor the queue
         Route(
-            "/pending-jobs",
+            "/admin/pending-jobs",
             endpoint=create_pending_jobs_endpoint(
                 max_age=app_config.admin.max_age,
                 external_auth_url=app_config.admin.external_auth_url,
@@ -96,7 +99,7 @@ def create_app() -> Starlette:
             ),
         ),
         Route(
-            "/blocked-datasets",
+            "/admin/blocked-datasets",
             endpoint=create_blocked_datasets_endpoint(
                 max_age=app_config.admin.max_age,
                 external_auth_url=app_config.admin.external_auth_url,
@@ -105,7 +108,7 @@ def create_app() -> Starlette:
             ),
         ),
         Route(
-            "/dataset-status",
+            "/admin/dataset-status",
             endpoint=create_dataset_status_endpoint(
                 max_age=app_config.admin.max_age,
                 external_auth_url=app_config.admin.external_auth_url,
@@ -114,7 +117,7 @@ def create_app() -> Starlette:
             ),
         ),
         Route(
-            "/num-dataset-infos-by-builder-name",
+            "/admin/num-dataset-infos-by-builder-name",
             endpoint=create_num_dataset_infos_by_builder_name_endpoint(
                 max_age=app_config.admin.max_age,
                 external_auth_url=app_config.admin.external_auth_url,
@@ -123,7 +126,7 @@ def create_app() -> Starlette:
             ),
         ),
         Route(
-            "/recreate-dataset",
+            "/admin/recreate-dataset",
             endpoint=create_recreate_dataset_endpoint(
                 hf_endpoint=app_config.common.hf_endpoint,
                 hf_token=app_config.common.hf_token,
@@ -145,7 +148,7 @@ def create_app() -> Starlette:
         routes.extend(
             [
                 Route(
-                    f"/force-refresh/{job_type}",
+                    f"/admin/force-refresh/{job_type}",
                     endpoint=create_force_refresh_endpoint(
                         input_type=input_type,
                         job_type=job_type,
@@ -160,7 +163,7 @@ def create_app() -> Starlette:
                     methods=["POST"],
                 ),
                 Route(
-                    f"/cache-reports/{cache_kind}",
+                    f"/admin/cache-reports/{cache_kind}",
                     endpoint=create_cache_reports_endpoint(
                         cache_kind=cache_kind,
                         cache_reports_num_results=app_config.admin.cache_reports_num_results,
@@ -171,7 +174,7 @@ def create_app() -> Starlette:
                     ),
                 ),
                 Route(
-                    f"/cache-reports-with-content/{cache_kind}",
+                    f"/admin/cache-reports-with-content/{cache_kind}",
                     endpoint=create_cache_reports_with_content_endpoint(
                         cache_kind=cache_kind,
                         cache_reports_with_content_num_results=app_config.admin.cache_reports_with_content_num_results,
@@ -185,7 +188,7 @@ def create_app() -> Starlette:
         )
 
     return Starlette(
-        routes=[Mount("/admin", routes=routes)],
+        routes=routes,
         middleware=middleware,
         on_shutdown=[resource.release for resource in resources],
     )
