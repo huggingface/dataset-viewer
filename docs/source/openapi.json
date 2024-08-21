@@ -2061,9 +2061,9 @@
                   },
                   "Truncated cells": {
                     "summary": "Truncated cells due to the response size (has a timestamp column).",
-                    "description": "Try with https://datasets-server.huggingface.co/first-rows?dataset=ett&config=m2&split=test.",
+                    "description": "Try with https://datasets-server.huggingface.co/first-rows?dataset=ETDataset/ett&config=m2&split=test.",
                     "value": {
-                      "dataset": "ett",
+                      "dataset": "ETDataset/ett",
                       "config": "m2",
                       "split": "test",
                       "features": [

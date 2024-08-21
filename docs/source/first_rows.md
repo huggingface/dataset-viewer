@@ -145,7 +145,7 @@ For some datasets, the response size from `/first-rows` may exceed 1MB, in which
 
 In some cases, if even the first few rows generate a response that exceeds 1MB, some of the columns are truncated and converted to a string. You'll see these listed in the `truncated_cells` field.
 
-For example, the [`ett`](https://datasets-server.huggingface.co/first-rows?dataset=ett&config=m2&split=test) dataset only returns 10 rows, and the `target` and `feat_dynamic_real` columns are truncated:
+For example, the [`ETDataset/ett`](https://datasets-server.huggingface.co/first-rows?dataset=ETDataset/ett&config=m2&split=test) dataset only returns 10 rows, and the `target` and `feat_dynamic_real` columns are truncated:
 
 ```json
   ...
