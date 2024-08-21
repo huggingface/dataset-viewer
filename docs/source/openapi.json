@@ -913,7 +913,9 @@
           "num_rows": {
             "type": "integer"
           },
-          "estimated_num_rows": { "anyOf": [{ "type": "integer" }, { "type": "null" }] }
+          "estimated_num_rows": {
+            "anyOf": [{ "type": "integer" }, { "type": "null" }]
+          }
         }
       },
       "ConfigSize": {
@@ -949,7 +951,9 @@
           "num_columns": {
             "type": "integer"
           },
-          "estimated_num_rows": { "anyOf": [{ "type": "integer" }, { "type": "null" }] }
+          "estimated_num_rows": {
+            "anyOf": [{ "type": "integer" }, { "type": "null" }]
+          }
         }
       },
       "SplitSize": {
@@ -986,7 +990,9 @@
           "num_columns": {
             "type": "integer"
           },
-          "estimated_num_rows": { "anyOf": [{ "type": "integer" }, { "type": "null" }] }
+          "estimated_num_rows": {
+            "anyOf": [{ "type": "integer" }, { "type": "null" }]
+          }
         }
       },
       "DatasetSizeResponse": {
@@ -1999,11 +2005,11 @@
                   "$ref": "#/components/schemas/FirstRowsResponse"
                 },
                 "examples": {
-                  "A simple dataset (imdb) with text and label": {
+                  "A simple dataset (stanfordnlp/stanfordnlp/imdb) with text and label": {
                     "summary": "Text, and label column. Only 3 rows are shown for brevity.",
-                    "description": "Try with https://datasets-server.huggingface.co/first-rows?dataset=imdb&config=plain_text&split=train.",
+                    "description": "Try with https://datasets-server.huggingface.co/first-rows?dataset=stanfordnlp/imdb&config=plain_text&split=train.",
                     "value": {
-                      "dataset": "imdb",
+                      "dataset": "stanfordnlp/imdb",
                       "config": "plain_text",
                       "split": "train",
                       "features": [
@@ -2637,9 +2643,9 @@
                   "$ref": "#/components/schemas/PaginatedResponse"
                 },
                 "examples": {
-                  "A slice of a simple dataset (imdb)": {
+                  "A slice of a simple dataset (stanfordnlp/imdb)": {
                     "summary": "Get a slice of length 3 from row 234 (offset=234&length=3).",
-                    "description": "Try with https://datasets-server.huggingface.co/rows?dataset=imdb&config=plain_text&split=train&offset=234&length=3.",
+                    "description": "Try with https://datasets-server.huggingface.co/rows?dataset=stanfordnlp/imdb&config=plain_text&split=train&offset=234&length=3.",
                     "value": {
                       "features": [
                         {
@@ -3056,9 +3062,9 @@
                   "$ref": "#/components/schemas/PaginatedResponse"
                 },
                 "examples": {
-                  "Search on a text dataset (imdb)": {
+                  "Search on a text dataset (stanfordnlp/imdb)": {
                     "summary": "The first 3 rows that match the 'dog' search query (query=dog&length=3).",
-                    "description": "Try with https://datasets-server.huggingface.co/search?dataset=imdb&config=plain_text&split=train&query=dog&length=3.",
+                    "description": "Try with https://datasets-server.huggingface.co/search?dataset=stanfordnlp/imdb&config=plain_text&split=train&query=dog&length=3.",
                     "value": {
                       "features": [
                         {
