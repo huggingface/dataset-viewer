@@ -1467,13 +1467,9 @@
           "type": "string"
         },
         "examples": {
-          "mnist": {
-            "summary": "A canonical dataset",
-            "value": "mnist"
-          },
-          "Helsinki-NLP/tatoeba_mt": {
-            "summary": "A namespaced dataset",
-            "value": "Helsinki-NLP/tatoeba_mt"
+          "ylecun/mnist": {
+            "summary": "A dataset",
+            "value": "ylecun/mnist"
           }
         }
       },
@@ -4735,10 +4731,10 @@
                 "examples": {
                   "dataset metadata": {
                     "summary": "metadata of a dataset. It's an object, with one key per subset",
-                    "description": "Try with https://datasets-server.huggingface.co/info?dataset=mnist",
+                    "description": "Try with https://datasets-server.huggingface.co/info?dataset=ylecun/mnist",
                     "value": {
                       "dataset_info": {
-                        "mnist": {
+                        "ylecun/mnist": {
                           "description": "The MNIST dataset consists of 70,000 28x28 black-and-white images in 10 classes (one for each digits), with 7,000\nimages per class. There are 60,000 training images and 10,000 test images.\n",
                           "citation": "@article{lecun2010mnist,\n  title={MNIST handwritten digit database},\n  author={LeCun, Yann and Cortes, Corinna and Burges, CJ},\n  journal={ATT Labs [Online]. Available: http://yann.lecun.com/exdb/mnist},\n  volume={2},\n  year={2010}\n}\n",
                           "homepage": "http://yann.lecun.com/exdb/mnist/",
@@ -4771,7 +4767,7 @@
                               "label_column": "label"
                             }
                           ],
-                          "builder_name": "mnist",
+                          "builder_name": "ylecun/mnist",
                           "config_name": "mnist",
                           "version": {
                             "version_str": "1.0.0",
@@ -4784,13 +4780,13 @@
                               "name": "train",
                               "num_bytes": 17471100,
                               "num_examples": 60000,
-                              "dataset_name": "mnist"
+                              "dataset_name": "ylecun/mnist"
                             },
                             "test": {
                               "name": "test",
                               "num_bytes": 2916482,
                               "num_examples": 10000,
-                              "dataset_name": "mnist"
+                              "dataset_name": "ylecun/mnist"
                             }
                           },
                           "download_checksums": {
@@ -5327,7 +5323,7 @@
                   },
                   "dataset that has no image URLs columns": {
                     "summary": "no image URLs columns: values are zero.",
-                    "description": "Try with https://datasets-server.huggingface.co/opt-in-out-urls?dataset=mnist",
+                    "description": "Try with https://datasets-server.huggingface.co/opt-in-out-urls?dataset=ylecun/mnist",
                     "value": {
                       "urls_columns": [],
                       "has_urls_columns": false,
@@ -5471,7 +5467,7 @@
                   },
                   "dataset that has no image URLs columns": {
                     "summary": "no scanned columns: values are zero.",
-                    "description": "Try with https://datasets-server.huggingface.co/presidio-entities?dataset=mnist",
+                    "description": "Try with https://datasets-server.huggingface.co/presidio-entities?dataset=ylecun/mnist",
                     "value": {
                       "scanned_columns": [],
                       "num_rows_with_person_entities": 0,
@@ -5878,9 +5874,9 @@
                       "partial": false
                     }
                   },
-                  "A split (mnist) with a label column": {
+                  "A split (ylecun/mnist) with a label column": {
                     "summary": "Statistics on a class label column. The image column is not processed.",
-                    "description": "Try with https://datasets-server.huggingface.co/statistics?dataset=mnist&config=mnist&split=train.",
+                    "description": "Try with https://datasets-server.huggingface.co/statistics?dataset=ylecun/mnist&config=mnist&split=train.",
                     "value": {
                       "num_examples": 60000,
                       "statistics": [
