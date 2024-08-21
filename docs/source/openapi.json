@@ -2481,7 +2481,7 @@
                 "examples": {
                   "error in the dataset itself": {
                     "summary": "An error while processing the dataset prevents the response to be created.",
-                    "description": "Try with https://datasets-server.huggingface.co/first-rows?dataset=atomic&config=atomic&split=train",
+                    "description": "Try with https://datasets-server.huggingface.co/first-rows?dataset=allenai/atomic&config=atomic&split=train",
                     "value": {
                       "error": "Cannot load the dataset split (in streaming mode) to extract the first rows.",
                       "cause_exception": "FileNotFoundError",
@@ -2499,7 +2499,7 @@
                         "  File \"/src/services/worker/src/worker/utils.py\", line 341, in get_rows\n    rows_plus_one = list(itertools.islice(ds, rows_max_number + 1))\n",
                         "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/iterable_dataset.py\", line 981, in __iter__\n    for key, example in ex_iterable:\n",
                         "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/iterable_dataset.py\", line 116, in __iter__\n    yield from self.generate_examples_fn(**self.kwargs)\n",
-                        "  File \"/tmp/modules-cache/datasets_modules/datasets/atomic/c0f0ec7d10713c41dfc87f0cf17f936b122d22e19216051217c99134d38f6d7b/atomic.py\", line 123, in _generate_examples\n    for path, f in files:\n",
+                        "  File \"/tmp/modules-cache/datasets_modules/datasets/allenai/atomic/c0f0ec7d10713c41dfc87f0cf17f936b122d22e19216051217c99134d38f6d7b/atomic.py\", line 123, in _generate_examples\n    for path, f in files:\n",
                         "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/download/streaming_download_manager.py\", line 866, in __iter__\n    yield from self.generator(*self.args, **self.kwargs)\n",
                         "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/download/streaming_download_manager.py\", line 917, in _iter_from_urlpath\n    with xopen(urlpath, \"rb\", use_auth_token=use_auth_token) as f:\n",
                         "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/download/streaming_download_manager.py\", line 498, in xopen\n    file_obj = fsspec.open(file, mode=mode, *args, **kwargs).open()\n",
@@ -2807,7 +2807,7 @@
                   },
                   "error in the dataset itself": {
                     "summary": "An error while processing the dataset prevents the response to be created.",
-                    "description": "Try with https://datasets-server.huggingface.co/rows?dataset=atomic&config=atomic&split=train. It's a bug, it should be a 500 error, see https://github.com/huggingface/dataset-viewer/issues/1661.",
+                    "description": "Try with https://datasets-server.huggingface.co/rows?dataset=allenai/atomic&config=atomic&split=train. It's a bug, it should be a 500 error, see https://github.com/huggingface/dataset-viewer/issues/1661.",
                     "value": { "error": "Not found." }
                   }
                 }
@@ -3300,7 +3300,7 @@
                 "examples": {
                   "error in the dataset itself": {
                     "summary": "An error while processing the dataset prevents the response to be created.",
-                    "description": "Try with https://datasets-server.huggingface.co/search?dataset=atomic&config=atomic&split=train&query=dog",
+                    "description": "Try with https://datasets-server.huggingface.co/search?dataset=allenai/atomic&config=atomic&split=train&query=dog",
                     "value": {
                       "error": "Couldn't get the size of external files in `_split_generators` because a request failed:\n404 Client Error: Not Found for url: https://maartensap.com/atomic/data/atomic_data.tgz\nPlease consider moving your data files in this dataset repository instead (e.g. inside a data/ folder).",
                       "cause_exception": "HTTPError",
@@ -3928,7 +3928,7 @@
                 "examples": {
                   "error in the dataset itself": {
                     "summary": "An error while processing the dataset prevents the response to be created.",
-                    "description": "Try with https://datasets-server.huggingface.co/filter?dataset=atomic&config=atomic&split=train&where=event='a'",
+                    "description": "Try with https://datasets-server.huggingface.co/filter?dataset=allenai/atomic&config=atomic&split=train&where=event='a'",
                     "value": {
                       "error": "Couldn't get the size of external files in `_split_generators` because a request failed:\n404 Client Error: Not Found for url: https://maartensap.com/atomic/data/atomic_data.tgz\nPlease consider moving your data files in this dataset repository instead (e.g. inside a data/ folder).",
                       "cause_exception": "HTTPError",
@@ -4419,14 +4419,14 @@
                   },
                   "dataset where no parquet file could be created": {
                     "summary": "When the parquet files cannot be created for a configuration, it's listed in 'failed'.",
-                    "description": "Try with https://datasets-server.huggingface.co/parquet?dataset=atomic",
+                    "description": "Try with https://datasets-server.huggingface.co/parquet?dataset=allenai/atomic",
                     "value": {
                       "parquet_files": [],
                       "pending": [],
                       "failed": [
                         {
                           "kind": "config-info",
-                          "dataset": "atomic",
+                          "dataset": "allenai/atomic",
                           "config": "atomic",
                           "split": null
                         }
@@ -4468,7 +4468,7 @@
                 "examples": {
                   "error in the dataset itself": {
                     "summary": "An error while processing the dataset prevents the response to be created.",
-                    "description": "Try with https://datasets-server.huggingface.co/parquet?dataset=atomic&config=atomic",
+                    "description": "Try with https://datasets-server.huggingface.co/parquet?dataset=allenai/atomic&config=atomic",
                     "value": {
                       "error": "Couldn't get the size of external files in `_split_generators` because a request failed:\n404 Client Error: Not Found for url: https://maartensap.com/atomic/data/atomic_data.tgz\nPlease consider moving your data files in this dataset repository instead (e.g. inside a data/ folder).",
                       "cause_exception": "HTTPError",
@@ -4607,7 +4607,7 @@
                   },
                   "no capabilities": {
                     "summary": "dataset with no capabilities",
-                    "description": "Try with https://datasets-server.huggingface.co/is-valid?dataset=atomic",
+                    "description": "Try with https://datasets-server.huggingface.co/is-valid?dataset=allenai/atomic",
                     "value": {
                       "preview": false,
                       "viewer": false,
@@ -4864,14 +4864,14 @@
                   },
                   "dataset metadata with failed subsets": {
                     "summary": "metadata of a dataset which has failed subsets. The failed subsets are listed in 'failed'.",
-                    "description": "Try with https://datasets-server.huggingface.co/info?dataset=atomic",
+                    "description": "Try with https://datasets-server.huggingface.co/info?dataset=allenai/atomic",
                     "value": {
                       "dataset_info": {},
                       "pending": [],
                       "failed": [
                         {
                           "kind": "config-info",
-                          "dataset": "atomic",
+                          "dataset": "allenai/atomic",
                           "config": "atomic",
                           "split": null
                         }
@@ -4913,7 +4913,7 @@
                 "examples": {
                   "error in the dataset itself": {
                     "summary": "An error while processing the dataset prevents the response to be created.",
-                    "description": "Try with https://datasets-server.huggingface.co/info?dataset=atomic&config=atomic",
+                    "description": "Try with https://datasets-server.huggingface.co/info?dataset=allenai/atomic&config=atomic",
                     "value": {
                       "error": "Couldn't get the size of external files in `_split_generators` because a request failed:\n404 Client Error: Not Found for url: https://maartensap.com/atomic/data/atomic_data.tgz\nPlease consider moving your data files in this dataset repository instead (e.g. inside a data/ folder).",
                       "cause_exception": "HTTPError",
@@ -5111,11 +5111,11 @@
                   },
                   "dataset size with failed subsets": {
                     "summary": "size of a dataset which has failed subsets. The failed subsets are listed in 'failed'.",
-                    "description": "Try with https://datasets-server.huggingface.co/size?dataset=atomic",
+                    "description": "Try with https://datasets-server.huggingface.co/size?dataset=allenai/atomic",
                     "value": {
                       "size": {
                         "dataset": {
-                          "dataset": "atomic",
+                          "dataset": "allenai/atomic",
                           "num_bytes_original_files": 0,
                           "num_bytes_parquet_files": 0,
                           "num_bytes_memory": 0,
@@ -5129,7 +5129,7 @@
                       "failed": [
                         {
                           "kind": "config-size",
-                          "dataset": "atomic",
+                          "dataset": "allenai/atomic",
                           "config": "atomic",
                           "split": null
                         }
@@ -5171,7 +5171,7 @@
                 "examples": {
                   "error in the dataset itself": {
                     "summary": "An error while processing the dataset prevents the response to be created.",
-                    "description": "Try with https://datasets-server.huggingface.co/size?dataset=atomic&config=atomic",
+                    "description": "Try with https://datasets-server.huggingface.co/size?dataset=allenai/atomic&config=atomic",
                     "value": {
                       "error": "Couldn't get the size of external files in `_split_generators` because a request failed:\n404 Client Error: Not Found for url: https://maartensap.com/atomic/data/atomic_data.tgz\nPlease consider moving your data files in this dataset repository instead (e.g. inside a data/ folder).",
                       "cause_exception": "HTTPError",
@@ -6438,7 +6438,7 @@
                 "examples": {
                   "error in the dataset itself": {
                     "summary": "An error while processing the dataset prevents the response to be created.",
-                    "description": "Try with https://datasets-server.huggingface.co/statistics?dataset=atomic&config=atomic&split=train",
+                    "description": "Try with https://datasets-server.huggingface.co/statistics?dataset=allenai/atomic&config=atomic&split=train",
                     "value": {
                       "error": "Couldn't get the size of external files in `_split_generators` because a request failed:\n404 Client Error: Not Found for url: https://maartensap.com/atomic/data/atomic_data.tgz\nPlease consider moving your data files in this dataset repository instead (e.g. inside a data/ folder).",
                       "cause_exception": "HTTPError",
