@@ -17,7 +17,7 @@ A Parquet file contains a single table. If a dataset has multiple tables (e.g. m
 
 ## Conversion to Parquet
 
-The Parquet files are published to the Hub on a specific `refs/convert/parquet` branch (like this `amazon_polarity` [branch](https://huggingface.co/datasets/amazon_polarity/tree/refs%2Fconvert%2Fparquet) for example) that parallels the `main` branch.
+The Parquet files are published to the Hub on a specific `refs/convert/parquet` branch (like this `fancyzhx/amazon_polarity` [branch](https://huggingface.co/datasets/fancyzhx/amazon_polarity/tree/refs%2Fconvert%2Fparquet) for example) that parallels the `main` branch.
 
 <Tip>
 
@@ -139,48 +139,48 @@ The endpoint also gives the filename and size of each file:
 
 ## Sharded Parquet files
 
-Big datasets are partitioned into Parquet files (shards) of about 500MB each. The filename contains the name of the dataset, the split, the shard index, and the total number of shards (`dataset-name-train-0000-of-0004.parquet`). For a given split, the elements in the list are sorted by their shard index, in ascending order. For example, the `train` split of the [`amazon_polarity`](https://datasets-server.huggingface.co/parquet?dataset=amazon_polarity) dataset is partitioned into 4 shards:
+Big datasets are partitioned into Parquet files (shards) of about 500MB each. The filename contains the name of the dataset, the split, the shard index, and the total number of shards (`dataset-name-train-0000-of-0004.parquet`). For a given split, the elements in the list are sorted by their shard index, in ascending order. For example, the `train` split of the [`fancyzhx/amazon_polarity`](https://datasets-server.huggingface.co/parquet?dataset=fancyzhx/amazon_polarity) dataset is partitioned into 4 shards:
 
 ```json
 {
    "parquet_files":[
       {
-         "dataset":"amazon_polarity",
+         "dataset":"fancyzhx/amazon_polarity",
          "config":"amazon_polarity",
          "split":"test",
-         "url":"https://huggingface.co/datasets/amazon_polarity/resolve/refs%2Fconvert%2Fparquet/amazon_polarity/test/0000.parquet",
+         "url":"https://huggingface.co/datasets/fancyzhx/amazon_polarity/resolve/refs%2Fconvert%2Fparquet/amazon_polarity/test/0000.parquet",
          "filename":"0000.parquet",
          "size":117422360
       },
       {
-         "dataset":"amazon_polarity",
+         "dataset":"fancyzhx/amazon_polarity",
          "config":"amazon_polarity",
          "split":"train",
-         "url":"https://huggingface.co/datasets/amazon_polarity/resolve/refs%2Fconvert%2Fparquet/amazon_polarity/train/0000.parquet",
+         "url":"https://huggingface.co/datasets/fancyzhx/amazon_polarity/resolve/refs%2Fconvert%2Fparquet/amazon_polarity/train/0000.parquet",
          "filename":"0000.parquet",
          "size":259761770
       },
       {
-         "dataset":"amazon_polarity",
+         "dataset":"fancyzhx/amazon_polarity",
          "config":"amazon_polarity",
          "split":"train",
-         "url":"https://huggingface.co/datasets/amazon_polarity/resolve/refs%2Fconvert%2Fparquet/amazon_polarity/train/0001.parquet",
+         "url":"https://huggingface.co/datasets/fancyzhx/amazon_polarity/resolve/refs%2Fconvert%2Fparquet/amazon_polarity/train/0001.parquet",
          "filename":"0001.parquet",
          "size":258363554
       },
       {
-         "dataset":"amazon_polarity",
+         "dataset":"fancyzhx/amazon_polarity",
          "config":"amazon_polarity",
          "split":"train",
-         "url":"https://huggingface.co/datasets/amazon_polarity/resolve/refs%2Fconvert%2Fparquet/amazon_polarity/train/0002.parquet",
+         "url":"https://huggingface.co/datasets/fancyzhx/amazon_polarity/resolve/refs%2Fconvert%2Fparquet/amazon_polarity/train/0002.parquet",
          "filename":"0002.parquet",
          "size":255471883
       },
       {
-         "dataset":"amazon_polarity",
+         "dataset":"fancyzhx/amazon_polarity",
          "config":"amazon_polarity",
          "split":"train",
-         "url":"https://huggingface.co/datasets/amazon_polarity/resolve/refs%2Fconvert%2Fparquet/amazon_polarity/train/0003.parquet",
+         "url":"https://huggingface.co/datasets/fancyzhx/amazon_polarity/resolve/refs%2Fconvert%2Fparquet/amazon_polarity/train/0003.parquet",
          "filename":"0003.parquet",
          "size":254410930
       }
