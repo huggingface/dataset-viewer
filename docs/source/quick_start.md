@@ -42,7 +42,7 @@ There is no installation or setup required to use the dataset viewer API.
   <a href="https://huggingface.co/datasets/mozilla-foundation/common_voice_10_0">
     CommonVoice
   </a>{" "}
-  and <a href="https://huggingface.co/datasets/imagenet-1k">ImageNet</a> without
+  and <a href="https://huggingface.co/datasets/ILSVRC/imagenet-1k">ImageNet</a> without
   providing a <a href="https://huggingface.co/settings/tokens">user token</a>{" "}
   which you can find in your user settings.
 </Tip>
