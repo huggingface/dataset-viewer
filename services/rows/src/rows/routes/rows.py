@@ -33,7 +33,9 @@ from starlette.responses import Response
 logger = logging.getLogger(__name__)
 
 
-ALL_COLUMNS_SUPPORTED_DATASETS_ALLOW_LIST: Union[Literal["all"], list[str]] = ["arabic_speech_corpus"]  # for testing
+ALL_COLUMNS_SUPPORTED_DATASETS_ALLOW_LIST: Union[Literal["all"], list[str]] = [
+    "halabi2016/arabic_speech_corpus"
+]  # for testing
 
 
 def create_rows_endpoint(
