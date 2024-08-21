@@ -15,7 +15,7 @@ import requests
 from datasets import Dataset, DatasetBuilder, Features, Value, load_dataset_builder
 from huggingface_hub.constants import REPO_TYPES, REPO_TYPES_URL_PREFIXES
 from huggingface_hub.hf_api import HfApi
-from huggingface_hub.utils._errors import hf_raise_for_status
+from huggingface_hub.utils import hf_raise_for_status
 from libcommon.viewer_utils.asset import DATASET_GIT_REVISION_PLACEHOLDER
 
 from ..constants import ASSETS_BASE_URL, CI_HUB_ENDPOINT, CI_URL_TEMPLATE, CI_USER, CI_USER_TOKEN
