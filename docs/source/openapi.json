@@ -4308,7 +4308,7 @@
                     }
                   },
                   "partial parquet export": {
-                    "summary": "c4 (en): the parquet export is partial (first 5GB)",
+                    "summary": "allenai/c4 (en): the parquet export is partial (first 5GB)",
                     "description": "Try with https://datasets-server.huggingface.co/parquet?dataset=allenai/c4&config=en",
                     "value": {
                       "parquet_files": [
