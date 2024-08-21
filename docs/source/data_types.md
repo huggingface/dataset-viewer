@@ -4,10 +4,10 @@ Datasets supported by the dataset viewer have a tabular format, meaning a data p
 
 There are several different data `Features` for representing different data formats such as [`Audio`](https://huggingface.co/docs/datasets/v2.5.2/en/package_reference/main_classes#datasets.Audio) and [`Image`](https://huggingface.co/docs/datasets/v2.5.2/en/package_reference/main_classes#datasets.Image) for speech and image data respectively. Knowing a dataset feature gives you a better understanding of the data type you're working with, and how you can preprocess it.
 
-For example, the `/first-rows` endpoint for the [Rotten Tomatoes](https://huggingface.co/datasets/rotten_tomatoes) dataset returns the following:
+For example, the `/first-rows` endpoint for the [Rotten Tomatoes](https://huggingface.co/datasets/cornell-movie-review-data/rotten_tomatoes) dataset returns the following:
 
 ```json
-{"dataset": "rotten_tomatoes",
+{"dataset": "cornell-movie-review-data/rotten_tomatoes",
  "config": "default",
  "split": "train",
  "features": [{"feature_idx": 0,
