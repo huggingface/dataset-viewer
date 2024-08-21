@@ -913,7 +913,9 @@
           "num_rows": {
             "type": "integer"
           },
-          "estimated_num_rows": { "anyOf": [{ "type": "integer" }, { "type": "null" }] }
+          "estimated_num_rows": {
+            "anyOf": [{ "type": "integer" }, { "type": "null" }]
+          }
         }
       },
       "ConfigSize": {
@@ -949,7 +951,9 @@
           "num_columns": {
             "type": "integer"
           },
-          "estimated_num_rows": { "anyOf": [{ "type": "integer" }, { "type": "null" }] }
+          "estimated_num_rows": {
+            "anyOf": [{ "type": "integer" }, { "type": "null" }]
+          }
         }
       },
       "SplitSize": {
@@ -986,7 +990,9 @@
           "num_columns": {
             "type": "integer"
           },
-          "estimated_num_rows": { "anyOf": [{ "type": "integer" }, { "type": "null" }] }
+          "estimated_num_rows": {
+            "anyOf": [{ "type": "integer" }, { "type": "null" }]
+          }
         }
       },
       "DatasetSizeResponse": {
@@ -1461,13 +1467,9 @@
           "type": "string"
         },
         "examples": {
-          "mnist": {
-            "summary": "A canonical dataset",
-            "value": "mnist"
-          },
-          "Helsinki-NLP/tatoeba_mt": {
-            "summary": "A namespaced dataset",
-            "value": "Helsinki-NLP/tatoeba_mt"
+          "ylecun/mnist": {
+            "summary": "A dataset",
+            "value": "ylecun/mnist"
           }
         }
       },
@@ -1999,11 +2001,11 @@
                   "$ref": "#/components/schemas/FirstRowsResponse"
                 },
                 "examples": {
-                  "A simple dataset (imdb) with text and label": {
+                  "A simple dataset (stanfordnlp/stanfordnlp/imdb) with text and label": {
                     "summary": "Text, and label column. Only 3 rows are shown for brevity.",
-                    "description": "Try with https://datasets-server.huggingface.co/first-rows?dataset=imdb&config=plain_text&split=train.",
+                    "description": "Try with https://datasets-server.huggingface.co/first-rows?dataset=stanfordnlp/imdb&config=plain_text&split=train.",
                     "value": {
-                      "dataset": "imdb",
+                      "dataset": "stanfordnlp/imdb",
                       "config": "plain_text",
                       "split": "train",
                       "features": [
@@ -2055,9 +2057,9 @@
                   },
                   "Truncated cells": {
                     "summary": "Truncated cells due to the response size (has a timestamp column).",
-                    "description": "Try with https://datasets-server.huggingface.co/first-rows?dataset=ett&config=m2&split=test.",
+                    "description": "Try with https://datasets-server.huggingface.co/first-rows?dataset=ETDataset/ett&config=m2&split=test.",
                     "value": {
-                      "dataset": "ett",
+                      "dataset": "ETDataset/ett",
                       "config": "m2",
                       "split": "test",
                       "features": [
@@ -2475,7 +2477,7 @@
                 "examples": {
                   "error in the dataset itself": {
                     "summary": "An error while processing the dataset prevents the response to be created.",
-                    "description": "Try with https://datasets-server.huggingface.co/first-rows?dataset=atomic&config=atomic&split=train",
+                    "description": "Try with https://datasets-server.huggingface.co/first-rows?dataset=allenai/atomic&config=atomic&split=train",
                     "value": {
                       "error": "Cannot load the dataset split (in streaming mode) to extract the first rows.",
                       "cause_exception": "FileNotFoundError",
@@ -2493,7 +2495,7 @@
                         "  File \"/src/services/worker/src/worker/utils.py\", line 341, in get_rows\n    rows_plus_one = list(itertools.islice(ds, rows_max_number + 1))\n",
                         "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/iterable_dataset.py\", line 981, in __iter__\n    for key, example in ex_iterable:\n",
                         "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/iterable_dataset.py\", line 116, in __iter__\n    yield from self.generate_examples_fn(**self.kwargs)\n",
-                        "  File \"/tmp/modules-cache/datasets_modules/datasets/atomic/c0f0ec7d10713c41dfc87f0cf17f936b122d22e19216051217c99134d38f6d7b/atomic.py\", line 123, in _generate_examples\n    for path, f in files:\n",
+                        "  File \"/tmp/modules-cache/datasets_modules/datasets/allenai/atomic/c0f0ec7d10713c41dfc87f0cf17f936b122d22e19216051217c99134d38f6d7b/atomic.py\", line 123, in _generate_examples\n    for path, f in files:\n",
                         "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/download/streaming_download_manager.py\", line 866, in __iter__\n    yield from self.generator(*self.args, **self.kwargs)\n",
                         "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/download/streaming_download_manager.py\", line 917, in _iter_from_urlpath\n    with xopen(urlpath, \"rb\", use_auth_token=use_auth_token) as f:\n",
                         "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/download/streaming_download_manager.py\", line 498, in xopen\n    file_obj = fsspec.open(file, mode=mode, *args, **kwargs).open()\n",
@@ -2637,9 +2639,9 @@
                   "$ref": "#/components/schemas/PaginatedResponse"
                 },
                 "examples": {
-                  "A slice of a simple dataset (imdb)": {
+                  "A slice of a simple dataset (stanfordnlp/imdb)": {
                     "summary": "Get a slice of length 3 from row 234 (offset=234&length=3).",
-                    "description": "Try with https://datasets-server.huggingface.co/rows?dataset=imdb&config=plain_text&split=train&offset=234&length=3.",
+                    "description": "Try with https://datasets-server.huggingface.co/rows?dataset=stanfordnlp/imdb&config=plain_text&split=train&offset=234&length=3.",
                     "value": {
                       "features": [
                         {
@@ -2801,7 +2803,7 @@
                   },
                   "error in the dataset itself": {
                     "summary": "An error while processing the dataset prevents the response to be created.",
-                    "description": "Try with https://datasets-server.huggingface.co/rows?dataset=atomic&config=atomic&split=train. It's a bug, it should be a 500 error, see https://github.com/huggingface/dataset-viewer/issues/1661.",
+                    "description": "Try with https://datasets-server.huggingface.co/rows?dataset=allenai/atomic&config=atomic&split=train. It's a bug, it should be a 500 error, see https://github.com/huggingface/dataset-viewer/issues/1661.",
                     "value": { "error": "Not found." }
                   }
                 }
@@ -3056,9 +3058,9 @@
                   "$ref": "#/components/schemas/PaginatedResponse"
                 },
                 "examples": {
-                  "Search on a text dataset (imdb)": {
+                  "Search on a text dataset (stanfordnlp/imdb)": {
                     "summary": "The first 3 rows that match the 'dog' search query (query=dog&length=3).",
-                    "description": "Try with https://datasets-server.huggingface.co/search?dataset=imdb&config=plain_text&split=train&query=dog&length=3.",
+                    "description": "Try with https://datasets-server.huggingface.co/search?dataset=stanfordnlp/imdb&config=plain_text&split=train&query=dog&length=3.",
                     "value": {
                       "features": [
                         {
@@ -3294,7 +3296,7 @@
                 "examples": {
                   "error in the dataset itself": {
                     "summary": "An error while processing the dataset prevents the response to be created.",
-                    "description": "Try with https://datasets-server.huggingface.co/search?dataset=atomic&config=atomic&split=train&query=dog",
+                    "description": "Try with https://datasets-server.huggingface.co/search?dataset=allenai/atomic&config=atomic&split=train&query=dog",
                     "value": {
                       "error": "Couldn't get the size of external files in `_split_generators` because a request failed:\n404 Client Error: Not Found for url: https://maartensap.com/atomic/data/atomic_data.tgz\nPlease consider moving your data files in this dataset repository instead (e.g. inside a data/ folder).",
                       "cause_exception": "HTTPError",
@@ -3922,7 +3924,7 @@
                 "examples": {
                   "error in the dataset itself": {
                     "summary": "An error while processing the dataset prevents the response to be created.",
-                    "description": "Try with https://datasets-server.huggingface.co/filter?dataset=atomic&config=atomic&split=train&where=event='a'",
+                    "description": "Try with https://datasets-server.huggingface.co/filter?dataset=allenai/atomic&config=atomic&split=train&where=event='a'",
                     "value": {
                       "error": "Couldn't get the size of external files in `_split_generators` because a request failed:\n404 Client Error: Not Found for url: https://maartensap.com/atomic/data/atomic_data.tgz\nPlease consider moving your data files in this dataset repository instead (e.g. inside a data/ folder).",
                       "cause_exception": "HTTPError",
@@ -4302,7 +4304,7 @@
                     }
                   },
                   "partial parquet export": {
-                    "summary": "c4 (en): the parquet export is partial (first 5GB)",
+                    "summary": "allenai/c4 (en): the parquet export is partial (first 5GB)",
                     "description": "Try with https://datasets-server.huggingface.co/parquet?dataset=allenai/c4&config=en",
                     "value": {
                       "parquet_files": [
@@ -4413,14 +4415,14 @@
                   },
                   "dataset where no parquet file could be created": {
                     "summary": "When the parquet files cannot be created for a configuration, it's listed in 'failed'.",
-                    "description": "Try with https://datasets-server.huggingface.co/parquet?dataset=atomic",
+                    "description": "Try with https://datasets-server.huggingface.co/parquet?dataset=allenai/atomic",
                     "value": {
                       "parquet_files": [],
                       "pending": [],
                       "failed": [
                         {
                           "kind": "config-info",
-                          "dataset": "atomic",
+                          "dataset": "allenai/atomic",
                           "config": "atomic",
                           "split": null
                         }
@@ -4462,7 +4464,7 @@
                 "examples": {
                   "error in the dataset itself": {
                     "summary": "An error while processing the dataset prevents the response to be created.",
-                    "description": "Try with https://datasets-server.huggingface.co/parquet?dataset=atomic&config=atomic",
+                    "description": "Try with https://datasets-server.huggingface.co/parquet?dataset=allenai/atomic&config=atomic",
                     "value": {
                       "error": "Couldn't get the size of external files in `_split_generators` because a request failed:\n404 Client Error: Not Found for url: https://maartensap.com/atomic/data/atomic_data.tgz\nPlease consider moving your data files in this dataset repository instead (e.g. inside a data/ folder).",
                       "cause_exception": "HTTPError",
@@ -4601,7 +4603,7 @@
                   },
                   "no capabilities": {
                     "summary": "dataset with no capabilities",
-                    "description": "Try with https://datasets-server.huggingface.co/is-valid?dataset=atomic",
+                    "description": "Try with https://datasets-server.huggingface.co/is-valid?dataset=allenai/atomic",
                     "value": {
                       "preview": false,
                       "viewer": false,
@@ -4729,10 +4731,10 @@
                 "examples": {
                   "dataset metadata": {
                     "summary": "metadata of a dataset. It's an object, with one key per subset",
-                    "description": "Try with https://datasets-server.huggingface.co/info?dataset=mnist",
+                    "description": "Try with https://datasets-server.huggingface.co/info?dataset=ylecun/mnist",
                     "value": {
                       "dataset_info": {
-                        "mnist": {
+                        "ylecun/mnist": {
                           "description": "The MNIST dataset consists of 70,000 28x28 black-and-white images in 10 classes (one for each digits), with 7,000\nimages per class. There are 60,000 training images and 10,000 test images.\n",
                           "citation": "@article{lecun2010mnist,\n  title={MNIST handwritten digit database},\n  author={LeCun, Yann and Cortes, Corinna and Burges, CJ},\n  journal={ATT Labs [Online]. Available: http://yann.lecun.com/exdb/mnist},\n  volume={2},\n  year={2010}\n}\n",
                           "homepage": "http://yann.lecun.com/exdb/mnist/",
@@ -4765,7 +4767,7 @@
                               "label_column": "label"
                             }
                           ],
-                          "builder_name": "mnist",
+                          "builder_name": "ylecun/mnist",
                           "config_name": "mnist",
                           "version": {
                             "version_str": "1.0.0",
@@ -4778,13 +4780,13 @@
                               "name": "train",
                               "num_bytes": 17471100,
                               "num_examples": 60000,
-                              "dataset_name": "mnist"
+                              "dataset_name": "ylecun/mnist"
                             },
                             "test": {
                               "name": "test",
                               "num_bytes": 2916482,
                               "num_examples": 10000,
-                              "dataset_name": "mnist"
+                              "dataset_name": "ylecun/mnist"
                             }
                           },
                           "download_checksums": {
@@ -4858,14 +4860,14 @@
                   },
                   "dataset metadata with failed subsets": {
                     "summary": "metadata of a dataset which has failed subsets. The failed subsets are listed in 'failed'.",
-                    "description": "Try with https://datasets-server.huggingface.co/info?dataset=atomic",
+                    "description": "Try with https://datasets-server.huggingface.co/info?dataset=allenai/atomic",
                     "value": {
                       "dataset_info": {},
                       "pending": [],
                       "failed": [
                         {
                           "kind": "config-info",
-                          "dataset": "atomic",
+                          "dataset": "allenai/atomic",
                           "config": "atomic",
                           "split": null
                         }
@@ -4907,7 +4909,7 @@
                 "examples": {
                   "error in the dataset itself": {
                     "summary": "An error while processing the dataset prevents the response to be created.",
-                    "description": "Try with https://datasets-server.huggingface.co/info?dataset=atomic&config=atomic",
+                    "description": "Try with https://datasets-server.huggingface.co/info?dataset=allenai/atomic&config=atomic",
                     "value": {
                       "error": "Couldn't get the size of external files in `_split_generators` because a request failed:\n404 Client Error: Not Found for url: https://maartensap.com/atomic/data/atomic_data.tgz\nPlease consider moving your data files in this dataset repository instead (e.g. inside a data/ folder).",
                       "cause_exception": "HTTPError",
@@ -5105,11 +5107,11 @@
                   },
                   "dataset size with failed subsets": {
                     "summary": "size of a dataset which has failed subsets. The failed subsets are listed in 'failed'.",
-                    "description": "Try with https://datasets-server.huggingface.co/size?dataset=atomic",
+                    "description": "Try with https://datasets-server.huggingface.co/size?dataset=allenai/atomic",
                     "value": {
                       "size": {
                         "dataset": {
-                          "dataset": "atomic",
+                          "dataset": "allenai/atomic",
                           "num_bytes_original_files": 0,
                           "num_bytes_parquet_files": 0,
                           "num_bytes_memory": 0,
@@ -5123,7 +5125,7 @@
                       "failed": [
                         {
                           "kind": "config-size",
-                          "dataset": "atomic",
+                          "dataset": "allenai/atomic",
                           "config": "atomic",
                           "split": null
                         }
@@ -5165,7 +5167,7 @@
                 "examples": {
                   "error in the dataset itself": {
                     "summary": "An error while processing the dataset prevents the response to be created.",
-                    "description": "Try with https://datasets-server.huggingface.co/size?dataset=atomic&config=atomic",
+                    "description": "Try with https://datasets-server.huggingface.co/size?dataset=allenai/atomic&config=atomic",
                     "value": {
                       "error": "Couldn't get the size of external files in `_split_generators` because a request failed:\n404 Client Error: Not Found for url: https://maartensap.com/atomic/data/atomic_data.tgz\nPlease consider moving your data files in this dataset repository instead (e.g. inside a data/ folder).",
                       "cause_exception": "HTTPError",
@@ -5282,7 +5284,7 @@
                 "examples": {
                   "number of URLS for a dataset": {
                     "summary": "number of URLs for a dataset.",
-                    "description": "Try with https://datasets-server.huggingface.co/opt-in-out-urls?dataset=conceptual_captions",
+                    "description": "Try with https://datasets-server.huggingface.co/opt-in-out-urls?dataset=google-research-datasets/conceptual_captions",
                     "value": {
                       "urls_columns": ["image_url"],
                       "has_urls_columns": true,
@@ -5295,7 +5297,7 @@
                   },
                   "number of URLS for a subset": {
                     "summary": "number of URLs for a subset.",
-                    "description": "Try with https://datasets-server.huggingface.co/opt-in-out-urls?dataset=conceptual_captions&config=labeled",
+                    "description": "Try with https://datasets-server.huggingface.co/opt-in-out-urls?dataset=google-research-datasets/conceptual_captions&config=labeled",
                     "value": {
                       "urls_columns": ["image_url"],
                       "has_urls_columns": true,
@@ -5308,7 +5310,7 @@
                   },
                   "number of URLS for a split": {
                     "summary": "number of URLs for a split.",
-                    "description": "Try with https://datasets-server.huggingface.co/opt-in-out-urls?dataset=conceptual_captions&config=labeled&split=train",
+                    "description": "Try with https://datasets-server.huggingface.co/opt-in-out-urls?dataset=google-research-datasets/conceptual_captions&config=labeled&split=train",
                     "value": {
                       "has_urls_columns": true,
                       "num_opt_in_urls": 0,
@@ -5321,7 +5323,7 @@
                   },
                   "dataset that has no image URLs columns": {
                     "summary": "no image URLs columns: values are zero.",
-                    "description": "Try with https://datasets-server.huggingface.co/opt-in-out-urls?dataset=mnist",
+                    "description": "Try with https://datasets-server.huggingface.co/opt-in-out-urls?dataset=ylecun/mnist",
                     "value": {
                       "urls_columns": [],
                       "has_urls_columns": false,
@@ -5465,7 +5467,7 @@
                   },
                   "dataset that has no image URLs columns": {
                     "summary": "no scanned columns: values are zero.",
-                    "description": "Try with https://datasets-server.huggingface.co/presidio-entities?dataset=mnist",
+                    "description": "Try with https://datasets-server.huggingface.co/presidio-entities?dataset=ylecun/mnist",
                     "value": {
                       "scanned_columns": [],
                       "num_rows_with_person_entities": 0,
@@ -5872,9 +5874,9 @@
                       "partial": false
                     }
                   },
-                  "A split (mnist) with a label column": {
+                  "A split (ylecun/mnist) with a label column": {
                     "summary": "Statistics on a class label column. The image column is not processed.",
-                    "description": "Try with https://datasets-server.huggingface.co/statistics?dataset=mnist&config=mnist&split=train.",
+                    "description": "Try with https://datasets-server.huggingface.co/statistics?dataset=ylecun/mnist&config=mnist&split=train.",
                     "value": {
                       "num_examples": 60000,
                       "statistics": [
@@ -6432,7 +6434,7 @@
                 "examples": {
                   "error in the dataset itself": {
                     "summary": "An error while processing the dataset prevents the response to be created.",
-                    "description": "Try with https://datasets-server.huggingface.co/statistics?dataset=atomic&config=atomic&split=train",
+                    "description": "Try with https://datasets-server.huggingface.co/statistics?dataset=allenai/atomic&config=atomic&split=train",
                     "value": {
                       "error": "Couldn't get the size of external files in `_split_generators` because a request failed:\n404 Client Error: Not Found for url: https://maartensap.com/atomic/data/atomic_data.tgz\nPlease consider moving your data files in this dataset repository instead (e.g. inside a data/ folder).",
                       "cause_exception": "HTTPError",

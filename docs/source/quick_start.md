@@ -42,7 +42,7 @@ There is no installation or setup required to use the dataset viewer API.
   <a href="https://huggingface.co/datasets/mozilla-foundation/common_voice_10_0">
     CommonVoice
   </a>{" "}
-  and <a href="https://huggingface.co/datasets/imagenet-1k">ImageNet</a> without
+  and <a href="https://huggingface.co/datasets/ILSVRC/imagenet-1k">ImageNet</a> without
   providing a <a href="https://huggingface.co/settings/tokens">user token</a>{" "}
   which you can find in your user settings.
 </Tip>
@@ -114,13 +114,13 @@ print(data)
 
 ## Check dataset validity
 
-To check whether a specific dataset is valid, for example, [Rotten Tomatoes](https://huggingface.co/datasets/rotten_tomatoes), use the `/is-valid` endpoint:
+To check whether a specific dataset is valid, for example, [Rotten Tomatoes](https://huggingface.co/datasets/cornell-movie-review-data/rotten_tomatoes), use the `/is-valid` endpoint:
 
 <inferencesnippet>
 <python>
 ```python
 import requests
-API_URL = "https://datasets-server.huggingface.co/is-valid?dataset=rotten_tomatoes"
+API_URL = "https://datasets-server.huggingface.co/is-valid?dataset=cornell-movie-review-data/rotten_tomatoes"
 def query():
     response = requests.get(API_URL)
     return response.json()
@@ -132,7 +132,7 @@ data = query()
 import fetch from "node-fetch";
 async function query(data) {
     const response = await fetch(
-        "https://datasets-server.huggingface.co/is-valid?dataset=rotten_tomatoes",
+        "https://datasets-server.huggingface.co/is-valid?dataset=cornell-movie-review-data/rotten_tomatoes",
         {
             method: "GET"
         }
@@ -147,7 +147,7 @@ query().then((response) => {
 </js>
 <curl>
 ```curl
-curl https://datasets-server.huggingface.co/is-valid?dataset=rotten_tomatoes \
+curl https://datasets-server.huggingface.co/is-valid?dataset=cornell-movie-review-data/rotten_tomatoes \
         -X GET
 ```
 </curl>
@@ -167,7 +167,7 @@ The `/splits` endpoint returns a JSON list of the splits in a dataset:
 <python>
 ```python
 import requests
-API_URL = "https://datasets-server.huggingface.co/splits?dataset=rotten_tomatoes"
+API_URL = "https://datasets-server.huggingface.co/splits?dataset=cornell-movie-review-data/rotten_tomatoes"
 def query():
     response = requests.get(API_URL)
     return response.json()
@@ -179,7 +179,7 @@ data = query()
 import fetch from "node-fetch";
 async function query(data) {
     const response = await fetch(
-        "https://datasets-server.huggingface.co/splits?dataset=rotten_tomatoes",
+        "https://datasets-server.huggingface.co/splits?dataset=cornell-movie-review-data/rotten_tomatoes",
         {
             method: "GET"
         }
@@ -194,7 +194,7 @@ query().then((response) => {
 </js>
 <curl>
 ```curl
-curl https://datasets-server.huggingface.co/splits?dataset=rotten_tomatoes \
+curl https://datasets-server.huggingface.co/splits?dataset=cornell-movie-review-data/rotten_tomatoes \
         -X GET
 ```
 </curl>
@@ -205,13 +205,13 @@ This returns the available subsets and splits in the dataset:
 ```json
 {
   "splits": [
-    { "dataset": "rotten_tomatoes", "config": "default", "split": "train" },
+    { "dataset": "cornell-movie-review-data/rotten_tomatoes", "config": "default", "split": "train" },
     {
-      "dataset": "rotten_tomatoes",
+      "dataset": "cornell-movie-review-data/rotten_tomatoes",
       "config": "default",
       "split": "validation"
     },
-    { "dataset": "rotten_tomatoes", "config": "default", "split": "test" }
+    { "dataset": "cornell-movie-review-data/rotten_tomatoes", "config": "default", "split": "test" }
   ],
   "pending": [],
   "failed": []
@@ -226,7 +226,7 @@ The `/first-rows` endpoint returns a JSON list of the first 100 rows of a datase
 <python>
 ```python
 import requests
-API_URL = "https://datasets-server.huggingface.co/first-rows?dataset=rotten_tomatoes&config=default&split=train"
+API_URL = "https://datasets-server.huggingface.co/first-rows?dataset=cornell-movie-review-data/rotten_tomatoes&config=default&split=train"
 def query():
     response = requests.get(API_URL)
     return response.json()
@@ -238,7 +238,7 @@ data = query()
 import fetch from "node-fetch";
 async function query(data) {
     const response = await fetch(
-        "https://datasets-server.huggingface.co/first-rows?dataset=rotten_tomatoes&config=default&split=train",
+        "https://datasets-server.huggingface.co/first-rows?dataset=cornell-movie-review-data/rotten_tomatoes&config=default&split=train",
         {
             method: "GET"
         }
@@ -253,7 +253,7 @@ query().then((response) => {
 </js>
 <curl>
 ```curl
-curl https://datasets-server.huggingface.co/first-rows?dataset=rotten_tomatoes&config=default&split=train \
+curl https://datasets-server.huggingface.co/first-rows?dataset=cornell-movie-review-data/rotten_tomatoes&config=default&split=train \
         -X GET
 ```
 </curl>
@@ -263,7 +263,7 @@ This returns the first 100 rows of the dataset:
 
 ```json
 {
-  "dataset": "rotten_tomatoes",
+  "dataset": "cornell-movie-review-data/rotten_tomatoes",
   "config": "default",
   "split": "train",
   "features": [
@@ -311,7 +311,7 @@ You should specify the dataset name, subset name (you can find out the subset na
 <python>
 ```python
 import requests
-API_URL = "https://datasets-server.huggingface.co/rows?dataset=rotten_tomatoes&config=default&split=train&offset=150&length=10"
+API_URL = "https://datasets-server.huggingface.co/rows?dataset=cornell-movie-review-data/rotten_tomatoes&config=default&split=train&offset=150&length=10"
 def query():
     response = requests.get(API_URL)
     return response.json()
@@ -323,7 +323,7 @@ data = query()
 import fetch from "node-fetch";
 async function query(data) {
     const response = await fetch(
-        "https://datasets-server.huggingface.co/rows?dataset=rotten_tomatoes&config=default&split=train&offset=150&length=10",
+        "https://datasets-server.huggingface.co/rows?dataset=cornell-movie-review-data/rotten_tomatoes&config=default&split=train&offset=150&length=10",
         {
             method: "GET"
         }
@@ -338,7 +338,7 @@ query().then((response) => {
 </js>
 <curl>
 ```curl
-curl https://datasets-server.huggingface.co/rows?dataset=rotten_tomatoes&config=default&split=train&offset=150&length=10 \
+curl https://datasets-server.huggingface.co/rows?dataset=cornell-movie-review-data/rotten_tomatoes&config=default&split=train&offset=150&length=10 \
         -X GET
 ```
 </curl>
@@ -398,7 +398,7 @@ You should specify the dataset name, subset name (you can find out the subset na
 <python>
 ```python
 import requests
-API_URL = "https://datasets-server.huggingface.co/search?dataset=rotten_tomatoes&config=default&split=train&query=cat"
+API_URL = "https://datasets-server.huggingface.co/search?dataset=cornell-movie-review-data/rotten_tomatoes&config=default&split=train&query=cat"
 def query():
     response = requests.get(API_URL)
     return response.json()
@@ -410,7 +410,7 @@ data = query()
 import fetch from "node-fetch";
 async function query(data) {
     const response = await fetch(
-        "https://datasets-server.huggingface.co/search?dataset=rotten_tomatoes&config=default&split=train&query=cat",
+        "https://datasets-server.huggingface.co/search?dataset=cornell-movie-review-data/rotten_tomatoes&config=default&split=train&query=cat",
         {
             method: "GET"
         }
@@ -425,7 +425,7 @@ query().then((response) => {
 </js>
 <curl>
 ```curl
-curl https://datasets-server.huggingface.co/search?dataset=rotten_tomatoes&config=default&split=train&query=cat \
+curl https://datasets-server.huggingface.co/search?dataset=cornell-movie-review-data/rotten_tomatoes&config=default&split=train&query=cat \
         -X GET
 ```
 </curl>
@@ -483,7 +483,7 @@ The dataset viewer converts every dataset on the Hub to the [Parquet](https://pa
 <python>
 ```python
 import requests
-API_URL = "https://datasets-server.huggingface.co/parquet?dataset=rotten_tomatoes"
+API_URL = "https://datasets-server.huggingface.co/parquet?dataset=cornell-movie-review-data/rotten_tomatoes"
 def query():
     response = requests.get(API_URL)
     return response.json()
@@ -495,7 +495,7 @@ data = query()
 import fetch from "node-fetch";
 async function query(data) {
     const response = await fetch(
-        "https://datasets-server.huggingface.co/parquet?dataset=rotten_tomatoes",
+        "https://datasets-server.huggingface.co/parquet?dataset=cornell-movie-review-data/rotten_tomatoes",
         {
             method: "GET"
         }
@@ -510,7 +510,7 @@ query().then((response) => {
 </js>
 <curl>
 ```curl
-curl https://datasets-server.huggingface.co/parquet?dataset=rotten_tomatoes \
+curl https://datasets-server.huggingface.co/parquet?dataset=cornell-movie-review-data/rotten_tomatoes \
         -X GET
 ```
 </curl>
@@ -522,26 +522,26 @@ This returns a URL to the Parquet file for each split:
 {
   "parquet_files": [
     {
-      "dataset": "rotten_tomatoes",
+      "dataset": "cornell-movie-review-data/rotten_tomatoes",
       "config": "default",
       "split": "test",
-      "url": "https://huggingface.co/datasets/rotten_tomatoes/resolve/refs%2Fconvert%2Fparquet/default/test/0000.parquet",
+      "url": "https://huggingface.co/datasets/cornell-movie-review-data/rotten_tomatoes/resolve/refs%2Fconvert%2Fparquet/default/test/0000.parquet",
       "filename": "0000.parquet",
       "size": 92206
     },
     {
-      "dataset": "rotten_tomatoes",
+      "dataset": "cornell-movie-review-data/rotten_tomatoes",
       "config": "default",
       "split": "train",
-      "url": "https://huggingface.co/datasets/rotten_tomatoes/resolve/refs%2Fconvert%2Fparquet/default/train/0000.parquet",
+      "url": "https://huggingface.co/datasets/cornell-movie-review-data/rotten_tomatoes/resolve/refs%2Fconvert%2Fparquet/default/train/0000.parquet",
       "filename": "0000.parquet",
       "size": 698845
     },
     {
-      "dataset": "rotten_tomatoes",
+      "dataset": "cornell-movie-review-data/rotten_tomatoes",
       "config": "default",
       "split": "validation",
-      "url": "https://huggingface.co/datasets/rotten_tomatoes/resolve/refs%2Fconvert%2Fparquet/default/validation/0000.parquet",
+      "url": "https://huggingface.co/datasets/cornell-movie-review-data/rotten_tomatoes/resolve/refs%2Fconvert%2Fparquet/default/validation/0000.parquet",
       "filename": "0000.parquet",
       "size": 90001
     }
@@ -560,7 +560,7 @@ The `/size` endpoint returns a JSON with the size (number of rows and size in by
 <python>
 ```python
 import requests
-API_URL = "https://datasets-server.huggingface.co/size?dataset=rotten_tomatoes"
+API_URL = "https://datasets-server.huggingface.co/size?dataset=cornell-movie-review-data/rotten_tomatoes"
 def query():
     response = requests.get(API_URL)
     return response.json()
@@ -573,7 +573,7 @@ data = query()
 import fetch from "node-fetch";
 async function query(data) {
     const response = await fetch(
-        "https://datasets-server.huggingface.co/size?dataset=rotten_tomatoes",
+        "https://datasets-server.huggingface.co/size?dataset=cornell-movie-review-data/rotten_tomatoes",
         {
             method: "GET"
         }
@@ -588,7 +588,7 @@ query().then((response) => {
 </js>
 <curl>
 ```curl
-curl https://datasets-server.huggingface.co/size?dataset=rotten_tomatoes \
+curl https://datasets-server.huggingface.co/size?dataset=cornell-movie-review-data/rotten_tomatoes \
         -X GET
 ```
 </curl>
@@ -600,7 +600,7 @@ This returns the size of the dataset, and for every subset and split:
 {
   "size": {
     "dataset": {
-      "dataset": "rotten_tomatoes",
+      "dataset": "cornell-movie-review-data/rotten_tomatoes",
       "num_bytes_original_files": 487770,
       "num_bytes_parquet_files": 881052,
       "num_bytes_memory": 1345449,
@@ -608,7 +608,7 @@ This returns the size of the dataset, and for every subset and split:
     },
     "configs": [
       {
-        "dataset": "rotten_tomatoes",
+        "dataset": "cornell-movie-review-data/rotten_tomatoes",
         "config": "default",
         "num_bytes_original_files": 487770,
         "num_bytes_parquet_files": 881052,
@@ -619,7 +619,7 @@ This returns the size of the dataset, and for every subset and split:
     ],
     "splits": [
       {
-        "dataset": "rotten_tomatoes",
+        "dataset": "cornell-movie-review-data/rotten_tomatoes",
         "config": "default",
         "split": "train",
         "num_bytes_parquet_files": 698845,
@@ -628,7 +628,7 @@ This returns the size of the dataset, and for every subset and split:
         "num_columns": 2
       },
       {
-        "dataset": "rotten_tomatoes",
+        "dataset": "cornell-movie-review-data/rotten_tomatoes",
         "config": "default",
         "split": "validation",
         "num_bytes_parquet_files": 90001,
@@ -637,7 +637,7 @@ This returns the size of the dataset, and for every subset and split:
         "num_columns": 2
       },
       {
-        "dataset": "rotten_tomatoes",
+        "dataset": "cornell-movie-review-data/rotten_tomatoes",
         "config": "default",
         "split": "test",
         "num_bytes_parquet_files": 92206,

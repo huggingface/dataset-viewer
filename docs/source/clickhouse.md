@@ -97,7 +97,7 @@ Remember to set `enable_url_encoding` to 0 and `max_https_get_redirects` to 1 to
 SET max_http_get_redirects = 1, enable_url_encoding = 0
 ```
 
-Let's create a function to return a list of Parquet files from the [`blog_authorship_corpus`](https://huggingface.co/datasets/blog_authorship_corpus):
+Let's create a function to return a list of Parquet files from the [`barilan/blog_authorship_corpus`](https://huggingface.co/datasets/barilan/blog_authorship_corpus):
 
 ```bash
 CREATE OR REPLACE FUNCTION hugging_paths AS dataset -> (
@@ -105,9 +105,9 @@ CREATE OR REPLACE FUNCTION hugging_paths AS dataset -> (
     FROM url('https://datasets-server.huggingface.co/parquet?dataset=' || dataset, 'JSONAsString')
 );
 
-SELECT hugging_paths('blog_authorship_corpus') AS paths
+SELECT hugging_paths('barilan/blog_authorship_corpus') AS paths
 
-['https://huggingface.co/datasets/blog_authorship_corpus/resolve/refs%2Fconvert%2Fparquet/blog_authorship_corpus/train/0000.parquet','https://huggingface.co/datasets/blog_authorship_corpus/resolve/refs%2Fconvert%2Fparquet/blog_authorship_corpus/train/0001.parquet','https://huggingface.co/datasets/blog_authorship_corpus/resolve/refs%2Fconvert%2Fparquet/blog_authorship_corpus/validation/0000.parquet']
+['https://huggingface.co/datasets/barilan/blog_authorship_corpus/resolve/refs%2Fconvert%2Fparquet/blog_authorship_corpus/train/0000.parquet','https://huggingface.co/datasets/barilan/blog_authorship_corpus/resolve/refs%2Fconvert%2Fparquet/blog_authorship_corpus/train/0001.parquet','https://huggingface.co/datasets/barilan/blog_authorship_corpus/resolve/refs%2Fconvert%2Fparquet/blog_authorship_corpus/validation/0000.parquet']
 ```
 
 You can make this even easier by creating another function that calls `hugging_paths` and outputs all the files based on the dataset name:
@@ -118,16 +118,16 @@ CREATE OR REPLACE FUNCTION hf AS dataset -> (
     SELECT multiIf(length(urls) = 0, '', length(urls) = 1, urls[1], 'https://huggingface.co/datasets/{' || arrayStringConcat(arrayMap(x -> replaceRegexpOne(replaceOne(x, 'https://huggingface.co/datasets/', ''), '\\.parquet$', ''), urls), ',') || '}.parquet')
 );
 
-SELECT hf('blog_authorship_corpus') AS pattern
+SELECT hf('barilan/blog_authorship_corpus') AS pattern
 
-['https://huggingface.co/datasets/{blog_authorship_corpus/resolve/refs%2Fconvert%2Fparquet/blog_authorship_corpus/blog_authorship_corpus-train-00000-of-00002,blog_authorship_corpus/resolve/refs%2Fconvert%2Fparquet/blog_authorship_corpus/blog_authorship_corpus-train-00001-of-00002,blog_authorship_corpus/resolve/refs%2Fconvert%2Fparquet/blog_authorship_corpus/blog_authorship_corpus-validation}.parquet']
+['https://huggingface.co/datasets/{blog_authorship_corpus/resolve/refs%2Fconvert%2Fparquet/barilan/blog_authorship_corpus/blog_authorship_corpus-train-00000-of-00002,barilan/blog_authorship_corpus/resolve/refs%2Fconvert%2Fparquet/blog_authorship_corpus/blog_authorship_corpus-train-00001-of-00002,barilan/blog_authorship_corpus/resolve/refs%2Fconvert%2Fparquet/blog_authorship_corpus/blog_authorship_corpus-validation}.parquet']
 ```
 
 Now use the `hf` function to query any dataset by passing the dataset name:
 
 ```bash
 SELECT horoscope, count(*), AVG(LENGTH(text)) AS avg_blog_length 
-FROM url(hf('blog_authorship_corpus')) 
+FROM url(hf('barilan/blog_authorship_corpus'))
 GROUP BY horoscope 
 ORDER BY avg_blog_length 
 DESC LIMIT(5) 

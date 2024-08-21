@@ -460,7 +460,7 @@ def test_compute_error(
             {"default": {"train": ["openhermes.json"]}},
         ),
         (
-            "cnn_dailymail",
+            "abisee/cnn_dailymail",
             "parquet",
             {
                 "1.0.0": {

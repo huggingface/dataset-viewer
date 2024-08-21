@@ -163,10 +163,10 @@ Images are represented as a JSON object with three fields:
 - `height`: height (in pixels) of the image
 - `width`: width (in pixels) of the image
 
-Here is an example of image, from the first row of the cifar100 dataset:
+Here is an example of image, from the first row of the uoft-cs/cifar100 dataset:
 
 ```json
-// https://datasets-server.huggingface.co/rows?dataset=cifar100&config=cifar100&split=train&offset=0&length=1
+// https://datasets-server.huggingface.co/rows?dataset=uoft-cs/cifar100&config=cifar100&split=train&offset=0&length=1
 {
   "features": [
     { "feature_idx": 0, "name": "img", "type": { "_type": "Image" } },
@@ -177,7 +177,7 @@ Here is an example of image, from the first row of the cifar100 dataset:
       "row_idx": 0,
       "row": {
         "img": {
-          "src": "https://datasets-server.huggingface.co/cached-assets/cifar100/--/aadb3af77e9048adbea6b47c21a81e47dd092ae5/--/cifar100/train/0/img/image.jpg?Expires=1710283469&Signature=A1v0cG07nuaBxYbuPR5EUZpJ9Se072SBDr4935gEsOESHGVyeqvd3qmvdsy1fuqbHk0dnx~p6MLtQ-hg3aCBOJ8eIJ5ItIoyYT4riJRuPQC0VFUb~b1maEwU8LRoXXuvrSysSz2QhBbC~ofv6cQudm~~bgGxXWAslDs180KnmPDsMU55ySsKyKQYNEkQKyuYvrGIJbFeg4lEps0f5CEwUstAwRAwlk~mzRpzUDBq7nJ~DcujTlllLv36nJX~too8mMnFn6dCn2nfGOFYwUiyYM73Czv-laLhVaIVUzcuJum90No~KNGzfYeFZpPqktA7MjCzRLf1gz5kA7wBqnY-8Q__&Key-Pair-Id=K3EI6M078Z3AC3",
+          "src": "https://datasets-server.huggingface.co/cached-assets/uoft-cs/cifar100/--/aadb3af77e9048adbea6b47c21a81e47dd092ae5/--/cifar100/train/0/img/image.jpg?Expires=1710283469&Signature=A1v0cG07nuaBxYbuPR5EUZpJ9Se072SBDr4935gEsOESHGVyeqvd3qmvdsy1fuqbHk0dnx~p6MLtQ-hg3aCBOJ8eIJ5ItIoyYT4riJRuPQC0VFUb~b1maEwU8LRoXXuvrSysSz2QhBbC~ofv6cQudm~~bgGxXWAslDs180KnmPDsMU55ySsKyKQYNEkQKyuYvrGIJbFeg4lEps0f5CEwUstAwRAwlk~mzRpzUDBq7nJ~DcujTlllLv36nJX~too8mMnFn6dCn2nfGOFYwUiyYM73Czv-laLhVaIVUzcuJum90No~KNGzfYeFZpPqktA7MjCzRLf1gz5kA7wBqnY-8Q__&Key-Pair-Id=K3EI6M078Z3AC3",
           "height": 32,
           "width": 32
         },

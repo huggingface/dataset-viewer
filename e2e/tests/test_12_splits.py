@@ -32,7 +32,7 @@ from .utils import get, get_openapi_body_example, poll, poll_splits, post_refres
         # ),
         (422, "missing dataset parameter", "", None, "MissingRequiredParameter"),
         (422, "empty dataset parameter", None, None, "MissingRequiredParameter"),
-        # (500, "SplitsNotFoundError", "natural_questions", None, "SplitsNamesError"),
+        # (500, "SplitsNotFoundError", "google-research-datasets/natural_questions", None, "SplitsNamesError"),
         # (500, "FileNotFoundError", "akhaliq/test", None, "SplitsNamesError"),
         # (500, "not-ready", "severo/fix-401", None, "SplitsResponseNotReady"),
         # not tested: 'internal_error'
