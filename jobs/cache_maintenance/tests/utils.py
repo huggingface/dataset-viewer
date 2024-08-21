@@ -15,7 +15,7 @@ from huggingface_hub.constants import (
     REPO_TYPES_URL_PREFIXES,
 )
 from huggingface_hub.hf_api import HfApi
-from huggingface_hub.utils._errors import hf_raise_for_status
+from huggingface_hub.utils import hf_raise_for_status
 from libcommon.resources import Resource
 
 from .constants import (
