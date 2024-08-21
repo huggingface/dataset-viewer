@@ -5288,7 +5288,7 @@
                 "examples": {
                   "number of URLS for a dataset": {
                     "summary": "number of URLs for a dataset.",
-                    "description": "Try with https://datasets-server.huggingface.co/opt-in-out-urls?dataset=conceptual_captions",
+                    "description": "Try with https://datasets-server.huggingface.co/opt-in-out-urls?dataset=google-research-datasets/conceptual_captions",
                     "value": {
                       "urls_columns": ["image_url"],
                       "has_urls_columns": true,
@@ -5301,7 +5301,7 @@
                   },
                   "number of URLS for a subset": {
                     "summary": "number of URLs for a subset.",
-                    "description": "Try with https://datasets-server.huggingface.co/opt-in-out-urls?dataset=conceptual_captions&config=labeled",
+                    "description": "Try with https://datasets-server.huggingface.co/opt-in-out-urls?dataset=google-research-datasets/conceptual_captions&config=labeled",
                     "value": {
                       "urls_columns": ["image_url"],
                       "has_urls_columns": true,
@@ -5314,7 +5314,7 @@
                   },
                   "number of URLS for a split": {
                     "summary": "number of URLs for a split.",
-                    "description": "Try with https://datasets-server.huggingface.co/opt-in-out-urls?dataset=conceptual_captions&config=labeled&split=train",
+                    "description": "Try with https://datasets-server.huggingface.co/opt-in-out-urls?dataset=google-research-datasets/conceptual_captions&config=labeled&split=train",
                     "value": {
                       "has_urls_columns": true,
                       "num_opt_in_urls": 0,
