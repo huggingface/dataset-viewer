@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from libcommon.storage_client import StorageClient
 
 
-SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE = {".wav": "audio/wav", ".mp3": "audio/mpeg", ".opus": "audio/opus"}
+SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE = {".wav": "audio/wav", ".mp3": "audio/mpeg", ".opus": "audio/ogg"}
 SUPPORTED_AUDIO_EXTENSIONS = SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE.keys()
 DATASET_GIT_REVISION_PLACEHOLDER = "{dataset_git_revision}"
 
