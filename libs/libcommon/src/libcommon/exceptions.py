@@ -78,6 +78,7 @@ CacheableErrorCode = Literal[
     "ConfigNamesError",
     "ConfigNotFoundError",
     "CreateCommitError",
+    "DataFilesNotFoundError",
     "DatasetGenerationError",
     "DatasetGenerationCastError",
     "DatasetInBlockListError",
@@ -183,6 +184,13 @@ class CreateCommitError(CacheableError):
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "CreateCommitError", cause, False)
+
+
+class DataFilesNotFoundError(CacheableError):
+    """No (supported) data files found."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "DataFilesNotFoundError", cause, False)
 
 
 class DatasetGenerationError(CacheableError):

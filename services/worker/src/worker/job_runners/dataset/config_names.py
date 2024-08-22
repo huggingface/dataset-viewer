@@ -12,9 +12,11 @@ from datasets import (
     load_dataset_builder,
 )
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
+from datasets.exceptions import DataFilesNotFoundError as _DataFilesNotFoundError
 from datasets.exceptions import DefunctDatasetError
 from libcommon.exceptions import (
     ConfigNamesError,
+    DataFilesNotFoundError,
     DatasetModuleNotInstalledError,
     DatasetWithScriptNotSupportedError,
     DatasetWithTooManyConfigsError,
@@ -107,6 +109,8 @@ def compute_config_names_response(
         ]
     except _EmptyDatasetError as err:
         raise EmptyDatasetError("The dataset is empty.", cause=err) from err
+    except _DataFilesNotFoundError as err:
+        raise DataFilesNotFoundError(str(err), cause=err) from err
     except ValueError as err:
         if "trust_remote_code" in str(err):
             raise DatasetWithScriptNotSupportedError from err
