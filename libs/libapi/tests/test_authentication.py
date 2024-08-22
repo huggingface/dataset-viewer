@@ -21,6 +21,7 @@ from libapi.exceptions import (
     AuthCheckHubRequestError,
     ExternalAuthenticatedError,
     ExternalUnauthenticatedError,
+    RenamedDatasetError,
 )
 
 private_key = """-----BEGIN RSA PRIVATE KEY-----
@@ -45,6 +46,7 @@ dataset_protected_with_access = "dataset_protected_with_access"
 dataset_protected_without_access = "dataset_protected_without_access"
 dataset_inexistent = "dataset_inexistent"
 dataset_throttled = "dataset_throttled"
+dataset_public_renamed = "dataset_public_renamed"
 
 cookie_is_not_supported_anymore = "cookie is not supported anymore"
 api_token_ok = "api token ok"
@@ -74,6 +76,9 @@ def auth_callback(request: WerkzeugRequest) -> WerkzeugResponse:
     if dataset == dataset_public:
         # a public dataset always has read access
         return WerkzeugResponse(status=200)
+    if dataset == dataset_public_renamed:
+        # the dataset has been renamed and /auth-check redirects to the new dataset
+        return WerkzeugResponse(status=307)
     if request.headers.get("authorization") != f"Bearer {api_token_ok}":
         # the user is not authenticated
         return WerkzeugResponse(status=401)
@@ -315,3 +320,25 @@ async def test_external_auth_service_dataset_throttled(
     expectation: Any,
 ) -> None:
     await assert_auth_headers(httpserver, hf_endpoint, hf_auth_path, dataset_throttled, headers, expectation)
+
+
+@pytest.mark.parametrize(
+    "headers,expectation",
+    [
+        ({}, pytest.raises(RenamedDatasetError)),
+        ({"Authorization": f"Bearer {api_token_wrong}"}, pytest.raises(RenamedDatasetError)),
+        ({"Authorization": api_token_ok}, pytest.raises(RenamedDatasetError)),
+        ({"Cookie": cookie_is_not_supported_anymore}, pytest.raises(RenamedDatasetError)),
+        ({"Authorization": f"Bearer {api_token_ok}"}, pytest.raises(RenamedDatasetError)),
+        ({"X-Api-Key": get_jwt(dataset_public_renamed)}, does_not_raise()),
+        ({"Authorization": f"Bearer jwt:{get_jwt(dataset_public_renamed)}"}, does_not_raise()),
+    ],
+)
+async def test_external_auth_service_dataset_public_renamed(
+    httpserver: HTTPServer,
+    hf_endpoint: str,
+    hf_auth_path: str,
+    headers: Mapping[str, str],
+    expectation: Any,
+) -> None:
+    await assert_auth_headers(httpserver, hf_endpoint, hf_auth_path, dataset_public_renamed, headers, expectation)
