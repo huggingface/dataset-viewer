@@ -79,8 +79,12 @@ class Lock(Document):
     ttl = IntField()
     job_id = StringField()  # deprecated
 
-    created_at = DateTimeField()
-    updated_at = DateTimeField()
+    created_at = (
+        DateTimeField()
+    )  # When read, it's an offset-naive datetime. Use pytz.UTC.localize() to make it timezone-aware.
+    updated_at = (
+        DateTimeField()
+    )  # When read, it's an offset-naive datetime. Use pytz.UTC.localize() to make it timezone-aware.
 
     objects = QuerySetManager["Lock"]()
 

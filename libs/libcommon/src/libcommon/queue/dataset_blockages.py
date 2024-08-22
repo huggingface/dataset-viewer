@@ -49,6 +49,7 @@ class DatasetBlockageDocument(Document):
     Args:
         dataset (`str`): The dataset on which to apply the job.
         blocked_at (`datetime`): The date the dataset has been blocked.
+          When read, it's an offset-naive datetime. Use pytz.UTC.localize() to make it timezone-aware.
     """
 
     meta = {
