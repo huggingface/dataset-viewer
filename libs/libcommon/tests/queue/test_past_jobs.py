@@ -5,6 +5,7 @@
 from datetime import timedelta
 
 import pytest
+import pytz
 
 from libcommon.queue.dataset_blockages import get_blocked_datasets
 from libcommon.queue.jobs import Queue
@@ -56,12 +57,15 @@ def test_create_past_job_raises_if_timezone_unaware() -> None:
     queue.add_job(job_type="test_type", dataset="test_dataset", revision="test_revision", difficulty=50)
     job_info = queue.start_job()
     started_at = queue._get_started_job(job_info["job_id"]).started_at
-    # ^ mongo looses the timezone, see https://github.com/huggingface/dataset-viewer/issues/862
     assert started_at is not None
+    assert started_at.tzinfo is None
+    # ^ mongo looses the timezone, see https://github.com/huggingface/dataset-viewer/issues/862
 
     with pytest.raises(TypeError) as exc_info:
         create_past_job(dataset=DATASET, started_at=started_at, finished_at=finished_at)
     assert "can't subtract offset-naive and offset-aware datetimes" in str(exc_info.value)
+
+    create_past_job(dataset=DATASET, started_at=pytz.UTC.localize(started_at), finished_at=finished_at)
 
 
 @pytest.mark.parametrize(

@@ -152,9 +152,12 @@ class JobDocument(Document):
         priority (`Priority`, *optional*): The priority of the job. Defaults to Priority.LOW.
         status (`Status`, *optional*): The status of the job. Defaults to Status.WAITING.
         difficulty (`int`): The difficulty of the job: 1=easy, 100=hard as a convention (strictly positive integer).
-        created_at (`datetime`): The creation date of the job.
-        started_at (`datetime`, *optional*): When the job has started.
+        created_at (`datetime`): The creation date of the job. When read, it's an offset-naive datetime.
+          Use pytz.UTC.localize() to make it timezone-aware.
+        started_at (`datetime`, *optional*): When the job has started. When read, it's an offset-naive datetime.
+          Use pytz.UTC.localize() to make it timezone-aware.
         last_heartbeat (`datetime`, *optional*): Last time the running job got a heartbeat from the worker.
+          When read, it's an offset-naive datetime. Use pytz.UTC.localize() to make it timezone-aware.
     """
 
     meta = {
