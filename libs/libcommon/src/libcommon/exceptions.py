@@ -100,6 +100,7 @@ CacheableErrorCode = Literal[
     "ExternalServerError",
     "FeaturesError",
     "FeaturesResponseEmptyError",
+    "FileFormatMismatchBetweenSplits",
     "FileSystemError",
     "HfHubError",
     "InfoError",
@@ -329,6 +330,13 @@ class FeaturesResponseEmptyError(CacheableError):
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "FeaturesResponseEmptyError", cause, True)
+
+
+class FileFormatMismatchBetweenSplits(CacheableError):
+    """Couldn't infer the same data file format for all splits."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "FileFormatMismatchBetweenSplits", cause, False)
 
 
 class FileSystemError(CacheableError):

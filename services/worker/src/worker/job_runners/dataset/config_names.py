@@ -21,6 +21,7 @@ from libcommon.exceptions import (
     DatasetWithScriptNotSupportedError,
     DatasetWithTooManyConfigsError,
     EmptyDatasetError,
+    FileFormatMismatchBetweenSplits,
 )
 
 from worker.dtos import CompleteJobResult, ConfigNameItem, DatasetConfigNamesResponse
@@ -114,6 +115,8 @@ def compute_config_names_response(
     except ValueError as err:
         if "trust_remote_code" in str(err):
             raise DatasetWithScriptNotSupportedError from err
+        if "Couldn't infer the same data file format for all splits" in str(err):
+            raise FileFormatMismatchBetweenSplits() from err
         raise ConfigNamesError("Cannot get the config names for the dataset.", cause=err) from err
     except ImportError as err:
         # this should only happen if the dataset is in the allow list, which should soon disappear
