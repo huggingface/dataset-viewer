@@ -62,7 +62,6 @@ from libcommon.constants import (
 )
 from libcommon.dtos import JobInfo, SplitHubFile
 from libcommon.exceptions import (
-    ConfigNamesError,
     CreateCommitError,
     DatasetGenerationCastError,
     DatasetGenerationError,
@@ -1408,8 +1407,6 @@ def compute_config_parquet_and_info_response(
           If one of the commits could not be created on the Hub.
         [~`libcommon.exceptions.EmptyDatasetError`]:
           The dataset is empty.
-        [~`libcommon.exceptions.ConfigNamesError`]:
-          If the list of configurations could not be obtained using the datasets library.
         [~`libcommon.exceptions.UnsupportedExternalFilesError`]:
             If we failed to get the external files sizes to make sure we can convert the dataset to parquet
         [~`libcommon.exceptions.ExternalFilesSizeRequestHTTPError`]:
@@ -1450,7 +1447,7 @@ def compute_config_parquet_and_info_response(
 
     config_names = {config_name_item["config"] for config_name_item in config_names_content["config_names"]}
     if config not in config_names:
-        raise ConfigNamesError(f"{config=} does not exist in {dataset=}")
+        raise ValueError(f"{config=} does not exist in {dataset=}")
 
     hf_api = HfApi(endpoint=hf_endpoint, token=hf_token)
     committer_hf_api = HfApi(endpoint=hf_endpoint, token=committer_hf_token)
