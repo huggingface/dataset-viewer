@@ -3,6 +3,7 @@
 
 from collections.abc import Callable
 from dataclasses import replace
+from typing import Optional
 from unittest.mock import patch
 
 import pytest
@@ -98,9 +99,9 @@ def test_compute_too_many_configs(
         ("n_configs_with_default", False, None, None),
         # should we really test the following cases?
         # The assumption is that the dataset exists and is accessible with the token
-        ("does_not_exist", False, "ConfigNamesError", "DatasetNotFoundError"),
-        ("gated", False, "ConfigNamesError", "ConnectionError"),  # See: huggingface/datasets#7109
-        ("private", False, "ConfigNamesError", "DatasetNotFoundError"),
+        ("does_not_exist", False, "RetryableConfigNamesError", "DatasetNotFoundError"),
+        ("gated", False, "RetryableConfigNamesError", "ConnectionError"),  # See: huggingface/datasets#7109
+        ("private", False, "RetryableConfigNamesError", "DatasetNotFoundError"),
     ],
 )
 def test_compute_splits_response(
@@ -114,7 +115,7 @@ def test_compute_splits_response(
     get_job_runner: GetJobRunner,
     name: str,
     use_token: bool,
-    error_code: str,
+    error_code: Optional[str],
     cause: str,
     app_config: AppConfig,
 ) -> None:
