@@ -1531,7 +1531,9 @@ def compute_config_parquet_and_info_response(
     except datasets.exceptions.DatasetGenerationCastError as err:
         raise DatasetGenerationCastError("The dataset generation failed because of a cast error", cause=err) from err
     except datasets.exceptions.DatasetGenerationError as err:
-        raise DatasetGenerationError("The dataset generation failed", cause=err) from err
+        if err.__cause__:
+            raise DatasetGenerationError("The dataset generation failed", cause=err.__cause__) from err
+        raise DatasetGenerationError("The dataset generation failed") from err
 
     raise_if_long_column_name(builder.info.features)
 
