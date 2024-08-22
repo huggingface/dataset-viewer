@@ -78,6 +78,7 @@ CacheableErrorCode = Literal[
     "ConfigNamesError",
     "ConfigNotFoundError",
     "CreateCommitError",
+    "DataFilesNotFoundError",
     "DatasetGenerationError",
     "DatasetGenerationCastError",
     "DatasetInBlockListError",
@@ -99,6 +100,7 @@ CacheableErrorCode = Literal[
     "ExternalServerError",
     "FeaturesError",
     "FeaturesResponseEmptyError",
+    "FileFormatMismatchBetweenSplitsError",
     "FileSystemError",
     "HfHubError",
     "InfoError",
@@ -120,6 +122,7 @@ CacheableErrorCode = Literal[
     "PreviousStepStatusError",
     "PreviousStepStillProcessingError",
     "PolarsParquetReadError",
+    "RetryableConfigNamesError",
     "RowsPostProcessingError",
     "SplitsNamesError",
     "SplitNamesFromStreamingError",
@@ -183,6 +186,13 @@ class CreateCommitError(CacheableError):
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "CreateCommitError", cause, False)
+
+
+class DataFilesNotFoundError(CacheableError):
+    """No (supported) data files found."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "DataFilesNotFoundError", cause, False)
 
 
 class DatasetGenerationError(CacheableError):
@@ -323,6 +333,15 @@ class FeaturesResponseEmptyError(CacheableError):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "FeaturesResponseEmptyError", cause, True)
 
 
+class FileFormatMismatchBetweenSplitsError(CacheableError):
+    """Couldn't infer the same data file format for all splits."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(
+            message, HTTPStatus.INTERNAL_SERVER_ERROR, "FileFormatMismatchBetweenSplitsError", cause, False
+        )
+
+
 class FileSystemError(CacheableError):
     """An error happen reading from File System."""
 
@@ -444,6 +463,13 @@ class PreviousStepStillProcessingError(CacheableError):
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "PreviousStepStillProcessingError", cause, False)
+
+
+class RetryableConfigNamesError(CacheableError):
+    """The config names could not be fetched, but we should retry."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "RetryableConfigNamesError", cause, True)
 
 
 class RowsPostProcessingError(CacheableError):

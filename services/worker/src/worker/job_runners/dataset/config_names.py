@@ -12,13 +12,20 @@ from datasets import (
     load_dataset_builder,
 )
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
-from datasets.exceptions import DefunctDatasetError
+from datasets.exceptions import (
+    DataFilesNotFoundError as _DataFilesNotFoundError,
+)
+from datasets.exceptions import DatasetNotFoundError, DefunctDatasetError
+from huggingface_hub.utils import HfHubHTTPError
 from libcommon.exceptions import (
     ConfigNamesError,
+    DataFilesNotFoundError,
     DatasetModuleNotInstalledError,
     DatasetWithScriptNotSupportedError,
     DatasetWithTooManyConfigsError,
     EmptyDatasetError,
+    FileFormatMismatchBetweenSplitsError,
+    RetryableConfigNamesError,
 )
 
 from worker.dtos import CompleteJobResult, ConfigNameItem, DatasetConfigNamesResponse
@@ -107,10 +114,16 @@ def compute_config_names_response(
         ]
     except _EmptyDatasetError as err:
         raise EmptyDatasetError("The dataset is empty.", cause=err) from err
+    except _DataFilesNotFoundError as err:
+        raise DataFilesNotFoundError(str(err), cause=err) from err
     except ValueError as err:
         if "trust_remote_code" in str(err):
             raise DatasetWithScriptNotSupportedError from err
+        if "Couldn't infer the same data file format for all splits" in str(err):
+            raise FileFormatMismatchBetweenSplitsError(str(err), cause=err) from err
         raise ConfigNamesError("Cannot get the config names for the dataset.", cause=err) from err
+    except (HfHubHTTPError, BrokenPipeError, DatasetNotFoundError, PermissionError, ConnectionError) as err:
+        raise RetryableConfigNamesError("Cannot get the config names for the dataset.", cause=err) from err
     except ImportError as err:
         # this should only happen if the dataset is in the allow list, which should soon disappear
         raise DatasetModuleNotInstalledError(
