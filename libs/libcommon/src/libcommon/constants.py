@@ -43,6 +43,7 @@ DEFAULT_MAX_FAILED_RUNS = 3
 LARGE_MAX_FAILED_RUNS = 30  # for errors that should not be permanent
 MAX_FAILED_RUNS_PER_ERROR_CODE = {
     # default
+    "DatasetGenerationError": DEFAULT_MAX_FAILED_RUNS,  # <- 20240822: to recompute all of them in the next backfill
     "ConfigNamesError": DEFAULT_MAX_FAILED_RUNS,  # <- 20240822: to recompute all of them in the next backfill
     "RetryableConfigNamesError": DEFAULT_MAX_FAILED_RUNS,
     "ConnectionError": DEFAULT_MAX_FAILED_RUNS,
