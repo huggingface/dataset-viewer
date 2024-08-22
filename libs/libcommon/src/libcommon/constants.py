@@ -43,7 +43,7 @@ DEFAULT_MAX_FAILED_RUNS = 3
 LARGE_MAX_FAILED_RUNS = 30  # for errors that should not be permanent
 MAX_FAILED_RUNS_PER_ERROR_CODE = {
     # default
-    "ConfigNamesError": DEFAULT_MAX_FAILED_RUNS,
+    "RetryableConfigNamesError": DEFAULT_MAX_FAILED_RUNS,
     "ConnectionError": DEFAULT_MAX_FAILED_RUNS,
     "ExternalServerError": DEFAULT_MAX_FAILED_RUNS,
     "JobManagerCrashedError": DEFAULT_MAX_FAILED_RUNS,

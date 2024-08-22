@@ -122,6 +122,7 @@ CacheableErrorCode = Literal[
     "PreviousStepStatusError",
     "PreviousStepStillProcessingError",
     "PolarsParquetReadError",
+    "RetryableConfigNamesError",
     "RowsPostProcessingError",
     "SplitsNamesError",
     "SplitNamesFromStreamingError",
@@ -460,6 +461,13 @@ class PreviousStepStillProcessingError(CacheableError):
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "PreviousStepStillProcessingError", cause, False)
+
+
+class RetryableConfigNamesError(CacheableError):
+    """The config names could not be fetched, but we should retry."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "RetryableConfigNamesError", cause, True)
 
 
 class RowsPostProcessingError(CacheableError):

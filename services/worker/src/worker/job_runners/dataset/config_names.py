@@ -12,8 +12,11 @@ from datasets import (
     load_dataset_builder,
 )
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
-from datasets.exceptions import DataFilesNotFoundError as _DataFilesNotFoundError
-from datasets.exceptions import DefunctDatasetError
+from datasets.exceptions import ConnectionError, DatasetNotFoundError, DefunctDatasetError, PermissionError
+from datasets.exceptions import (
+    DataFilesNotFoundError as _DataFilesNotFoundError,
+)
+from huggingface_hub.utils import HfHubHTTPError
 from libcommon.exceptions import (
     ConfigNamesError,
     DataFilesNotFoundError,
@@ -22,6 +25,7 @@ from libcommon.exceptions import (
     DatasetWithTooManyConfigsError,
     EmptyDatasetError,
     FileFormatMismatchBetweenSplits,
+    RetryableConfigNamesError,
 )
 
 from worker.dtos import CompleteJobResult, ConfigNameItem, DatasetConfigNamesResponse
@@ -118,6 +122,8 @@ def compute_config_names_response(
         if "Couldn't infer the same data file format for all splits" in str(err):
             raise FileFormatMismatchBetweenSplits() from err
         raise ConfigNamesError("Cannot get the config names for the dataset.", cause=err) from err
+    except (HfHubHTTPError, BrokenPipeError, DatasetNotFoundError, PermissionError, ConnectionError) as err:
+        raise RetryableConfigNamesError("Cannot get the config names for the dataset.", cause=err) from err
     except ImportError as err:
         # this should only happen if the dataset is in the allow list, which should soon disappear
         raise DatasetModuleNotInstalledError(
