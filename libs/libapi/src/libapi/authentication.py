@@ -13,6 +13,7 @@ from libapi.exceptions import (
     AuthCheckHubRequestError,
     ExternalAuthenticatedError,
     ExternalUnauthenticatedError,
+    RenamedDatasetError,
 )
 from libapi.jwt_token import validate_jwt
 
@@ -115,6 +116,8 @@ async def auth_check(
     with StepProfiler(method="auth_check", step="return or raise"):
         if response.status_code == 200:
             return True
+        elif response.status_code == 307:
+            raise RenamedDatasetError("The dataset has been renamed. Please use the current dataset name.")
         elif response.status_code == 401:
             raise ExternalUnauthenticatedError(
                 "The dataset does not exist, or is not accessible without authentication (private or gated). Please"
