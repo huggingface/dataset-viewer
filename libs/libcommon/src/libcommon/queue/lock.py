@@ -180,21 +180,6 @@ class lock(contextlib.AbstractContextManager["lock"]):
         return cls(key=key, owner=owner, sleeps=sleeps, ttl=_TTL.LOCK_TTL_SECONDS_TO_WRITE_ON_GIT_BRANCH)
 
 
-def release_locks(owner: str) -> None:
-    """
-    Release all locks owned by the given owner
-
-    Args:
-        owner (`str`): the current owner that holds the locks
-    """
-    Lock.objects(owner=owner).update(
-        write_concern={"w": "majority", "fsync": True},
-        read_concern={"level": "majority"},
-        owner=None,
-        updated_at=get_datetime(),
-    )
-
-
 def release_lock(key: str) -> None:
     """
     Release the lock for a specific key
