@@ -12,10 +12,10 @@ from datasets import (
     load_dataset_builder,
 )
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
-from datasets.exceptions import ConnectionError, DatasetNotFoundError, DefunctDatasetError, PermissionError
 from datasets.exceptions import (
     DataFilesNotFoundError as _DataFilesNotFoundError,
 )
+from datasets.exceptions import DatasetNotFoundError, DefunctDatasetError, PermissionError
 from huggingface_hub.utils import HfHubHTTPError
 from libcommon.exceptions import (
     ConfigNamesError,
