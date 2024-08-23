@@ -110,3 +110,35 @@ def extra_fields_readme(tmp_path_factory: pytest.TempPathFactory) -> str:
     with open(path, "w", newline="") as f:
         f.writelines(f"{line}\n" for line in lines)
     return path
+
+
+@pytest.fixture(scope="session")
+def n_configs_paths(tmp_path_factory: pytest.TempPathFactory) -> list[str]:
+    directory = tmp_path_factory.mktemp("data")
+    readme = directory / "README.md"
+    N = 15
+    lines = [
+        "---",
+        "configs:",
+    ]
+    for i in range(N):
+        lines += [
+            f"- config_name: config{i}",
+            f'  data_files: "config{i}.csv"',
+        ]
+    lines += [
+        "---",
+    ]
+    with open(readme, "w", newline="") as f:
+        f.writelines(f"{line}\n" for line in lines)
+    files = [readme]
+    for i in range(N):
+        config_name = f"config{i}"
+        path = directory / f"{config_name}.csv"
+        with open(path, "w", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=["text"])
+            writer.writeheader()
+            for _ in range(1000):
+                writer.writerow({"text": config_name})
+        files.append(path)
+    return files
