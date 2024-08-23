@@ -1113,7 +1113,13 @@ def stream_convert_to_parquet(
                         shards_total_size = (
                             len(urlpaths)
                             / min(10_000, len(urlpaths))
-                            * get_total_files_size(urlpaths[:10_000], storage_options=builder.storage_options)
+                            * get_total_files_size(
+                                urlpaths[:10_000],
+                                storage_options={
+                                    "hf": {"token": builder.token, "endpoint": datasets.config.HF_ENDPOINT},
+                                    **builder.storage_options,
+                                },
+                            )
                         )
                         estimated_splits_info[split] = asdict(
                             SplitInfo(
