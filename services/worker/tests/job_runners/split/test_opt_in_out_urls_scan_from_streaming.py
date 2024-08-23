@@ -205,8 +205,10 @@ def test_compute(
         progress=1.0,
         http_status=HTTPStatus.OK,
     )
+    job_runner.pre_compute()
     with patch("worker.job_runners.split.opt_in_out_urls_scan_from_streaming.check_spawning", mock_check_spawning):
         response = job_runner.compute()
+    job_runner.post_compute()
     assert response
     assert response.content == expected_content
 
@@ -270,8 +272,10 @@ def test_compute_failed(
             progress=1.0,
             http_status=upstream_status,
         )
+    job_runner.pre_compute()
     with pytest.raises(Exception) as exc_info:
         job_runner.compute()
+    job_runner.post_compute()
     assert exc_info.typename == exception_name
 
 
@@ -299,8 +303,10 @@ def test_compute_error_from_spawning(
         progress=1.0,
         http_status=HTTPStatus.OK,
     )
+    job_runner.pre_compute()
     with pytest.raises(ExternalServerError):
         job_runner.compute()
+    job_runner.post_compute()
 
 
 @pytest.mark.skip(

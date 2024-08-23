@@ -436,7 +436,9 @@ def test_compute(
 
     # computing and pushing real parquet files because we need them for stats computation
     parquet_and_info_job_runner = get_parquet_and_info_job_runner(dataset, config, app_config)
+    parquet_and_info_job_runner.pre_compute()
     parquet_and_info_response = parquet_and_info_job_runner.compute()
+    parquet_and_info_job_runner.post_compute()
     config_parquet_and_info = parquet_and_info_response.content
 
     assert config_parquet_and_info["partial"] is partial
@@ -451,7 +453,9 @@ def test_compute(
     )
 
     parquet_job_runner = get_parquet_job_runner(dataset, config, app_config)
+    parquet_job_runner.pre_compute()
     parquet_response = parquet_job_runner.compute()
+    parquet_job_runner.post_compute()
     config_parquet = parquet_response.content
 
     assert config_parquet["partial"] is partial
@@ -466,7 +470,9 @@ def test_compute(
     )
 
     parquet_metadata_job_runner = get_parquet_metadata_job_runner(dataset, config, app_config)
+    parquet_metadata_job_runner.pre_compute()
     parquet_metadata_response = parquet_metadata_job_runner.compute()
+    parquet_metadata_job_runner.post_compute()
     config_parquet_metadata = parquet_metadata_response.content
 
     assert config_parquet_metadata["partial"] is partial
@@ -536,3 +542,4 @@ def test_compute(
                 assert column_response_stats == expected_column_response_stats
             else:
                 raise ValueError("Incorrect data type")
+    job_runner.post_compute()

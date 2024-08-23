@@ -152,7 +152,9 @@ def test_compute(
     dataset = hub_responses_public["name"]
     config = hub_responses_public["config_names_response"]["config_names"][0]["config"]
     job_runner = get_job_runner(dataset, config, app_config)
+    job_runner.pre_compute()
     response = job_runner.compute()
+    job_runner.post_compute()
     assert response
     content = response.content
     assert content
@@ -189,7 +191,9 @@ def test_compute_legacy_configs(
                 ],
             },
         )
+        job_runner.pre_compute()
         assert job_runner.compute()
+        job_runner.post_compute()
     hf_api = HfApi(endpoint=CI_HUB_ENDPOINT, token=CI_USER_TOKEN)
     dataset_info = hf_api.dataset_info(
         repo_id=hub_public_legacy_configs, revision=app_config.parquet_and_info.target_revision, files_metadata=False
@@ -208,7 +212,9 @@ def test_compute_legacy_configs(
     assert orig_repo_configs == original_configs
     # then change the set of dataset configs (remove "second")
     job_runner = get_job_runner(dataset_name, "first", app_config)
+    job_runner.pre_compute()
     assert job_runner.compute()
+    job_runner.post_compute()
     dataset_info = hf_api.dataset_info(
         repo_id=hub_public_legacy_configs, revision=app_config.parquet_and_info.target_revision, files_metadata=False
     )
@@ -334,7 +340,9 @@ def test_supported_if_big_parquet(
     dataset = hub_responses_big["name"]
     config = hub_responses_big["config_names_response"]["config_names"][0]["config"]
     job_runner = get_job_runner(dataset, config, app_config)
+    job_runner.pre_compute()
     response = job_runner.compute()
+    job_runner.post_compute()
     assert response
     content = response.content
     assert content
@@ -356,8 +364,10 @@ def test_partially_converted_if_big_non_parquet(
 
     # Set a small chunk size to yield more than one Arrow Table in _generate_tables
     # to be able to stop the generation mid-way.
+    job_runner.pre_compute()
     with patch.object(CsvConfig, "pd_read_csv_kwargs", {"chunksize": 10}):
         response = job_runner.compute()
+    job_runner.post_compute()
     assert response
     content = response.content
     assert content
@@ -377,7 +387,9 @@ def test_supported_if_gated(
     dataset = hub_responses_gated["name"]
     config = hub_responses_gated["config_names_response"]["config_names"][0]["config"]
     job_runner = get_job_runner(dataset, config, app_config)
+    job_runner.pre_compute()
     response = job_runner.compute()
+    job_runner.post_compute()
     assert response
     assert response.content
 
@@ -407,7 +419,9 @@ def test_compute_splits_response_simple_csv_ok(
     config = hub_datasets[name]["config_names_response"]["config_names"][0]["config"]
     expected_parquet_and_info_response = hub_datasets[name]["parquet_and_info_response"]
     job_runner = get_job_runner(dataset, config, app_config)
+    job_runner.pre_compute()
     result = job_runner.compute().content
+    job_runner.post_compute()
     assert_content_is_equal(result, expected_parquet_and_info_response)
 
     # download the parquet file and check that it is valid
@@ -454,8 +468,10 @@ def test_previous_step_error(
         http_status=upstream_status,
         content=upstream_content,
     )
+    job_runner.pre_compute()
     with pytest.raises(Exception) as exc_info:
         job_runner.compute()
+    job_runner.post_compute()
     assert exc_info.typename == exception_name
 
 
@@ -590,7 +606,10 @@ def launch_job_runner(job_runner_args: JobRunnerArgs) -> CompleteJobResult:
         app_config=app_config,
         hf_datasets_cache=tmp_path,
     )
-    return job_runner.compute()
+    job_runner.pre_compute()
+    result = job_runner.compute()
+    job_runner.post_compute()
+    return result
 
 
 def test_concurrency(
