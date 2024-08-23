@@ -42,6 +42,14 @@ TAG_NFAA_SYNONYMS = [TAG_NFAA_CONTENT, "nsfw", "porn", "hentai", "inappropriate"
 DEFAULT_MAX_FAILED_RUNS = 3
 LARGE_MAX_FAILED_RUNS = 30  # for errors that should not be permanent
 MAX_FAILED_RUNS_PER_ERROR_CODE = {
+    # 20240823 - temporary until all these deprecated errors disappear
+    "UnsupportedExternalFilesError": DEFAULT_MAX_FAILED_RUNS,
+    "ExternalFilesSizeRequestError": DEFAULT_MAX_FAILED_RUNS,
+    "ExternalFilesSizeRequestHTTPError": DEFAULT_MAX_FAILED_RUNS,
+    "ExternalFilesSizeRequestConnectionError": DEFAULT_MAX_FAILED_RUNS,
+    "ExternalFilesSizeRequestTimeoutError": DEFAULT_MAX_FAILED_RUNS,
+    "DatasetModuleNotInstalledError": DEFAULT_MAX_FAILED_RUNS,
+    "DatasetScriptError": DEFAULT_MAX_FAILED_RUNS,
     # default
     "RetryableConfigNamesError": DEFAULT_MAX_FAILED_RUNS,
     "ConnectionError": DEFAULT_MAX_FAILED_RUNS,
