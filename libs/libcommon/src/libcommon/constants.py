@@ -56,8 +56,6 @@ MAX_FAILED_RUNS_PER_ERROR_CODE = {
 }
 ERROR_CODES_TO_RETRY = list(MAX_FAILED_RUNS_PER_ERROR_CODE.keys())
 
-EXTERNAL_DATASET_SCRIPT_PATTERN = "datasets_modules/datasets"
-
 # Arrays are not immutable, we have to take care of not modifying them
 # Anyway: in all this file, we allow constant reassignment (no use of Final)
 CONFIG_HAS_VIEWER_KIND = "config-size"

@@ -27,7 +27,7 @@ from libcommon.viewer_utils.rows import create_first_rows_response
 from worker.config import AppConfig, FirstRowsConfig
 from worker.dtos import CompleteJobResult
 from worker.job_runners.split.split_job_runner import SplitJobRunnerWithDatasetsCache
-from worker.utils import get_rows_or_raise, raise_if_long_column_name, resolve_trust_remote_code
+from worker.utils import get_rows_or_raise, raise_if_long_column_name
 
 
 def compute_first_rows_from_parquet_response(
@@ -144,7 +144,6 @@ def compute_first_rows_from_streaming_response(
     rows_max_number: int,
     rows_min_number: int,
     columns_max_number: int,
-    dataset_scripts_allow_list: list[str],
     max_size_fallback: Optional[int] = None,
 ) -> SplitFirstRowsResponse:
     """
@@ -173,10 +172,6 @@ def compute_first_rows_from_streaming_response(
             The minimum number of rows of the response.
         columns_max_number (`int`):
             The maximum number of columns supported.
-        dataset_scripts_allow_list (`list[str]`):
-            List of datasets for which we support dataset scripts.
-            Unix shell-style wildcards also work in the dataset name for namespaced datasets,
-            for example `some_namespace/*` to refer to all the datasets in the `some_namespace` namespace.
         max_size_fallback (`int`, *optional*): **DEPRECATED**
             The maximum number of bytes of the split to fallback to normal mode if the streaming mode fails.
             This argument is now hard-coded to 100MB, and will be removed in a future version.
@@ -203,7 +198,7 @@ def compute_first_rows_from_streaming_response(
         [~`libcommon.exceptions.NormalRowsError`]:
           If the split rows could not be obtained using the datasets library in normal mode.
         [~`libcommon.exceptions.DatasetWithScriptNotSupportedError`]:
-            If the dataset has a dataset script and is not in the allow list.
+            If the dataset has a dataset script.
         [~`libcommon.exceptions.TooLongColumnNameError`]:
             If one of the columns' name is too long (> 500 characters)
 
@@ -211,12 +206,9 @@ def compute_first_rows_from_streaming_response(
         `SplitFirstRowsResponse`: The list of first rows of the split.
     """
     logging.info(f"compute 'split-first-rows' from streaming for {dataset=} {config=} {split=}")
-    trust_remote_code = resolve_trust_remote_code(dataset=dataset, allow_list=dataset_scripts_allow_list)
     # get the features
     try:
-        info = get_dataset_config_info(
-            path=dataset, config_name=config, token=hf_token, trust_remote_code=trust_remote_code
-        )
+        info = get_dataset_config_info(path=dataset, config_name=config, token=hf_token)
     except Exception as err:
         if isinstance(err, ValueError) and "trust_remote_code" in str(err):
             raise DatasetWithScriptNotSupportedError from err
@@ -233,7 +225,6 @@ def compute_first_rows_from_streaming_response(
                 split=split,
                 streaming=True,
                 token=hf_token,
-                trust_remote_code=trust_remote_code,
             )
             if not isinstance(iterable_dataset, IterableDataset):
                 raise TypeError("load_dataset should return an IterableDataset.")
@@ -264,7 +255,6 @@ def compute_first_rows_from_streaming_response(
             max_size_fallback=max_size_fallback,
             rows_max_number=rows_max_number,
             token=hf_token,
-            trust_remote_code=trust_remote_code,
         )
 
     return create_first_rows_response(
@@ -356,6 +346,5 @@ class SplitFirstRowsJobRunner(SplitJobRunnerWithDatasetsCache):
                     rows_min_number=self.first_rows_config.min_number,
                     rows_max_number=MAX_NUM_ROWS_PER_PAGE,
                     columns_max_number=self.first_rows_config.columns_max_number,
-                    dataset_scripts_allow_list=self.app_config.common.dataset_scripts_allow_list,
                 )
             )

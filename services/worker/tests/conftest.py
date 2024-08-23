@@ -85,7 +85,6 @@ def set_env_vars(
     mp.setenv("ASSETS_BASE_URL", "http://localhost/assets")
     mp.setenv("PARQUET_AND_INFO_MAX_DATASET_SIZE_BYTES", "10_000")
     mp.setenv("DESCRIPTIVE_STATISTICS_MAX_SPLIT_SIZE_BYTES", "20_000")
-    mp.setenv("PARQUET_AND_INFO_MAX_EXTERNAL_DATA_FILES", "10")
     mp.setenv("PARQUET_AND_INFO_COMMITTER_HF_TOKEN", CI_PARQUET_CONVERTER_APP_TOKEN)
     mp.setenv("DUCKDB_INDEX_COMMITTER_HF_TOKEN", CI_PARQUET_CONVERTER_APP_TOKEN)
     mp.setenv("DATASETS_BASED_HF_DATASETS_CACHE", str(datasets_cache_directory))

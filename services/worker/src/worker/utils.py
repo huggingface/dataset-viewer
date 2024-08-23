@@ -4,12 +4,9 @@
 import itertools
 import logging
 import os
-import sys
-import traceback
 import warnings
 from collections.abc import Iterable
 from dataclasses import dataclass, field
-from fnmatch import fnmatch
 from itertools import count, islice
 from typing import Literal, Optional, TypeVar, Union, overload
 from urllib.parse import quote
@@ -21,7 +18,7 @@ from datasets.utils.file_utils import SINGLE_FILE_COMPRESSION_EXTENSION_TO_PROTO
 from huggingface_hub import HfFileSystem, HfFileSystemFile
 from huggingface_hub.hf_api import HfApi
 from huggingface_hub.utils._errors import RepositoryNotFoundError
-from libcommon.constants import CONFIG_SPLIT_NAMES_KIND, EXTERNAL_DATASET_SCRIPT_PATTERN, MAX_COLUMN_NAME_LENGTH
+from libcommon.constants import CONFIG_SPLIT_NAMES_KIND, MAX_COLUMN_NAME_LENGTH
 from libcommon.dtos import RowsContent
 from libcommon.exceptions import (
     ConfigNotFoundError,
@@ -50,7 +47,6 @@ def get_rows(
     rows_max_number: int,
     token: Union[bool, str, None] = False,
     column_names: Optional[list[str]] = None,
-    trust_remote_code: bool = False,
 ) -> RowsContent:
     download_config = DownloadConfig(delete_extracted=True)
     PIL.Image.MAX_IMAGE_PIXELS = MAX_IMAGE_PIXELS
@@ -61,7 +57,6 @@ def get_rows(
         streaming=streaming,
         token=token,
         download_config=download_config,
-        trust_remote_code=trust_remote_code,
     )
     if streaming:
         if not isinstance(ds, IterableDataset):
@@ -90,7 +85,6 @@ def get_rows_or_raise(
     info: DatasetInfo,
     max_size_fallback: Optional[int] = None,
     column_names: Optional[list[str]] = [],
-    trust_remote_code: bool = False,
 ) -> RowsContent:
     try:
         return get_rows(
@@ -101,7 +95,6 @@ def get_rows_or_raise(
             rows_max_number=rows_max_number,
             token=token,
             column_names=column_names,
-            trust_remote_code=trust_remote_code,
         )
     except Exception as err:
         if isinstance(err, ValueError) and "trust_remote_code" in str(err):
@@ -234,19 +227,6 @@ def get_split_names(dataset: str, config: str) -> set[str]:
             TypeError(f"'splits' should be a list, but got {type(split_names_content['splits'])}"),
         )
     return {split_name_item["split"] for split_name_item in split_names_content["splits"]}
-
-
-def is_dataset_script_error() -> bool:
-    (t, v, tb) = sys.exc_info()
-    cause_traceback: list[str] = traceback.format_exception(t, v, tb)
-    return any(EXTERNAL_DATASET_SCRIPT_PATTERN in cause for cause in cause_traceback)
-
-
-def resolve_trust_remote_code(dataset: str, allow_list: list[str]) -> bool:
-    for allowed_pattern in allow_list:
-        if fnmatch(dataset, allowed_pattern):
-            return True
-    return False
 
 
 def raise_if_long_column_name(features: Optional[Features]) -> None:
