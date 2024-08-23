@@ -163,7 +163,9 @@ def test_compute_progress(
             http_status=HTTPStatus.OK,
         )
     job_runner = get_job_runner(dataset, app_config)
+    job_runner.pre_compute()
     response = job_runner.compute()
+    job_runner.post_compute()
     assert response.content == expected_content
     assert response.progress == progress
 
@@ -196,7 +198,9 @@ def test_compute_error(app_config: AppConfig, get_job_runner: GetJobRunner) -> N
         http_status=HTTPStatus.INTERNAL_SERVER_ERROR,
     )
     job_runner = get_job_runner(dataset, app_config)
+    job_runner.pre_compute()
     response = job_runner.compute()
+    job_runner.post_compute()
     assert response.content == {
         "splits": [],
         "failed": [{"dataset": dataset, "config": config, "error": {}}],
@@ -231,12 +235,16 @@ def test_compute_format_error(app_config: AppConfig, get_job_runner: GetJobRunne
         http_status=HTTPStatus.OK,
     )
     job_runner = get_job_runner(dataset, app_config)
+    job_runner.pre_compute()
     with pytest.raises(PreviousStepFormatError):
         job_runner.compute()
+    job_runner.post_compute()
 
 
 def test_doesnotexist(app_config: AppConfig, get_job_runner: GetJobRunner) -> None:
     dataset = "doesnotexist"
     job_runner = get_job_runner(dataset, app_config)
+    job_runner.pre_compute()
     with pytest.raises(CachedArtifactNotFoundError):
         job_runner.compute()
+    job_runner.post_compute()

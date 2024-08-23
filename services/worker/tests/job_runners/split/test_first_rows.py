@@ -6,6 +6,7 @@ from collections.abc import Callable, Generator
 from dataclasses import replace
 from http import HTTPStatus
 from pathlib import Path
+from typing import Optional
 from unittest.mock import patch
 
 import pyarrow.parquet as pq
@@ -181,6 +182,7 @@ def test_compute_from_parquet(
             ),
         )
 
+        job_runner.pre_compute()
         if error_code:
             with pytest.raises(CustomError) as error_info:
                 job_runner.compute()
@@ -221,6 +223,7 @@ def test_compute_from_parquet(
             assert mock_read_schema.call_args_list[0][0][0] == os.path.join(
                 parquet_metadata_directory, fake_metadata_subpath
             )
+        job_runner.post_compute()
 
 
 @pytest.mark.parametrize(
@@ -253,7 +256,7 @@ def test_number_rows(
     get_job_runner: GetJobRunner,
     name: str,
     use_token: bool,
-    exception_name: str,
+    exception_name: Optional[str],
     app_config: AppConfig,
 ) -> None:
     # no parquet-metadata entry available -> the job runner will use the streaming approach
@@ -286,6 +289,7 @@ def test_number_rows(
         app_config if use_token else replace(app_config, common=replace(app_config.common, hf_token=None)),
     )
 
+    job_runner.pre_compute()
     if exception_name is None:
         job_runner.validate()
         result = job_runner.compute().content
@@ -295,6 +299,7 @@ def test_number_rows(
             job_runner.validate()
             job_runner.compute()
         assert exc_info.typename == exception_name
+    job_runner.post_compute()
 
 
 def test_compute(app_config: AppConfig, get_job_runner: GetJobRunner, hub_public_csv: str) -> None:
@@ -303,7 +308,9 @@ def test_compute(app_config: AppConfig, get_job_runner: GetJobRunner, hub_public
     dataset = hub_public_csv
     config, split = get_default_config_split()
     job_runner = get_job_runner(dataset, config, split, app_config)
+    job_runner.pre_compute()
     response = job_runner.compute()
+    job_runner.post_compute()
     assert response
     content = response.content
     assert content
@@ -330,9 +337,11 @@ def test_long_column_name(
     dataset = hub_public_csv
     config, split = get_default_config_split()
     job_runner = get_job_runner(dataset, config, split, app_config)
+    job_runner.pre_compute()
     with patch("worker.utils.MAX_COLUMN_NAME_LENGTH", max_column_name_length):
         if raises:
             with pytest.raises(TooLongColumnNameError):
                 job_runner.compute()
         else:
             job_runner.compute()
+    job_runner.post_compute()

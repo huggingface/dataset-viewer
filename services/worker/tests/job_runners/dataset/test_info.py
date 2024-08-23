@@ -227,6 +227,7 @@ def test_compute(
     for upstream_response in upstream_responses:
         upsert_response(**upstream_response)
     job_runner = get_job_runner(dataset, app_config)
+    job_runner.pre_compute()
     if should_raise:
         with pytest.raises(Exception) as e:
             job_runner.compute()
@@ -235,10 +236,13 @@ def test_compute(
         compute_result = job_runner.compute()
         assert compute_result.content == expected[0]
         assert compute_result.progress == expected[1]
+    job_runner.post_compute()
 
 
 def test_doesnotexist(app_config: AppConfig, get_job_runner: GetJobRunner) -> None:
     dataset = "doesnotexist"
     job_runner = get_job_runner(dataset, app_config)
+    job_runner.pre_compute()
     with pytest.raises(CachedArtifactNotFoundError):
         job_runner.compute()
+    job_runner.post_compute()
