@@ -270,7 +270,7 @@ def hub_public_external_files(dataset_script_with_external_files_path: str) -> I
 
 @pytest.fixture
 def external_files_dataset_builder(hub_public_external_files: str) -> DatasetBuilder:
-    return load_dataset_builder(hub_public_external_files)
+    return load_dataset_builder(hub_public_external_files, trust_remote_code=True)
 
 
 @pytest.fixture(scope="session")
