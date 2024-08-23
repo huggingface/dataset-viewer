@@ -131,7 +131,7 @@ def n_configs_paths(tmp_path_factory: pytest.TempPathFactory) -> list[str]:
     ]
     with open(readme, "w", newline="") as f:
         f.writelines(f"{line}\n" for line in lines)
-    files = [readme]
+    files = [str(readme)]
     for i in range(N):
         config_name = f"config{i}"
         path = directory / f"{config_name}.csv"
@@ -140,5 +140,5 @@ def n_configs_paths(tmp_path_factory: pytest.TempPathFactory) -> list[str]:
             writer.writeheader()
             for _ in range(1000):
                 writer.writerow({"text": config_name})
-        files.append(path)
+        files.append(str(path))
     return files

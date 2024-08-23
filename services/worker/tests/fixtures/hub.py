@@ -255,7 +255,7 @@ def hub_public_big_no_info(datasets: Mapping[str, Dataset]) -> Iterator[str]:
 
 
 @pytest.fixture(scope="session")
-def hub_public_n_configs(n_configs_paths: str) -> Iterator[str]:
+def hub_public_n_configs(n_configs_paths: list[str]) -> Iterator[str]:
     repo_id = create_hub_dataset_repo(prefix="n-configs", file_paths=n_configs_paths)
     yield repo_id
     delete_hub_dataset_repo(repo_id=repo_id)
