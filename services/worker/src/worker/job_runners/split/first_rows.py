@@ -333,18 +333,19 @@ class SplitFirstRowsJobRunner(SplitJobRunnerWithDatasetsCache):
                 f"Cannot compute 'split-first-rows' from parquet for {self.dataset=} {self.config=}. "
                 f"Trying to compute it using streaming."
             )
-            return CompleteJobResult(
-                compute_first_rows_from_streaming_response(
-                    dataset=self.dataset,
-                    revision=self.dataset_git_revision,
-                    config=self.config,
-                    split=self.split,
-                    storage_client=self.storage_client,
-                    hf_token=self.app_config.common.hf_token,
-                    min_cell_bytes=self.first_rows_config.min_cell_bytes,
-                    rows_max_bytes=self.first_rows_config.max_bytes,
-                    rows_min_number=self.first_rows_config.min_number,
-                    rows_max_number=MAX_NUM_ROWS_PER_PAGE,
-                    columns_max_number=self.first_rows_config.columns_max_number,
-                )
+            pass
+        return CompleteJobResult(
+            compute_first_rows_from_streaming_response(
+                dataset=self.dataset,
+                revision=self.dataset_git_revision,
+                config=self.config,
+                split=self.split,
+                storage_client=self.storage_client,
+                hf_token=self.app_config.common.hf_token,
+                min_cell_bytes=self.first_rows_config.min_cell_bytes,
+                rows_max_bytes=self.first_rows_config.max_bytes,
+                rows_min_number=self.first_rows_config.min_number,
+                rows_max_number=MAX_NUM_ROWS_PER_PAGE,
+                columns_max_number=self.first_rows_config.columns_max_number,
             )
+        )
