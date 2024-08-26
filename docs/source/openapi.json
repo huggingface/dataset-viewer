@@ -128,10 +128,7 @@
             {
               "$ref": "#/components/schemas/X-Error-Code-ResponseNotReadyError"
             },
-            { "$ref": "#/components/schemas/X-Error-Code-UnexpectedError" },
-            {
-              "$ref": "#/components/schemas/X-Error-Code-ExternalFilesSizeRequestHTTPError"
-            }
+            { "$ref": "#/components/schemas/X-Error-Code-UnexpectedError" }
           ]
         },
         "required": false
@@ -1310,11 +1307,6 @@
         "type": "string",
         "const": "ExternalAuthenticatedError",
         "description": "Raised when the external authentication check failed while the user was authenticated. Even if the external authentication server returns 403 in that case, we return 404 because we don't know if the dataset exist or not. It's also coherent with how the Hugging Face Hub works."
-      },
-      "X-Error-Code-ExternalFilesSizeRequestHTTPError": {
-        "type": "string",
-        "const": "ExternalFilesSizeRequestHTTPError",
-        "description": "We failed to get the size of the external files."
       },
       "X-Error-Code-ExternalUnauthenticatedError": {
         "type": "string",

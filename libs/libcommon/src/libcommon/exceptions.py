@@ -82,9 +82,7 @@ CacheableErrorCode = Literal[
     "DatasetGenerationError",
     "DatasetGenerationCastError",
     "DatasetInBlockListError",
-    "DatasetModuleNotInstalledError",
     "DatasetNotFoundError",
-    "DatasetScriptError",
     "DatasetWithScriptNotSupportedError",
     "DatasetWithTooComplexDataFilesPatternsError",
     "DatasetWithTooManyConfigsError",
@@ -93,10 +91,6 @@ CacheableErrorCode = Literal[
     "DiskError",
     "DuckDBIndexFileNotFoundError",
     "EmptyDatasetError",
-    "ExternalFilesSizeRequestConnectionError",
-    "ExternalFilesSizeRequestError",
-    "ExternalFilesSizeRequestHTTPError",
-    "ExternalFilesSizeRequestTimeoutError",
     "ExternalServerError",
     "FeaturesError",
     "FeaturesResponseEmptyError",
@@ -134,7 +128,6 @@ CacheableErrorCode = Literal[
     "TooLongColumnNameError",
     "TooManyColumnsError",
     "UnexpectedError",
-    "UnsupportedExternalFilesError",
 ]
 
 
@@ -209,13 +202,6 @@ class DatasetGenerationCastError(CacheableError):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "DatasetGenerationCastError", cause, True)
 
 
-class DatasetModuleNotInstalledError(CacheableError):
-    """The dataset tries to import a module that is not installed."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "DatasetModuleNotInstalledError", cause, True)
-
-
 class DatasetNotFoundError(CacheableError):
     """The dataset does not exist."""
 
@@ -227,13 +213,6 @@ class DatasetNotFoundError(CacheableError):
             cause=cause,
             disclose_cause=False,
         )
-
-
-class DatasetScriptError(CacheableError):
-    """The dataset script generated an error."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "DatasetScriptError", cause, False)
 
 
 class DatasetWithTooManyConfigsError(CacheableError):
@@ -282,34 +261,6 @@ class EmptyDatasetError(CacheableError):
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "EmptyDatasetError", cause, True)
-
-
-class ExternalFilesSizeRequestConnectionError(CacheableError):
-    """We failed to get the size of the external files."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "ExternalFilesSizeRequestConnectionError", cause, False)
-
-
-class ExternalFilesSizeRequestError(CacheableError):
-    """We failed to get the size of the external files."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "ExternalFilesSizeRequestError", cause, False)
-
-
-class ExternalFilesSizeRequestHTTPError(CacheableError):
-    """We failed to get the size of the external files."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "ExternalFilesSizeRequestHTTPError", cause, False)
-
-
-class ExternalFilesSizeRequestTimeoutError(CacheableError):
-    """We failed to get the size of the external files."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "ExternalFilesSizeRequestTimeoutError", cause, False)
 
 
 class ExternalServerError(CacheableError):
@@ -572,13 +523,6 @@ class UnexpectedError(CacheableError):
             disclose_cause=False,
         )
         logging.error(message, exc_info=cause)
-
-
-class UnsupportedExternalFilesError(CacheableError):
-    """We failed to get the size of the external files."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "UnsupportedExternalFilesError", cause, False)
 
 
 class DatasetWithScriptNotSupportedError(CacheableError):

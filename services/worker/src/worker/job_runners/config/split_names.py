@@ -18,14 +18,12 @@ from libcommon.simple_cache import CachedArtifactError, CachedArtifactNotFoundEr
 
 from worker.dtos import CompleteJobResult, SplitsList
 from worker.job_runners.config.config_job_runner import ConfigJobRunnerWithDatasetsCache
-from worker.utils import resolve_trust_remote_code
 
 
 def compute_split_names_from_streaming_response(
     dataset: str,
     config: str,
     max_number: int,
-    dataset_scripts_allow_list: list[str],
     hf_token: Optional[str] = None,
 ) -> SplitsList:
     """
@@ -40,10 +38,6 @@ def compute_split_names_from_streaming_response(
             by a `/`.
         config (`str`):
             A configuration name.
-        dataset_scripts_allow_list (`list[str]`):
-            List of datasets for which we support dataset scripts.
-            Unix shell-style wildcards also work in the dataset name for namespaced datasets,
-            for example `some_namespace/*` to refer to all the datasets in the `some_namespace` namespace.
         hf_token (`str`, *optional*):
             An authentication token (See https://huggingface.co/settings/token)
         max_number (`str`):
@@ -55,7 +49,7 @@ def compute_split_names_from_streaming_response(
         [~`libcommon.exceptions.SplitsNamesError`]:
           If the list of splits could not be obtained using the datasets library.
         [~`libcommon.exceptions.DatasetWithScriptNotSupportedError`]:
-            If the dataset has a dataset script and is not in the allow list.
+            If the dataset has a dataset script.
         [~`libcommon.exceptions.SplitNamesFromStreamingError`]:
             If the split names could not be obtained using the datasets library.
         [~`libcommon.exceptions.DatasetWithTooManySplitsError`]:
@@ -72,7 +66,6 @@ def compute_split_names_from_streaming_response(
                 path=dataset,
                 config_name=config,
                 token=hf_token,
-                trust_remote_code=resolve_trust_remote_code(dataset=dataset, allow_list=dataset_scripts_allow_list),
             )
         ]
     except _EmptyDatasetError as err:
@@ -165,6 +158,5 @@ class ConfigSplitNamesJobRunner(ConfigJobRunnerWithDatasetsCache):
                     config=self.config,
                     max_number=self.app_config.split_names.max_number,
                     hf_token=self.app_config.common.hf_token,
-                    dataset_scripts_allow_list=self.app_config.common.dataset_scripts_allow_list,
                 )
             )
