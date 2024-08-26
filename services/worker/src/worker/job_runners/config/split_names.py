@@ -152,11 +152,12 @@ class ConfigSplitNamesJobRunner(ConfigJobRunnerWithDatasetsCache):
                 f"Cannot compute 'config-split-names' from config-info for {self.dataset=} {self.config=}. "
                 f"Trying to compute it using streaming."
             )
-            return CompleteJobResult(
-                compute_split_names_from_streaming_response(
-                    dataset=self.dataset,
-                    config=self.config,
-                    max_number=self.app_config.split_names.max_number,
-                    hf_token=self.app_config.common.hf_token,
-                )
+            pass
+        return CompleteJobResult(
+            compute_split_names_from_streaming_response(
+                dataset=self.dataset,
+                config=self.config,
+                max_number=self.app_config.split_names.max_number,
+                hf_token=self.app_config.common.hf_token,
             )
+        )
