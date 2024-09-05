@@ -93,6 +93,52 @@ def get_croissant_crumbs_from_dataset_infos(
         skipped_columns = []
         record_set_name = get_record_set(dataset=dataset, config_name=config)
         record_set_name = _escape_name(record_set_name, names)
+        # Add splits record set.
+        split_record_set_name = f"{record_set_name}_splits"
+        split_field = _remove_none_values(
+            {
+                "@type": "cr:Field",
+                "@id": f"{split_record_set_name}/split_name",
+                "name": "split_name",
+                "description": "The name of the split.",
+                "dataType": "sc:Text"
+            }
+        )
+        record_set.append(
+            _remove_none_values(
+                {
+                    "@type": "cr:RecordSet",
+                    "dataType": "cr:Split",
+                    "key": f"name",
+                    "@id": split_record_set_name,
+                    "name": split_record_set_name,
+                    "description": f"Splits for the {record_set_name} config.",
+                    "field": [split_field],
+                    "data": [{f"split_name": split_name} for split_name in splits],
+                }
+            )
+        )
+        # Add a split field to the record set.
+        piped_splits = "|".join([re.escape(split) for split in splits])
+        fields.append(
+            {
+                "@type": "cr:Field",
+                "@id": f"{record_set_name}/split",
+                "name": f"{record_set_name}/split",
+                "description": "Split to which the example belongs to.",
+                "dataType": "sc:Text",
+                "source": {
+                    "fileSet": {"@id": distribution_name},
+                    "extract": {"fileProperty": "fullpath"},
+                    "transform": {"regex": f"{re.escape(config)}/({piped_splits})/.+parquet$"},
+                },
+                "references": {
+                    "field": {
+                       "@id": f"{split_record_set_name}/split_name"
+                    }
+                }
+            }
+        )
         for column, feature in features.items():
             fields_names: set[str] = set()
             field_name = f"{record_set_name}/{_escape_name(column, fields_names)}"
