@@ -111,16 +111,26 @@ def test_get_croissant_crumbs_from_dataset_infos() -> None:
     assert "recordSet" in croissant_crumbs
     assert croissant_crumbs["recordSet"]
     assert isinstance(croissant_crumbs["recordSet"], list)
-    assert len(croissant_crumbs["recordSet"]) == 2
-    assert croissant_crumbs["recordSet"][0]["@type"] == croissant_crumbs["recordSet"][1]["@type"] == "cr:RecordSet"
-    assert croissant_crumbs["recordSet"][0]["name"] == "record_set_user_squad_with_space"
-    assert croissant_crumbs["recordSet"][1]["name"] == "record_set_user_squad_with_space_0"
-    assert isinstance(croissant_crumbs["recordSet"][0]["field"], list)
+    assert len(croissant_crumbs["recordSet"]) == 4
+
+    # Test split record sets.
+    for i in [0, 2]:
+      assert "data" in croissant_crumbs["recordSet"][i]
+      for d in croissant_crumbs["recordSet"][i]["data"]:
+        for key in d.keys():
+          if key.endswith("name"):
+            assert d[key] in squad_info["splits"]
+      assert croissant_crumbs["recordSet"][i]["dataType"] == "cr:Split"
+      assert croissant_crumbs["recordSet"][i]["key"].endswith("name")
+    assert croissant_crumbs["recordSet"][1]["@type"] == croissant_crumbs["recordSet"][3]["@type"] == "cr:RecordSet"
+    assert croissant_crumbs["recordSet"][1]["name"] == "record_set_user_squad_with_space"
+    assert croissant_crumbs["recordSet"][3]["name"] == "record_set_user_squad_with_space_0"
+    assert isinstance(croissant_crumbs["recordSet"][1]["field"], list)
     assert isinstance(squad_info["features"], dict)
-    assert "1 skipped column: answers" in croissant_crumbs["recordSet"][0]["description"]
-    assert croissant_crumbs["recordSet"][0]["@id"] == "record_set_user_squad_with_space"
-    assert croissant_crumbs["recordSet"][1]["@id"] == "record_set_user_squad_with_space_0"
-    for i, _ in enumerate(croissant_crumbs["recordSet"]):
+    assert "1 skipped column: answers" in croissant_crumbs["recordSet"][1]["description"]
+    assert croissant_crumbs["recordSet"][1]["@id"] == "record_set_user_squad_with_space"
+    assert croissant_crumbs["recordSet"][3]["@id"] == "record_set_user_squad_with_space_0"
+    for i in [1, 3]:
         for field in croissant_crumbs["recordSet"][i]["field"]:
             assert "source" in field
             assert "fileSet" in field["source"]
@@ -130,12 +140,12 @@ def test_get_croissant_crumbs_from_dataset_infos() -> None:
             assert field["source"]["extract"]["column"] == field["@id"].split("/")[-1]
 
     # Test fields.
-    assert len(croissant_crumbs["recordSet"][0]["field"]) == 4
-    assert len(croissant_crumbs["recordSet"][1]["field"]) == 4
-    for field in croissant_crumbs["recordSet"][0]["field"]:
+    assert len(croissant_crumbs["recordSet"][1]["field"]) == 5
+    assert len(croissant_crumbs["recordSet"][3]["field"]) == 5
+    for field in croissant_crumbs["recordSet"][1]["field"]:
         assert field["@type"] == "cr:Field"
         assert field["dataType"] == "sc:Text"
-    assert len(croissant_crumbs["recordSet"][0]["field"]) == len(squad_info["features"]) - 1
+    assert len(croissant_crumbs["recordSet"][1]["field"]) == len(squad_info["features"])
 
     # Test distribution.
     assert "distribution" in croissant_crumbs
