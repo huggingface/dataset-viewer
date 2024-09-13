@@ -12,13 +12,21 @@ spec:
     - host: {{ include "datasetsServer.ingress.hostname" . }}
       http:
         paths:
+          {{ if hasKey $annotations "alb.ingress.kubernetes.io/actions.metrics-unauthorized" -}}
+          - path: /admin/metrics
+            pathType: Exact
+            backend:
+              service:
+                name: metrics-unauthorized
+                port:
+                  name: use-annotation
+          {{- end -}}
           - path: /admin
+            pathType: Prefix
             backend:
               service:
                 name: "{{ include "name" . }}-admin"
                 port:
                   name: http
-
-            pathType: Prefix
 {{- include "ingress.tls" (merge (dict "annotations" $annotations) $ ) | indent 2}}
 {{- end }}
