@@ -12,7 +12,7 @@ spec:
     - host: {{ include "datasetsServer.ingress.hostname" . }}
       http:
         paths:
-          {{ if hasKey $annotations "alb.ingress.kubernetes.io/actions.metrics-unauthorized" -}}
+          {{- if hasKey $annotations "alb.ingress.kubernetes.io/actions.metrics-unauthorized" }}
           - path: /admin/metrics
             pathType: Exact
             backend:
@@ -20,7 +20,7 @@ spec:
                 name: metrics-unauthorized
                 port:
                   name: use-annotation
-          {{- end -}}
+          {{ end -}}
           - path: /admin
             pathType: Prefix
             backend:
