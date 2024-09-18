@@ -131,7 +131,7 @@ def get_croissant_crumbs_from_dataset_infos(
                     "fileSet": {"@id": distribution_name},
                     "extract": {"fileProperty": "fullpath"},
                     "transform": {
-                        "regex": f"{re.escape(config)}/{'partial-' if partial else ''}({piped_splits})/.+parquet$"
+                        "regex": f"{re.escape(config)}/(?:partial-)?({piped_splits})/.+parquet$"
                     },
                 },
                 "references": {"field": {"@id": f"{split_record_set_name}/split_name"}},
