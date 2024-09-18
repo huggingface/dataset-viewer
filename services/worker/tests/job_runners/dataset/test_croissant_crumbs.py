@@ -137,7 +137,12 @@ def test_get_croissant_crumbs_from_dataset_infos() -> None:
             assert "@id" in field["source"]["fileSet"]
             assert field["source"]["fileSet"]["@id"]
             assert "extract" in field["source"]
-            assert field["source"]["extract"]["column"] == field["@id"].split("/")[-1]
+            if field["description"] == "Split to which the example belongs to.":
+                assert "regex" in field["source"]["extract"]["transform"]
+                assert field["source"]["extract"]["fileProperty"] == "fullpath"
+                assert field["source"]["extract"]["references"]["@id"] == croissant_crumbs["recordSet"][i - 1]["field"]["@id"]
+            else:
+                assert field["source"]["extract"]["column"] == field["@id"].split("/")[-1]
 
     # Test fields.
     assert len(croissant_crumbs["recordSet"][1]["field"]) == 5

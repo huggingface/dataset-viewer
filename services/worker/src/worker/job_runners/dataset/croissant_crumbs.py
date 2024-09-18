@@ -109,12 +109,12 @@ def get_croissant_crumbs_from_dataset_infos(
                 {
                     "@type": "cr:RecordSet",
                     "dataType": "cr:Split",
-                    "key": f"name",
+                    "key": [{"@id": f"{split_record_set_name}/split_name"}]
                     "@id": split_record_set_name,
                     "name": split_record_set_name,
                     "description": f"Splits for the {record_set_name} config.",
                     "field": [split_field],
-                    "data": [{f"split_name": split_name} for split_name in splits],
+                    "data": [{"split_name": split_name} for split_name in splits],
                 }
             )
         )
@@ -130,7 +130,7 @@ def get_croissant_crumbs_from_dataset_infos(
                 "source": {
                     "fileSet": {"@id": distribution_name},
                     "extract": {"fileProperty": "fullpath"},
-                    "transform": {"regex": f"{re.escape(config)}/({piped_splits})/.+parquet$"},
+                    "transform": {"regex": f"{re.escape(config)}/{'partial-' if partial else ''}({piped_splits})/.+parquet$"},
                 },
                 "references": {
                     "field": {
