@@ -43,17 +43,14 @@ async def auth_check(
     if response.status_code == 200:
         try:
             json = response.json()
-            if (
-                organization is None
-                or (
-                    organization in {org["name"] for org in json["orgs"]}
-                    and json["auth"]["type"] == "access_token"
-                    and "fineGrained" in json["auth"]["accessToken"]
-                    and any(
-                        set(permission for permission in scope["permissions"]) >= set(require_fine_grained_permissions)
-                        for scope in json["auth"]["accessToken"]["fineGrained"]["scoped"]
-                        if scope["entity"]["name"] == organization and scope["entity"]["type"] == "org"
-                    )
+            if organization is None or (
+                organization in {org["name"] for org in json["orgs"]}
+                and json["auth"]["type"] == "access_token"
+                and "fineGrained" in json["auth"]["accessToken"]
+                and any(
+                    set(permission for permission in scope["permissions"]) >= set(require_fine_grained_permissions)
+                    for scope in json["auth"]["accessToken"]["fineGrained"]["scoped"]
+                    if scope["entity"]["name"] == organization and scope["entity"]["type"] == "org"
                 )
             ):
                 return True
