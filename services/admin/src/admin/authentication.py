@@ -15,7 +15,7 @@ async def auth_check(
     request: Optional[Request] = None,
     organization: Optional[str] = None,
     hf_timeout_seconds: Optional[float] = None,
-    require_fine_grained_permissions: Optional[Sequence[str]] = ("repo.write",),
+    require_fine_grained_permissions: Sequence[str] = ("repo.write",),
 ) -> Literal[True]:
     """check if the user is member of the organization
 
@@ -27,7 +27,7 @@ async def auth_check(
           authorized.
         hf_timeout_seconds (`float`, *optional*): the timeout in seconds for the HTTP request to the external authentication
           service.
-        require_fine_grained_permissions (`Sequence[str]`, *optional*): require a fine-grained token with certain permissions
+        require_fine_grained_permissions (`Sequence[str]`): require a fine-grained token with certain permissions
           for the organization, if organization is provided. Defaults to ("repo.write",).
 
     Returns:
@@ -43,11 +43,11 @@ async def auth_check(
     if response.status_code == 200:
         try:
             json = response.json()
-            if organization is None or (
-                organization in {org["name"] for org in json["orgs"]}
-                and require_fine_grained_permissions is None
+            if (
+                organization is None
                 or (
-                    json["auth"]["type"] == "access_token"
+                    organization in {org["name"] for org in json["orgs"]}
+                    and json["auth"]["type"] == "access_token"
                     and "fineGrained" in json["auth"]["accessToken"]
                     and any(
                         set(permission for permission in scope["permissions"]) >= set(require_fine_grained_permissions)
