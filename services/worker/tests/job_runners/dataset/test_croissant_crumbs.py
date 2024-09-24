@@ -115,13 +115,13 @@ def test_get_croissant_crumbs_from_dataset_infos() -> None:
 
     # Test split record sets.
     for i in [0, 2]:
-      assert "data" in croissant_crumbs["recordSet"][i]
-      for d in croissant_crumbs["recordSet"][i]["data"]:
-        for key in d.keys():
-          if key.endswith("name"):
-            assert d[key] in squad_info["splits"]
-      assert croissant_crumbs["recordSet"][i]["dataType"] == "cr:Split"
-      assert croissant_crumbs["recordSet"][i]["key"].endswith("name")
+        assert "data" in croissant_crumbs["recordSet"][i]
+        for d in croissant_crumbs["recordSet"][i]["data"]:
+            for key in d.keys():
+                if key.endswith("name"):
+                    assert d[key] in squad_info["splits"]
+        assert croissant_crumbs["recordSet"][i]["dataType"] == "cr:Split"
+        assert croissant_crumbs["recordSet"][i]["key"].endswith("name")
     assert croissant_crumbs["recordSet"][1]["@type"] == croissant_crumbs["recordSet"][3]["@type"] == "cr:RecordSet"
     assert croissant_crumbs["recordSet"][1]["name"] == "record_set_user_squad_with_space"
     assert croissant_crumbs["recordSet"][3]["name"] == "record_set_user_squad_with_space_0"
@@ -140,7 +140,10 @@ def test_get_croissant_crumbs_from_dataset_infos() -> None:
             if field["description"] == "Split to which the example belongs to.":
                 assert "regex" in field["source"]["extract"]["transform"]
                 assert field["source"]["extract"]["fileProperty"] == "fullpath"
-                assert field["source"]["extract"]["references"]["@id"] == croissant_crumbs["recordSet"][i - 1]["field"]["@id"]
+                assert (
+                    field["source"]["extract"]["references"]["@id"]
+                    == croissant_crumbs["recordSet"][i - 1]["field"]["@id"]
+                )
             else:
                 assert field["source"]["extract"]["column"] == field["@id"].split("/")[-1]
 
