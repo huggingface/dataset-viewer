@@ -52,6 +52,7 @@ squad_info = {
     "dataset_size": 89819092,
     "size_in_bytes": 124961643,
 }
+squad_splits = ["train", "validation"]
 
 
 v1_context = {
@@ -119,7 +120,7 @@ def test_get_croissant_crumbs_from_dataset_infos() -> None:
         for d in croissant_crumbs["recordSet"][i]["data"]:
             for key in d.keys():
                 if key.endswith("name"):
-                    assert d[key] in squad_info["splits"]
+                    assert d[key] in squad_splits
         assert croissant_crumbs["recordSet"][i]["dataType"] == "cr:Split"
         assert croissant_crumbs["recordSet"][i]["key"].endswith("name")
     assert croissant_crumbs["recordSet"][1]["@type"] == croissant_crumbs["recordSet"][3]["@type"] == "cr:RecordSet"
