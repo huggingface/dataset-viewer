@@ -23,7 +23,7 @@ from presidio_analyzer import AnalyzerEngine, BatchAnalyzerEngine, RecognizerRes
 from worker.config import AppConfig, PresidioEntitiesScanConfig
 from worker.dtos import CompleteJobResult, ConfigParquetAndInfoResponse, PresidioEntitiesScanResponse, PresidioEntity
 from worker.job_runners.split.split_job_runner import SplitJobRunnerWithDatasetsCache
-from worker.utils import batched, get_rows_or_raise, resolve_trust_remote_code
+from worker.utils import batched, get_rows_or_raise
 
 BATCH_SIZE = 10
 batch_analyzer: Optional[BatchAnalyzerEngine] = None
@@ -177,7 +177,6 @@ def compute_presidio_entities_scan_response(
     rows_max_number: int,
     columns_max_number: int,
     max_text_length: int,
-    dataset_scripts_allow_list: list[str],
 ) -> PresidioEntitiesScanResponse:
     """
     Get the response of 'split-presidio-scan' cache for a specific split of a dataset from huggingface.co.
@@ -199,10 +198,6 @@ def compute_presidio_entities_scan_response(
             The maximum number of supported columns.
         max_text_length (`int`):
             The maximum text length considered by the scanner.
-        dataset_scripts_allow_list (`list[str]`):
-            List of datasets for which we support dataset scripts.
-            Unix shell-style wildcards also work in the dataset name for namespaced datasets,
-            for example `some_namespace/*` to refer to all the datasets in the `some_namespace` namespace.
 
     Raises:
         [~`libcommon.simple_cache.CachedArtifactError`]:
@@ -218,7 +213,7 @@ def compute_presidio_entities_scan_response(
         [~`libcommon.exceptions.NormalRowsError`]:
           If the split rows could not be obtained using the datasets library in normal mode.
         [~`libcommon.exceptions.DatasetWithScriptNotSupportedError`]:
-            If the dataset has a dataset script and is not in the allow list.
+            If the dataset has a dataset script.
 
     Returns:
         `PresidioEntitiesScanResponse`: An object with the lists of opt-in/opt-out urls
@@ -233,7 +228,6 @@ def compute_presidio_entities_scan_response(
     ):
         raise PresidioScanNotEnabledForThisDataset(dataset)
     logging.info(f"compute 'split-presidio-scan' for {dataset=} {config=} {split=}")
-    trust_remote_code = resolve_trust_remote_code(dataset=dataset, allow_list=dataset_scripts_allow_list)
 
     # get the first rows from previous job
     parquet_and_info_response = get_previous_step_or_raise(
@@ -343,7 +337,6 @@ def compute_presidio_entities_scan_response(
         rows_max_number=rows_max_number,
         token=hf_token,
         column_names=scanned_columns,
-        trust_remote_code=trust_remote_code,
     )
     rows = rows_content.rows
 
@@ -461,7 +454,6 @@ class SplitPresidioEntitiesScanJobRunner(SplitJobRunnerWithDatasetsCache):
                 rows_max_number=self.presidio_entities_scan_config.rows_max_number,
                 columns_max_number=self.presidio_entities_scan_config.columns_max_number,
                 max_text_length=self.presidio_entities_scan_config.max_text_length,
-                dataset_scripts_allow_list=self.app_config.common.dataset_scripts_allow_list,
             )
         )
 

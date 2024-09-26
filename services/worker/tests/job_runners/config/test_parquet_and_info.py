@@ -1,12 +1,9 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
-
 import io
 import os
 import zipfile
 from collections.abc import Callable, Iterator, Mapping
-from dataclasses import replace
-from fnmatch import fnmatch
 from http import HTTPStatus
 from multiprocessing import Pool
 from pathlib import Path
@@ -41,7 +38,6 @@ from worker.job_runners.config.parquet_and_info import (
     ParquetFileValidator,
     TooBigRowGroupsError,
     _is_too_big_from_datasets,
-    _is_too_big_from_external_data_files,
     _is_too_big_from_hub,
     create_commits,
     fill_builder_info,
@@ -57,7 +53,6 @@ from worker.job_runners.config.parquet_and_info import (
 )
 from worker.job_runners.dataset.config_names import DatasetConfigNamesJobRunner
 from worker.resources import LibrariesResource
-from worker.utils import resolve_trust_remote_code
 
 from ...constants import CI_HUB_ENDPOINT, CI_USER_TOKEN
 from ...fixtures.hub import HubDatasetTest
@@ -152,76 +147,14 @@ def test_compute(
     dataset = hub_responses_public["name"]
     config = hub_responses_public["config_names_response"]["config_names"][0]["config"]
     job_runner = get_job_runner(dataset, config, app_config)
+    job_runner.pre_compute()
     response = job_runner.compute()
+    job_runner.post_compute()
     assert response
     content = response.content
     assert content
     assert len(content["parquet_files"]) == 1
     assert_content_is_equal(content, hub_responses_public["parquet_and_info_response"])
-
-
-def test_compute_legacy_configs(
-    app_config: AppConfig,
-    get_job_runner: GetJobRunner,
-    hub_public_legacy_configs: str,
-) -> None:
-    app_config = replace(
-        app_config, parquet_and_info=replace(app_config.parquet_and_info, max_dataset_size_bytes=20_000)
-    )
-    app_config = replace(app_config, common=replace(app_config.common, dataset_scripts_allow_list=["*"]))
-
-    dataset_name = hub_public_legacy_configs
-    original_configs = {"first", "second"}
-
-    # first compute and push parquet files for each config for dataset with script with two configs
-    for config in original_configs:
-        job_runner = get_job_runner(dataset_name, config, app_config)
-        # needed to overwrite default record when creating job runner
-        upsert_response(
-            kind="dataset-config-names",
-            dataset=hub_public_legacy_configs,
-            dataset_git_revision=REVISION_NAME,
-            http_status=HTTPStatus.OK,
-            content={
-                "config_names": [
-                    {"dataset": hub_public_legacy_configs, "config": "first"},
-                    {"dataset": hub_public_legacy_configs, "config": "second"},
-                ],
-            },
-        )
-        assert job_runner.compute()
-    hf_api = HfApi(endpoint=CI_HUB_ENDPOINT, token=CI_USER_TOKEN)
-    dataset_info = hf_api.dataset_info(
-        repo_id=hub_public_legacy_configs, revision=app_config.parquet_and_info.target_revision, files_metadata=False
-    )
-    repo_files = {f.rfilename for f in dataset_info.siblings}
-    # assert that there are only parquet files for dataset's configs and ".gitattributes" in a repo
-    # (no files from 'main')
-    assert ".gitattributes" in repo_files
-    assert all(
-        fnmatch(file, "first/*/*.parquet") or fnmatch(file, "second/*/*.parquet")
-        for file in repo_files.difference({".gitattributes"})
-    )
-    orig_repo_configs = {f.rfilename.split("/")[0] for f in dataset_info.siblings if f.rfilename.endswith(".parquet")}
-    # assert that both configs are pushed (push of second config didn't delete first config's files)
-    assert len(orig_repo_configs) == 2
-    assert orig_repo_configs == original_configs
-    # then change the set of dataset configs (remove "second")
-    job_runner = get_job_runner(dataset_name, "first", app_config)
-    assert job_runner.compute()
-    dataset_info = hf_api.dataset_info(
-        repo_id=hub_public_legacy_configs, revision=app_config.parquet_and_info.target_revision, files_metadata=False
-    )
-    updated_repo_files = {f.rfilename for f in dataset_info.siblings}
-    # assert that legacy config is removed from the repo
-    # and there are only files for config that was just pushed and .gitattributes
-    assert ".gitattributes" in updated_repo_files
-    assert all(fnmatch(file, "first/*/*.parquet") for file in updated_repo_files.difference({".gitattributes"}))
-    updated_repo_configs = {
-        f.rfilename.split("/")[0] for f in dataset_info.siblings if f.rfilename.endswith(".parquet")
-    }
-    assert len(updated_repo_configs) == 1
-    assert updated_repo_configs == {"first"}
 
 
 @pytest.mark.parametrize(
@@ -269,60 +202,6 @@ def test__is_too_big_from_datasets(
     )
 
 
-@pytest.mark.parametrize(
-    "max_dataset_size_bytes,max_external_data_files,expected",
-    [
-        (None, None, False),
-        (10, None, True),
-    ],
-)
-def test__is_too_big_external_files(
-    external_files_dataset_builder: "datasets.builder.DatasetBuilder",
-    expected: bool,
-    max_dataset_size_bytes: Optional[int],
-    max_external_data_files: Optional[int],
-    app_config: AppConfig,
-) -> None:
-    max_dataset_size_bytes = max_dataset_size_bytes or app_config.parquet_and_info.max_dataset_size_bytes
-    max_external_data_files = max_external_data_files or app_config.parquet_and_info.max_external_data_files
-    assert (
-        _is_too_big_from_external_data_files(
-            builder=external_files_dataset_builder,
-            hf_token=app_config.common.hf_token,
-            max_dataset_size_bytes=max_dataset_size_bytes,
-            max_external_data_files=max_external_data_files,
-        )
-        == expected
-    )
-
-
-@pytest.mark.parametrize(
-    "max_dataset_size_bytes,max_external_data_files,expected",
-    [
-        (None, None, False),
-        (None, 1, True),
-    ],
-)
-def test_raise_if_too_many_external_files(
-    external_files_dataset_builder: "datasets.builder.DatasetBuilder",
-    expected: bool,
-    max_dataset_size_bytes: Optional[int],
-    max_external_data_files: Optional[int],
-    app_config: AppConfig,
-) -> None:
-    max_dataset_size_bytes = max_dataset_size_bytes or app_config.parquet_and_info.max_dataset_size_bytes
-    max_external_data_files = max_external_data_files or app_config.parquet_and_info.max_external_data_files
-    assert (
-        _is_too_big_from_external_data_files(
-            builder=external_files_dataset_builder,
-            hf_token=app_config.common.hf_token,
-            max_dataset_size_bytes=max_dataset_size_bytes,
-            max_external_data_files=max_external_data_files,
-        )
-        == expected
-    )
-
-
 def test_supported_if_big_parquet(
     app_config: AppConfig,
     get_job_runner: GetJobRunner,
@@ -334,7 +213,9 @@ def test_supported_if_big_parquet(
     dataset = hub_responses_big["name"]
     config = hub_responses_big["config_names_response"]["config_names"][0]["config"]
     job_runner = get_job_runner(dataset, config, app_config)
+    job_runner.pre_compute()
     response = job_runner.compute()
+    job_runner.post_compute()
     assert response
     content = response.content
     assert content
@@ -356,8 +237,10 @@ def test_partially_converted_if_big_non_parquet(
 
     # Set a small chunk size to yield more than one Arrow Table in _generate_tables
     # to be able to stop the generation mid-way.
+    job_runner.pre_compute()
     with patch.object(CsvConfig, "pd_read_csv_kwargs", {"chunksize": 10}):
         response = job_runner.compute()
+    job_runner.post_compute()
     assert response
     content = response.content
     assert content
@@ -377,7 +260,9 @@ def test_supported_if_gated(
     dataset = hub_responses_gated["name"]
     config = hub_responses_gated["config_names_response"]["config_names"][0]["config"]
     job_runner = get_job_runner(dataset, config, app_config)
+    job_runner.pre_compute()
     response = job_runner.compute()
+    job_runner.post_compute()
     assert response
     assert response.content
 
@@ -407,7 +292,9 @@ def test_compute_splits_response_simple_csv_ok(
     config = hub_datasets[name]["config_names_response"]["config_names"][0]["config"]
     expected_parquet_and_info_response = hub_datasets[name]["parquet_and_info_response"]
     job_runner = get_job_runner(dataset, config, app_config)
+    job_runner.pre_compute()
     result = job_runner.compute().content
+    job_runner.post_compute()
     assert_content_is_equal(result, expected_parquet_and_info_response)
 
     # download the parquet file and check that it is valid
@@ -454,8 +341,10 @@ def test_previous_step_error(
         http_status=upstream_status,
         content=upstream_content,
     )
+    job_runner.pre_compute()
     with pytest.raises(Exception) as exc_info:
         job_runner.compute()
+    job_runner.post_compute()
     assert exc_info.typename == exception_name
 
 
@@ -500,10 +389,10 @@ def test_get_writer_batch_size_from_info(ds_info: datasets.info.DatasetInfo, has
     [(2, False, 1), (1, False, 2), (2, True, 1), (1, True, 2)],
 )
 def test_create_commits(
-    hub_public_legacy_configs: str, max_operations_per_commit: int, use_parent_commit: bool, expected_num_commits: int
+    hub_public_empty_2: str, max_operations_per_commit: int, use_parent_commit: bool, expected_num_commits: int
 ) -> None:
     NUM_FILES = 2
-    repo_id = hub_public_legacy_configs
+    repo_id = hub_public_empty_2
     hf_api = HfApi(endpoint=CI_HUB_ENDPOINT, token=CI_USER_TOKEN)
     if use_parent_commit:
         target_dataset_info = hf_api.dataset_info(repo_id=repo_id, files_metadata=False)
@@ -590,11 +479,14 @@ def launch_job_runner(job_runner_args: JobRunnerArgs) -> CompleteJobResult:
         app_config=app_config,
         hf_datasets_cache=tmp_path,
     )
-    return job_runner.compute()
+    job_runner.pre_compute()
+    result = job_runner.compute()
+    job_runner.post_compute()
+    return result
 
 
 def test_concurrency(
-    hub_public_legacy_n_configs: str,
+    hub_public_n_configs: str,
     app_config: AppConfig,
     tmp_path: Path,
     get_dataset_config_names_job_runner: GetDatasetConfigNamesJobRunner,
@@ -607,8 +499,7 @@ def test_concurrency(
     For this test, we need a lot of configs for the same dataset (say 20) and one job runner for each.
     Ideally we would try for both quick and slow jobs.
     """
-    app_config = replace(app_config, common=replace(app_config.common, dataset_scripts_allow_list=["*"]))
-    repo_id = hub_public_legacy_n_configs
+    repo_id = hub_public_n_configs
     hf_api = HfApi(endpoint=CI_HUB_ENDPOINT, token=CI_USER_TOKEN)
     revision = hf_api.dataset_info(repo_id=repo_id, files_metadata=False).sha
     if revision is None:
@@ -1025,12 +916,6 @@ def test_get_writer_batch_size_from_row_group_size(
         num_rows=num_rows, row_group_byte_size=row_group_byte_size, max_row_group_byte_size=max_row_group_byte_size
     )
     assert writer_batch_size == expected
-
-
-def test_resolve_trust_remote_code() -> None:
-    assert resolve_trust_remote_code("lhoestq/demo1", allow_list=[]) is False
-    assert resolve_trust_remote_code("lhoestq/demo1", allow_list=["lhoestq/d*"]) is True
-    assert resolve_trust_remote_code("lhoestq/custom_mnist", allow_list=["lhoestq/d*"]) is False
 
 
 @pytest.mark.parametrize(

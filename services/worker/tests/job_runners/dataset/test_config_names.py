@@ -55,7 +55,9 @@ def get_job_runner(
 def test_compute(app_config: AppConfig, hub_public_csv: str, get_job_runner: GetJobRunner) -> None:
     dataset = hub_public_csv
     job_runner = get_job_runner(dataset, app_config)
+    job_runner.pre_compute()
     response = job_runner.compute()
+    job_runner.post_compute()
     content = response.content
     assert len(content["config_names"]) == 1
 
@@ -78,6 +80,7 @@ def test_compute_too_many_configs(
         replace(app_config, config_names=replace(app_config.config_names, max_number=max_number_of_configs)),
     )
 
+    job_runner.pre_compute()
     with patch("worker.job_runners.dataset.config_names.get_dataset_config_names", return_value=configs):
         with patch("worker.job_runners.dataset.config_names.get_dataset_default_config_name", return_value=None):
             if error_code:
@@ -86,6 +89,7 @@ def test_compute_too_many_configs(
                 assert exc_info.value.code == error_code
             else:
                 assert job_runner.compute() is not None
+    job_runner.post_compute()
 
 
 @pytest.mark.parametrize(
@@ -134,6 +138,7 @@ def test_compute_splits_response(
         dataset,
         app_config if use_token else replace(app_config, common=replace(app_config.common, hf_token=None)),
     )
+    job_runner.pre_compute()
     if error_code is None:
         result = job_runner.compute().content
         assert result == expected_configs_response
@@ -141,6 +146,7 @@ def test_compute_splits_response(
 
     with pytest.raises(CustomError) as exc_info:
         job_runner.compute()
+    job_runner.post_compute()
     assert exc_info.value.code == error_code
     assert exc_info.value.cause_exception == cause
     if exc_info.value.disclose_cause:

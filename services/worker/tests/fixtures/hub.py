@@ -12,7 +12,7 @@ from typing import Any, Literal, Optional, TypedDict, Union
 
 import pytest
 import requests
-from datasets import Dataset, DatasetBuilder, Features, Value, load_dataset_builder
+from datasets import Dataset, Features, Value
 from huggingface_hub.constants import REPO_TYPES, REPO_TYPES_URL_PREFIXES
 from huggingface_hub.hf_api import HfApi
 from huggingface_hub.utils import hf_raise_for_status
@@ -255,6 +255,13 @@ def hub_public_big_no_info(datasets: Mapping[str, Dataset]) -> Iterator[str]:
 
 
 @pytest.fixture(scope="session")
+def hub_public_n_configs(n_configs_paths: list[str]) -> Iterator[str]:
+    repo_id = create_hub_dataset_repo(prefix="n-configs", file_paths=n_configs_paths)
+    yield repo_id
+    delete_hub_dataset_repo(repo_id=repo_id)
+
+
+@pytest.fixture(scope="session")
 def hub_public_big_csv(big_csv_path: str) -> Iterator[str]:
     repo_id = create_hub_dataset_repo(prefix="big-csv", file_paths=[big_csv_path])
     yield repo_id
@@ -262,34 +269,8 @@ def hub_public_big_csv(big_csv_path: str) -> Iterator[str]:
 
 
 @pytest.fixture(scope="session")
-def hub_public_external_files(dataset_script_with_external_files_path: str) -> Iterator[str]:
-    repo_id = create_hub_dataset_repo(prefix="external_files", file_paths=[dataset_script_with_external_files_path])
-    yield repo_id
-    delete_hub_dataset_repo(repo_id=repo_id)
-
-
-@pytest.fixture
-def external_files_dataset_builder(hub_public_external_files: str) -> DatasetBuilder:
-    return load_dataset_builder(hub_public_external_files, trust_remote_code=True)
-
-
-@pytest.fixture(scope="session")
-def hub_public_legacy_configs(dataset_script_with_two_configs_path: str) -> Iterator[str]:
-    repo_id = create_hub_dataset_repo(prefix="legacy_configs", file_paths=[dataset_script_with_two_configs_path])
-    yield repo_id
-    delete_hub_dataset_repo(repo_id=repo_id)
-
-
-@pytest.fixture(scope="session")
-def hub_public_legacy_n_configs(dataset_script_with_n_configs_path: str) -> Iterator[str]:
-    repo_id = create_hub_dataset_repo(prefix="legacy_n_configs", file_paths=[dataset_script_with_n_configs_path])
-    yield repo_id
-    delete_hub_dataset_repo(repo_id=repo_id)
-
-
-@pytest.fixture(scope="session")
-def hub_public_manual_download(dataset_script_with_manual_download_path: str) -> Iterator[str]:
-    repo_id = create_hub_dataset_repo(prefix="manual_download", file_paths=[dataset_script_with_manual_download_path])
+def hub_public_empty_2() -> Iterator[str]:
+    repo_id = create_hub_dataset_repo(prefix="configs")
     yield repo_id
     delete_hub_dataset_repo(repo_id=repo_id)
 
@@ -1054,17 +1035,6 @@ def hub_responses_big_csv(hub_public_big_csv: str) -> HubDatasetTest:
         "parquet_and_info_response": create_parquet_and_info_response(
             dataset=hub_public_big_csv, data_type="big-csv", partial=True
         ),
-    }
-
-
-@pytest.fixture
-def hub_responses_external_files(hub_public_external_files: str) -> HubDatasetTest:
-    return {
-        "name": hub_public_external_files,
-        "config_names_response": create_config_names_response(hub_public_external_files),
-        "splits_response": create_splits_response(hub_public_external_files),
-        "first_rows_response": create_first_rows_response(hub_public_external_files, TEXT_cols, TEXT_rows),
-        "parquet_and_info_response": None,
     }
 
 
