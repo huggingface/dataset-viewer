@@ -598,3 +598,5 @@ The `splits` worker does not need any additional configuration.
 ### Common
 
 See [../../libs/libcommon/README.md](../../libs/libcommon/README.md) for more information about the common configuration.
+
+Run CI.
