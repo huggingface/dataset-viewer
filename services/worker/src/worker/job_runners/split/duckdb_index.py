@@ -15,9 +15,9 @@ from huggingface_hub._commit_api import (
     CommitOperationAdd,
     CommitOperationDelete,
 )
+from huggingface_hub.errors import HfHubHTTPError, RepositoryNotFoundError
 from huggingface_hub.hf_api import HfApi
 from huggingface_hub.repocard_data import DatasetCardData
-from huggingface_hub.utils._errors import HfHubHTTPError, RepositoryNotFoundError
 from libcommon.constants import DUCKDB_INDEX_JOB_RUNNER_SUBDIRECTORY, ROW_IDX_COLUMN
 from libcommon.dtos import JobInfo
 from libcommon.exceptions import (
