@@ -31,8 +31,6 @@ from datasets.splits import SplitDict, SplitGenerator, SplitInfo
 from datasets.utils.file_utils import (
     ArchiveIterable,
     FilesIterable,
-    get_authentication_headers_for_url,
-    http_head,
 )
 from datasets.utils.py_utils import asdict
 from fsspec.core import filesystem, url_to_fs
@@ -299,14 +297,6 @@ class EmptyDownloadSizeError(Exception):
 
 class EmptyFeaturesError(Exception):
     pass
-
-
-def _request_size(url: str, hf_token: Optional[str] = None) -> Optional[int]:
-    headers = get_authentication_headers_for_url(url, token=hf_token)
-    response = http_head(url, headers=headers, max_retries=3)
-    response.raise_for_status()
-    size = response.headers.get("Content-Length") if response.ok else None
-    return int(size) if size is not None else size
 
 
 def _fsspec_request_size(urlpath: str, storage_options: dict[str, Any]) -> Optional[int]:
