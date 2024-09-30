@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Optional
 
 import datasets.config
+import huggingface_hub.constants
 import pytest
 from libcommon.dtos import Priority
 from libcommon.resources import CacheMongoResource, QueueMongoResource
@@ -74,7 +75,8 @@ def test_set_datasets_cache(app_config: AppConfig, get_job_runner: GetJobRunner)
     base_path = job_runner.base_cache_directory
     dummy_path = base_path / "dummy"
     job_runner.set_datasets_cache(dummy_path)
-    assert str(datasets.config.HF_DATASETS_CACHE).startswith(str(dummy_path))
+    assert datasets.config.HF_DATASETS_CACHE.is_relative_to(dummy_path)
+    assert huggingface_hub.constants.HF_HUB_CACHE.is_relative_to(dummy_path)
 
 
 def test_pre_compute_post_compute(app_config: AppConfig, get_job_runner: GetJobRunner) -> None:
