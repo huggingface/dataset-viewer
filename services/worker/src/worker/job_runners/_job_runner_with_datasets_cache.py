@@ -29,6 +29,8 @@ class JobRunnerWithDatasetsCache(JobRunnerWithCache):
         )
 
     def set_datasets_cache(self, cache_subdirectory: Optional[Path]) -> None:
+        if cache_subdirectory is None:
+            return
         datasets.config.HF_DATASETS_CACHE = cache_subdirectory / "datasets"
         logging.debug(f"datasets data cache set to: {datasets.config.HF_DATASETS_CACHE}")
         datasets.config.DOWNLOADED_DATASETS_PATH = (
