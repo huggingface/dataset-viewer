@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Optional
 
 import datasets.config
+import huggingface_hub.constants
 from libcommon.dtos import JobInfo
 
 from worker.config import AppConfig
@@ -28,7 +29,7 @@ class JobRunnerWithDatasetsCache(JobRunnerWithCache):
         )
 
     def set_datasets_cache(self, cache_subdirectory: Optional[Path]) -> None:
-        datasets.config.HF_DATASETS_CACHE = cache_subdirectory
+        datasets.config.HF_DATASETS_CACHE = cache_subdirectory / "datasets"
         logging.debug(f"datasets data cache set to: {datasets.config.HF_DATASETS_CACHE}")
         datasets.config.DOWNLOADED_DATASETS_PATH = (
             datasets.config.HF_DATASETS_CACHE / datasets.config.DOWNLOADED_DATASETS_DIR
@@ -36,6 +37,8 @@ class JobRunnerWithDatasetsCache(JobRunnerWithCache):
         datasets.config.EXTRACTED_DATASETS_PATH = (
             datasets.config.HF_DATASETS_CACHE / datasets.config.EXTRACTED_DATASETS_DIR
         )
+        huggingface_hub.constants.HF_HUB_CACHE = cache_subdirectory / "hub"
+        logging.debug(f"huggingface_hub cache set to: {huggingface_hub.constants.HF_HUB_CACHE}")
 
     def pre_compute(self) -> None:
         super().pre_compute()
