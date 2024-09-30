@@ -87,16 +87,22 @@ def test_pre_compute_post_compute(app_config: AppConfig, get_job_runner: GetJobR
     job_runner.pre_compute()
     datasets_cache_subdirectory = job_runner.cache_subdirectory
     assert_datasets_cache_path(path=datasets_cache_subdirectory, exists=True)
-    assert str(datasets.config.HF_DATASETS_CACHE).startswith(str(datasets_base_path))
+    assert datasets.config.HF_DATASETS_CACHE.is_relative_to(datasets_base_path)
     assert "dummy-job-runner-user-dataset" in str(datasets.config.HF_DATASETS_CACHE)
     job_runner.post_compute()
     assert_datasets_cache_path(path=datasets_base_path, exists=True)
-    assert_datasets_cache_path(path=datasets_cache_subdirectory, exists=False, equals=False)
+    assert_datasets_cache_path(path=datasets_cache_subdirectory, exists=False)
 
 
-def assert_datasets_cache_path(path: Optional[Path], exists: bool, equals: bool = True) -> None:
+def assert_datasets_cache_path(path: Optional[Path], exists: bool) -> None:
     assert path is not None
     assert path.exists() is exists
-    assert (datasets.config.HF_DATASETS_CACHE == path) is equals
-    assert (datasets.config.DOWNLOADED_DATASETS_PATH == path / datasets.config.DOWNLOADED_DATASETS_DIR) is equals
-    assert (datasets.config.EXTRACTED_DATASETS_PATH == path / datasets.config.EXTRACTED_DATASETS_DIR) is equals
+    if exists:
+        datasets_cache_path = path / "datasets"
+        hub_cache_path = path / "hub"
+        assert datasets.config.HF_DATASETS_CACHE == datasets_cache_path
+        assert (
+            datasets.config.DOWNLOADED_DATASETS_PATH == datasets_cache_path / datasets.config.DOWNLOADED_DATASETS_DIR
+        )
+        assert datasets.config.EXTRACTED_DATASETS_PATH == datasets_cache_path / datasets.config.EXTRACTED_DATASETS_DIR
+        assert huggingface_hub.constants.HF_HUB_CACHE == hub_cache_path
