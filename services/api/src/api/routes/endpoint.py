@@ -64,12 +64,12 @@ class OptInOutUrlsCountResponse(TypedDict):
 
 # TODO: remove once full scan is implemented for spawning urls scan
 HARD_CODED_OPT_IN_OUT_URLS = {
-    "laion/laion2B-en": OptInOutUrlsCountResponse(
+    "laion/relaion2B-en-research-safe": OptInOutUrlsCountResponse(
         urls_columns=["URL"],
-        num_opt_in_urls=5,
-        num_opt_out_urls=42785281,
-        num_urls=2322161807,
-        num_scanned_rows=0,  # It is unknown but leaving with 0 for now since UI validates non null
+        num_opt_in_urls=16,
+        num_opt_out_urls=43913814,
+        num_urls=2097653553,
+        num_scanned_rows=2097693557,
         has_urls_columns=True,
         full_scan=True,
     ),

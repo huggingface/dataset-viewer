@@ -104,7 +104,7 @@ def test_compute_too_many_configs(
         # should we really test the following cases?
         # The assumption is that the dataset exists and is accessible with the token
         ("does_not_exist", False, "RetryableConfigNamesError", "DatasetNotFoundError"),
-        ("gated", False, "RetryableConfigNamesError", "ConnectionError"),  # See: huggingface/datasets#7109
+        ("gated", False, "RetryableConfigNamesError", "DatasetNotFoundError"),
         ("private", False, "RetryableConfigNamesError", "DatasetNotFoundError"),
     ],
 )

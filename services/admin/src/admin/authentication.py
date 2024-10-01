@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+from collections.abc import Sequence
 from typing import Literal, Optional
 
 import httpx
@@ -14,6 +15,7 @@ async def auth_check(
     request: Optional[Request] = None,
     organization: Optional[str] = None,
     hf_timeout_seconds: Optional[float] = None,
+    require_fine_grained_permissions: Sequence[str] = ("repo.write",),
 ) -> Literal[True]:
     """check if the user is member of the organization
 
@@ -25,6 +27,8 @@ async def auth_check(
           authorized.
         hf_timeout_seconds (`float`, *optional*): the timeout in seconds for the HTTP request to the external authentication
           service.
+        require_fine_grained_permissions (`Sequence[str]`): require a fine-grained token with certain permissions
+          for the organization, if organization is provided. Defaults to ("repo.write",).
 
     Returns:
         `Literal[True]`: the user is authorized
@@ -39,10 +43,21 @@ async def auth_check(
     if response.status_code == 200:
         try:
             json = response.json()
-            if organization is None or organization in {org["name"] for org in json["orgs"]}:
+            if organization is None or (
+                organization in {org["name"] for org in json["orgs"]}
+                and json["auth"]["type"] == "access_token"
+                and "fineGrained" in json["auth"]["accessToken"]
+                and any(
+                    set(permission for permission in scope["permissions"]) >= set(require_fine_grained_permissions)
+                    for scope in json["auth"]["accessToken"]["fineGrained"]["scoped"]
+                    if scope["entity"]["name"] == organization and scope["entity"]["type"] == "org"
+                )
+            ):
                 return True
             else:
-                raise ExternalAuthenticatedError("You are not member of the organization")
+                raise ExternalAuthenticatedError(
+                    "Cannot access the route with the current credentials. Please retry with other authentication credentials."
+                )
         except Exception as err:
             raise ExternalAuthenticatedError(
                 "Cannot access the route with the current credentials. Please retry with other authentication"

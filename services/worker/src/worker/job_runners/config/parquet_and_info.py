@@ -32,8 +32,6 @@ from datasets.splits import SplitDict, SplitGenerator, SplitInfo
 from datasets.utils.file_utils import (
     ArchiveIterable,
     FilesIterable,
-    get_authentication_headers_for_url,
-    http_head,
     is_relative_path,
     url_or_path_join,
 )
@@ -302,14 +300,6 @@ class EmptyDownloadSizeError(Exception):
 
 class EmptyFeaturesError(Exception):
     pass
-
-
-def _request_size(url: str, hf_token: Optional[str] = None) -> Optional[int]:
-    headers = get_authentication_headers_for_url(url, token=hf_token)
-    response = http_head(url, headers=headers, max_retries=3)
-    response.raise_for_status()
-    size = response.headers.get("Content-Length") if response.ok else None
-    return int(size) if size is not None else size
 
 
 def _fsspec_request_size(urlpath: str, storage_options: dict[str, Any]) -> Optional[int]:
@@ -1004,7 +994,13 @@ def stream_convert_to_parquet(
                         shards_total_size = (
                             len(urlpaths)
                             / min(10_000, len(urlpaths))
-                            * get_total_files_size(urlpaths[:10_000], storage_options=builder.storage_options)
+                            * get_total_files_size(
+                                urlpaths[:10_000],
+                                storage_options={
+                                    "hf": {"token": builder.token, "endpoint": datasets.config.HF_ENDPOINT},
+                                    **builder.storage_options,
+                                },
+                            )
                         )
                         estimated_splits_info[split] = asdict(
                             SplitInfo(

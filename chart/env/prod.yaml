@@ -296,6 +296,7 @@ admin:
     annotations:
       alb.ingress.kubernetes.io/group.order: "1"
       alb.ingress.kubernetes.io/target-node-labels: role-datasets-server=true
+      alb.ingress.kubernetes.io/actions.metrics-unauthorized: '{"type":"fixed-response","fixedResponseConfig":{"contentType":"text/plain","statusCode":"401","messageBody":"401 Unauthorized"}}'
   resources:
     requests:
       cpu: 1

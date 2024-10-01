@@ -8,8 +8,8 @@ license = "Apache-2.0"
 [tool.poetry.dependencies]
 python = "3.9.18"
 appdirs = "^1.4.4"
-cryptography = "^42.0.4"
-datasets = {version = "~2.20.0", extras = ["audio", "vision"]}
+cryptography = "^43.0.1"
+datasets = {version = "3.0.1", extras = ["audio", "vision"]}
 environs = "^9.5.0"
 fsspec = {version = "2024.3.1", extras = ["s3"]}
 huggingface-hub = {version = "^0.24.6", extras = ["hf-transfer"]}
