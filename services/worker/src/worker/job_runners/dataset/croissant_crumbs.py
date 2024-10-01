@@ -109,7 +109,7 @@ def get_croissant_crumbs_from_dataset_infos(
                 {
                     "@type": "cr:RecordSet",
                     "dataType": "cr:Split",
-                    "key": [{"@id": f"{split_record_set_name}/split_name"}],
+                    "key": {"@id": f"{split_record_set_name}/split_name"},
                     "@id": split_record_set_name,
                     "name": split_record_set_name,
                     "description": f"Splits for the {record_set_name} config.",
