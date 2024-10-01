@@ -122,7 +122,7 @@ def test_get_croissant_crumbs_from_dataset_infos() -> None:
                 if key.endswith("name"):
                     assert d[key] in squad_splits
         assert croissant_crumbs["recordSet"][i]["dataType"] == "cr:Split"
-        assert croissant_crumbs["recordSet"][i]["key"].endswith("name")
+        assert croissant["recordSet"][i]["key"]["@id"].endswith("name")
     assert croissant_crumbs["recordSet"][1]["@type"] == croissant_crumbs["recordSet"][3]["@type"] == "cr:RecordSet"
     assert croissant_crumbs["recordSet"][1]["name"] == "record_set_user_squad_with_space"
     assert croissant_crumbs["recordSet"][3]["name"] == "record_set_user_squad_with_space_0"
