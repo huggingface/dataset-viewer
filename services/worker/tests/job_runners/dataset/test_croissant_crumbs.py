@@ -141,10 +141,7 @@ def test_get_croissant_crumbs_from_dataset_infos() -> None:
             if field["description"] == "Split to which the example belongs to.":
                 assert "regex" in field["source"]["transform"]
                 assert field["source"]["extract"]["fileProperty"] == "fullpath"
-                assert (
-                    field["references"]["field"]["@id"]
-                    == croissant_crumbs["recordSet"][i - 1]["field"][0]["@id"]
-                )
+                assert field["references"]["field"]["@id"] == croissant_crumbs["recordSet"][i - 1]["field"][0]["@id"]
             else:
                 assert field["source"]["extract"]["column"] == field["@id"].split("/")[-1]
 
