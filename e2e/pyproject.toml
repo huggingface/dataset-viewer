@@ -11,7 +11,7 @@ python = "3.9.18"
 
 [tool.poetry.group.dev.dependencies]
 bandit = "^1.7.4"
-huggingface-hub = {version = "^0.24.6", extras = ["hf-transfer"]}
+huggingface-hub = {version = "^0.25.1", extras = ["hf-transfer"]}
 mypy = "^1.10.0"
 pip-audit = "^2.7.3"
 pytest = "^8.2.2"

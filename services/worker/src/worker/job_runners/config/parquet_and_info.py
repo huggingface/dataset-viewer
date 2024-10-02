@@ -48,8 +48,8 @@ from huggingface_hub._commit_api import (
     CommitOperationCopy,
     CommitOperationDelete,
 )
+from huggingface_hub.errors import HfHubHTTPError, RepositoryNotFoundError
 from huggingface_hub.hf_api import CommitInfo, DatasetInfo, HfApi, RepoFile
-from huggingface_hub.utils._errors import HfHubHTTPError, RepositoryNotFoundError
 from huggingface_hub.utils._http import HTTP_METHOD_T, Response, http_backoff
 from libcommon.constants import (
     PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_ROW_GROUP_SIZE_FOR_AUDIO_DATASETS,

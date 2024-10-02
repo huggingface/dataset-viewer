@@ -12,7 +12,7 @@ cryptography = "^43.0.1"
 datasets = {version = "3.0.1", extras = ["audio", "vision"]}
 environs = "^9.5.0"
 fsspec = {version = "2024.3.1", extras = ["s3"]}
-huggingface-hub = {version = "^0.24.6", extras = ["hf-transfer"]}
+huggingface-hub = {version = "^0.25.1", extras = ["hf-transfer"]}
 mongo-types = "0.15.1"
 mongoengine = "^0.27.0"
 networkx = "^3.0"
