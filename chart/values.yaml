@@ -384,7 +384,7 @@ ingress:
 
 admin:
   # HF organization that is allowed to request the report
-  hfOrganization: "huggingface"
+  hfOrganization: "datasets-maintainers"
   # Number of reports in /cache-reports/... endpoints
   cacheReportsNumResults: 100
   # Number of reports in /cache-reports-with-content/... endpoints
