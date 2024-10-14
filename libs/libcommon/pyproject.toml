@@ -76,6 +76,7 @@ module = [
     "moto.*",
     "aiobotocore.*",
     "requests.*",
+    "dateutil.*"
 ]
 # ^ huggingface_hub is not typed since version 0.13.0
 ignore_missing_imports = true
