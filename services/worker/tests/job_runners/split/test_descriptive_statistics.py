@@ -347,7 +347,6 @@ def datetime_statistics_expected(datasets: Mapping[str, Dataset]) -> dict[str, A
     return {"num_examples": df.shape[0], "statistics": expected_statistics, "partial": False}
 
 
-
 @pytest.mark.parametrize(
     "hub_dataset_name,expected_error_code",
     [

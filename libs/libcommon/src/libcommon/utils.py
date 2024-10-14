@@ -2,12 +2,14 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import base64
+import datetime
 import functools
 import logging
 import mimetypes
 import time
 from collections.abc import Callable, Sequence
 from datetime import datetime, timedelta, timezone
+from dateutil import parser
 from fnmatch import fnmatch
 from pathlib import Path
 from typing import Any, Optional, TypeVar, Union, cast
@@ -91,6 +93,18 @@ def get_datetime(days: Optional[float] = None) -> datetime:
     if days is not None:
         date = date - timedelta(days=days)
     return date
+
+
+def is_datetime(string: str):
+    try:
+        parser.parse(string)
+        return True
+    except ValueError:
+        return False
+
+
+def datetime_to_string(dt: datetime, format: str = "%Y-%m-%d %H:%M:%S%z") -> str:
+    return dt.strftime(format)
 
 
 def get_duration(started_at: datetime) -> float:

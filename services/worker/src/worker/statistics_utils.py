@@ -15,6 +15,7 @@ from datasets import Features
 from libcommon.exceptions import (
     StatisticsComputationError,
 )
+from libcommon.utils import datetime_to_string, is_datetime
 from PIL import Image
 from tqdm.contrib.concurrent import thread_map
 
@@ -476,6 +477,13 @@ class StringColumn(Column):
             n_unique / n_samples <= MAX_PROPORTION_STRING_LABELS and n_unique <= MAX_NUM_STRING_LABELS
         ) or n_unique <= NUM_BINS
 
+    @staticmethod
+    def is_datetime(data: pl.DataFrame, column_name: str) -> bool:
+        """Check if first 1000 non-null samples in a column match datetime format."""
+
+        values = data.filter(pl.col(column_name).is_not_null()).head(1000)[column_name].to_list()
+        return all(is_datetime(value) for value in values)
+
     @classmethod
     def compute_transformed_data(
         cls,
@@ -493,7 +501,7 @@ class StringColumn(Column):
         data: pl.DataFrame,
         column_name: str,
         n_samples: int,
-    ) -> Union[CategoricalStatisticsItem, NumericalStatisticsItem]:
+    ) -> Union[CategoricalStatisticsItem, NumericalStatisticsItem, DatetimeStatisticsItem]:
         nan_count, nan_proportion = nan_count_proportion(data, column_name, n_samples)
         n_unique = data[column_name].n_unique()
         if cls.is_class(n_unique, n_samples):
@@ -509,6 +517,13 @@ class StringColumn(Column):
                 n_unique=len(labels2counts),
                 frequencies=labels2counts,
             )
+        if cls.is_datetime(data, column_name):
+            datetime_stats: DatetimeStatisticsItem = DatetimeColumn.compute_statistics(
+                data.select(pl.col(column_name).cast(pl.Datetime)),
+                column_name=column_name,
+                n_samples=n_samples,
+            )
+            return datetime_stats
 
         lengths_column_name = f"{column_name}_len"
         lengths_df = cls.compute_transformed_data(data, column_name, transformed_column_name=lengths_column_name)
@@ -519,7 +534,12 @@ class StringColumn(Column):
 
     def compute_and_prepare_response(self, data: pl.DataFrame) -> StatisticsPerColumnItem:
         stats = self.compute_statistics(data, column_name=self.name, n_samples=self.n_samples)
-        string_type = ColumnType.STRING_LABEL if "frequencies" in stats else ColumnType.STRING_TEXT
+        if "frequencies" in stats:
+            string_type = ColumnType.STRING_LABEL
+        elif isinstance(stats["histogram"], DatetimeHistogram):  # type: ignore
+            string_type = ColumnType.DATETIME
+        else:
+            string_type = ColumnType.STRING_TEXT
         return StatisticsPerColumnItem(
             column_name=self.name,
             column_type=string_type,
@@ -799,17 +819,3 @@ class DatetimeColumn(Column):
             column_type=ColumnType.DATETIME,
             column_statistics=stats,
         )
-
-
-def datetime_to_string(dt: datetime.datetime, format: str = "%Y-%m-%d %H:%M:%S%z") -> str:
-    """
-    Convert a datetime.datetime object to a string.
-
-    Args:
-        dt (datetime): The datetime object to convert.
-        format (str, optional): The format of the output string. Defaults to "%Y-%m-%d %H:%M:%S%z".
-
-    Returns:
-        str: The datetime object as a string.
-    """
-    return dt.strftime(format)

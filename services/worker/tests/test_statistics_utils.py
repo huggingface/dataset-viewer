@@ -517,7 +517,7 @@ def count_expected_statistics_for_datetime_column(column: pd.Series, column_name
         timedeltas = pd.Series(range(0, 11 * seconds_in_day, seconds_in_day))
         hist = [2, 1, 1, 1, 1, 1, 1, 1, 1, 1]
     elif column_name == "datetime_null":
-        timedeltas = pd.Series(range(0, 6 * 2 * seconds_in_day, 2 * seconds_in_day))  # take every second day
+        timedeltas = pd.Series(range(0, 6 * 2 * seconds_in_day, 2 * seconds_in_day))  # take every other day
         hist = [1, 1, 0, 1, 0, 1, 0, 1, 0, 1]
     else:
         raise ValueError("Incorrect column")
