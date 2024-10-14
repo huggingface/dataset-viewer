@@ -40,7 +40,7 @@ async def test_external_auth_responses_without_request(
     status: int, error: Optional[type[Exception]], httpx_mock: HTTPXMock
 ) -> None:
     url = "https://auth.check"
-    body = '{"orgs": [{"name": "org1"}]}'
+    body = '{"orgs": [{"name": "org1"}], "auth": {"type": "access_token", "accessToken": {"fineGrained": {"scoped": [{"entity": {"type": "org", "name": "org1"}, "permissions": ["repo.write"]}]}}}}'
     httpx_mock.add_response(method="GET", url=url, status_code=status, text=body)
     if error is None:
         assert await auth_check(external_auth_url=url, organization="org1")
@@ -55,7 +55,7 @@ async def test_external_auth_responses_without_request(
 )
 async def test_org(org: str, status: int, error: Optional[type[Exception]], httpx_mock: HTTPXMock) -> None:
     url = "https://auth.check"
-    body = '{"orgs": [{"name": "org1"}]}'
+    body = '{"orgs": [{"name": "org1"}], "auth": {"type": "access_token", "accessToken": {"fineGrained": {"scoped": [{"entity": {"type": "org", "name": "org1"}, "permissions": ["repo.write"]}]}}}}'
     httpx_mock.add_response(method="GET", url=url, status_code=status, text=body)
     if error is None:
         assert await auth_check(external_auth_url=url, organization=org)

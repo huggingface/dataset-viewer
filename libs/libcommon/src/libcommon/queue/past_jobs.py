@@ -55,6 +55,7 @@ class PastJobDocument(Document):
         dataset (`str`): The dataset on which to apply the job.
         duration (`int`): The duration of the job, in seconds.
         finished_at (`datetime`): The date the job has finished.
+          When read, it's an offset-naive datetime. Use pytz.UTC.localize() to make it timezone-aware.
     """
 
     meta = {

@@ -54,7 +54,8 @@ class JobTotalMetricDocument(Document):
         status (`str`): job status see libcommon.queue.jobs.Status
         dataset_status (`str`): whether the dataset is blocked ("normal", "blocked")
         total (`int`): total of jobs
-        created_at (`datetime`): when the metric has been created.
+        created_at (`datetime`): when the metric has been created. When read, it's an
+          offset-naive datetime. Use pytz.UTC.localize() to make it timezone-aware.
     """
 
     id = ObjectIdField(db_field="_id", primary_key=True, default=ObjectId)
@@ -84,6 +85,7 @@ class WorkerSizeJobsCountDocument(Document):
         worker_size (`WorkerSize`): worker size
         jobs_count (`int`): jobs count
         created_at (`datetime`): when the metric has been created.
+          When read, it's an offset-naive datetime. Use pytz.UTC.localize() to make it timezone-aware.
     """
 
     id = ObjectIdField(db_field="_id", primary_key=True, default=ObjectId)

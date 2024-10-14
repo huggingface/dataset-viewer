@@ -326,6 +326,7 @@ def test_compute(
     )
 
     parquet_and_info_job_runner = get_parquet_and_info_job_runner(dataset, config, app_config)
+    parquet_and_info_job_runner.pre_compute()
     with ExitStack() as stack:
         if multiple_parquet_files:
             stack.enter_context(patch.object(datasets.config, "MAX_SHARD_SIZE", 1))
@@ -333,6 +334,7 @@ def test_compute(
             # to be able to generate multiple tables and therefore multiple files
             stack.enter_context(patch.object(CsvConfig, "pd_read_csv_kwargs", {"chunksize": 1}))
         parquet_and_info_response = parquet_and_info_job_runner.compute()
+    parquet_and_info_job_runner.post_compute()
     config_parquet_and_info = parquet_and_info_response.content
     if multiple_parquet_files:
         assert len(config_parquet_and_info["parquet_files"]) > 1
@@ -349,7 +351,9 @@ def test_compute(
     )
 
     parquet_job_runner = get_parquet_job_runner(dataset, config, app_config)
+    parquet_job_runner.pre_compute()
     parquet_response = parquet_job_runner.compute()
+    parquet_job_runner.post_compute()
     config_parquet = parquet_response.content
 
     assert config_parquet["partial"] is partial_parquet_export
@@ -364,7 +368,9 @@ def test_compute(
     )
 
     parquet_metadata_job_runner = get_parquet_metadata_job_runner(dataset, config, app_config)
+    parquet_metadata_job_runner.pre_compute()
     parquet_metadata_response = parquet_metadata_job_runner.compute()
+    parquet_metadata_job_runner.post_compute()
     config_parquet_metadata = parquet_metadata_response.content
     parquet_export_num_rows = sum(
         parquet_file["num_rows"] for parquet_file in config_parquet_metadata["parquet_files_metadata"]

@@ -168,7 +168,7 @@ IMAGE_EXTENSIONS = {
     ".pjp",
     ".png",
     ".svg",
-    "webp",
+    ".webp",
     ".bmp",
     ".ico",
     ".cur",

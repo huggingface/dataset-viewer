@@ -8,6 +8,7 @@ from datasets import Dataset, Image
 from datasets.table import embed_table_storage
 from libcommon.constants import ROW_IDX_COLUMN
 from libcommon.storage_client import StorageClient
+from libcommon.url_preparator import URLPreparator
 from PIL import Image as PILImage
 
 from libapi.response import create_response
@@ -23,6 +24,7 @@ def storage_client(tmp_path: Path) -> StorageClient:
         protocol="file",
         storage_root=str(tmp_path / CACHED_ASSETS_FOLDER),
         base_url="http://localhost/cached-assets",
+        url_preparator=URLPreparator(url_signer=None),
     )
 
 

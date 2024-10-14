@@ -131,6 +131,7 @@ class CachedResponseDocument(Document):
         content (`dict`): The content of the cached response. Can be an error or a valid content.
         details (`dict`, *optional*): Additional details, eg. a detailed error that we don't want to send as a response.
         updated_at (`datetime`): When the cache entry has been last updated.
+          When read, it's an offset-naive datetime. Use pytz.UTC.localize() to make it timezone-aware.
         duration (`float`, *optional*): Duration of a corresponding job in seconds.
         job_runner_version (`int`): The version of the job runner that cached the response.
         failed_runs (`int`): The number of failed_runs to get cached result.

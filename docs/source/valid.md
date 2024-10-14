@@ -25,7 +25,7 @@ This guide shows you how to check dataset validity programmatically, but free to
 ```python
 import requests
 headers = {"Authorization": f"Bearer {API_TOKEN}"}
-API_URL = "https://datasets-server.huggingface.co/is-valid?dataset=rotten_tomatoes"
+API_URL = "https://datasets-server.huggingface.co/is-valid?dataset=cornell-movie-review-data/rotten_tomatoes"
 def query():
     response = requests.get(API_URL, headers=headers)
     return response.json()
@@ -37,7 +37,7 @@ data = query()
 import fetch from "node-fetch";
 async function query(data) {
     const response = await fetch(
-        "https://datasets-server.huggingface.co/is-valid?dataset=rotten_tomatoes",
+        "https://datasets-server.huggingface.co/is-valid?dataset=cornell-movie-review-data/rotten_tomatoes",
         {
             headers: { Authorization: `Bearer ${API_TOKEN}` },
             method: "GET"
@@ -53,7 +53,7 @@ query().then((response) => {
 </js>
 <curl>
 ```curl
-curl https://datasets-server.huggingface.co/is-valid?dataset=rotten_tomatoes \
+curl https://datasets-server.huggingface.co/is-valid?dataset=cornell-movie-review-data/rotten_tomatoes \
         -X GET \
         -H "Authorization: Bearer ${API_TOKEN}"
 ```
@@ -140,6 +140,6 @@ Some cases where a dataset is not valid are:
 - the dataset contains no data or the data format is not supported
 
 <Tip>
-  Remember if a dataset is <a href="./quick_start#gated-datasets">gated</a>,
+  Remember if a dataset is <a href="./quick_start#private-and-gated-datasets">gated</a>,
   you'll need to provide your user token to submit a successful query!
 </Tip>

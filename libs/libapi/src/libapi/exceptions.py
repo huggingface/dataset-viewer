@@ -22,6 +22,7 @@ ApiErrorCode = Literal[
     "JWTMissingRequiredClaim",
     "MissingProcessingStepsError",
     "MissingRequiredParameter",
+    "RenamedDatasetError",
     "ResponseNotFound",
     "ResponseNotReady",
     "SearchFeatureNotAvailableError",
@@ -111,6 +112,13 @@ class ResponseNotFoundError(ApiError):
 
     def __init__(self, message: str):
         super().__init__(message, HTTPStatus.NOT_FOUND, "ResponseNotFound")
+
+
+class RenamedDatasetError(ApiError):
+    """The dataset had been renamed. The current name is not found."""
+
+    def __init__(self, message: str):
+        super().__init__(message, HTTPStatus.NOT_FOUND, "RenamedDatasetError")
 
 
 class ResponseNotReadyError(ApiError):

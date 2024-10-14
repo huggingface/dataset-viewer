@@ -33,11 +33,11 @@ def prepare_json(response: requests.Response) -> Any:
             "ExternalUnauthenticatedError",
         ),
         (422, "missing required parameter", None, "plain_text", "train", "MissingRequiredParameter"),
-        (422, "missing required parameter", "imdb", None, "train", "MissingRequiredParameter"),
-        (422, "missing required parameter", "imdb", "plain_text", None, "MissingRequiredParameter"),
+        (422, "missing required parameter", "stanfordnlp/imdb", None, "train", "MissingRequiredParameter"),
+        (422, "missing required parameter", "stanfordnlp/imdb", "plain_text", None, "MissingRequiredParameter"),
         (422, "empty required parameter", "", "plain_text", "train", "MissingRequiredParameter"),
-        (422, "empty required parameter", "imdb", "", "train", "MissingRequiredParameter"),
-        (422, "empty required parameter", "imdb", "plain_text", "", "MissingRequiredParameter"),
+        (422, "empty required parameter", "stanfordnlp/imdb", "", "train", "MissingRequiredParameter"),
+        (422, "empty required parameter", "stanfordnlp/imdb", "plain_text", "", "MissingRequiredParameter"),
     ],
 )
 def test_first_rows(status: int, name: str, dataset: str, config: str, split: str, error_code: str) -> None:

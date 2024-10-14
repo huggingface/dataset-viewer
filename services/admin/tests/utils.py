@@ -9,7 +9,7 @@ def request_callback(request: httpx.Request) -> httpx.Response:
     # and 200 if none has been provided
     # there is no logic behind this behavior, it's just to test if the
     # tokens are correctly passed to the auth_check service
-    body = '{"orgs": [{"name": "org1"}]}'
+    body = '{"orgs": [{"name": "org1"}], "auth": {"type": "access_token", "accessToken": {"fineGrained": {"scoped": [{"entity": {"type": "org", "name": "org1"}, "permissions": ["repo.write"]}]}}}}'
     if request.headers.get("authorization"):
         return httpx.Response(status_code=404, text=body)
     return httpx.Response(status_code=200, text=body)

@@ -8,15 +8,15 @@
 
 </Tip>
 
-Let's start by grabbing the URLs to the `train` split of the [`blog_authorship_corpus`](https://huggingface.co/datasets/blog_authorship_corpus) dataset from the dataset viewer API:
+Let's start by grabbing the URLs to the `train` split of the [`barilan/blog_authorship_corpus`](https://huggingface.co/datasets/barilan/blog_authorship_corpus) dataset from the dataset viewer API:
 
 ```py
-r = requests.get("https://datasets-server.huggingface.co/parquet?dataset=blog_authorship_corpus")
+r = requests.get("https://datasets-server.huggingface.co/parquet?dataset=barilan/blog_authorship_corpus")
 j = r.json()
 urls = [f['url'] for f in j['parquet_files'] if f['split'] == 'train']
 urls
-['https://huggingface.co/datasets/blog_authorship_corpus/resolve/refs%2Fconvert%2Fparquet/blog_authorship_corpus/train/0000.parquet',
- 'https://huggingface.co/datasets/blog_authorship_corpus/resolve/refs%2Fconvert%2Fparquet/blog_authorship_corpus/train/0001.parquet']
+['https://huggingface.co/datasets/barilan/blog_authorship_corpus/resolve/refs%2Fconvert%2Fparquet/blog_authorship_corpus/train/0000.parquet',
+ 'https://huggingface.co/datasets/barilan/blog_authorship_corpus/resolve/refs%2Fconvert%2Fparquet/blog_authorship_corpus/train/0001.parquet']
 ```
 
 To read from a single Parquet file, use the [`read_parquet`](https://pola-rs.github.io/polars/py-polars/html/reference/api/polars.read_parquet.html) function to read it into a DataFrame and then execute your query:
@@ -25,7 +25,7 @@ To read from a single Parquet file, use the [`read_parquet`](https://pola-rs.git
 import polars as pl
 
 df = (
-    pl.read_parquet("https://huggingface.co/datasets/blog_authorship_corpus/resolve/refs%2Fconvert%2Fparquet/blog_authorship_corpus/train/0000.parquet")
+    pl.read_parquet("https://huggingface.co/datasets/barilan/blog_authorship_corpus/resolve/refs%2Fconvert%2Fparquet/blog_authorship_corpus/train/0000.parquet")
     .groupby("horoscope")
     .agg(
         [
@@ -92,7 +92,7 @@ To lazily read a Parquet file, use the [`scan_parquet`](https://pola-rs.github.i
 import polars as pl
 
 q = (
-    pl.scan_parquet("https://huggingface.co/datasets/blog_authorship_corpus/resolve/refs%2Fconvert%2Fparquet/blog_authorship_corpus/train/0000.parquet")
+    pl.scan_parquet("https://huggingface.co/datasets/barilan/blog_authorship_corpus/resolve/refs%2Fconvert%2Fparquet/blog_authorship_corpus/train/0000.parquet")
     .groupby("horoscope")
     .agg(
         [

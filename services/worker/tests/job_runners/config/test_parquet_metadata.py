@@ -299,6 +299,7 @@ def test_compute(
         http_status=upstream_status,
     )
     job_runner = get_job_runner(dataset, config, app_config)
+    job_runner.pre_compute()
     if should_raise:
         with pytest.raises(Exception) as e:
             job_runner.compute()
@@ -328,6 +329,7 @@ def test_compute(
                 )
                 == pq.ParquetFile(get_dummy_parquet_buffer()).metadata
             )
+    job_runner.post_compute()
 
 
 class AuthenticatedHTTPFile(HTTPFile):  # type: ignore

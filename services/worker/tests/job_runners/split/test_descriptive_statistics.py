@@ -6,10 +6,8 @@ from http import HTTPStatus
 from typing import Any, Optional
 
 import pandas as pd
-import polars as pl
 import pytest
 from datasets import Dataset
-from huggingface_hub.hf_api import HfApi
 from libcommon.dtos import Priority
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import upsert_response
@@ -25,7 +23,6 @@ from worker.statistics_utils import (
     ColumnType,
 )
 
-from ...constants import CI_HUB_ENDPOINT, CI_USER_TOKEN
 from ...fixtures.hub import HubDatasetTest
 from ...test_statistics_utils import (
     count_expected_statistics_for_bool_column,
@@ -350,37 +347,6 @@ def datetime_statistics_expected(datasets: Mapping[str, Dataset]) -> dict[str, A
     return {"num_examples": df.shape[0], "statistics": expected_statistics, "partial": False}
 
 
-@pytest.fixture
-def struct_thread_panic_error_parquet_file(tmp_path_factory: pytest.TempPathFactory) -> str:
-    repo_id = "__DUMMY_TRANSFORMERS_USER__/test_polars_panic_error"
-    hf_api = HfApi(endpoint=CI_HUB_ENDPOINT)
-
-    dir_name = tmp_path_factory.mktemp("data")
-    hf_api.hf_hub_download(
-        repo_id=repo_id,
-        filename="test_polars_panic_error.parquet",
-        repo_type="dataset",
-        local_dir=dir_name,
-        token=CI_USER_TOKEN,
-    )
-    return str(dir_name / "test_polars_panic_error.parquet")
-
-
-def test_polars_struct_thread_panic_error(struct_thread_panic_error_parquet_file: str) -> None:
-    from polars import (
-        Float64,
-        List,
-        String,
-        Struct,
-    )
-
-    df = pl.read_parquet(struct_thread_panic_error_parquet_file)  # should not raise
-    assert "conversations" in df
-
-    conversations_schema = List(Struct({"from": String, "value": String, "weight": Float64}))
-    assert "conversations" in df.schema
-    assert df.schema["conversations"] == conversations_schema
-
 
 @pytest.mark.parametrize(
     "hub_dataset_name,expected_error_code",
@@ -457,7 +423,9 @@ def test_compute(
 
     # computing and pushing real parquet files because we need them for stats computation
     parquet_and_info_job_runner = get_parquet_and_info_job_runner(dataset, config, app_config)
+    parquet_and_info_job_runner.pre_compute()
     parquet_and_info_response = parquet_and_info_job_runner.compute()
+    parquet_and_info_job_runner.post_compute()
     config_parquet_and_info = parquet_and_info_response.content
 
     assert config_parquet_and_info["partial"] is partial
@@ -472,7 +440,9 @@ def test_compute(
     )
 
     parquet_job_runner = get_parquet_job_runner(dataset, config, app_config)
+    parquet_job_runner.pre_compute()
     parquet_response = parquet_job_runner.compute()
+    parquet_job_runner.post_compute()
     config_parquet = parquet_response.content
 
     assert config_parquet["partial"] is partial
@@ -487,7 +457,9 @@ def test_compute(
     )
 
     parquet_metadata_job_runner = get_parquet_metadata_job_runner(dataset, config, app_config)
+    parquet_metadata_job_runner.pre_compute()
     parquet_metadata_response = parquet_metadata_job_runner.compute()
+    parquet_metadata_job_runner.post_compute()
     config_parquet_metadata = parquet_metadata_response.content
 
     assert config_parquet_metadata["partial"] is partial
@@ -567,3 +539,4 @@ def test_compute(
                 assert column_response_stats == expected_column_response_stats
             else:
                 raise ValueError("Incorrect data type")
+    job_runner.post_compute()

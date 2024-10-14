@@ -205,7 +205,9 @@ def test_compute(
         progress=1.0,
         http_status=HTTPStatus.OK,
     )
+    job_runner.pre_compute()
     response = job_runner.compute()
+    job_runner.post_compute()
     assert response
     assert response.content == expected_content
 
@@ -250,6 +252,8 @@ def test_compute_failed(
             progress=1.0,
             http_status=upstream_status,
         )
+    job_runner.pre_compute()
     with pytest.raises(Exception) as exc_info:
         job_runner.compute()
+    job_runner.post_compute()
     assert exc_info.typename == exception_name

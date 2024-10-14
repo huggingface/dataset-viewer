@@ -12,7 +12,7 @@ from typing import Any, Optional
 
 import requests
 from huggingface_hub.hf_api import HfApi
-from huggingface_hub.utils._errors import hf_raise_for_status
+from huggingface_hub.utils import hf_raise_for_status
 from requests import Response
 
 from .constants import CI_HUB_ENDPOINT

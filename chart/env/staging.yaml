@@ -2,6 +2,7 @@
 # Copyright 2022 The HuggingFace Authors.
 
 # --- common parameters ---
+
 global:
   huggingface:
     ingress:
@@ -60,7 +61,6 @@ images:
       useGlobalRegistry: false
       repository: datasets-server-services-webhook
       tag: sha-fb3399a
-
 secrets:
   infisical:
     enabled: true
@@ -247,6 +247,17 @@ search:
 sseApi:
   service:
     type: NodePort
+  ingress:
+    enabled: true
+    annotations:
+      alb.ingress.kubernetes.io/group.order: "4"
+  resources:
+    requests:
+      cpu: 100m
+      memory: "512Mi"
+    limits:
+      cpu: 1
+      memory: "4Gi"
 
 workers:
   - deployName: "all"
@@ -307,7 +318,7 @@ webhook:
   ingress:
     enabled: true
     annotations:
-      alb.ingress.kubernetes.io/group.order: "4"
+      alb.ingress.kubernetes.io/group.order: "5"
   resources:
     requests:
       cpu: 100m

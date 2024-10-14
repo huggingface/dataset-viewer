@@ -23,7 +23,7 @@ from libcommon.simple_cache import get_previous_step_or_raise
 from worker.config import AppConfig, OptInOutUrlsScanConfig
 from worker.dtos import CompleteJobResult, OptInOutUrlsScanResponse, OptUrl
 from worker.job_runners.split.split_job_runner import SplitJobRunnerWithDatasetsCache
-from worker.utils import get_rows_or_raise, resolve_trust_remote_code
+from worker.utils import get_rows_or_raise
 
 
 async def check_spawning(
@@ -99,7 +99,6 @@ def compute_opt_in_out_urls_scan_response(
     max_concurrent_requests_number: int,
     max_requests_per_second: int,
     spawning_url: str,
-    dataset_scripts_allow_list: list[str],
 ) -> OptInOutUrlsScanResponse:
     """
     Get the response of 'split-opt-in-out-urls-scan' cache for a specific split of a dataset from huggingface.co.
@@ -129,10 +128,6 @@ def compute_opt_in_out_urls_scan_response(
             The maximum number of requests to be processed by second.
         spawning_url (`str`):
             Spawgning API URL
-        dataset_scripts_allow_list (`list[str]`):
-            List of datasets for which we support dataset scripts.
-            Unix shell-style wildcards also work in the dataset name for namespaced datasets,
-            for example `some_namespace/*` to refer to all the datasets in the `some_namespace` namespace.
 
     Raises:
         [~`libcommon.simple_cache.CachedArtifactError`]:
@@ -148,13 +143,12 @@ def compute_opt_in_out_urls_scan_response(
         [~`libcommon.exceptions.NormalRowsError`]:
           If the split rows could not be obtained using the datasets library in normal mode.
         [~`libcommon.exceptions.DatasetWithScriptNotSupportedError`]:
-            If the dataset has a dataset script and is not in the allow list.
+            If the dataset has a dataset script.
 
     Returns:
         `OptInOutUrlsScanResponse`: An object with the lists of opt-in/opt-out urls
     """
     logging.info(f"compute 'split-opt-in-out-urls-scan' for {dataset=} {config=} {split=}")
-    trust_remote_code = resolve_trust_remote_code(dataset=dataset, allow_list=dataset_scripts_allow_list)
 
     if not spawning_token:
         raise MissingSpawningTokenError("OPT_IN_OUT_URLS_SCAN_SPAWNING_TOKEN is not set")
@@ -174,9 +168,7 @@ def compute_opt_in_out_urls_scan_response(
 
     # get the info
     try:
-        info = get_dataset_config_info(
-            path=dataset, config_name=config, token=hf_token, trust_remote_code=trust_remote_code
-        )
+        info = get_dataset_config_info(path=dataset, config_name=config, token=hf_token)
     except Exception as err:
         if isinstance(err, ValueError) and "trust_remote_code" in str(err):
             raise DatasetWithScriptNotSupportedError from err
@@ -213,7 +205,6 @@ def compute_opt_in_out_urls_scan_response(
         rows_max_number=rows_max_number,
         token=hf_token,
         column_names=image_url_columns,
-        trust_remote_code=trust_remote_code,
     )
     rows = rows_content.rows
 
@@ -300,6 +291,5 @@ class SplitOptInOutUrlsScanJobRunner(SplitJobRunnerWithDatasetsCache):
                 max_concurrent_requests_number=self.urls_scan_config.max_concurrent_requests_number,
                 max_requests_per_second=self.urls_scan_config.max_requests_per_second,
                 spawning_url=self.urls_scan_config.spawning_url,
-                dataset_scripts_allow_list=self.app_config.common.dataset_scripts_allow_list,
             )
         )

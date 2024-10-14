@@ -112,153 +112,33 @@ def extra_fields_readme(tmp_path_factory: pytest.TempPathFactory) -> str:
     return path
 
 
-DATASET_SCRIPT_WITH_EXTERNAL_FILES_CONTENT = """
-import datasets
-
-_URLS = {
-    "train": [
-        "https://huggingface.co/datasets/lhoestq/test/resolve/main/some_text.txt",
-        "https://huggingface.co/datasets/lhoestq/test/resolve/main/another_text.txt",
+@pytest.fixture(scope="session")
+def n_configs_paths(tmp_path_factory: pytest.TempPathFactory) -> list[str]:
+    directory = tmp_path_factory.mktemp("data")
+    readme = directory / "README.md"
+    N = 15
+    lines = [
+        "---",
+        "configs:",
     ]
-}
-
-
-class Test(datasets.GeneratorBasedBuilder):
-
-
-    def _info(self):
-        return datasets.DatasetInfo(
-            features=datasets.Features(
-                {
-                    "text": datasets.Value("string"),
-                }
-            ),
-            homepage="https://huggingface.co/datasets/lhoestq/test",
-        )
-
-    def _split_generators(self, dl_manager):
-        downloaded_files = dl_manager.download_and_extract(_URLS)
-
-        return [
-            datasets.SplitGenerator(name=datasets.Split.TRAIN, gen_kwargs={"filepath": downloaded_files["train"]}),
+    for i in range(N):
+        lines += [
+            f"- config_name: config{i}",
+            f'  data_files: "config{i}.csv"',
         ]
-
-    def _generate_examples(self, filepaths):
-        _id = 0
-        for filepath in filepaths:
-            with open(filepath, encoding="utf-8") as f:
-                for line in f:
-                    yield _id, {"text": line.rstrip()}
-                    _id += 1
-"""
-
-
-@pytest.fixture(scope="session")
-def dataset_script_with_external_files_path(tmp_path_factory: pytest.TempPathFactory) -> str:
-    path = str(tmp_path_factory.mktemp("data") / "{dataset_name}.py")
-    with open(path, "w", newline="") as f:
-        f.write(DATASET_SCRIPT_WITH_EXTERNAL_FILES_CONTENT)
-    return path
-
-
-DATASET_SCRIPT_WITH_TWO_CONFIGS = """
-import os
-
-import datasets
-from datasets import DatasetInfo, BuilderConfig, Features, Split, SplitGenerator, Value
-
-
-class DummyDataset(datasets.GeneratorBasedBuilder):
-
-    BUILDER_CONFIGS = [BuilderConfig(name="first"), BuilderConfig(name="second")]
-
-    def _info(self) -> DatasetInfo:
-        return DatasetInfo(features=Features({"text": Value("string")}))
-
-    def _split_generators(self, dl_manager):
-        return [
-            SplitGenerator(Split.TRAIN, gen_kwargs={"text": self.config.name}),
-            SplitGenerator(Split.TEST, gen_kwargs={"text": self.config.name}),
-        ]
-
-    def _generate_examples(self, text, **kwargs):
-        for i in range(1000):
-            yield i, {"text": text}
-"""
-
-
-@pytest.fixture(scope="session")
-def dataset_script_with_two_configs_path(tmp_path_factory: pytest.TempPathFactory) -> str:
-    path = str(tmp_path_factory.mktemp("data") / "{dataset_name}.py")
-    with open(path, "w", newline="") as f:
-        f.write(DATASET_SCRIPT_WITH_TWO_CONFIGS)
-    return path
-
-
-# N = 15
-DATASET_SCRIPT_WITH_N_CONFIGS = """
-import os
-
-import datasets
-from datasets import DatasetInfo, BuilderConfig, Features, Split, SplitGenerator, Value
-
-
-class DummyDataset(datasets.GeneratorBasedBuilder):
-
-    BUILDER_CONFIGS = [BuilderConfig(name="config"+str(i)) for i in range(15)]
-
-    def _info(self) -> DatasetInfo:
-        return DatasetInfo(features=Features({"text": Value("string")}))
-
-    def _split_generators(self, dl_manager):
-        return [
-            SplitGenerator(Split.TRAIN, gen_kwargs={"text": self.config.name}),
-        ]
-
-    def _generate_examples(self, text, **kwargs):
-        for i in range(1000):
-            yield i, {"text": text}
-"""
-
-
-@pytest.fixture(scope="session")
-def dataset_script_with_n_configs_path(tmp_path_factory: pytest.TempPathFactory) -> str:
-    path = str(tmp_path_factory.mktemp("data") / "{dataset_name}.py")
-    with open(path, "w", newline="") as f:
-        f.write(DATASET_SCRIPT_WITH_N_CONFIGS)
-    return path
-
-
-DATASET_SCRIPT_WITH_MANUAL_DOWNLOAD = """
-import os
-
-import datasets
-from datasets import DatasetInfo, BuilderConfig, Features, Split, SplitGenerator, Value
-
-
-class DummyDatasetManualDownload(datasets.GeneratorBasedBuilder):
-
-    @property
-    def manual_download_instructions(self):
-        return "To use DummyDatasetManualDownload you have to download it manually."
-
-    def _info(self) -> DatasetInfo:
-        return DatasetInfo(features=Features({"text": Value("string")}))
-
-    def _split_generators(self, dl_manager):
-        return [
-            SplitGenerator(Split.TRAIN, gen_kwargs={"text": self.config.name}),
-        ]
-
-    def _generate_examples(self, text, **kwargs):
-        for i in range(1000):
-            yield i, {"text": text}
-"""
-
-
-@pytest.fixture(scope="session")
-def dataset_script_with_manual_download_path(tmp_path_factory: pytest.TempPathFactory) -> str:
-    path = str(tmp_path_factory.mktemp("data") / "{dataset_name}.py")
-    with open(path, "w", newline="") as f:
-        f.write(DATASET_SCRIPT_WITH_MANUAL_DOWNLOAD)
-    return path
+    lines += [
+        "---",
+    ]
+    with open(readme, "w", newline="") as f:
+        f.writelines(f"{line}\n" for line in lines)
+    files = [str(readme)]
+    for i in range(N):
+        config_name = f"config{i}"
+        path = directory / f"{config_name}.csv"
+        with open(path, "w", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=["text"])
+            writer.writeheader()
+            for _ in range(1000):
+                writer.writerow({"text": config_name})
+        files.append(str(path))
+    return files

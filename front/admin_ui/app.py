@@ -217,16 +217,21 @@ with gr.Blocks() as demo:
                                 error_datasets.append(dataset)
                             else:
                                 unauthorized_datasets.append(dataset)
-                        
+
                         def fill_empty_cells(datasets, sign):
                             trending_datasets_coverage[
                                 "All trending datasets"
                             ] += datasets
                             for pretty_field in trending_datasets_coverage:
                                 trending_datasets_coverage[pretty_field] += [sign] * (
-                                    len(trending_datasets_coverage["All trending datasets"])
+                                    len(
+                                        trending_datasets_coverage[
+                                            "All trending datasets"
+                                        ]
+                                    )
                                     - len(trending_datasets_coverage[pretty_field])
-                                )    
+                                )
+
                         fill_empty_cells(error_datasets, "❌")
                         fill_empty_cells(unauthorized_datasets, "🚫")
 
@@ -521,7 +526,7 @@ with gr.Blocks() as demo:
                 )
             with gr.Tab("Recreate dataset"):
                 delete_and_recreate_dataset_name = gr.Textbox(
-                    label="dataset", placeholder="imdb"
+                    label="dataset", placeholder="stanfordnlp/imdb"
                 )
                 delete_and_recreate_priority = gr.Dropdown(
                     ["low", "normal", "high"],

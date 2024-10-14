@@ -31,7 +31,7 @@ def test_metrics() -> None:
         # these metrics are only available in the admin API
         assert not has_metric(
             name="queue_jobs_total",
-            labels={"pid": "[0-9]*", "queue": endpoint, "status": "started"},
+            labels={"dataset_status": "normal", "pid": "[0-9]*", "queue": endpoint, "status": "started"},
             metric_names=metric_names,
         ), f"queue_jobs_total - endpoint={endpoint} found in {metrics}"
         assert not has_metric(

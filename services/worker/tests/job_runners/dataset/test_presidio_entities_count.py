@@ -348,16 +348,20 @@ def test_compute(
             )
 
     job_runner = get_job_runner(dataset, app_config)
+    job_runner.pre_compute()
     if should_raise:
         with pytest.raises(Exception) as e:
             job_runner.compute()
         assert e.typename == expected_error_code
     else:
         assert job_runner.compute().content == expected_content
+    job_runner.post_compute()
 
 
 def test_doesnotexist(app_config: AppConfig, get_job_runner: GetJobRunner) -> None:
     dataset = "doesnotexist"
     job_runner = get_job_runner(dataset, app_config)
+    job_runner.pre_compute()
     with pytest.raises(CachedArtifactNotFoundError):
         job_runner.compute()
+    job_runner.post_compute()

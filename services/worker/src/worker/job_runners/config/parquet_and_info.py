@@ -8,7 +8,6 @@ import re
 from collections.abc import Callable, Generator
 from contextlib import ExitStack
 from itertools import groupby
-from multiprocessing.pool import ThreadPool
 from pathlib import Path
 from types import TracebackType
 from typing import Any, Optional, TypeVar, Union
@@ -23,7 +22,6 @@ import fsspec
 import numpy as np
 import pyarrow as pa
 import pyarrow.parquet as pq
-import requests
 from datasets import DownloadConfig, Features, load_dataset_builder
 from datasets.arrow_writer import ParquetWriter
 from datasets.builder import DatasetBuilder
@@ -34,8 +32,6 @@ from datasets.splits import SplitDict, SplitGenerator, SplitInfo
 from datasets.utils.file_utils import (
     ArchiveIterable,
     FilesIterable,
-    get_authentication_headers_for_url,
-    http_head,
     is_relative_path,
     url_or_path_join,
 )
@@ -52,8 +48,8 @@ from huggingface_hub._commit_api import (
     CommitOperationCopy,
     CommitOperationDelete,
 )
+from huggingface_hub.errors import HfHubHTTPError, RepositoryNotFoundError
 from huggingface_hub.hf_api import CommitInfo, DatasetInfo, HfApi, RepoFile
-from huggingface_hub.utils._errors import HfHubHTTPError, RepositoryNotFoundError
 from huggingface_hub.utils._http import HTTP_METHOD_T, Response, http_backoff
 from libcommon.constants import (
     PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_ROW_GROUP_SIZE_FOR_AUDIO_DATASETS,
@@ -62,22 +58,16 @@ from libcommon.constants import (
 )
 from libcommon.dtos import JobInfo, SplitHubFile
 from libcommon.exceptions import (
-    ConfigNamesError,
     CreateCommitError,
     DatasetGenerationCastError,
     DatasetGenerationError,
     DatasetNotFoundError,
     DatasetWithScriptNotSupportedError,
     EmptyDatasetError,
-    ExternalFilesSizeRequestConnectionError,
-    ExternalFilesSizeRequestError,
-    ExternalFilesSizeRequestHTTPError,
-    ExternalFilesSizeRequestTimeoutError,
     FileSystemError,
     HfHubError,
     LockedDatasetTimeoutError,
     PreviousStepFormatError,
-    UnsupportedExternalFilesError,
 )
 from libcommon.parquet_utils import PART_SUFFIX, PARTIAL_PREFIX
 from libcommon.queue.lock import lock
@@ -94,7 +84,6 @@ from worker.utils import (
     create_branch,
     hf_hub_url,
     raise_if_long_column_name,
-    resolve_trust_remote_code,
     retry_on_arrow_invalid_open_file,
 )
 
@@ -265,10 +254,7 @@ def _is_too_big_from_datasets(
 def is_dataset_too_big(
     dataset_info: DatasetInfo,
     builder: DatasetBuilder,
-    hf_endpoint: str,
-    hf_token: Optional[str],
     max_dataset_size_bytes: int,
-    max_external_data_files: int,
 ) -> bool:
     """
     Check:
@@ -281,51 +267,18 @@ def is_dataset_too_big(
             The dataset info
         builder (`datasets.builder.DatasetBuilder`):
             A dataset builder instance to check.
-        hf_endpoint (`str`):
-            The Hub endpoint (for example: "https://huggingface.co")
-        hf_token (`str`, *optional*):
-            An app authentication token with read access to all the datasets.
         max_dataset_size_bytes (`int`):
             The maximum size of a dataset in bytes. If the dataset is under the limit (which means that the size
             can be fetched), it will be allowed.
-        max_external_data_files (`int`):
-            The maximum number of external data files (i.e. not hosted on HF).
-            If the dataset is under the limit (which means that the files can be fetched), it will be allowed.
-
-    Raises:
-        [~`libcommon.exceptions.UnsupportedExternalFilesError`]:
-          If we failed to get the external files sizes to make sure we can convert the dataset to parquet
-        [~`libcommon.exceptions.ExternalFilesSizeRequestHTTPError`]:
-          If we failed to get the external files sizes to make sure we can convert the dataset to parquet
-        [~`libcommon.exceptions.ExternalFilesSizeRequestConnectionError`]:
-          If we failed to get the external files sizes to make sure we can convert the dataset to parquet
-        [~`libcommon.exceptions.ExternalFilesSizeRequestTimeoutError`]:
-          If we failed to get the external files sizes to make sure we can convert the dataset to parquet
-        [~`libcommon.exceptions.ExternalFilesSizeRequestError`]:
-          If we failed to get the external files sizes to make sure we can convert the dataset to parquet
-        [~`ValueError`](https://docs.python.org/3/library/exceptions.html#ValueError):
-          If the datasets.config.HF_ENDPOINT is not set to the expected value
 
     Returns:
         `bool`: if dataset is too big.
     """
-    if datasets.config.HF_ENDPOINT != hf_endpoint:
-        raise ValueError(
-            f"Invalid datasets.config.HF_ENDPOINT value: '{datasets.config.HF_ENDPOINT}'. Please set it to:"
-            f" '{hf_endpoint}'."
-        )
-    return (
-        _is_too_big_from_hub(dataset_info=dataset_info, max_dataset_size_bytes=max_dataset_size_bytes)
-        or _is_too_big_from_datasets(
-            builder.info,
-            max_dataset_size_bytes=max_dataset_size_bytes,
-        )
-        or _is_too_big_from_external_data_files(
-            builder=builder,
-            max_dataset_size_bytes=max_dataset_size_bytes,
-            max_external_data_files=max_external_data_files,
-            hf_token=hf_token,
-        )
+    return _is_too_big_from_hub(
+        dataset_info=dataset_info, max_dataset_size_bytes=max_dataset_size_bytes
+    ) or _is_too_big_from_datasets(
+        builder.info,
+        max_dataset_size_bytes=max_dataset_size_bytes,
     )
 
 
@@ -347,14 +300,6 @@ class EmptyDownloadSizeError(Exception):
 
 class EmptyFeaturesError(Exception):
     pass
-
-
-def _request_size(url: str, hf_token: Optional[str] = None) -> Optional[int]:
-    headers = get_authentication_headers_for_url(url, token=hf_token)
-    response = http_head(url, headers=headers, max_retries=3)
-    response.raise_for_status()
-    size = response.headers.get("Content-Length") if response.ok else None
-    return int(size) if size is not None else size
 
 
 def _fsspec_request_size(urlpath: str, storage_options: dict[str, Any]) -> Optional[int]:
@@ -391,71 +336,6 @@ class _MockStreamingDownloadManager(StreamingDownloadManager):  # type: ignore
             # it's an external file
             self.ext_data_files.append(urlpath_str)
         return urlpath_str
-
-
-def _is_too_big_from_external_data_files(
-    builder: DatasetBuilder, max_dataset_size_bytes: int, max_external_data_files: int, hf_token: Optional[str]
-) -> bool:
-    # Packaged dataset modules only load data files that are inside the dataset repository.
-    # No need to check them since they're already caught by `raise_if_too_big_from_hub`
-    if type(builder).__module__.startswith("datasets."):
-        return False
-    message = (
-        "Couldn't get the %s of external files in `_split_generators` because a request"
-        " failed. Please consider moving your data files in this dataset repository instead"
-        " (e.g. inside a data/ folder)."
-    )
-    message_list = message % "list"
-    message_size = message % "size"
-    # For datasets with a loading script however, we need to check the downloaded files
-    mock_dl_manager = _MockStreamingDownloadManager(
-        base_path=builder.base_path, download_config=DownloadConfig(token=hf_token)
-    )
-    try:
-        builder._split_generators(mock_dl_manager)
-    except (requests.exceptions.RequestException, NotImplementedError) as error:
-        if isinstance(error, NotImplementedError):
-            # we can ignore the errors from functions not implemented in streaming mode like `.extract()` on TAR files
-            if "is not implemented in streaming mode." not in str(error):
-                raise UnsupportedExternalFilesError(
-                    (
-                        "Couldn't get the list of external files in `_split_generators` because it doesn't support"
-                        " streaming."
-                    ),
-                    error,
-                ) from error
-        else:
-            if isinstance(error, requests.exceptions.HTTPError):
-                raise ExternalFilesSizeRequestHTTPError(message_list, error) from error
-            elif isinstance(error, requests.exceptions.ConnectionError):
-                raise ExternalFilesSizeRequestConnectionError(message_list, error) from error
-            elif isinstance(error, requests.exceptions.Timeout):
-                raise ExternalFilesSizeRequestTimeoutError(message_list, error) from error
-            else:
-                raise ExternalFilesSizeRequestError(message_list, error) from error
-    ext_data_files = mock_dl_manager.ext_data_files
-    if len(ext_data_files) > max_external_data_files:
-        return True
-    elif ext_data_files:
-        try:
-            with ThreadPool(16) as pool:
-                total_size = 0
-                get_size = functools.partial(_request_size, hf_token=hf_token)
-                for i, size in enumerate(pool.imap_unordered(get_size, ext_data_files)):
-                    if size is not None:
-                        total_size += size
-                        return total_size > max_dataset_size_bytes
-                return False
-        except requests.exceptions.RequestException as error:
-            if isinstance(error, requests.exceptions.HTTPError):
-                raise ExternalFilesSizeRequestHTTPError(message_size, error) from error
-            elif isinstance(error, requests.exceptions.ConnectionError):
-                raise ExternalFilesSizeRequestConnectionError(message_size, error) from error
-            elif isinstance(error, requests.exceptions.Timeout):
-                raise ExternalFilesSizeRequestTimeoutError(message_size, error) from error
-            else:
-                raise ExternalFilesSizeRequestError(message_size, error) from error
-    return False
 
 
 def get_writer_batch_size_from_info(ds_config_info: datasets.info.DatasetInfo) -> Optional[int]:
@@ -1114,7 +994,13 @@ def stream_convert_to_parquet(
                         shards_total_size = (
                             len(urlpaths)
                             / min(10_000, len(urlpaths))
-                            * get_total_files_size(urlpaths[:10_000], storage_options=builder.storage_options)
+                            * get_total_files_size(
+                                urlpaths[:10_000],
+                                storage_options={
+                                    "hf": {"token": builder.token, "endpoint": datasets.config.HF_ENDPOINT},
+                                    **builder.storage_options,
+                                },
+                            )
                         )
                         estimated_splits_info[split] = asdict(
                             SplitInfo(
@@ -1355,9 +1241,7 @@ def compute_config_parquet_and_info_response(
     commit_message: str,
     url_template: str,
     max_dataset_size_bytes: int,
-    max_external_data_files: int,
     max_row_group_byte_size_for_copy: int,
-    dataset_scripts_allow_list: list[str],
 ) -> ConfigParquetAndInfoResponse:
     """
     Get the response of 'config-parquet-and-info' for one specific dataset and config on huggingface.co.
@@ -1388,14 +1272,8 @@ def compute_config_parquet_and_info_response(
         max_dataset_size_bytes (`int`):
             The maximum size of a dataset in bytes. If the dataset is under the limit (which means that the size
             can be fetched), it will be allowed.
-        max_external_data_files (`int`):
-            The maximum number of external data files of a dataset. This is for datasets with loading scripts only.
         max_row_group_byte_size_for_copy (`int`):
             The maximum size in bytes of parquet files that are allowed to be copied without being converted.
-        dataset_scripts_allow_list (`list[str]`):
-            List of datasets for which we support dataset scripts.
-            Unix shell-style wildcards also work in the dataset name for namespaced datasets,
-            for example `some_namespace/*` to refer to all the datasets in the `some_namespace` namespace.
 
     Raises:
         [~`libcommon.exceptions.DatasetNotFoundError`]:
@@ -1408,26 +1286,12 @@ def compute_config_parquet_and_info_response(
           If one of the commits could not be created on the Hub.
         [~`libcommon.exceptions.EmptyDatasetError`]:
           The dataset is empty.
-        [~`libcommon.exceptions.ConfigNamesError`]:
-          If the list of configurations could not be obtained using the datasets library.
-        [~`libcommon.exceptions.UnsupportedExternalFilesError`]:
-            If we failed to get the external files sizes to make sure we can convert the dataset to parquet
-        [~`libcommon.exceptions.ExternalFilesSizeRequestHTTPError`]:
-            If we failed to get the external files sizes to make sure we can convert the dataset to parquet
-        [~`libcommon.exceptions.ExternalFilesSizeRequestConnectionError`]:
-            If we failed to get the external files sizes to make sure we can convert the dataset to parquet
-        [~`libcommon.exceptions.ExternalFilesSizeRequestTimeoutError`]:
-            If we failed to get the external files sizes to make sure we can convert the dataset to parquet
-        [~`libcommon.exceptions.ExternalFilesSizeRequestError`]:
-            If we failed to get the external files sizes to make sure we can convert the dataset to parquet
         [~`libcommon.exceptions.DatasetWithScriptNotSupportedError`]:
-            If the dataset has a dataset script and is not in the allow list.
+            If the dataset has a dataset script.
         [~`libcommon.exceptions.PreviousStepFormatError`]:
             If the content of the previous step has not the expected format
         [~`libcommon.exceptions.TooLongColumnNameError`]:
             If one of the columns' name is too long (> 500 characters)
-        [~`ValueError`](https://docs.python.org/3/library/exceptions.html#ValueError):
-            If the datasets.config.HF_ENDPOINT is not set to the expected value
 
     Returns:
         `ConfigParquetAndInfoResponse`: An object with the list of parquet files, the dataset info and whether the response is partial or not.
@@ -1450,7 +1314,7 @@ def compute_config_parquet_and_info_response(
 
     config_names = {config_name_item["config"] for config_name_item in config_names_content["config_names"]}
     if config not in config_names:
-        raise ConfigNamesError(f"{config=} does not exist in {dataset=}")
+        raise ValueError(f"{config=} does not exist in {dataset=}")
 
     hf_api = HfApi(endpoint=hf_endpoint, token=hf_token)
     committer_hf_api = HfApi(endpoint=hf_endpoint, token=committer_hf_token)
@@ -1467,7 +1331,6 @@ def compute_config_parquet_and_info_response(
             revision=source_revision,
             token=hf_token,
             download_config=download_config,
-            trust_remote_code=resolve_trust_remote_code(dataset=dataset, allow_list=dataset_scripts_allow_list),
         )
     except _EmptyDatasetError as err:
         raise EmptyDatasetError(f"{dataset=} is empty.", cause=err) from err
@@ -1515,10 +1378,7 @@ def compute_config_parquet_and_info_response(
             if is_dataset_too_big(
                 dataset_info=dataset_info,
                 builder=builder,
-                hf_endpoint=hf_endpoint,
-                hf_token=hf_token,
                 max_dataset_size_bytes=max_dataset_size_bytes,
-                max_external_data_files=max_external_data_files,
             ):
                 logging.info(
                     f"{dataset=} {config=} is too big to be fully converted, "
@@ -1534,7 +1394,9 @@ def compute_config_parquet_and_info_response(
     except datasets.exceptions.DatasetGenerationCastError as err:
         raise DatasetGenerationCastError("The dataset generation failed because of a cast error", cause=err) from err
     except datasets.exceptions.DatasetGenerationError as err:
-        raise DatasetGenerationError("The dataset generation failed", cause=err) from err
+        if err.__cause__:
+            raise DatasetGenerationError("The dataset generation failed", cause=err.__cause__) from err
+        raise DatasetGenerationError("The dataset generation failed") from err
 
     raise_if_long_column_name(builder.info.features)
 
@@ -1635,8 +1497,6 @@ class ConfigParquetAndInfoJobRunner(ConfigJobRunnerWithDatasetsCache):
                 commit_message=self.parquet_and_info_config.commit_message,
                 url_template=self.parquet_and_info_config.url_template,
                 max_dataset_size_bytes=self.parquet_and_info_config.max_dataset_size_bytes,
-                max_external_data_files=self.parquet_and_info_config.max_external_data_files,
                 max_row_group_byte_size_for_copy=self.parquet_and_info_config.max_row_group_byte_size_for_copy,
-                dataset_scripts_allow_list=self.app_config.common.dataset_scripts_allow_list,
             )
         )
