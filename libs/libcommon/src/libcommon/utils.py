@@ -2,14 +2,12 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import base64
-import datetime
 import functools
 import logging
 import mimetypes
 import time
 from collections.abc import Callable, Sequence
 from datetime import datetime, timedelta, timezone
-from dateutil import parser
 from fnmatch import fnmatch
 from pathlib import Path
 from typing import Any, Optional, TypeVar, Union, cast
@@ -17,6 +15,7 @@ from typing import Any, Optional, TypeVar, Union, cast
 import orjson
 import pandas as pd
 import pytz
+from dateutil import parser
 from huggingface_hub import constants, hf_hub_download
 from requests.exceptions import ReadTimeout
 
@@ -95,7 +94,7 @@ def get_datetime(days: Optional[float] = None) -> datetime:
     return date
 
 
-def is_datetime(string: str):
+def is_datetime(string: str) -> bool:
     try:
         parser.parse(string)
         return True
