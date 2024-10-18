@@ -262,7 +262,7 @@ def compute_descriptive_statistics_response(
                     pq.read_table(
                         local_parquet_split_directory,
                         columns=[column.name],
-                        schema=Features({column.name: features[column.name]}).arrow_schema
+                        schema=Features({column.name: features[column.name]}).arrow_schema,
                     )
                 )
             except Exception as error:
