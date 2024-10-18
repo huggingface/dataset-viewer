@@ -194,6 +194,12 @@ def compute_descriptive_statistics_response(
 
     pq_split_dataset = pq.ParquetDataset(local_parquet_split_directory)
     num_examples = sum(fragment.metadata.num_rows for fragment in pq_split_dataset.fragments)
+    split_extension_features = get_extension_features(features)
+    features = {
+        feature_name: feature
+        for feature_name, feature in features.items()
+        if feature_name not in split_extension_features
+    }
 
     def _column_from_feature(
         dataset_feature_name: str, dataset_feature: Union[dict[str, Any], list[Any]]
@@ -262,7 +268,7 @@ def compute_descriptive_statistics_response(
                     pq.read_table(
                         local_parquet_split_directory,
                         columns=[column.name],
-                        schema=Features({column.name: features[column.name]}).arrow_schema,
+                        schema=Features.from_dict({column.name: features[column.name]}).arrow_schema,
                     )
                 )
             except Exception as error:
