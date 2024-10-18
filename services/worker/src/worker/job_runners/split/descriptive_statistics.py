@@ -194,12 +194,6 @@ def compute_descriptive_statistics_response(
 
     pq_split_dataset = pq.ParquetDataset(local_parquet_split_directory)
     num_examples = sum(fragment.metadata.num_rows for fragment in pq_split_dataset.fragments)
-    split_extension_features = get_extension_features(features)
-    features = {
-        feature_name: feature
-        for feature_name, feature in features.items()
-        if feature_name not in split_extension_features
-    }
 
     def _column_from_feature(
         dataset_feature_name: str, dataset_feature: Union[dict[str, Any], list[Any]]
@@ -264,12 +258,13 @@ def compute_descriptive_statistics_response(
             column_stats = column.compute_and_prepare_response(local_parquet_split_directory)
         else:
             try:
-                if split_extension_features:
-                    data = pl.DataFrame._from_arrow(
-                        pq.read_table(local_parquet_split_directory, columns=[column.name])
+                data = pl.DataFrame._from_arrow(
+                    pq.read_table(
+                        local_parquet_split_directory,
+                        columns=[column.name],
+                        schema=Features({column.name: features[column.name]}).arrow_schema
                     )
-                else:
-                    data = pl.read_parquet(local_parquet_split_directory / "*.parquet", columns=[column.name])
+                )
             except Exception as error:
                 raise PolarsParquetReadError(
                     f"Error reading parquet file(s) at {local_parquet_split_directory=}, columns=[{column.name}]: {error}",
