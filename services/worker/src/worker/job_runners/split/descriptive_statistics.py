@@ -264,12 +264,13 @@ def compute_descriptive_statistics_response(
             column_stats = column.compute_and_prepare_response(local_parquet_split_directory)
         else:
             try:
-                if split_extension_features:
-                    data = pl.DataFrame._from_arrow(
-                        pq.read_table(local_parquet_split_directory, columns=[column.name])
+                data = pl.DataFrame._from_arrow(
+                    pq.read_table(
+                        local_parquet_split_directory,
+                        columns=[column.name],
+                        schema=Features.from_dict({column.name: features[column.name]}).arrow_schema,
                     )
-                else:
-                    data = pl.read_parquet(local_parquet_split_directory / "*.parquet", columns=[column.name])
+                )
             except Exception as error:
                 raise PolarsParquetReadError(
                     f"Error reading parquet file(s) at {local_parquet_split_directory=}, columns=[{column.name}]: {error}",
