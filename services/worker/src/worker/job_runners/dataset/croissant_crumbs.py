@@ -114,7 +114,7 @@ def get_croissant_crumbs_from_dataset_infos(
                     "name": split_record_set_name,
                     "description": f"Splits for the {record_set_name} config.",
                     "field": [split_field],
-                    "data": [{"split_name": split_name} for split_name in splits],
+                    "data": [{f"{split_record_set_name}/split_name": split_name} for split_name in splits],
                 }
             )
         )
