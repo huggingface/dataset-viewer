@@ -61,7 +61,9 @@ def create_app_with_config(app_config: AppConfig) -> Starlette:
 
     url_signer = get_cloudfront_signer(cloudfront_config=app_config.cloudfront)
     url_preparator = URLPreparator(
-        url_signer=url_signer, hf_endpoint=app_config.common.hf_endpoint, assets_base_url=app_config.assets.base_url
+        url_signer=url_signer,
+        hf_endpoint=app_config.common.hf_endpoint,
+        assets_base_url=app_config.cached_assets.base_url,
     )
     cached_assets_storage_client = StorageClient(
         protocol=app_config.cached_assets.storage_protocol,
