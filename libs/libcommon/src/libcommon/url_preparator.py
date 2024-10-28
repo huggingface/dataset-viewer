@@ -19,7 +19,6 @@ class InvalidFirstRowsError(ValueError):
 
 
 VisitPath = list[Union[str, Literal[0]]]
-DATASETS_SERVER_ASSETS_SUBDOMAIN_NAME = "datasets-server"
 
 
 @dataclass
