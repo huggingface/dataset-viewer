@@ -16,6 +16,8 @@ from libcommon.viewer_utils.features import to_features_list
 from libcommon.viewer_utils.rows import create_first_rows_response
 
 from .constants import (
+    ASSETS_BASE_URL,
+    CI_HUB_ENDPOINT,
     DATASETS_NAMES,
     DEFAULT_COLUMNS_MAX_NUMBER,
     DEFAULT_CONFIG,
@@ -63,7 +65,7 @@ class FakeUrlSigner(CloudFrontSigner):
 def test__prepare_asset_url_path_in_place(datasets_fixtures: Mapping[str, DatasetFixture], dataset_name: str) -> None:
     dataset_fixture = datasets_fixtures[dataset_name]
     url_signer = FakeUrlSigner()
-    url_preparator = URLPreparator(url_signer=url_signer)
+    url_preparator = URLPreparator(url_signer=url_signer, hf_endpoint=CI_HUB_ENDPOINT, assets_base_url=ASSETS_BASE_URL)
     for asset_url_path in dataset_fixture.expected_asset_url_paths:
         cell_asset_url_path = asset_url_path.enter()
         # ^ remove the column name, as we will sign the cell, not the row
@@ -101,7 +103,9 @@ def test__get_asset_url_paths_from_first_rows(
     )
 
     url_signer = FakeUrlSigner()
-    url_preparator = URLPreparator(url_signer=url_signer)
+    url_preparator = URLPreparator(
+        url_signer=url_signer, hf_endpoint=CI_HUB_ENDPOINT, assets_base_url=storage_client.base_url
+    )
     asset_url_paths = url_preparator._get_asset_url_paths_from_first_rows(first_rows=first_rows)
 
     assert asset_url_paths == dataset_fixture.expected_asset_url_paths
@@ -130,7 +134,9 @@ def test_prepare_urls_in_first_rows_in_place(
     )
 
     url_signer = FakeUrlSigner()
-    url_preparator = URLPreparator(url_signer=url_signer)
+    url_preparator = URLPreparator(
+        url_signer=url_signer, hf_endpoint=CI_HUB_ENDPOINT, assets_base_url=storage_client.base_url
+    )
     url_preparator.prepare_urls_in_first_rows_in_place(first_rows=first_rows, revision=DEFAULT_REVISION)
 
     assert url_signer.counter == dataset_fixture.expected_num_asset_urls
@@ -185,7 +191,9 @@ def test_prepare_urls_in_first_rows_in_place_with_truncated_cells(
     )
 
     url_signer = FakeUrlSigner()
-    url_preparator = URLPreparator(url_signer=url_signer)
+    url_preparator = URLPreparator(
+        url_signer=url_signer, hf_endpoint=CI_HUB_ENDPOINT, assets_base_url=storage_client.base_url
+    )
     url_preparator.prepare_urls_in_first_rows_in_place(first_rows=first_rows, revision=DEFAULT_REVISION)
 
     if expected == "complete":

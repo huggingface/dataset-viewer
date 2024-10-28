@@ -97,7 +97,7 @@ def test_create_audio_file(
 def test_src_is_sanitized(storage_client: StorageClient, dataset: str, config: str, split: str, column: str) -> None:
     base_url = "https://datasets-server.huggingface.co/assets"
     filename = "image.jpg"
-    object_key = storage_client.generate_object_key(
+    object_key = storage_client.generate_object_path(
         dataset=dataset,
         revision="revision",
         config=config,

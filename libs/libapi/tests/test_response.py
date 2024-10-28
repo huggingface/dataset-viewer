@@ -19,12 +19,14 @@ CACHED_ASSETS_FOLDER = "cached-assets"
 
 
 @pytest.fixture
-def storage_client(tmp_path: Path) -> StorageClient:
+def storage_client(tmp_path: Path, hf_endpoint: str) -> StorageClient:
     return StorageClient(
         protocol="file",
         storage_root=str(tmp_path / CACHED_ASSETS_FOLDER),
         base_url="http://localhost/cached-assets",
-        url_preparator=URLPreparator(url_signer=None),
+        url_preparator=URLPreparator(
+            url_signer=None, hf_endpoint=hf_endpoint, assets_base_url="http://localhost/cached-assets"
+        ),
     )
 
 

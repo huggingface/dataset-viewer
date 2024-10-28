@@ -3,7 +3,7 @@
 
 from io import BytesIO
 from tempfile import NamedTemporaryFile
-from typing import TYPE_CHECKING, Optional, TypedDict
+from typing import TYPE_CHECKING, Any, Optional, TypedDict
 
 from PIL import Image, ImageOps
 from pydub import AudioSegment  # type:ignore
@@ -28,6 +28,10 @@ class AudioSource(TypedDict):
     type: str
 
 
+class VideoSource(TypedDict):
+    src: str
+
+
 def create_image_file(
     dataset: str,
     revision: str,
@@ -46,7 +50,7 @@ def create_image_file(
     # dataset_git_revision of cache responses when the data will be accessed.
     # This is useful to allow moving files to a newer revision without having
     # to modify the cached rows content.
-    object_key = storage_client.generate_object_key(
+    object_path = storage_client.generate_object_path(
         dataset=dataset,
         revision=DATASET_GIT_REVISION_PLACEHOLDER,
         config=config,
@@ -55,7 +59,7 @@ def create_image_file(
         column=column,
         filename=filename,
     )
-    path = replace_dataset_git_revision_placeholder(object_key, revision=revision)
+    path = replace_dataset_git_revision_placeholder(object_path, revision=revision)
     if storage_client.overwrite or not storage_client.exists(path):
         image = ImageOps.exif_transpose(image)  # type: ignore[assignment]
         buffer = BytesIO()
@@ -64,7 +68,7 @@ def create_image_file(
         with storage_client._fs.open(storage_client.get_full_path(path), "wb") as f:
             f.write(buffer.read())
     return ImageSource(
-        src=storage_client.get_url(object_key, revision=revision), height=image.height, width=image.width
+        src=storage_client.get_url(object_path, revision=revision), height=image.height, width=image.width
     )
 
 
@@ -84,7 +88,7 @@ def create_audio_file(
     # dataset_git_revision of cache responses when the data will be accessed.
     # This is useful to allow moving files to a newer revision without having
     # to modify the cached rows content.
-    object_key = storage_client.generate_object_key(
+    object_path = storage_client.generate_object_path(
         dataset=dataset,
         revision=DATASET_GIT_REVISION_PLACEHOLDER,
         config=config,
@@ -101,7 +105,7 @@ def create_audio_file(
         )
     media_type = SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE[suffix]
 
-    path = replace_dataset_git_revision_placeholder(object_key, revision=revision)
+    path = replace_dataset_git_revision_placeholder(object_path, revision=revision)
     if storage_client.overwrite or not storage_client.exists(path):
         audio_path = storage_client.get_full_path(path)
         if audio_file_extension == suffix:
@@ -117,11 +121,51 @@ def create_audio_file(
                 buffer.seek(0)
                 with storage_client._fs.open(audio_path, "wb") as f:
                     f.write(buffer.read())
-    return [AudioSource(src=storage_client.get_url(object_key, revision=revision), type=media_type)]
+    return [AudioSource(src=storage_client.get_url(object_path, revision=revision), type=media_type)]
 
 
-def replace_dataset_git_revision_placeholder(url_or_object_key: str, revision: str) -> str:
+def replace_dataset_git_revision_placeholder(url_or_object_path: str, revision: str) -> str:
     # Set the right revision in the URL e.g.
     # Before: https://datasets-server.huggingface.co/assets/vidore/syntheticDocQA_artificial_intelligence_test/--/{dataset_git_revision}/--/default/test/0/image/image.jpg
     # After:  https://datasets-server.huggingface.co/assets/vidore/syntheticDocQA_artificial_intelligence_test/--/c844916c2920d2d01e8a15f8dc1caf6f017a293c/--/default/test/0/image/image.jpg
-    return url_or_object_key.replace(DATASET_GIT_REVISION_PLACEHOLDER, revision)
+    return url_or_object_path.replace(DATASET_GIT_REVISION_PLACEHOLDER, revision)
+
+
+def create_video_file(
+    dataset: str,
+    revision: str,
+    config: str,
+    split: str,
+    row_idx: int,
+    column: str,
+    filename: str,
+    encoded_video: dict[str, Any],
+    storage_client: "StorageClient",
+) -> VideoSource:
+    # We use a placeholder revision in the JSON stored in the database,
+    # while the path of the file stored on the disk/s3 contains the revision.
+    # The placeholder will be replaced later by the
+    # dataset_git_revision of cache responses when the data will be accessed.
+    # This is useful to allow moving files to a newer revision without having
+    # to modify the cached rows content.
+    if "path" in encoded_video and isinstance(encoded_video["path"], str) and "://" in encoded_video["path"]:
+        # in general video files are stored in the dataset repository, we can just get the URL
+        # (`datasets` doesn't embed the video bytes in Parquet when the file is already on HF)
+        object_path = encoded_video["path"].replace(revision, DATASET_GIT_REVISION_PLACEHOLDER)
+    else:
+        # (rare and not very important) otherwise we attempt to upload video data from webdataset/parquet files but don't process them
+        object_path = storage_client.generate_object_path(
+            dataset=dataset,
+            revision=DATASET_GIT_REVISION_PLACEHOLDER,
+            config=config,
+            split=split,
+            row_idx=row_idx,
+            column=column,
+            filename=filename,
+        )
+        path = replace_dataset_git_revision_placeholder(object_path, revision=revision)
+        if storage_client.overwrite or not storage_client.exists(path):
+            with storage_client._fs.open(storage_client.get_full_path(path), "wb") as f:
+                f.write(encoded_video["bytes"])
+    src = storage_client.get_url(object_path, revision=revision)
+    return VideoSource(src=src)

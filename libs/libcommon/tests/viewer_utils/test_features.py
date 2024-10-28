@@ -26,6 +26,7 @@ from libcommon.viewer_utils.features import (
 
 from ..constants import (
     ASSETS_BASE_URL,
+    CI_HUB_ENDPOINT,
     DATASETS_NAMES,
     DEFAULT_COLUMN_NAME,
     DEFAULT_CONFIG,
@@ -147,7 +148,9 @@ def test_ogg_audio_with_s3(
                     secret_access_key="fake_secret_access_key",
                     region_name="us-east-1",
                 ),
-                url_preparator=URLPreparator(url_signer=None),
+                url_preparator=URLPreparator(
+                    url_signer=None, hf_endpoint=CI_HUB_ENDPOINT, assets_base_url=ASSETS_BASE_URL
+                ),
             )
 
         # patch aiobotocore.endpoint.convert_to_response_dict  because of known issue in aiotbotocore
