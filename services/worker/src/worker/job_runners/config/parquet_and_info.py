@@ -1374,7 +1374,7 @@ def compute_config_parquet_and_info_response(
                     divide_step=10,
                 )
                 if writer_batch_size / err.num_rows * err.row_group_byte_size > max_row_group_byte_size_for_copy:
-                    return get_writer_batch_size_from_row_group_size(
+                    writer_batch_size = get_writer_batch_size_from_row_group_size(
                         num_rows=err.num_rows,
                         row_group_byte_size=err.row_group_byte_size,
                         max_row_group_byte_size=max_row_group_byte_size_for_copy,
