@@ -150,6 +150,7 @@ def create_video_file(
     # to modify the cached rows content.
     if "path" in encoded_video and isinstance(encoded_video["path"], str) and "://" in encoded_video["path"]:
         # in general video files are stored in the dataset repository, we can just get the URL
+        # (`datasets` doesn't embed the video bytes in Parquet when the file is already on HF)
         object_path = encoded_video["path"].replace(revision, DATASET_GIT_REVISION_PLACEHOLDER)
     else:
         # (rare and not very important) otherwise we attempt to upload video data from webdataset/parquet files but don't process them
