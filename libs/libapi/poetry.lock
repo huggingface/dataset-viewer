@@ -609,8 +609,8 @@ vision = ["Pillow (>=9.4.0)"]
 [package.source]
 type = "git"
 url = "https://github.com/huggingface/datasets.git"
-reference = "ff0149f3473078e5e287576a1c3a033081f5caa9"
-resolved_reference = "ff0149f3473078e5e287576a1c3a033081f5caa9"
+reference = "f75f48926773f39798b85b6b5499e84c5e9e53b1"
+resolved_reference = "f75f48926773f39798b85b6b5499e84c5e9e53b1"
 
 [[package]]
 name = "decorator"
@@ -1165,7 +1165,7 @@ develop = true
 [package.dependencies]
 appdirs = "^1.4.4"
 cryptography = "^43.0.1"
-datasets = {git = "https://github.com/huggingface/datasets.git", rev = "ff0149f3473078e5e287576a1c3a033081f5caa9", extras = ["audio", "vision"]}
+datasets = {git = "https://github.com/huggingface/datasets.git", rev = "f75f48926773f39798b85b6b5499e84c5e9e53b1", extras = ["audio", "vision"]}
 decord = "0.6.0"
 environs = "^9.5.0"
 fsspec = {version = "2024.3.1", extras = ["s3"]}
