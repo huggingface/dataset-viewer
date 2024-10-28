@@ -78,10 +78,10 @@ def get_asset_url_paths(features: Features) -> list[AssetUrlPath]:
 
 
 class URLPreparator(ABC):
-    def __init__(self, url_signer: Optional[CloudFrontSigner], hf_endpoint: str) -> None:
+    def __init__(self, url_signer: Optional[CloudFrontSigner], hf_endpoint: str, assets_base_url: str) -> None:
         self.url_signer = url_signer
         self.hf_endpoint = hf_endpoint
-        self.datasets_server_assets_endpoint = hf_endpoint.replace("://", "://" + DATASETS_SERVER_ASSETS_SUBDOMAIN_NAME + ".")
+        self.assets_base_url = assets_base_url
 
     def prepare_url(self, url: str, revision: str) -> str:
         # Set the right revision in the URL e.g.
@@ -91,7 +91,7 @@ class URLPreparator(ABC):
         # Sign the URL since the assets require authentication to be accessed
         # Before: https://datasets-server.huggingface.co/assets/vidore/syntheticDocQA_artificial_intelligence_test/--/5fe59d7e52732b86d11ee0e9c4a8cdb0e8ba7a6e/--/default/test/0/image/image.jpg
         # After:  https://datasets-server.huggingface.co/assets/vidore/syntheticDocQA_artificial_intelligence_test/--/5fe59d7e52732b86d11ee0e9c4a8cdb0e8ba7a6e/--/default/test/0/image/image.jpg?Expires=1...4&Signature=E...A__&Key-Pair-Id=K...3
-        if self.url_signer and url.startswith(self.datasets_server_assets_endpoint):
+        if self.url_signer and url.startswith(self.assets_base_url):
             url = self.url_signer.sign_url(url)
         # Convert HF URL to HF HTTP URL e.g.
         # Before: hf://datasets/username/dataset_name@5fe59d7e52732b86d11ee0e9c4a8cdb0e8ba7a6e/video.mp4

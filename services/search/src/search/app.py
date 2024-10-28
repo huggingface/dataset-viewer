@@ -61,7 +61,9 @@ def create_app_with_config(app_config: AppConfig) -> Starlette:
     cache_resource = CacheMongoResource(database=app_config.cache.mongo_database, host=app_config.cache.mongo_url)
     queue_resource = QueueMongoResource(database=app_config.queue.mongo_database, host=app_config.queue.mongo_url)
     url_signer = get_cloudfront_signer(cloudfront_config=app_config.cloudfront)
-    url_preparator = URLPreparator(url_signer=url_signer)
+    url_preparator = URLPreparator(
+        url_signer=url_signer, hf_endpoint=app_config.common.hf_endpoint, assets_base_url=app_config.assets.base_url
+    )
     cached_assets_storage_client = StorageClient(
         protocol=app_config.cached_assets.storage_protocol,
         storage_root=app_config.cached_assets.storage_root,

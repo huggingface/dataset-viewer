@@ -12,6 +12,8 @@ from libcommon.config import AssetsConfig, CloudFrontConfig, S3Config
 from libcommon.storage_client import StorageClient
 from libcommon.url_preparator import URLPreparator
 
+from .constants import CI_HUB_ENDPOINT
+
 BUCKET = "hf-datasets-server-statics-test"
 CLOUDFRONT_KEY_PAIR_ID = "K3814DK2QUJ71H"
 
@@ -34,7 +36,9 @@ def test_real_cloudfront(monkeypatch: pytest.MonkeyPatch) -> None:
         storage_root=f"{BUCKET}/assets",
     )
     url_signer = get_cloudfront_signer(cloudfront_config=cloudfront_config)
-    url_preparator = URLPreparator(url_signer=url_signer)
+    url_preparator = URLPreparator(
+        url_signer=url_signer, hf_endpoint=CI_HUB_ENDPOINT, assets_base_url=assets_config.base_url
+    )
     if not s3_config.access_key_id or not s3_config.secret_access_key or not url_signer:
         pytest.skip("the S3 and/or CloudFront credentials are not set in environment variables, so we skip the test")
 

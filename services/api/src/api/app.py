@@ -64,7 +64,9 @@ def create_app_with_config(app_config: AppConfig, endpoint_config: EndpointConfi
     )
 
     url_signer = get_cloudfront_signer(cloudfront_config=app_config.cloudfront)
-    url_preparator = URLPreparator(url_signer=url_signer)
+    url_preparator = URLPreparator(
+        url_signer=url_signer, hf_endpoint=app_config.common.hf_endpoint, assets_base_url=app_config.assets.base_url
+    )
     assets_storage_client = StorageClient(
         protocol=app_config.assets.storage_protocol,
         storage_root=app_config.assets.storage_root,

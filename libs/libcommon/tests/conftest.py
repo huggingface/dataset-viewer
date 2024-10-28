@@ -13,7 +13,7 @@ from libcommon.storage import StrPath, init_parquet_metadata_dir
 from libcommon.storage_client import StorageClient
 from libcommon.url_preparator import URLPreparator
 
-from .constants import ASSETS_BASE_URL
+from .constants import ASSETS_BASE_URL, CI_HUB_ENDPOINT
 
 # Import fixture modules as plugins
 pytest_plugins = ["tests.fixtures.datasets", "tests.fixtures.fsspec"]
@@ -91,5 +91,5 @@ def storage_client_with_url_preparator(tmp_path_factory: TempPathFactory) -> Sto
         storage_root=str(tmp_path_factory.getbasetemp()),
         base_url=ASSETS_BASE_URL,
         overwrite=True,
-        url_preparator=URLPreparator(url_signer=None),
+        url_preparator=URLPreparator(url_signer=None, hf_endpoint=CI_HUB_ENDPOINT, assets_base_url=ASSETS_BASE_URL),
     )

@@ -269,7 +269,6 @@ def get_cell_value(
     featureName: str,
     fieldType: Any,
     storage_client: StorageClient,
-    hf_endpoint: str,
     json_path: Optional[list[Union[str, int]]] = None,
 ) -> Any:
     # always allow None values in the cells

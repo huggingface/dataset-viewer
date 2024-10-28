@@ -1,7 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2023 The HuggingFace Authors.
 import logging
-import re
 from typing import Optional, Union
 from urllib import parse
 

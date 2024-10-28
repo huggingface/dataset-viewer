@@ -1,7 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-import re
 from io import BytesIO
 from tempfile import NamedTemporaryFile
 from typing import TYPE_CHECKING, Any, Optional, TypedDict
@@ -149,11 +148,7 @@ def create_video_file(
     # dataset_git_revision of cache responses when the data will be accessed.
     # This is useful to allow moving files to a newer revision without having
     # to modify the cached rows content.
-    if (
-        "path" in encoded_video
-        and isinstance(encoded_video["path"], str)
-        and "://" in encoded_video["path"]
-    ):
+    if "path" in encoded_video and isinstance(encoded_video["path"], str) and "://" in encoded_video["path"]:
         object_path = encoded_video["path"].replace(revision, DATASET_GIT_REVISION_PLACEHOLDER)
     else:
         object_path = storage_client.generate_object_path(
