@@ -1,9 +1,10 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+import re
 from io import BytesIO
 from tempfile import NamedTemporaryFile
-from typing import TYPE_CHECKING, Optional, TypedDict
+from typing import TYPE_CHECKING, Any, Optional, TypedDict
 
 from PIL import Image, ImageOps
 from pydub import AudioSegment  # type:ignore
@@ -26,6 +27,10 @@ class ImageSource(TypedDict):
 class AudioSource(TypedDict):
     src: str
     type: str
+
+
+class VideoSource(TypedDict):
+    src: str
 
 
 def create_image_file(
@@ -125,3 +130,47 @@ def replace_dataset_git_revision_placeholder(url_or_object_key: str, revision: s
     # Before: https://datasets-server.huggingface.co/assets/vidore/syntheticDocQA_artificial_intelligence_test/--/{dataset_git_revision}/--/default/test/0/image/image.jpg
     # After:  https://datasets-server.huggingface.co/assets/vidore/syntheticDocQA_artificial_intelligence_test/--/c844916c2920d2d01e8a15f8dc1caf6f017a293c/--/default/test/0/image/image.jpg
     return url_or_object_key.replace(DATASET_GIT_REVISION_PLACEHOLDER, revision)
+
+
+def create_video_file(
+    dataset: str,
+    revision: str,
+    config: str,
+    split: str,
+    row_idx: int,
+    column: str,
+    filename: str,
+    encoded_video: dict[str, Any],
+    storage_client: "StorageClient",
+) -> VideoSource:
+    # We use a placeholder revision in the JSON stored in the database,
+    # while the path of the file stored on the disk/s3 contains the revision.
+    # The placeholder will be replaced later by the
+    # dataset_git_revision of cache responses when the data will be accessed.
+    # This is useful to allow moving files to a newer revision without having
+    # to modify the cached rows content.
+    if (
+        "path" in encoded_video
+        and isinstance(encoded_video["path"], str)
+        and encoded_video["path"].startswith(f"hf://datasets/{dataset}@")
+    ):
+        # TODO(QL) use URL preparator
+        src = re.sub("@\w+", "/resolve/" + DATASET_GIT_REVISION_PLACEHOLDER, encoded_video["path"]).replace(
+            "hf://", hf_endpoint
+        )
+    else:
+        object_key = storage_client.generate_object_key(
+            dataset=dataset,
+            revision=DATASET_GIT_REVISION_PLACEHOLDER,
+            config=config,
+            split=split,
+            row_idx=row_idx,
+            column=column,
+            filename=filename,
+        )
+        path = replace_dataset_git_revision_placeholder(object_key, revision=revision)
+        if storage_client.overwrite or not storage_client.exists(path):
+            with storage_client._fs.open(storage_client.get_full_path(path), "wb") as f:
+                f.write(encoded_video["bytes"])
+        src = storage_client.get_url(object_key, revision=revision)
+    return VideoSource(src=src)

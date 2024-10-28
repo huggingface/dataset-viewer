@@ -55,6 +55,7 @@ from libcommon.constants import (
     PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_ROW_GROUP_SIZE_FOR_AUDIO_DATASETS,
     PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_ROW_GROUP_SIZE_FOR_BINARY_DATASETS,
     PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_ROW_GROUP_SIZE_FOR_IMAGE_DATASETS,
+    PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_ROW_GROUP_SIZE_FOR_VIDEO_DATASETS,
 )
 from libcommon.dtos import JobInfo, SplitHubFile
 from libcommon.exceptions import (
@@ -352,7 +353,9 @@ def get_writer_batch_size_from_info(ds_config_info: datasets.info.DatasetInfo) -
             Writer batch size to pass to a dataset builder.
             If `None`, then it will use the `datasets` default.
     """
-    if ds_config_info.builder_name == "audiofolder" or "Audio(" in str(ds_config_info.features):
+    if ds_config_info.builder_name == "videofolder" or "Video(" in str(ds_config_info.features):
+        return PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_ROW_GROUP_SIZE_FOR_VIDEO_DATASETS
+    elif ds_config_info.builder_name == "audiofolder" or "Audio(" in str(ds_config_info.features):
         return PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_ROW_GROUP_SIZE_FOR_AUDIO_DATASETS
     elif ds_config_info.builder_name == "imagefolder" or "Image(" in str(ds_config_info.features):
         return PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_ROW_GROUP_SIZE_FOR_IMAGE_DATASETS
@@ -363,7 +366,7 @@ def get_writer_batch_size_from_info(ds_config_info: datasets.info.DatasetInfo) -
 
 
 def get_writer_batch_size_from_row_group_size(
-    num_rows: int, row_group_byte_size: int, max_row_group_byte_size: int, factor_of: int = 100, divide_step: int = 10
+    num_rows: int, row_group_byte_size: int, max_row_group_byte_size: int, factor_of: int, divide_step: int
 ) -> int:
     """
     Get the writer_batch_size that defines the maximum row group size in the parquet files,
@@ -1367,7 +1370,17 @@ def compute_config_parquet_and_info_response(
                     num_rows=err.num_rows,
                     row_group_byte_size=err.row_group_byte_size,
                     max_row_group_byte_size=max_row_group_byte_size_for_copy,
+                    factor_of=100,
+                    divide_step=10,
                 )
+                if writer_batch_size / err.num_rows * err.row_group_byte_size > max_row_group_byte_size_for_copy:
+                    return get_writer_batch_size_from_row_group_size(
+                        num_rows=err.num_rows,
+                        row_group_byte_size=err.row_group_byte_size,
+                        max_row_group_byte_size=max_row_group_byte_size_for_copy,
+                        factor_of=10,
+                        divide_step=2,
+                    )
                 parquet_operations, partial, estimated_dataset_info = stream_convert_to_parquet(
                     builder,
                     max_dataset_size_bytes=max_dataset_size_bytes,

@@ -22,13 +22,20 @@ from datasets import (
     Translation,
     TranslationVariableLanguages,
     Value,
+    Video,
 )
 from datasets.features.features import FeatureType, _visit
+from decord import VideoReader  # type: ignore
 from PIL import Image as PILImage
 
 from libcommon.dtos import FeatureItem
 from libcommon.storage_client import StorageClient
-from libcommon.viewer_utils.asset import SUPPORTED_AUDIO_EXTENSIONS, create_audio_file, create_image_file
+from libcommon.viewer_utils.asset import (
+    SUPPORTED_AUDIO_EXTENSIONS,
+    create_audio_file,
+    create_image_file,
+    create_video_file,
+)
 
 UNSUPPORTED_FEATURES = [Value("binary")]
 AUDIO_FILE_MAGIC_NUMBERS: dict[str, Any] = {
@@ -196,6 +203,62 @@ def infer_audio_file_extension(audio_file_bytes: bytes) -> Optional[str]:
     return None
 
 
+def video(
+    dataset: str,
+    revision: str,
+    config: str,
+    split: str,
+    row_idx: int,
+    value: Any,
+    featureName: str,
+    storage_client: StorageClient,
+    json_path: Optional[list[Union[str, int]]] = None,
+) -> Any:
+    if value is None:
+        return None
+    if isinstance(value, VideoReader) and hasattr(value, "_hf_encoded") and isinstance(value._hf_encoded, dict):
+        value = value._hf_encoded  # `datasets` patches `decord` to store the encoded data here
+    elif isinstance(value, dict):
+        value = {"path": value.get("path"), "bytes": value["bytes"]}
+    elif isinstance(value, bytes):
+        value = {"path": None, "bytes": value}
+    elif isinstance(value, str):
+        value = {"path": value, "bytes": None}
+
+    if not (isinstance(value, dict) and "path" in value and "bytes" in value):
+        raise TypeError(
+            "Video cell must be an encoded dict of a video, "
+            f"but got {str(value)[:300]}{'...' if len(str(value)) > 300 else ''}"
+        )
+
+    video_file_extension = get_video_file_extension(value)
+    return create_video_file(
+        dataset=dataset,
+        revision=revision,
+        config=config,
+        split=split,
+        row_idx=row_idx,
+        column=featureName,
+        filename=f"{append_hash_suffix('video', json_path)}{video_file_extension}",
+        encoded_video=value,
+        storage_client=storage_client,
+    )
+
+
+def get_video_file_extension(value: Any) -> str:
+    if "path" in value and isinstance(value["path"], str):
+        # .split("::")[0] for chained URLs like zip://audio.wav::https://foo.bar/data.zip
+        video_file_extension = os.path.splitext(value["path"].split("::")[0])[1]
+        if not video_file_extension:
+            raise ValueError(
+                "A video sample should have a 'path' with a valid file name nd extension, but got"
+                f" {', '.join(value['path'])}."
+            )
+    else:
+        raise ValueError("A video sample should have 'path' and 'bytes' but got" f" {', '.join(value)}.")
+    return video_file_extension
+
+
 def get_cell_value(
     dataset: str,
     revision: str,
@@ -206,6 +269,7 @@ def get_cell_value(
     featureName: str,
     fieldType: Any,
     storage_client: StorageClient,
+    hf_endpoint: str,
     json_path: Optional[list[Union[str, int]]] = None,
 ) -> Any:
     # always allow None values in the cells
@@ -225,6 +289,18 @@ def get_cell_value(
         )
     elif isinstance(fieldType, Audio):
         return audio(
+            dataset=dataset,
+            revision=revision,
+            config=config,
+            split=split,
+            row_idx=row_idx,
+            value=cell,
+            featureName=featureName,
+            storage_client=storage_client,
+            json_path=json_path,
+        )
+    elif isinstance(fieldType, Video):
+        return video(
             dataset=dataset,
             revision=revision,
             config=config,
