@@ -149,8 +149,10 @@ def create_video_file(
     # This is useful to allow moving files to a newer revision without having
     # to modify the cached rows content.
     if "path" in encoded_video and isinstance(encoded_video["path"], str) and "://" in encoded_video["path"]:
+        # in general video files are stored in the dataset repository, we can just get the URL
         object_path = encoded_video["path"].replace(revision, DATASET_GIT_REVISION_PLACEHOLDER)
     else:
+        # (rare and not very important) otherwise we attempt to upload video data from webdataset/parquet files but don't process them
         object_path = storage_client.generate_object_path(
             dataset=dataset,
             revision=DATASET_GIT_REVISION_PLACEHOLDER,
