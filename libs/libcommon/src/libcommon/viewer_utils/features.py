@@ -25,7 +25,6 @@ from datasets import (
     Video,
 )
 from datasets.features.features import FeatureType, _visit
-from decord import VideoReader  # type: ignore
 from PIL import Image as PILImage
 
 from libcommon.dtos import FeatureItem
@@ -214,6 +213,8 @@ def video(
     storage_client: StorageClient,
     json_path: Optional[list[Union[str, int]]] = None,
 ) -> Any:
+    from decord import VideoReader  # type: ignore
+
     if value is None:
         return None
     if isinstance(value, VideoReader) and hasattr(value, "_hf_encoded") and isinstance(value._hf_encoded, dict):
