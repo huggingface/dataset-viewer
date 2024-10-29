@@ -7,6 +7,7 @@ from io import BytesIO
 from typing import Any, Optional, Union
 from zlib import adler32
 
+import datasets.config
 import numpy as np
 import soundfile  # type: ignore
 from datasets import (
@@ -213,11 +214,20 @@ def video(
     storage_client: StorageClient,
     json_path: Optional[list[Union[str, int]]] = None,
 ) -> Any:
-    from decord import VideoReader  # type: ignore
+    if datasets.config.DECORD_AVAILABLE:
+        from decord import VideoReader  # type: ignore
+
+    else:
+        VideoReader = None
 
     if value is None:
         return None
-    if isinstance(value, VideoReader) and hasattr(value, "_hf_encoded") and isinstance(value._hf_encoded, dict):
+    if (
+        VideoReader
+        and isinstance(value, VideoReader)
+        and hasattr(value, "_hf_encoded")
+        and isinstance(value._hf_encoded, dict)
+    ):
         value = value._hf_encoded  # `datasets` patches `decord` to store the encoded data here
     elif isinstance(value, dict):
         value = {"path": value.get("path"), "bytes": value["bytes"]}
