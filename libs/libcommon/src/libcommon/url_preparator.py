@@ -99,7 +99,7 @@ class URLPreparator(ABC):
         # Before: hf://datasets/username/dataset_name@5fe59d7e52732b86d11ee0e9c4a8cdb0e8ba7a6e/video.mp4
         # After:  https://huggingface.co/datasets/username/dataset_name/resolve/5fe59d7e52732b86d11ee0e9c4a8cdb0e8ba7a6e/video.mp4
         if url.startswith("hf://"):
-            url = url.replace("hf://", self.hf_endpoint).replace("@", "/resolve/")
+            url = url.replace("hf://", self.hf_endpoint + "/").replace("@", "/resolve/")
         return url
 
     def __str__(self) -> str:
