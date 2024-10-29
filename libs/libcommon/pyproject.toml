@@ -9,8 +9,7 @@ license = "Apache-2.0"
 python = "3.9.18"
 appdirs = "^1.4.4"
 cryptography = "^43.0.1"
-datasets = {git = "https://github.com/huggingface/datasets.git", rev = "f75f48926773f39798b85b6b5499e84c5e9e53b1", extras = ["audio", "vision"]}
-decord = "0.6.0"
+datasets = {git = "https://github.com/huggingface/datasets.git", rev = "1946182ab6547e4fca4a2e3814d362b1776412cd", extras = ["audio", "vision"]}
 environs = "^9.5.0"
 fsspec = {version = "2024.3.1", extras = ["s3"]}
 huggingface-hub = {version = "^0.25.1", extras = ["hf-transfer"]}
