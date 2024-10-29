@@ -15,6 +15,7 @@ from typing import Any, Optional, TypeVar, Union, cast
 import orjson
 import pandas as pd
 import pytz
+from dateutil import parser
 from huggingface_hub import constants, hf_hub_download
 from requests.exceptions import ReadTimeout
 
@@ -91,6 +92,18 @@ def get_datetime(days: Optional[float] = None) -> datetime:
     if days is not None:
         date = date - timedelta(days=days)
     return date
+
+
+def is_datetime(string: str) -> bool:
+    try:
+        parser.parse(string)
+        return True
+    except ValueError:
+        return False
+
+
+def datetime_to_string(dt: datetime, format: str = "%Y-%m-%d %H:%M:%S%z") -> str:
+    return dt.strftime(format)
 
 
 def get_duration(started_at: datetime) -> float:
