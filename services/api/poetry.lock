@@ -616,8 +616,8 @@ vision = ["Pillow (>=9.4.0)"]
 [package.source]
 type = "git"
 url = "https://github.com/huggingface/datasets.git"
-reference = "f75f48926773f39798b85b6b5499e84c5e9e53b1"
-resolved_reference = "f75f48926773f39798b85b6b5499e84c5e9e53b1"
+reference = "1946182ab6547e4fca4a2e3814d362b1776412cd"
+resolved_reference = "1946182ab6547e4fca4a2e3814d362b1776412cd"
 
 [[package]]
 name = "decorator"
@@ -629,23 +629,6 @@ files = [
     {file = "decorator-5.1.1-py3-none-any.whl", hash = "sha256:b8c3f85900b9dc423225913c5aace94729fe1fa9763b38939a95226f02d37186"},
     {file = "decorator-5.1.1.tar.gz", hash = "sha256:637996211036b6385ef91435e4fae22989472f9d571faba8927ba8253acbc330"},
 ]
-
-[[package]]
-name = "decord"
-version = "0.6.0"
-description = "Decord Video Loader"
-optional = false
-python-versions = "*"
-files = [
-    {file = "decord-0.6.0-cp36-cp36m-macosx_10_15_x86_64.whl", hash = "sha256:85ef90d2f872384657d7774cc486c237c5b12df62d4ac5cb5c8d6001fa611323"},
-    {file = "decord-0.6.0-cp37-cp37m-macosx_10_15_x86_64.whl", hash = "sha256:9c20674964fb1490c677bd911d2023d2a09fec7a58a4bb0b7ddf1ccc269f107a"},
-    {file = "decord-0.6.0-cp38-cp38-macosx_10_15_x86_64.whl", hash = "sha256:a0eb1258beade34dceb29d97856a7764d179db1b5182899b61874f3418a1abc8"},
-    {file = "decord-0.6.0-py3-none-manylinux2010_x86_64.whl", hash = "sha256:51997f20be8958e23b7c4061ba45d0efcd86bffd5fe81c695d0befee0d442976"},
-    {file = "decord-0.6.0-py3-none-win_amd64.whl", hash = "sha256:02665d7c4f1193a330205a791bc128f7e108eb6ae5b67144437a02f700943bad"},
-]
-
-[package.dependencies]
-numpy = ">=1.14.0"
 
 [[package]]
 name = "defusedxml"
@@ -1207,8 +1190,7 @@ develop = true
 [package.dependencies]
 appdirs = "^1.4.4"
 cryptography = "^43.0.1"
-datasets = {git = "https://github.com/huggingface/datasets.git", rev = "f75f48926773f39798b85b6b5499e84c5e9e53b1", extras = ["audio", "vision"]}
-decord = "0.6.0"
+datasets = {git = "https://github.com/huggingface/datasets.git", rev = "1946182ab6547e4fca4a2e3814d362b1776412cd", extras = ["audio", "vision"]}
 environs = "^9.5.0"
 fsspec = {version = "2024.3.1", extras = ["s3"]}
 huggingface-hub = {version = "^0.25.1", extras = ["hf-transfer"]}
