@@ -28,6 +28,7 @@ from datasets.builder import DatasetBuilder
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
 from datasets.download import StreamingDownloadManager
 from datasets.packaged_modules.parquet.parquet import Parquet as ParquetBuilder
+from datasets.packaged_modules.videofolder.videofolder import VideoFolder as VideoFolderBuilder
 from datasets.splits import SplitDict, SplitGenerator, SplitInfo
 from datasets.utils.file_utils import (
     ArchiveIterable,
@@ -208,6 +209,10 @@ def is_parquet_builder_with_hub_files(builder: DatasetBuilder) -> bool:
             if not data_file.startswith(f"hf://datasets/{builder.repo_id}@"):
                 return False
     return True
+
+
+def is_video_builder(builder: DatasetBuilder) -> bool:
+    return isinstance(builder, VideoFolderBuilder) or "Video(" in str(builder.info.features)
 
 
 def _is_too_big_from_hub(
@@ -1386,6 +1391,13 @@ def compute_config_parquet_and_info_response(
                     max_dataset_size_bytes=max_dataset_size_bytes,
                     writer_batch_size=writer_batch_size,
                 )
+        elif is_video_builder(builder):  # videos should be saved from their URLs, not from locally downloaded files
+            logging.info(
+                f"{dataset=} {config=} is a video dataset, converting it by streaming to store the video URLs"
+            )
+            parquet_operations, partial, estimated_dataset_info = stream_convert_to_parquet(
+                builder, max_dataset_size_bytes=max_dataset_size_bytes
+            )
         else:
             dataset_info = hf_api.dataset_info(repo_id=dataset, revision=source_revision, files_metadata=True)
             if is_dataset_too_big(
