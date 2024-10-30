@@ -795,12 +795,6 @@
           "src": {
             "type": "string",
             "format": "uri"
-          },
-          "height": {
-            "type": "integer"
-          },
-          "width": {
-            "type": "integer"
           }
         },
         "required": ["src"]
