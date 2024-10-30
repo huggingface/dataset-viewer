@@ -346,7 +346,7 @@ df = {function}("hf://datasets/{dataset}/{data_file}"{args})"""
 PANDAS_CODE_SPLITS = """import pandas as pd
 {comment}
 splits = {splits}
-df = {function}("hf://datasets/{dataset}/" + splits["{first_split}"{args}])"""
+df = {function}("hf://datasets/{dataset}/" + splits["{first_split}"]{args})"""
 
 
 DASK_CODE = """import dask.dataframe as dd
