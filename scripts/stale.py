@@ -24,11 +24,11 @@ from github import Github
 
 LABELS_TO_EXEMPT = [
     "good first issue",
-    "good second issue",
-    "good difficult issue",
+    "bug",
+    "P0",
     "feature request",
-    "new model",
-    "wip",
+    "P1",
+    "prod",
 ]
 
 
