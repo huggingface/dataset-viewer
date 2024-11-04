@@ -1,29 +1,16 @@
-name: Stale Bot
-
+name: 'Close stale issues'
 on:
   schedule:
-    - cron: "0 8 * * *"
+    - cron: '30 1 * * *'
 
 jobs:
-  close_stale_issues:
-    name: Close Stale Issues
-    if: github.repository == 'huggingface/dataset-viewer'
-    runs-on: ubuntu-22.04
-    permissions:
-      issues: write
-    env:
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  stale:
+    runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-
-    - name: Setup Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: 3.8
-
-    - name: Install requirements
-      run: |
-        pip install PyGithub
-    - name: Close stale issues
-      run: |
-        python scripts/stale.py
+      - uses: actions/stale@v9
+        with:
+          stale-issue-message: 'This issue is stale because it has been open 30 days with no activity. Remove stale label or comment or this will be closed in 3 days.'
+          close-issue-message: 'This issue was closed because it has been stalled for 3 days with no activity.'
+          exempt-issue-labels: 'P0,P1,P2'
+          days-before-issue-stale: 30
+          days-before-issue-close: 3
