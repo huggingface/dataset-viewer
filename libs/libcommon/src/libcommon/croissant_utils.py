@@ -91,16 +91,22 @@ def feature_to_croissant_field(
         }
     # Field with sub-fields.
     elif isinstance(feature, dict):
-      return {
+        return {
             "@type": "cr:Field",
             "@id": field_name,
             "name": field_name,
             "description": f"Column '{column}' from the Hugging Face parquet file.",
-            "subField" : [
+            "subField": [
                 feature_to_croissant_field(
-                    distribution_name, f"{field_name}/{subfeature_name}", column, sub_feature, add_transform=True, json_path=subfeature_name)
-                    for subfeature_name, sub_feature in feature.items()
-                ],
+                    distribution_name,
+                    f"{field_name}/{subfeature_name}",
+                    column,
+                    sub_feature,
+                    add_transform=True,
+                    json_path=subfeature_name,
+                )
+                for subfeature_name, sub_feature in feature.items()
+            ],
         }
     elif isinstance(feature, (Sequence, list)):
         if isinstance(feature, Sequence):

@@ -134,29 +134,29 @@ def test_get_croissant_crumbs_from_dataset_infos() -> None:
     for i in [1, 3]:
         for field in croissant_crumbs["recordSet"][i]["field"]:
             if "subField" not in field:
-              assert "source" in field
-              assert "fileSet" in field["source"]
-              assert "@id" in field["source"]["fileSet"]
-              assert field["source"]["fileSet"]["@id"]
-              assert "extract" in field["source"]
+                assert "source" in field
+                assert "fileSet" in field["source"]
+                assert "@id" in field["source"]["fileSet"]
+                assert field["source"]["fileSet"]["@id"]
+                assert "extract" in field["source"]
             else:
-              for sub_field in field["subField"]:
-                assert "source" in sub_field
-                assert "fileSet" in sub_field["source"]
-                assert "@id" in sub_field["source"]["fileSet"]
-                assert sub_field["source"]["fileSet"]["@id"]
-                assert "extract" in sub_field["source"]
-                assert "transform" in sub_field["source"]
+                for sub_field in field["subField"]:
+                    assert "source" in sub_field
+                    assert "fileSet" in sub_field["source"]
+                    assert "@id" in sub_field["source"]["fileSet"]
+                    assert sub_field["source"]["fileSet"]["@id"]
+                    assert "extract" in sub_field["source"]
+                    assert "transform" in sub_field["source"]
             if field["description"] == "Split to which the example belongs to.":
                 assert "regex" in field["source"]["transform"]
                 assert field["source"]["extract"]["fileProperty"] == "fullpath"
                 assert field["references"]["field"]["@id"] == croissant_crumbs["recordSet"][i - 1]["field"][0]["@id"]
             else:
                 if "subField" not in field:
-                  assert field["source"]["extract"]["column"] == field["@id"].split("/")[-1]
+                    assert field["source"]["extract"]["column"] == field["@id"].split("/")[-1]
                 else:
-                  for sub_field in field["subField"]:
-                    assert sub_field["source"]["extract"]["column"] == field["@id"].split("/")[-1]
+                    for sub_field in field["subField"]:
+                        assert sub_field["source"]["extract"]["column"] == field["@id"].split("/")[-1]
 
     # Test fields.
     assert len(croissant_crumbs["recordSet"][1]["field"]) == 6
