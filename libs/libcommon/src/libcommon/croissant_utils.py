@@ -2,7 +2,7 @@
 # Copyright 2024 The HuggingFace Authors.
 
 from collections.abc import Mapping
-from typing import Any, Union
+from typing import Any, Optional, Union
 
 from datasets import ClassLabel, Image, Sequence, Value
 
@@ -53,7 +53,9 @@ HF_TO_CROISSANT_VALUE_TYPE = {
 }
 
 
-def get_source(distribution_name: str, column: str, add_transform: bool, json_path: str | None) -> dict[str, Any]:
+def get_source(
+    distribution_name: str, column: str, add_transform: bool, json_path: Optional[str] = None
+) -> dict[str, Any]:
     """Returns a Source dictionary for a Field."""
     source = {"fileSet": {"@id": distribution_name}, "extract": {"column": column}}
     if add_transform and json_path:
@@ -67,7 +69,7 @@ def feature_to_croissant_field(
     column: str,
     feature: Any,
     add_transform: bool = False,
-    json_path: str | None = None,
+    json_path: Optional[str] = None,
 ) -> Union[dict[str, Any], None]:
     """Converts a Hugging Face Datasets feature to a Croissant field or None if impossible."""
     if isinstance(feature, Value) and feature.dtype in HF_TO_CROISSANT_VALUE_TYPE:
