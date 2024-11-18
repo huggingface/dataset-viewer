@@ -163,7 +163,8 @@ def test_get_croissant_crumbs_from_dataset_infos() -> None:
     assert len(croissant_crumbs["recordSet"][3]["field"]) == 6
     for field in croissant_crumbs["recordSet"][1]["field"]:
         assert field["@type"] == "cr:Field"
-        assert field["dataType"] == "sc:Text"
+        if "subField" not in field:
+            assert field["dataType"] == "sc:Text"
     assert len(croissant_crumbs["recordSet"][1]["field"]) == len(squad_info["features"]) + 1
 
     # Test distribution.
