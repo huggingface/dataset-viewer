@@ -2,7 +2,7 @@
 # Copyright 2024 The HuggingFace Authors.
 
 from collections.abc import Mapping
-from typing import Any, Union
+from typing import Any, Optional, Union
 
 from datasets import ClassLabel, Image, Sequence, Value
 
@@ -53,8 +53,23 @@ HF_TO_CROISSANT_VALUE_TYPE = {
 }
 
 
+def get_source(
+    distribution_name: str, column: str, add_transform: bool, json_path: Optional[str] = None
+) -> dict[str, Any]:
+    """Returns a Source dictionary for a Field."""
+    source = {"fileSet": {"@id": distribution_name}, "extract": {"column": column}}
+    if add_transform and json_path:
+        source["transform"] = {"jsonPath": json_path}
+    return source
+
+
 def feature_to_croissant_field(
-    distribution_name: str, field_name: str, column: str, feature: Any
+    distribution_name: str,
+    field_name: str,
+    column: str,
+    feature: Any,
+    add_transform: bool = False,
+    json_path: Optional[str] = None,
 ) -> Union[dict[str, Any], None]:
     """Converts a Hugging Face Datasets feature to a Croissant field or None if impossible."""
     if isinstance(feature, Value) and feature.dtype in HF_TO_CROISSANT_VALUE_TYPE:
@@ -64,20 +79,21 @@ def feature_to_croissant_field(
             "name": field_name,
             "description": f"Column '{column}' from the Hugging Face parquet file.",
             "dataType": HF_TO_CROISSANT_VALUE_TYPE[feature.dtype],
-            "source": {"fileSet": {"@id": distribution_name}, "extract": {"column": column}},
+            "source": get_source(distribution_name, column, add_transform, json_path),
         }
     elif isinstance(feature, Image):
+        source = get_source(distribution_name, column, add_transform, json_path)
+        if transform := source.get("transform"):
+            source["transform"] = [transform, {"jsonPath": "bytes"}]
+        else:
+            source["transform"] = {"jsonPath": "bytes"}
         return {
             "@type": "cr:Field",
             "@id": field_name,
             "name": field_name,
             "description": f"Image column '{column}' from the Hugging Face parquet file.",
             "dataType": "sc:ImageObject",
-            "source": {
-                "fileSet": {"@id": distribution_name},
-                "extract": {"column": column},
-                "transform": {"jsonPath": "bytes"},
-            },
+            "source": source,
         }
     elif isinstance(feature, ClassLabel):
         return {
@@ -87,7 +103,26 @@ def feature_to_croissant_field(
             "description": f"ClassLabel column '{column}' from the Hugging Face parquet file.\nLabels:\n"
             + ", ".join(f"{name} ({i})" for i, name in enumerate(feature.names)),
             "dataType": "sc:Integer",
-            "source": {"fileSet": {"@id": distribution_name}, "extract": {"column": column}},
+            "source": get_source(distribution_name, column, add_transform, json_path),
+        }
+    # Field with sub-fields.
+    elif isinstance(feature, dict):
+        return {
+            "@type": "cr:Field",
+            "@id": field_name,
+            "name": field_name,
+            "description": f"Column '{column}' from the Hugging Face parquet file.",
+            "subField": [
+                feature_to_croissant_field(
+                    distribution_name,
+                    f"{field_name}/{subfeature_name}",
+                    column,
+                    sub_feature,
+                    add_transform=True,
+                    json_path=subfeature_name,
+                )
+                for subfeature_name, sub_feature in feature.items()
+            ],
         }
     elif isinstance(feature, (Sequence, list)):
         if isinstance(feature, Sequence):
