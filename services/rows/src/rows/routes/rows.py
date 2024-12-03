@@ -97,7 +97,7 @@ def create_rows_endpoint(
                     with StepProfiler(method="rows_endpoint", step="query the rows"):
                         try:
                             truncated_columns: list[str] = []
-                            if dataset == "Major-TOM/Core-S2L2A":
+                            if dataset == "Major-TOM/Core-S2L2A" or dataset == "foursquare/fsq-os-places":
                                 pa_table, truncated_columns = rows_index.query_truncated_binary(
                                     offset=offset, length=length
                                 )
