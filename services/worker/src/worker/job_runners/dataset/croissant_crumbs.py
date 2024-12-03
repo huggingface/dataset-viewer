@@ -82,8 +82,6 @@ def get_croissant_crumbs_from_dataset_infos(
                 {
                     "@type": "cr:FileSet",
                     "@id": distribution_name,
-                    "name": distribution_name,
-                    "description": "The underlying Parquet files as converted by Hugging Face (see: https://huggingface.co/docs/dataset-viewer/parquet).",
                     "containedIn": {"@id": repo_name},
                     "encodingFormat": "application/x-parquet",
                     "includes": f"{config}/*/*.parquet",
@@ -99,8 +97,6 @@ def get_croissant_crumbs_from_dataset_infos(
             {
                 "@type": "cr:Field",
                 "@id": f"{split_record_set_name}/split_name",
-                "name": "split_name",
-                "description": "The name of the split.",
                 "dataType": "sc:Text",
             }
         )
@@ -124,8 +120,6 @@ def get_croissant_crumbs_from_dataset_infos(
             {
                 "@type": "cr:Field",
                 "@id": f"{record_set_name}/split",
-                "name": f"{record_set_name}/split",
-                "description": "Split to which the example belongs to.",
                 "dataType": "sc:Text",
                 "source": {
                     "fileSet": {"@id": distribution_name},
@@ -160,7 +154,6 @@ def get_croissant_crumbs_from_dataset_infos(
                 {
                     "@type": "cr:RecordSet",
                     "@id": record_set_name,
-                    "name": record_set_name,
                     "description": description,
                     "field": fields,
                 }
