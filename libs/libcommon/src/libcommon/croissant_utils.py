@@ -76,8 +76,6 @@ def feature_to_croissant_field(
         return {
             "@type": "cr:Field",
             "@id": field_name,
-            "name": field_name,
-            "description": f"Column '{column}' from the Hugging Face parquet file.",
             "dataType": HF_TO_CROISSANT_VALUE_TYPE[feature.dtype],
             "source": get_source(distribution_name, column, add_transform, json_path),
         }
@@ -90,8 +88,6 @@ def feature_to_croissant_field(
         return {
             "@type": "cr:Field",
             "@id": field_name,
-            "name": field_name,
-            "description": f"Image column '{column}' from the Hugging Face parquet file.",
             "dataType": "sc:ImageObject",
             "source": source,
         }
@@ -99,9 +95,6 @@ def feature_to_croissant_field(
         return {
             "@type": "cr:Field",
             "@id": field_name,
-            "name": field_name,
-            "description": f"ClassLabel column '{column}' from the Hugging Face parquet file.\nLabels:\n"
-            + ", ".join(f"{name} ({i})" for i, name in enumerate(feature.names)),
             "dataType": "sc:Integer",
             "source": get_source(distribution_name, column, add_transform, json_path),
         }
@@ -110,8 +103,6 @@ def feature_to_croissant_field(
         return {
             "@type": "cr:Field",
             "@id": field_name,
-            "name": field_name,
-            "description": f"Column '{column}' from the Hugging Face parquet file.",
             "subField": [
                 feature_to_croissant_field(
                     distribution_name,
