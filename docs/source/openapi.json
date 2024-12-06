@@ -754,8 +754,7 @@
               "format": "uri"
             },
             "type": {
-              "type": "string",
-              "enum": ["audio/wav", "audio/mpeg", "audio/ogg"]
+              "type": "string"
             }
           }
         }
@@ -774,7 +773,7 @@
             "type": "integer"
           }
         },
-        "required": ["src", "height", "width"]
+        "required": ["src"]
       },
       "NullableImagesListCell": {
         "type": "array",
