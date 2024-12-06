@@ -773,7 +773,7 @@
             "type": "integer"
           }
         },
-        "required": ["src", "height", "width"]
+        "required": ["src"]
       },
       "NullableImagesListCell": {
         "type": "array",
