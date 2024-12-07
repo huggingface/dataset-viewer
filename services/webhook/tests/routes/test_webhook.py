@@ -82,23 +82,23 @@ def test_parse_payload(
     "payload,does_update",
     [
         (
-            {"event": "add", "repo": {"type": "dataset", "name": "webhook-test", "gitalyUid": "123"}, "scope": "repo"},
+            {"event": "add", "repo": {"type": "dataset", "name": "webhook-test", "gitalyUid": "123", "private": False}, "scope": "repo"},
             True,
         ),
         (
             {
                 "event": "move",
                 "movedTo": "webhook-test",
-                "repo": {"type": "dataset", "name": "previous-name", "gitalyUid": "123"},
+                "repo": {"type": "dataset", "name": "previous-name", "gitalyUid": "123", "private": False},
                 "scope": "repo",
             },
             True,
         ),
-        ({"event": "add", "repo": {"type": "dataset", "name": "webhook-test"}, "scope": "repo"}, True),
+        ({"event": "add", "repo": {"type": "dataset", "name": "webhook-test", "private": False}, "scope": "repo"}, True),
         (
             {
                 "event": "doesnotexist",
-                "repo": {"type": "dataset", "name": "webhook-test", "gitalyUid": "123"},
+                "repo": {"type": "dataset", "name": "webhook-test", "gitalyUid": "123", "private": False},
                 "scope": "repo",
             },
             False,
@@ -128,7 +128,7 @@ def test_parse_payload(
         (
             {
                 "event": "update",
-                "repo": {"type": "dataset", "name": "AresEkb/prof_standards_sbert_large_mt_nlu_ru", "headSha": "abc"},
+                "repo": {"type": "dataset", "name": "AresEkb/prof_standards_sbert_large_mt_nlu_ru", "headSha": "abc", "private": False},
                 "scope": "repo.content",
             },
             True,
