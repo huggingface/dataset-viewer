@@ -258,7 +258,7 @@ class NumbaConfig:
             return cls(path=env.str(name="CACHE_DIR", default=NUMBA_CACHE_DIR))
 
 
-CONFIG_NAMES_MAX_NUMBER = 3_000
+CONFIG_NAMES_MAX_NUMBER = 4_000
 
 
 @dataclass(frozen=True)
