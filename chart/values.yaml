@@ -228,7 +228,7 @@ optInOutUrlsScan:
 
 configNames:
   # the max number of configs per dataset
-  maxNumber: 3_000
+  maxNumber: 4_000
 
 s3:
   regionName: "us-east-1"
