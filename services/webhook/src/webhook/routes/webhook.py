@@ -40,6 +40,7 @@ schema = {
 class _MoonWebhookV2PayloadRepo(TypedDict):
     type: Literal["model", "dataset", "space"]
     name: str
+    private: bool
 
 
 class MoonWebhookV2PayloadRepo(_MoonWebhookV2PayloadRepo, total=False):
@@ -82,18 +83,16 @@ def process_payload(
         # ^ it filters out the webhook calls for non-dataset repos and discussions in dataset repos
         return None
     dataset = payload["repo"]["name"]
+    private = payload["repo"]["private"]
     if dataset is None:
         return None
     event = payload["event"]
     if event == "remove":
         delete_dataset(dataset=dataset, storage_clients=storage_clients)
     elif event in ["add", "update", "move"]:
-        if (
-            event == "update"
-            and get_current_revision(dataset) == payload["repo"]["headSha"]
-            and not payload["scope"] == "repo.config"
-        ):
+        if event == "update" and get_current_revision(dataset) == payload["repo"]["headSha"] and not private:
             # ^ it filters out the webhook calls when the refs/convert/parquet branch is updated
+            # ^ it also filters switching from private to public if the headSha is in the cache (i.e. if the user is PRO/Enterprise)
             logging.warning(
                 f"Webhook revision for {dataset} is the same as the current revision in the db - skipping update."
             )
