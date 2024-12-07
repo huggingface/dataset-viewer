@@ -40,11 +40,11 @@ schema = {
 class _MoonWebhookV2PayloadRepo(TypedDict):
     type: Literal["model", "dataset", "space"]
     name: str
+    private: bool
 
 
 class MoonWebhookV2PayloadRepo(_MoonWebhookV2PayloadRepo, total=False):
     headSha: Optional[str]
-    private: bool
 
 
 class UpdatedRefDict(TypedDict):
