@@ -90,7 +90,11 @@ def process_payload(
     if event == "remove":
         delete_dataset(dataset=dataset, storage_clients=storage_clients)
     elif event in ["add", "update", "move"]:
-        if event == "update" and get_current_revision(dataset) == payload["repo"]["headSha"] and not private:
+        if (
+            event == "update"
+            and get_current_revision(dataset) == payload["repo"]["headSha"]
+            and (not payload["scope"] == "repo.config" or not private)
+        ):
             # ^ it filters out the webhook calls when the refs/convert/parquet branch is updated
             # ^ it also filters switching from private to public if the headSha is in the cache (i.e. if the user is PRO/Enterprise)
             logging.warning(
