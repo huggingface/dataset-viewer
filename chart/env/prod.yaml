@@ -306,7 +306,7 @@ admin:
       memory: "8Gi"
 
 hf:
-  timeoutSeconds: "1.5"
+  timeoutSeconds: "10"
 
 api:
   # Number of uvicorn workers for running the application
