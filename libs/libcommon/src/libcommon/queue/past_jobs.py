@@ -49,9 +49,8 @@ JOB_DURATION_MIN_SECONDS = 30
 
 # hardcoded list of datasets for which we allocated more compute
 # (typically impactful datasets with tons of subsets)
-ALLOWED_COMPUTE_MULTIPLIER = {
-    "HuggingFaceFW/fineweb-2": 100
-}
+ALLOWED_COMPUTE_MULTIPLIER = {"HuggingFaceFW/fineweb-2": 100}
+
 
 class PastJobDocument(Document):
     """The duration of a job that has been completed.
