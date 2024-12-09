@@ -47,6 +47,10 @@ JOB_DURATION_CHECK_MIN_SECONDS = 30
 # don't record short durations, because they will not have impact, but can clutter the collection
 JOB_DURATION_MIN_SECONDS = 30
 
+# hardcoded list of datasets for which we allocated more compute
+# (typically impactful datasets with tons of subsets)
+ALLOWED_COMPUTE_MULTIPLIER = {"HuggingFaceFW/fineweb-2": 100}
+
 
 class PastJobDocument(Document):
     """The duration of a job that has been completed.
@@ -96,7 +100,8 @@ def create_past_job(dataset: str, started_at: datetime, finished_at: datetime) -
     PastJobDocument(dataset=dataset, duration=duration, finished_at=finished_at).save()
 
     if not is_blocked(dataset) and duration > JOB_DURATION_CHECK_MIN_SECONDS:
-        if PastJobDocument.objects(dataset=dataset).sum("duration") > DATASET_BLOCKAGE_THRESHOLD_SECONDS:
+        max_duration = DATASET_BLOCKAGE_THRESHOLD_SECONDS * ALLOWED_COMPUTE_MULTIPLIER.get(dataset, 1)
+        if PastJobDocument.objects(dataset=dataset).sum("duration") > max_duration:
             block_dataset(dataset)
             return True
     return False
