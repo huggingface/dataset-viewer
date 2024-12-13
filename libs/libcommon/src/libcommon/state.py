@@ -232,7 +232,7 @@ class ConfigState:
                 name_field="split",
             )  # Note that we use the cached content even the revision is different (ie. maybe obsolete)
 
-        if self.split_names:  # emoty if the config-split-names cache is missing
+        if self.split_names:  # empty if the config-split-names cache is missing
             unexpected_split_names = set(cache_entries_df["split"].unique()).difference(
                 set(self.split_names).union({None})
             )
