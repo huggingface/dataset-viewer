@@ -232,13 +232,14 @@ class ConfigState:
                 name_field="split",
             )  # Note that we use the cached content even the revision is different (ie. maybe obsolete)
 
-        unexpected_split_names = set(cache_entries_df["split"].unique()).difference(
-            set(self.split_names).union({None})
-        )
-        if unexpected_split_names:
-            raise UnexceptedSplitNamesError(
-                f"Unexpected split names for dataset={self.dataset} config={self.config} ({len(unexpected_split_names)}): {list(islice(unexpected_split_names, 10))}{'' if len(unexpected_split_names) <= 10 else '...'}"
+        if self.split_names:  # emoty if the config-split-names cache is missing
+            unexpected_split_names = set(cache_entries_df["split"].unique()).difference(
+                set(self.split_names).union({None})
             )
+            if unexpected_split_names:
+                raise UnexceptedSplitNamesError(
+                    f"Unexpected split names for dataset={self.dataset} config={self.config} ({len(unexpected_split_names)}): {list(islice(unexpected_split_names, 10))}{'' if len(unexpected_split_names) <= 10 else '...'}"
+                )
 
         with StepProfiler(
             method="ConfigState.__post_init__",
