@@ -11,5 +11,6 @@ There are several different libraries you can use to work with the published Par
 - [DuckDB](https://duckdb.org/docs/), a high-performance SQL database for analytical queries
 - [Pandas](https://pandas.pydata.org/docs/index.html), a data analysis tool for working with data structures
 - [Polars](https://pola-rs.github.io/polars-book/user-guide/), a Rust based DataFrame library
+- [PostgreSQL via pgai](https://github.com/timescale/pgai/blob/main/docs/load_dataset_from_huggingface.md), a powerful, open source object-relational database system
 - [mlcroissant](https://github.com/mlcommons/croissant/tree/main/python/mlcroissant), a library for loading datasets from Croissant metadata
 - [pyspark](https://spark.apache.org/docs/latest/api/python), the Python API for Apache Spark
