@@ -2,8 +2,6 @@
 
 The dataset viewer provides a `/first-rows` endpoint for visualizing the first 100 rows of a dataset. This'll give you a good idea of the data types and example data contained in a dataset.
 
-![dataset-viewer](https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/dataset-viewer.png)
-
 This guide shows you how to use the dataset viewer's `/first-rows` endpoint to preview a dataset. Feel free to also try it out with [Postman](https://www.postman.com/huggingface/workspace/hugging-face-apis/request/23242779-32d6a8be-b800-446a-8cee-f6b5ca1710df), [RapidAPI](https://rapidapi.com/hugging-face-hugging-face-default/api/hugging-face-datasets-api), or [ReDoc](https://redocly.github.io/redoc/?url=https://datasets-server.huggingface.co/openapi.json#operation/listFirstRows).
 
 The `/first-rows` endpoint accepts three query parameters:
@@ -145,31 +143,60 @@ For some datasets, the response size from `/first-rows` may exceed 1MB, in which
 
 In some cases, if even the first few rows generate a response that exceeds 1MB, some of the columns are truncated and converted to a string. You'll see these listed in the `truncated_cells` field.
 
-For example, the [`ETDataset/ett`](https://datasets-server.huggingface.co/first-rows?dataset=ETDataset/ett&config=m2&split=test) dataset only returns 10 rows, and the `target` and `feat_dynamic_real` columns are truncated:
+For example, the [`GEM/SciDuet`](https://datasets-server.huggingface.co/first-rows?dataset=GEM/SciDuet&config=default&split=train) dataset only returns 10 rows, and the `paper_abstract`, `paper_content`, `paper_headers`, `slide_content_text` and `target` columns are truncated:
 
 ```json
   ...
   "rows": [
     {
-      "row_idx": 0,
-      "row": {
-        "start": "2016-07-01T00:00:00",
-        "target": "[38.6619987487793,38.222999572753906,37.34400177001953,37.124000549316406,37.124000549316406,36.9039",
-        "feat_static_cat": [0],
-        "feat_dynamic_real": "[[41.130001068115234,39.62200164794922,38.86800003051758,35.518001556396484,37.52799987792969,37.611",
-        "item_id": "OT"
+      {
+         "row_idx":8,
+         "row":{
+            "gem_id":"GEM-SciDuet-train-1#paper-954#slide-8",
+            "paper_id":"954",
+            "paper_title":"Incremental Syntactic Language Models for Phrase-based Translation",
+            "paper_abstract":"\"This paper describes a novel technique for incorporating syntactic knowledge into phrasebased machi",
+            "paper_content":"{\"paper_content_id\":[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29",
+            "paper_headers":"{\"paper_header_number\":[\"1\",\"2\",\"3\",\"3.1\",\"3.3\",\"4\",\"4.1\",\"6\",\"7\"],\"paper_header_content\":[\"Introduc",
+            "slide_id":"GEM-SciDuet-train-1#paper-954#slide-8",
+            "slide_title":"Does an Incremental Syntactic LM Help Translation",
+            "slide_content_text":"\"but will it make my BLEU score go up?\\nMotivation Syntactic LM Decoder Integration Questions?\\nMose",
+            "target":"\"but will it make my BLEU score go up?\\nMotivation Syntactic LM Decoder Integration Questions?\\nMose",
+            "references":[]
+         },
+         "truncated_cells":[
+            "paper_abstract",
+            "paper_content",
+            "paper_headers",
+            "slide_content_text",
+            "target"
+         ]
       },
-      "truncated_cells": ["target", "feat_dynamic_real"]
-    },
-    {
-      "row_idx": 1,
-      "row": {
-        "start": "2016-07-01T00:00:00",
-        "target": "[38.6619987487793,38.222999572753906,37.34400177001953,37.124000549316406,37.124000549316406,36.9039",
-        "feat_static_cat": [0],
-        "feat_dynamic_real": "[[41.130001068115234,39.62200164794922,38.86800003051758,35.518001556396484,37.52799987792969,37.611",
-        "item_id": "OT"
-      },
+      {
+         "row_idx":9,
+         "row":{
+            "gem_id":"GEM-SciDuet-train-1#paper-954#slide-9",
+            "paper_id":"954",
+            "paper_title":"Incremental Syntactic Language Models for Phrase-based Translation",
+            "paper_abstract":"\"This paper describes a novel technique for incorporating syntactic knowledge into phrasebased machi",
+            "paper_content":"{\"paper_content_id\":[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29",
+            "paper_headers":"{\"paper_header_number\":[\"1\",\"2\",\"3\",\"3.1\",\"3.3\",\"4\",\"4.1\",\"6\",\"7\"],\"paper_header_content\":[\"Introduc",
+            "slide_id":"GEM-SciDuet-train-1#paper-954#slide-9",
+            "slide_title":"Perplexity Results",
+            "slide_content_text":"\"Language models trained on WSJ Treebank corpus\\nMotivation Syntactic LM Decoder Integration Questio",
+            "target":"\"Language models trained on WSJ Treebank corpus\\nMotivation Syntactic LM Decoder Integration Questio",
+            "references":[
+               
+            ]
+         },
+         "truncated_cells":[
+            "paper_abstract",
+            "paper_content",
+            "paper_headers",
+            "slide_content_text",
+            "target"
+         ]
+      }
       "truncated_cells": ["target", "feat_dynamic_real"]
     },
   ...

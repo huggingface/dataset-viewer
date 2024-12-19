@@ -8,8 +8,8 @@ To read from a single Parquet file, use the [`read_parquet`](https://docs.rapids
 import cudf
 
 df = (
-    cudf.read_parquet("https://huggingface.co/datasets/barilan/blog_authorship_corpus/resolve/refs%2Fconvert%2Fparquet/blog_authorship_corpus/train/0000.parquet")
-    .groupby('horoscope')['text']
+    cudf.read_parquet("https://huggingface.co/datasets/tasksource/blog_authorship_corpus/resolve/refs%2Fconvert%2Fparquet/default/train/0000.parquet")
+    .groupby('sign')['text']
     .apply(lambda x: x.str.len().mean())
     .sort_values(ascending=False)
     .head(5)
@@ -25,6 +25,6 @@ import dask.dataframe as dd
 dask.config.set({"dataframe.backend": "cudf"})
 
 df = (
-    dd.read_parquet("https://huggingface.co/datasets/barilan/blog_authorship_corpus/resolve/refs%2Fconvert%2Fparquet/blog_authorship_corpus/train/*.parquet")
+    dd.read_parquet("https://huggingface.co/datasets/tasksource/blog_authorship_corpus/resolve/refs%2Fconvert%2Fparquet/default/train/*.parquet")
 )
 ```
