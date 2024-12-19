@@ -200,7 +200,7 @@ To read and query the Parquet files, take a look at the [Query datasets from the
 ## Partially converted datasets
 
 The Parquet version can be partial in two cases:
-- if the dataset is already in Parquet format but it contains row groups bigger than the recommended size (100-300MB uncompressed)
+- if the dataset is already in Parquet format but it contains row groups bigger than the recommended size (100-300MB uncompressed). This size is better for memory usage since Parquet is streamed row group per row group in most data libraries.
 - if the dataset is not already in Parquet format or if it is bigger than 5GB.
 
 In that case the Parquet files are generated up to 5GB and placed in a split directory prefixed with "partial", e.g. "partial-train" instead of "train".
