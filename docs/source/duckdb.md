@@ -7,7 +7,7 @@
 ```py
 import duckdb
 
-url = "https://huggingface.co/datasets/barilan/blog_authorship_corpus/resolve/refs%2Fconvert%2Fparquet/blog_authorship_corpus/train/0000.parquet"
+url = "https://huggingface.co/datasets/tasksource/blog_authorship_corpus/resolve/refs%2Fconvert%2Fparquet/default/train/0000.parquet"
 
 con = duckdb.connect()
 con.execute("INSTALL httpfs;")
@@ -22,7 +22,7 @@ var con = db.connect();
 con.exec('INSTALL httpfs');
 con.exec('LOAD httpfs');
 
-const url = "https://huggingface.co/datasets/barilan/blog_authorship_corpus/resolve/refs%2Fconvert%2Fparquet/blog_authorship_corpus/train/0000.parquet"
+const url = "https://huggingface.co/datasets/tasksource/blog_authorship_corpus/resolve/refs%2Fconvert%2Fparquet/default/train/0000.parquet"
 ```
 </js>
 </inferencesnippet>
@@ -32,22 +32,22 @@ Now you can write and execute your SQL query on the Parquet file:
 <inferencesnippet>
 <python>
 ```py
-con.sql(f"SELECT horoscope, count(*), AVG(LENGTH(text)) AS avg_blog_length FROM '{url}' GROUP BY horoscope ORDER BY avg_blog_length DESC LIMIT(5)")
+con.sql(f"SELECT sign, count(*), AVG(LENGTH(text)) AS avg_blog_length FROM '{url}' GROUP BY sign ORDER BY avg_blog_length DESC LIMIT(5)")
 ┌───────────┬──────────────┬────────────────────┐
-│ horoscope │ count_star() │  avg_blog_length   │
+│   sign    │ count_star() │  avg_blog_length   │
 │  varchar  │    int64     │       double       │
 ├───────────┼──────────────┼────────────────────┤
-│ Aquarius  │        34062 │  1129.218836239798 │
-│ Cancer    │        41509 │  1098.366812016671 │
-│ Capricorn │        33961 │ 1073.2002002296751 │
-│ Libra     │        40302 │ 1072.0718326633914 │
-│ Leo       │        40587 │ 1064.0536871412028 │
+│ Cancer    │        38956 │ 1206.5212034089743 │
+│ Leo       │        35487 │ 1180.0673767858652 │
+│ Aquarius  │        32723 │ 1152.1136815084192 │
+│ Virgo     │        36189 │ 1117.1982094006466 │
+│ Capricorn │        31825 │  1102.397360565593 │
 └───────────┴──────────────┴────────────────────┘
 ```
 </python>
 <js>
 ```js
-con.all(`SELECT horoscope, count(*), AVG(LENGTH(text)) AS avg_blog_length FROM '${url}' GROUP BY horoscope ORDER BY avg_blog_length DESC LIMIT(5)`, function(err, res) {
+con.all(`SELECT sign, count(*), AVG(LENGTH(text)) AS avg_blog_length FROM '${url}' GROUP BY sign ORDER BY avg_blog_length DESC LIMIT(5)`, function(err, res) {
   if (err) {
     throw err;
   }
@@ -62,22 +62,26 @@ To query multiple files - for example, if the dataset is sharded:
 <inferencesnippet>
 <python>
 ```py
-con.sql(f"SELECT horoscope, count(*), AVG(LENGTH(text)) AS avg_blog_length FROM read_parquet({urls[:2]}) GROUP BY horoscope ORDER BY avg_blog_length DESC LIMIT(5)")
-┌─────────────┬──────────────┬────────────────────┐
-│  horoscope  │ count_star() │  avg_blog_length   │
-│   varchar   │    int64     │       double       │
-├─────────────┼──────────────┼────────────────────┤
-│ Aquarius    │        49568 │ 1125.8306770497095 │
-│ Cancer      │        63512 │   1097.95608703867 │
-│ Libra       │        60304 │ 1060.6110539931017 │
-│ Capricorn   │        49402 │ 1059.5552609206104 │
-│ Sagittarius │        50431 │ 1057.4589835616982 │
-└─────────────┴──────────────┴────────────────────┘
+urls = ["https://huggingface.co/datasets/tasksource/blog_authorship_corpus/resolve/refs%2Fconvert%2Fparquet/default/train/0000.parquet", "https://huggingface.co/datasets/tasksource/blog_authorship_corpus/resolve/refs%2Fconvert%2Fparquet/default/train/0001.parquet"]
+
+con.sql(f"SELECT sign, count(*), AVG(LENGTH(text)) AS avg_blog_length FROM read_parquet({urls}) GROUP BY sign ORDER BY avg_blog_length DESC LIMIT(5)")
+┌──────────┬──────────────┬────────────────────┐
+│   sign   │ count_star() │  avg_blog_length   │
+│ varchar  │    int64     │       double       │
+├──────────┼──────────────┼────────────────────┤
+│ Aquarius │        49687 │  1191.417211745527 │
+│ Leo      │        53811 │ 1183.8782219248853 │
+│ Cancer   │        65048 │ 1158.9691612347804 │
+│ Gemini   │        51985 │ 1156.0693084543618 │
+│ Virgo    │        60399 │ 1140.9584430205798 │
+└──────────┴──────────────┴────────────────────┘
 ```
 </python>
 <js>
 ```js
-con.all(`SELECT horoscope, count(*), AVG(LENGTH(text)) AS avg_blog_length FROM read_parquet(${JSON.stringify(urls)}) GROUP BY horoscope ORDER BY avg_blog_length DESC LIMIT(5)`, function(err, res) {
+const urls = ["https://huggingface.co/datasets/tasksource/blog_authorship_corpus/resolve/refs%2Fconvert%2Fparquet/default/train/0000.parquet", "https://huggingface.co/datasets/tasksource/blog_authorship_corpus/resolve/refs%2Fconvert%2Fparquet/default/train/0001.parquet"];
+
+con.all(`SELECT sign, count(*), AVG(LENGTH(text)) AS avg_blog_length FROM read_parquet(${JSON.stringify(urls)}) GROUP BY sign ORDER BY avg_blog_length DESC LIMIT(5)`, function(err, res) {
   if (err) {
     throw err;
   }
