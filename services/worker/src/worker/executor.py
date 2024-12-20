@@ -73,7 +73,7 @@ class WorkerExecutor:
             START_WORKER_LOOP_PATH,
             "--print-worker-state-path",
         ]
-        return OutputExecutor(start_worker_loop_command, banner, timeout=10)
+        return OutputExecutor(start_worker_loop_command, banner, timeout=20)
 
     def _create_web_app_executor(self) -> TCPExecutor:
         logging.info("Starting webapp for /healthcheck and /metrics.")
@@ -87,7 +87,7 @@ class WorkerExecutor:
         self.executors.append(worker_loop_executor)
 
         web_app_executor = self._create_web_app_executor()
-        web_app_executor.start()  # blocking until the banner is printed
+        web_app_executor.start()  # blocking until socket connection is established
         self.executors.append(web_app_executor)
 
         loop = asyncio.get_event_loop()
@@ -149,8 +149,9 @@ class WorkerExecutor:
             try:
                 Queue().heartbeat(job_id=job_id)
             except Exception as error:
-                logging.warning(f"Heartbeat failed for job {job_id}: {error}")
-                self.stop()
+                logging.warning(f"Heartbeat failed for job {job_id} (AfterJobPlan might be running): {error}")
+                # Don't stop since the AfterJobPlan may be running
+                # self.stop()
 
     def kill_zombies(self) -> None:
         queue = Queue()

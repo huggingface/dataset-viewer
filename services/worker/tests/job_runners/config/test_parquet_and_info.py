@@ -913,7 +913,11 @@ def test_get_writer_batch_size_from_row_group_size(
     num_rows: int, row_group_byte_size: int, max_row_group_byte_size: int, expected: int
 ) -> None:
     writer_batch_size = get_writer_batch_size_from_row_group_size(
-        num_rows=num_rows, row_group_byte_size=row_group_byte_size, max_row_group_byte_size=max_row_group_byte_size
+        num_rows=num_rows,
+        row_group_byte_size=row_group_byte_size,
+        max_row_group_byte_size=max_row_group_byte_size,
+        factor_of=100,
+        divide_step=10,
     )
     assert writer_batch_size == expected
 

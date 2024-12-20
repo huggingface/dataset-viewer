@@ -136,5 +136,5 @@ jobs:
           repo: huggingface/infra-deployments
           wait-for-completion: true
           ref: refs/heads/main
-          token: ${{ secrets.ARGO_CD_TOKEN }}
+          token: ${{ secrets.GIT_TOKEN_INFRA_DEPLOYMENT }}
           inputs: '{"path": "datasets-server/*.yaml", "values": ${{ env.VALUES }}, "url": "${{ github.event.head_commit.url }}"}'

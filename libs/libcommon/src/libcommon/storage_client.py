@@ -86,7 +86,8 @@ class StorageClient:
         return self.prepare_url(self.get_unprepared_url(path), revision=revision)
 
     def get_unprepared_url(self, path: str) -> str:
-        url = f"{self.base_url}/{path}"
+        # handle path in assets and hf/http urls
+        url = path if "://" in path else f"{self.base_url}/{path}"
         logging.debug(f"unprepared url: {url}")
         return url
 
@@ -145,7 +146,7 @@ class StorageClient:
             return 0
 
     @staticmethod
-    def generate_object_key(
+    def generate_object_path(
         dataset: str, revision: str, config: str, split: str, row_idx: int, column: str, filename: str
     ) -> str:
         return f"{parse.quote(dataset)}/{DATASET_SEPARATOR}/{revision}/{DATASET_SEPARATOR}/{parse.quote(config)}/{parse.quote(split)}/{str(row_idx)}/{parse.quote(column)}/{filename}"

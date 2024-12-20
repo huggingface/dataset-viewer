@@ -386,6 +386,9 @@
           },
           {
             "$ref": "#/components/schemas/ImageFeature"
+          },
+          {
+            "$ref": "#/components/schemas/VideoFeature"
           }
         ]
       },
@@ -558,6 +561,19 @@
           }
         }
       },
+      "VideoFeature": {
+        "type": "object",
+        "required": ["_type"],
+        "properties": {
+          "_type": {
+            "type": "string",
+            "enum": ["Video"]
+          },
+          "decode": {
+            "type": "boolean"
+          }
+        }
+      },
       "RowItem": {
         "type": "object",
         "required": ["row_idx", "row", "truncated_cells"],
@@ -622,6 +638,9 @@
           },
           {
             "$ref": "#/components/schemas/NullableImagesListCell"
+          },
+          {
+            "$ref": "#/components/schemas/VideoCell"
           }
         ]
       },
@@ -735,8 +754,7 @@
               "format": "uri"
             },
             "type": {
-              "type": "string",
-              "enum": ["audio/wav", "audio/mpeg", "audio/ogg"]
+              "type": "string"
             }
           }
         }
@@ -755,7 +773,7 @@
             "type": "integer"
           }
         },
-        "required": ["src", "height", "width"]
+        "required": ["src"]
       },
       "NullableImagesListCell": {
         "type": "array",
@@ -769,6 +787,16 @@
             }
           ]
         }
+      },
+      "VideoCell": {
+        "type": "object",
+        "properties": {
+          "src": {
+            "type": "string",
+            "format": "uri"
+          }
+        },
+        "required": ["src"]
       },
       "IsValidResponse": {
         "type": "object",

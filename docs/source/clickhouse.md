@@ -97,7 +97,7 @@ Remember to set `enable_url_encoding` to 0 and `max_https_get_redirects` to 1 to
 SET max_http_get_redirects = 1, enable_url_encoding = 0
 ```
 
-Let's create a function to return a list of Parquet files from the [`barilan/blog_authorship_corpus`](https://huggingface.co/datasets/barilan/blog_authorship_corpus):
+Let's create a function to return a list of Parquet files from the [`tasksource/blog_authorship_corpus`](https://huggingface.co/datasets/tasksource/blog_authorship_corpus):
 
 ```bash
 CREATE OR REPLACE FUNCTION hugging_paths AS dataset -> (
@@ -105,9 +105,9 @@ CREATE OR REPLACE FUNCTION hugging_paths AS dataset -> (
     FROM url('https://datasets-server.huggingface.co/parquet?dataset=' || dataset, 'JSONAsString')
 );
 
-SELECT hugging_paths('barilan/blog_authorship_corpus') AS paths
+SELECT hugging_paths('tasksource/blog_authorship_corpus') AS paths
 
-['https://huggingface.co/datasets/barilan/blog_authorship_corpus/resolve/refs%2Fconvert%2Fparquet/blog_authorship_corpus/train/0000.parquet','https://huggingface.co/datasets/barilan/blog_authorship_corpus/resolve/refs%2Fconvert%2Fparquet/blog_authorship_corpus/train/0001.parquet','https://huggingface.co/datasets/barilan/blog_authorship_corpus/resolve/refs%2Fconvert%2Fparquet/blog_authorship_corpus/validation/0000.parquet']
+['https://huggingface.co/datasets/tasksource/blog_authorship_corpus/resolve/refs%2Fconvert%2Fparquet/default/train/0000.parquet','https://huggingface.co/datasets/tasksource/blog_authorship_corpus/resolve/refs%2Fconvert%2Fparquet/default/train/0001.parquet']
 ```
 
 You can make this even easier by creating another function that calls `hugging_paths` and outputs all the files based on the dataset name:
@@ -118,26 +118,27 @@ CREATE OR REPLACE FUNCTION hf AS dataset -> (
     SELECT multiIf(length(urls) = 0, '', length(urls) = 1, urls[1], 'https://huggingface.co/datasets/{' || arrayStringConcat(arrayMap(x -> replaceRegexpOne(replaceOne(x, 'https://huggingface.co/datasets/', ''), '\\.parquet$', ''), urls), ',') || '}.parquet')
 );
 
-SELECT hf('barilan/blog_authorship_corpus') AS pattern
+SELECT hf('tasksource/blog_authorship_corpus') AS pattern
 
-['https://huggingface.co/datasets/{blog_authorship_corpus/resolve/refs%2Fconvert%2Fparquet/barilan/blog_authorship_corpus/blog_authorship_corpus-train-00000-of-00002,barilan/blog_authorship_corpus/resolve/refs%2Fconvert%2Fparquet/blog_authorship_corpus/blog_authorship_corpus-train-00001-of-00002,barilan/blog_authorship_corpus/resolve/refs%2Fconvert%2Fparquet/blog_authorship_corpus/blog_authorship_corpus-validation}.parquet']
+https://huggingface.co/datasets/{tasksource/blog_authorship_corpus/resolve/refs%2Fconvert%2Fparquet/default/train/0000,tasksource/blog_authorship_corpus/resolve/refs%2Fconvert%2Fparquet/default/train/0001}.parquet 
 ```
 
 Now use the `hf` function to query any dataset by passing the dataset name:
 
 ```bash
-SELECT horoscope, count(*), AVG(LENGTH(text)) AS avg_blog_length 
-FROM url(hf('barilan/blog_authorship_corpus'))
-GROUP BY horoscope 
+SELECT sign, count(*), AVG(LENGTH(text)) AS avg_blog_length 
+FROM url(hf('tasksource/blog_authorship_corpus'))
+GROUP BY sign 
 ORDER BY avg_blog_length 
 DESC LIMIT(5) 
 
-┌─────────────┬───────┬────────────────────┐
-│  Aquarius   │ 51747 │ 1132.487873693161  │
-├─────────────┼───────┼────────────────────┤
-│ Cancer      │ 66944 │  1111.613109464627 │
-│ Libra       │ 63994 │ 1060.3968184517298 │
-│ Sagittarius │ 52753 │ 1055.7120732470191 │
-│ Capricorn   │ 52207 │ 1055.4147719654452 │
-└─────────────┴───────┴────────────────────┘
+┌───────────┬────────┬────────────────────┐
+│  sign     │ count  │ avg_blog_length    │
+├───────────┼────────┼────────────────────┤
+│ Aquarius  │ 49687  │ 1193.9523819107615 │
+│ Leo       │ 53811  │ 1186.0665291483153 │
+│ Cancer    │ 65048  │ 1160.8010392325666 │
+│ Gemini    │ 51985  │ 1158.4132922958545 │
+│ Vurgi     │ 60399  │ 1142.9977648636566 │
+└───────────┴────────┴────────────────────┘
 ```

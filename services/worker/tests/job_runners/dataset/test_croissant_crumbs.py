@@ -124,34 +124,46 @@ def test_get_croissant_crumbs_from_dataset_infos() -> None:
         assert croissant_crumbs["recordSet"][i]["dataType"] == "cr:Split"
         assert croissant_crumbs["recordSet"][i]["key"]["@id"].endswith("name")
     assert croissant_crumbs["recordSet"][1]["@type"] == croissant_crumbs["recordSet"][3]["@type"] == "cr:RecordSet"
-    assert croissant_crumbs["recordSet"][1]["name"] == "record_set_user_squad_with_space"
-    assert croissant_crumbs["recordSet"][3]["name"] == "record_set_user_squad_with_space_0"
     assert isinstance(croissant_crumbs["recordSet"][1]["field"], list)
     assert isinstance(squad_info["features"], dict)
-    assert "1 skipped column: answers" in croissant_crumbs["recordSet"][1]["description"]
+    assert "skipped column" not in croissant_crumbs["recordSet"][1]["description"]
     assert croissant_crumbs["recordSet"][1]["@id"] == "record_set_user_squad_with_space"
     assert croissant_crumbs["recordSet"][3]["@id"] == "record_set_user_squad_with_space_0"
     for i in [1, 3]:
         for field in croissant_crumbs["recordSet"][i]["field"]:
-            assert "source" in field
-            assert "fileSet" in field["source"]
-            assert "@id" in field["source"]["fileSet"]
-            assert field["source"]["fileSet"]["@id"]
-            assert "extract" in field["source"]
-            if field["description"] == "Split to which the example belongs to.":
+            if "subField" not in field:
+                assert "source" in field
+                assert "fileSet" in field["source"]
+                assert "@id" in field["source"]["fileSet"]
+                assert field["source"]["fileSet"]["@id"]
+                assert "extract" in field["source"]
+            else:
+                for sub_field in field["subField"]:
+                    assert "source" in sub_field
+                    assert "fileSet" in sub_field["source"]
+                    assert "@id" in sub_field["source"]["fileSet"]
+                    assert sub_field["source"]["fileSet"]["@id"]
+                    assert "extract" in sub_field["source"]
+                    assert "transform" in sub_field["source"]
+            if field["@id"].endswith("split"):
                 assert "regex" in field["source"]["transform"]
                 assert field["source"]["extract"]["fileProperty"] == "fullpath"
                 assert field["references"]["field"]["@id"] == croissant_crumbs["recordSet"][i - 1]["field"][0]["@id"]
             else:
-                assert field["source"]["extract"]["column"] == field["@id"].split("/")[-1]
+                if "subField" not in field:
+                    assert field["source"]["extract"]["column"] == field["@id"].split("/")[-1]
+                else:
+                    for sub_field in field["subField"]:
+                        assert sub_field["source"]["extract"]["column"] == field["@id"].split("/")[-1]
 
     # Test fields.
-    assert len(croissant_crumbs["recordSet"][1]["field"]) == 5
-    assert len(croissant_crumbs["recordSet"][3]["field"]) == 5
+    assert len(croissant_crumbs["recordSet"][1]["field"]) == 6
+    assert len(croissant_crumbs["recordSet"][3]["field"]) == 6
     for field in croissant_crumbs["recordSet"][1]["field"]:
         assert field["@type"] == "cr:Field"
-        assert field["dataType"] == "sc:Text"
-    assert len(croissant_crumbs["recordSet"][1]["field"]) == len(squad_info["features"])
+        if "subField" not in field:
+            assert field["dataType"] == "sc:Text"
+    assert len(croissant_crumbs["recordSet"][1]["field"]) == len(squad_info["features"]) + 1
 
     # Test distribution.
     assert "distribution" in croissant_crumbs

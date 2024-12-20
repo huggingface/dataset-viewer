@@ -6,7 +6,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Any, Callable, Literal, Optional, Union
 
-from datasets import Audio, Features, Image
+from datasets import Audio, Features, Image, Video
 from datasets.features.features import FeatureType, Sequence
 
 from libcommon.cloudfront import CloudFrontSigner
@@ -23,7 +23,7 @@ VisitPath = list[Union[str, Literal[0]]]
 
 @dataclass
 class AssetUrlPath:
-    feature_type: Literal["Audio", "Image"]
+    feature_type: Literal["Audio", "Image", "Video"]
     path: VisitPath
 
     def enter(self) -> "AssetUrlPath":
@@ -70,15 +70,20 @@ def get_asset_url_paths(features: Features) -> list[AssetUrlPath]:
             if isinstance(feature, Image):
                 asset_url_paths.append(AssetUrlPath(feature_type="Image", path=visit_path))
             elif isinstance(feature, Audio):
+                # for audio we give a list in case there are multiple formats available
                 asset_url_paths.append(AssetUrlPath(feature_type="Audio", path=visit_path + [0]))
+            elif isinstance(feature, Video):
+                asset_url_paths.append(AssetUrlPath(feature_type="Video", path=visit_path))
 
         _visit(feature, classify, [column])
     return asset_url_paths
 
 
 class URLPreparator(ABC):
-    def __init__(self, url_signer: Optional[CloudFrontSigner]) -> None:
+    def __init__(self, url_signer: Optional[CloudFrontSigner], hf_endpoint: str, assets_base_url: str) -> None:
         self.url_signer = url_signer
+        self.hf_endpoint = hf_endpoint
+        self.assets_base_url = assets_base_url
 
     def prepare_url(self, url: str, revision: str) -> str:
         # Set the right revision in the URL e.g.
@@ -88,8 +93,13 @@ class URLPreparator(ABC):
         # Sign the URL since the assets require authentication to be accessed
         # Before: https://datasets-server.huggingface.co/assets/vidore/syntheticDocQA_artificial_intelligence_test/--/5fe59d7e52732b86d11ee0e9c4a8cdb0e8ba7a6e/--/default/test/0/image/image.jpg
         # After:  https://datasets-server.huggingface.co/assets/vidore/syntheticDocQA_artificial_intelligence_test/--/5fe59d7e52732b86d11ee0e9c4a8cdb0e8ba7a6e/--/default/test/0/image/image.jpg?Expires=1...4&Signature=E...A__&Key-Pair-Id=K...3
-        if self.url_signer:
+        if self.url_signer and url.startswith(self.assets_base_url):
             url = self.url_signer.sign_url(url)
+        # Convert HF URL to HF HTTP URL e.g.
+        # Before: hf://datasets/username/dataset_name@5fe59d7e52732b86d11ee0e9c4a8cdb0e8ba7a6e/video.mp4
+        # After:  https://huggingface.co/datasets/username/dataset_name/resolve/5fe59d7e52732b86d11ee0e9c4a8cdb0e8ba7a6e/video.mp4
+        if url.startswith("hf://"):
+            url = url.replace("hf://", self.hf_endpoint + "/").replace("@", "/resolve/")
         return url
 
     def __str__(self) -> str:

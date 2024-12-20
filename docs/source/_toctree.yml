@@ -44,6 +44,8 @@
           title: Pandas
         - local: polars
           title: Polars
+        - local: postgresql
+          title: PostgreSQL
         - local: mlcroissant
           title: mlcroissant
         - local: pyspark
