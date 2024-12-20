@@ -8,25 +8,55 @@ To demonstrate, this guide will show you an end-to-end example of how to retriev
 
 ## Get a dataset
 
-The [Hub](https://huggingface.co/datasets) is home to more than 100,000 datasets across a wide variety of tasks, sizes, and languages. For this example, you'll use the [`codeparrot/codecomplex`](https://huggingface.co/datasets/codeparrot/codecomplex) dataset, but feel free to explore and find another dataset that interests you! The dataset contains Java code from programming competitions, and the time complexity of the code is labeled by a group of algorithm experts. 
+The [Hub](https://huggingface.co/datasets) is home to more than 200,000 datasets across a wide variety of tasks, sizes, and languages. For this example, you'll use the [`codeparrot/codecomplex`](https://huggingface.co/datasets/codeparrot/codecomplex) dataset, but feel free to explore and find another dataset that interests you! The dataset contains Java code from programming competitions, and the time complexity of the code is labeled by a group of algorithm experts. 
 
 Let's say you're interested in the average length of the submitted code as it relates to the time complexity. Here's how you can get started. 
 
 Use the `/parquet` endpoint to convert the dataset to a Parquet file and return the URL to it:
 
-```py
+<inferencesnippet>
+<python>
+```python
 import requests
 API_URL = "https://datasets-server.huggingface.co/parquet?dataset=codeparrot/codecomplex"
 def query():
     response = requests.get(API_URL)
     return response.json()
 data = query()
-print(data)
-{'parquet_files': 
+```
+</python>
+<js>
+```js
+import fetch from "node-fetch";
+async function query(data) {
+    const response = await fetch(
+        "https://datasets-server.huggingface.co/parquet?dataset=codeparrot/codecomplex",
+        {
+            method: "GET"
+        }
+    );
+    const result = await response.json();
+    return result;
+}
+query().then((response) => {
+    console.log(JSON.stringify(response));
+});
+```
+</js>
+<curl>
+```curl
+curl https://datasets-server.huggingface.co/parquet?dataset=codeparrot/codecomplex \
+        -X GET
+```
+</curl>
+</inferencesnippet>
+
+```json
+{"parquet_files": 
     [
-        {'dataset': 'codeparrot/codecomplex', 'config': 'default', 'split': 'train', 'url': 'https://huggingface.co/datasets/codeparrot/codecomplex/resolve/refs%2Fconvert%2Fparquet/default/train/0000.parquet', 'filename': '0000.parquet', 'size': 4115908}
+        {"dataset": "codeparrot/codecomplex", "config": "default", "split": "train", "url": "https://huggingface.co/datasets/codeparrot/codecomplex/resolve/refs%2Fconvert%2Fparquet/default/train/0000.parquet", "filename": "0000.parquet", "size": 4115908}
     ], 
- 'pending': [], 'failed': [], 'partial: false
+ "pending": [], "failed": [], "partial": false
 }
 ```
 

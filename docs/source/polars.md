@@ -8,15 +8,16 @@
 
 </Tip>
 
-Let's start by grabbing the URLs to the `train` split of the [`barilan/blog_authorship_corpus`](https://huggingface.co/datasets/barilan/blog_authorship_corpus) dataset from the dataset viewer API:
+Let's start by grabbing the URLs to the `train` split of the [`tasksource/blog_authorship_corpus`](https://huggingface.co/datasets/tasksource/blog_authorship_corpus) dataset from the dataset viewer API:
 
 ```py
-r = requests.get("https://datasets-server.huggingface.co/parquet?dataset=barilan/blog_authorship_corpus")
+import requests 
+
+r = requests.get("https://datasets-server.huggingface.co/parquet?dataset=tasksource/blog_authorship_corpus")
 j = r.json()
 urls = [f['url'] for f in j['parquet_files'] if f['split'] == 'train']
 urls
-['https://huggingface.co/datasets/barilan/blog_authorship_corpus/resolve/refs%2Fconvert%2Fparquet/blog_authorship_corpus/train/0000.parquet',
- 'https://huggingface.co/datasets/barilan/blog_authorship_corpus/resolve/refs%2Fconvert%2Fparquet/blog_authorship_corpus/train/0001.parquet']
+['https://huggingface.co/datasets/tasksource/blog_authorship_corpus/resolve/refs%2Fconvert%2Fparquet/default/train/0000.parquet', 'https://huggingface.co/datasets/tasksource/blog_authorship_corpus/resolve/refs%2Fconvert%2Fparquet/default/train/0001.parquet']
 ```
 
 To read from a single Parquet file, use the [`read_parquet`](https://pola-rs.github.io/polars/py-polars/html/reference/api/polars.read_parquet.html) function to read it into a DataFrame and then execute your query:
@@ -25,12 +26,12 @@ To read from a single Parquet file, use the [`read_parquet`](https://pola-rs.git
 import polars as pl
 
 df = (
-    pl.read_parquet("https://huggingface.co/datasets/barilan/blog_authorship_corpus/resolve/refs%2Fconvert%2Fparquet/blog_authorship_corpus/train/0000.parquet")
-    .groupby("horoscope")
+    pl.read_parquet("https://huggingface.co/datasets/tasksource/blog_authorship_corpus/resolve/refs%2Fconvert%2Fparquet/default/train/0000.parquet")
+    .group_by("sign")
     .agg(
         [
             pl.count(),
-            pl.col("text").str.n_chars().mean().alias("avg_blog_length")
+            pl.col("text").str.len_chars().mean().alias("avg_blog_length")
         ]
     )
     .sort("avg_blog_length", descending=True)
@@ -39,15 +40,15 @@ df = (
 print(df)
 shape: (5, 3)
 ┌───────────┬───────┬─────────────────┐
-│ horoscope ┆ count ┆ avg_blog_length │
+│ sign      ┆ count ┆ avg_blog_length │
 │ ---       ┆ ---   ┆ ---             │
 │ str       ┆ u32   ┆ f64             │
 ╞═══════════╪═══════╪═════════════════╡
-│ Aquarius  ┆ 34062 ┆ 1129.218836     │
-│ Cancer    ┆ 41509 ┆ 1098.366812     │
-│ Capricorn ┆ 33961 ┆ 1073.2002       │
-│ Libra     ┆ 40302 ┆ 1072.071833     │
-│ Leo       ┆ 40587 ┆ 1064.053687     │
+│ Cancer    ┆ 38956 ┆ 1206.521203     │
+│ Leo       ┆ 35487 ┆ 1180.067377     │
+│ Aquarius  ┆ 32723 ┆ 1152.113682     │
+│ Virgo     ┆ 36189 ┆ 1117.198209     │
+│ Capricorn ┆ 31825 ┆ 1102.397361     │
 └───────────┴───────┴─────────────────┘
 ```
 
@@ -55,13 +56,14 @@ To read multiple Parquet files - for example, if the dataset is sharded - you'll
 
 ```py
 import polars as pl
+
 df = (
     pl.concat([pl.read_parquet(url) for url in urls])
-    .groupby("horoscope")
+    .group_by("sign")
     .agg(
         [
             pl.count(),
-            pl.col("text").str.n_chars().mean().alias("avg_blog_length")
+            pl.col("text").str.len_chars().mean().alias("avg_blog_length")
         ]
     )
     .sort("avg_blog_length", descending=True)
@@ -69,17 +71,17 @@ df = (
 )
 print(df)
 shape: (5, 3)
-┌─────────────┬───────┬─────────────────┐
-│ horoscope   ┆ count ┆ avg_blog_length │
-│ ---         ┆ ---   ┆ ---             │
-│ str         ┆ u32   ┆ f64             │
-╞═════════════╪═══════╪═════════════════╡
-│ Aquarius    ┆ 49568 ┆ 1125.830677     │
-│ Cancer      ┆ 63512 ┆ 1097.956087     │
-│ Libra       ┆ 60304 ┆ 1060.611054     │
-│ Capricorn   ┆ 49402 ┆ 1059.555261     │
-│ Sagittarius ┆ 50431 ┆ 1057.458984     │
-└─────────────┴───────┴─────────────────┘
+┌──────────┬───────┬─────────────────┐
+│ sign     ┆ count ┆ avg_blog_length │
+│ ---      ┆ ---   ┆ ---             │
+│ str      ┆ u32   ┆ f64             │
+╞══════════╪═══════╪═════════════════╡
+│ Aquarius ┆ 49687 ┆ 1191.417212     │
+│ Leo      ┆ 53811 ┆ 1183.878222     │
+│ Cancer   ┆ 65048 ┆ 1158.969161     │
+│ Gemini   ┆ 51985 ┆ 1156.069308     │
+│ Virgo    ┆ 60399 ┆ 1140.958443     │
+└──────────┴───────┴─────────────────┘
 ```
 
 ## Lazy API
@@ -92,12 +94,12 @@ To lazily read a Parquet file, use the [`scan_parquet`](https://pola-rs.github.i
 import polars as pl
 
 q = (
-    pl.scan_parquet("https://huggingface.co/datasets/barilan/blog_authorship_corpus/resolve/refs%2Fconvert%2Fparquet/blog_authorship_corpus/train/0000.parquet")
-    .groupby("horoscope")
+    pl.scan_parquet("https://huggingface.co/datasets/tasksource/blog_authorship_corpus/resolve/refs%2Fconvert%2Fparquet/default/train/0000.parquet")
+    .group_by("sign")
     .agg(
         [
             pl.count(),
-            pl.col("text").str.n_chars().mean().alias("avg_blog_length")
+            pl.col("text").str.len_chars().mean().alias("avg_blog_length")
         ]
     )
     .sort("avg_blog_length", descending=True)
