@@ -504,6 +504,14 @@ class StringColumn(Column):
     ) -> Union[CategoricalStatisticsItem, NumericalStatisticsItem, DatetimeStatisticsItem]:
         nan_count, nan_proportion = nan_count_proportion(data, column_name, n_samples)
         n_unique = data[column_name].n_unique()
+        if cls.is_datetime(data, column_name):
+            datetime_stats: DatetimeStatisticsItem = DatetimeColumn.compute_statistics(
+                data.select(pl.col(column_name).cast(pl.Datetime)),
+                column_name=column_name,
+                n_samples=n_samples,
+            )
+            return datetime_stats
+
         if cls.is_class(n_unique, n_samples):
             labels2counts: dict[str, int] = value_counts(data, column_name) if nan_count != n_samples else {}
             logging.debug(f"{n_unique=} {nan_count=} {nan_proportion=} {labels2counts=}")
@@ -517,13 +525,6 @@ class StringColumn(Column):
                 n_unique=len(labels2counts),
                 frequencies=labels2counts,
             )
-        if cls.is_datetime(data, column_name):
-            datetime_stats: DatetimeStatisticsItem = DatetimeColumn.compute_statistics(
-                data.select(pl.col(column_name).cast(pl.Datetime)),
-                column_name=column_name,
-                n_samples=n_samples,
-            )
-            return datetime_stats
 
         lengths_column_name = f"{column_name}_len"
         lengths_df = cls.compute_transformed_data(data, column_name, transformed_column_name=lengths_column_name)
@@ -536,7 +537,7 @@ class StringColumn(Column):
         stats = self.compute_statistics(data, column_name=self.name, n_samples=self.n_samples)
         if "frequencies" in stats:
             string_type = ColumnType.STRING_LABEL
-        elif isinstance(stats["histogram"], DatetimeHistogram):  # type: ignore
+        elif isinstance(stats["histogram"]["bin_edges"][0], str):
             string_type = ColumnType.DATETIME
         else:
             string_type = ColumnType.STRING_TEXT
