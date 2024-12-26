@@ -15,7 +15,7 @@ from datasets import Features
 from libcommon.exceptions import (
     StatisticsComputationError,
 )
-from libcommon.utils import datetime_to_string, is_datetime
+from libcommon.utils import datetime_to_string, identify_datetime_format, is_datetime
 from PIL import Image
 from tqdm.contrib.concurrent import thread_map
 
@@ -478,11 +478,19 @@ class StringColumn(Column):
         ) or n_unique <= NUM_BINS
 
     @staticmethod
-    def is_datetime(data: pl.DataFrame, column_name: str) -> bool:
-        """Check if first 1000 non-null samples in a column match datetime format."""
+    def is_datetime(data: pl.DataFrame, column_name: str) -> tuple[bool, Optional[str]]:
+        """Check if first 1000 non-null samples in a column match datetime format. If true, also return datetime format"""
 
         values = data.filter(pl.col(column_name).is_not_null()).head(1000)[column_name].to_list()
-        return all(is_datetime(value) for value in values)
+        _is_datetime = all(is_datetime(value) for value in values)
+
+        if _is_datetime:
+            formats = [identify_datetime_format(value) for value in values]
+            if len(set(formats)) == 1:
+                return True, formats[0]
+            raise StatisticsComputationError("Multiple datetime formats detected. ")
+
+        return False, None
 
     @classmethod
     def compute_transformed_data(
@@ -504,11 +512,13 @@ class StringColumn(Column):
     ) -> Union[CategoricalStatisticsItem, NumericalStatisticsItem, DatetimeStatisticsItem]:
         nan_count, nan_proportion = nan_count_proportion(data, column_name, n_samples)
         n_unique = data[column_name].n_unique()
-        if cls.is_datetime(data, column_name):
+        _is_datetime, datetime_format = cls.is_datetime(data, column_name)
+        if _is_datetime:
             datetime_stats: DatetimeStatisticsItem = DatetimeColumn.compute_statistics(
-                data.select(pl.col(column_name).cast(pl.Datetime)),
+                data,
                 column_name=column_name,
                 n_samples=n_samples,
+                format=datetime_format,
             )
             return datetime_stats
 
@@ -765,6 +775,7 @@ class DatetimeColumn(Column):
         data: pl.DataFrame,
         column_name: str,
         n_samples: int,
+        format: Optional[str] = None,
     ) -> DatetimeStatisticsItem:
         nan_count, nan_proportion = nan_count_proportion(data, column_name, n_samples)
         if nan_count == n_samples:  # all values are None
@@ -778,6 +789,8 @@ class DatetimeColumn(Column):
                 std=None,
                 histogram=None,
             )
+        if isinstance(data[column_name].dtype, pl.String):
+            data = data.with_columns(pl.col(column_name).str.to_datetime(format=format))
 
         min_date: datetime.datetime = data[column_name].min()  # type: ignore   # mypy infers type of datetime column .min() incorrectly
         timedelta_column_name = f"{column_name}_timedelta"
