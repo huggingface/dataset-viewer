@@ -124,7 +124,6 @@ def identify_datetime_format(datetime_string: str) -> Optional[str]:
         "%m-%d-%Y %H:%M:%S",
         "%m-%d-%Y %H:%M",
         "%m-%d-%Y",
-
         "%Y/%m/%d %H:%M:%S%z",
         "%Y/%m/%d %H:%M:%S",
         "%Y/%m/%d %H:%M",
@@ -137,7 +136,6 @@ def identify_datetime_format(datetime_string: str) -> Optional[str]:
         "%m/%d/%Y %H:%M:%S",
         "%m/%d/%Y %H:%M",
         "%m/%d/%Y",
-
         "%B %d, %Y",
         "%d %B %Y",
     ]
@@ -148,6 +146,7 @@ def identify_datetime_format(datetime_string: str) -> Optional[str]:
             return fmt
         except ValueError:
             continue
+    return None
 
 
 def get_duration(started_at: datetime) -> float:
