@@ -482,7 +482,7 @@ class StringColumn(Column):
         """Check if first 1000 non-null samples in a column match datetime format. If true, also return datetime format"""
 
         values = data.filter(pl.col(column_name).is_not_null()).head(1000)[column_name].to_list()
-        _is_datetime = all(is_datetime(value) for value in values)
+        _is_datetime = all(is_datetime(value) for value in values) if len(values) > 0 else False
 
         if _is_datetime:
             formats = [identify_datetime_format(value) for value in values]
