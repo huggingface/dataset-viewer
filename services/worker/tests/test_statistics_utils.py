@@ -125,7 +125,7 @@ def count_expected_statistics_for_numerical_column(
     }
 
 
-def count_expected_statistics_for_list_column(column: pd.Series) -> dict[str, Any]:
+def count_expected_statistics_for_list_column(column: pd.Series) -> dict[str, Any]:  # type: ignore
     if column.isnull().all():
         lengths_column = pd.Series([None] * column.shape[0])
         return count_expected_statistics_for_numerical_column(lengths_column, dtype=ColumnType.INT)
@@ -160,7 +160,7 @@ def count_expected_statistics_for_categorical_column(
     }
 
 
-def count_expected_statistics_for_string_column(column: pd.Series) -> dict[str, Any]:
+def count_expected_statistics_for_string_column(column: pd.Series) -> dict[str, Any]:  # type: ignore
     n_samples = column.shape[0]
     nan_count = column.isna().sum()
     value_counts = column.value_counts(dropna=True).to_dict()
@@ -183,7 +183,7 @@ def count_expected_statistics_for_string_column(column: pd.Series) -> dict[str, 
     return count_expected_statistics_for_numerical_column(lengths_column, dtype=ColumnType.INT)
 
 
-def count_expected_statistics_for_bool_column(column: pd.Series) -> dict[str, Any]:
+def count_expected_statistics_for_bool_column(column: pd.Series) -> dict[str, Any]:  # type: ignore
     n_samples = column.shape[0]
     nan_count = column.isna().sum()
     value_counts = column.value_counts(dropna=True).to_dict()
@@ -474,7 +474,7 @@ def test_image_statistics(
     assert computed == expected
 
 
-def count_expected_statistics_for_datetime_column(column: pd.Series, column_name: str) -> dict[str, Any]:
+def count_expected_statistics_for_datetime_column(column: pd.Series, column_name: str) -> dict[str, Any]:  # type: ignore
     n_samples = column.shape[0]
     nan_count = column.isna().sum()
     if nan_count == n_samples:
