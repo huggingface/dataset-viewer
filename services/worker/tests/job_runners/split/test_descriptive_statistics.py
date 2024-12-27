@@ -353,11 +353,11 @@ def datetime_statistics_expected(datasets: Mapping[str, Dataset]) -> dict[str, A
         ("descriptive_statistics", None),
         ("descriptive_statistics_string_text", None),
         ("descriptive_statistics_string_text_partial", None),
-        # ("descriptive_statistics_not_supported", "NoSupportedFeaturesError"),
-        # ("audio_statistics", None),
-        # ("image_statistics", None),
-        # ("datetime_statistics", None),
-        # ("gated", None),
+        ("descriptive_statistics_not_supported", "NoSupportedFeaturesError"),
+        ("audio_statistics", None),
+        ("image_statistics", None),
+        ("datetime_statistics", None),
+        ("gated", None),
     ],
 )
 def test_compute(
