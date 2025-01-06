@@ -7,7 +7,6 @@ from pathlib import Path
 from typing import Optional
 
 from datasets import IterableDataset, get_dataset_config_info, load_dataset
-from datasets.table import cast_table_to_features
 from fsspec.implementations.http import HTTPFileSystem
 from libcommon.constants import MAX_NUM_ROWS_PER_PAGE
 from libcommon.dtos import JobInfo, RowsContent, SplitFirstRowsResponse

@@ -4,8 +4,6 @@
 import logging
 from typing import Literal, Optional, Union
 
-from datasets import Features
-from datasets.table import cast_table_to_features
 from fsspec.implementations.http import HTTPFileSystem
 from libapi.authentication import auth_check
 from libapi.exceptions import ApiError, TooBigContentError, UnexpectedApiError
