@@ -13,6 +13,7 @@ import pyarrow.compute as pc
 import pyarrow.parquet as pq
 from datasets import Features, Value
 from datasets.features.features import FeatureType
+from datasets.table import cast_table_to_schema
 from datasets.utils.py_utils import size_str
 from fsspec.implementations.http import HTTPFile, HTTPFileSystem
 from huggingface_hub import HfFileSystem
@@ -146,7 +147,13 @@ class RowGroupReader:
     features: Features
 
     def read(self, columns: list[str]) -> pa.Table:
-        return self.parquet_file.read_row_group(i=self.group_id, columns=columns)
+        if not set(self.parquet_file.schema_arrow.names) <= set(columns):
+            raise SchemaMismatchError(
+                f"Parquet files have different columns: {sorted(columns)} and {sorted(self.parquet_file.schema_arrow.names)}"
+            )
+        pa_table = self.parquet_file.read_row_group(i=self.group_id, columns=columns)
+        # cast_table_to_schema adds null values to missing columns
+        return cast_table_to_schema(pa_table, self.features.arrow_schema)
 
     def read_truncated_binary(self, columns: list[str], max_binary_length: int) -> tuple[pa.Table, list[str]]:
         pa_table = self.parquet_file.read_row_group(i=self.group_id, columns=columns)
@@ -157,7 +164,7 @@ class RowGroupReader:
                     truncated_array = pc.binary_slice(pa_table[field_idx], 0, max_binary_length // len(pa_table))
                     pa_table = pa_table.set_column(field_idx, field, truncated_array)
                     truncated_columns.append(field.name)
-        return pa_table, truncated_columns
+        return cast_table_to_schema(pa_table, self.features.arrow_schema), truncated_columns
 
     def read_size(self, columns: Optional[Iterable[str]] = None) -> int:
         if columns is None:
@@ -278,7 +285,7 @@ class ParquetIndexWithMetadata:
             if len(row_group_offsets) == 0 or row_group_offsets[-1] == 0:  # if the dataset is empty
                 if offset < 0:
                     raise IndexError("Offset must be non-negative")
-                return parquet_files[0].read(), []
+                return cast_table_to_schema(parquet_files[0].read(), self.features.arrow_schema), []
 
             last_row_in_parquet = row_group_offsets[-1] - 1
             first_row = min(parquet_offset, last_row_in_parquet)
@@ -410,7 +417,7 @@ class ParquetIndexWithMetadata:
             if len(row_group_offsets) == 0 or row_group_offsets[-1] == 0:  # if the dataset is empty
                 if offset < 0:
                     raise IndexError("Offset must be non-negative")
-                return parquet_files[0].read()
+                return cast_table_to_schema(parquet_files[0].read(), self.features.arrow_schema)
 
             last_row_in_parquet = row_group_offsets[-1] - 1
             first_row = min(parquet_offset, last_row_in_parquet)
