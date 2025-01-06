@@ -147,6 +147,10 @@ class RowGroupReader:
     features: Features
 
     def read(self, columns: list[str]) -> pa.Table:
+        if not set(columns) <= set(self.parquet_file.schema_arrow.names):
+            raise SchemaMismatchError(
+                f"Parquet files have different columns: {sorted(columns)} and {sorted(self.parquet_file.schema_arrow.names)}"
+            )
         pa_table = self.parquet_file.read_row_group(i=self.group_id, columns=columns)
         # cast_table_to_schema adds null values to missing columns
         return cast_table_to_schema(pa_table, self.features.arrow_schema)
