@@ -513,7 +513,7 @@ def count_expected_statistics_for_datetime_column(column: pd.Series, column_name
 
     # compute std
     seconds_in_day = 24 * 60 * 60
-    if column_name in ["datetime", "datetime_string", "datetime_tz"]:
+    if column_name in ["datetime", "datetime_string", "datetime_string_z", "datetime_tz"]:
         timedeltas = pd.Series(range(0, 11 * seconds_in_day, seconds_in_day))
         hist = [2, 1, 1, 1, 1, 1, 1, 1, 1, 1]
     elif column_name == "datetime_null":
@@ -542,7 +542,7 @@ def count_expected_statistics_for_datetime_column(column: pd.Series, column_name
 
 @pytest.mark.parametrize(
     "column_name",
-    ["datetime", "datetime_string", "datetime_tz", "datetime_null", "datetime_all_null"],
+    ["datetime", "datetime_string", "datetime_string_z", "datetime_tz", "datetime_null", "datetime_all_null"],
 )
 def test_datetime_statistics(
     column_name: str,
@@ -550,7 +550,7 @@ def test_datetime_statistics(
 ) -> None:
     data = datasets["datetime_statistics"].to_pandas()
     expected = count_expected_statistics_for_datetime_column(data[column_name], column_name)
-    if column_name == "datetime_string":
+    if "_string" in column_name:
         computed = StringColumn.compute_statistics(
             data=pl.from_pandas(data),
             column_name=column_name,

@@ -826,8 +826,10 @@ class DatetimeColumn(Column):
             ),
         )
 
-    def compute_and_prepare_response(self, data: pl.DataFrame) -> StatisticsPerColumnItem:
-        stats = self.compute_statistics(data, column_name=self.name, n_samples=self.n_samples)
+    def compute_and_prepare_response(
+        self, data: pl.DataFrame, format: Optional[str] = None
+    ) -> StatisticsPerColumnItem:
+        stats = self.compute_statistics(data, column_name=self.name, n_samples=self.n_samples, format=format)
         return StatisticsPerColumnItem(
             column_name=self.name,
             column_type=ColumnType.DATETIME,
