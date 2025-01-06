@@ -147,7 +147,7 @@ class RowGroupReader:
     features: Features
 
     def read(self, columns: list[str]) -> pa.Table:
-        if not set(columns) <= set(self.parquet_file.schema_arrow.names):
+        if not set(self.parquet_file.schema_arrow.names) <= set(columns):
             raise SchemaMismatchError(
                 f"Parquet files have different columns: {sorted(columns)} and {sorted(self.parquet_file.schema_arrow.names)}"
             )
