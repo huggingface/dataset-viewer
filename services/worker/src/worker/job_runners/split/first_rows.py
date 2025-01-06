@@ -104,7 +104,6 @@ def compute_first_rows_from_parquet_response(
                 pa_table, truncated_columns = rows_index.query_truncated_binary(offset=0, length=rows_max_number)
             else:
                 pa_table = rows_index.query(offset=0, length=rows_max_number)
-            pa_table = cast_table_to_features(pa_table, rows_index.parquet_index.features)
             return RowsContent(
                 rows=pa_table.to_pylist(),
                 all_fetched=rows_index.parquet_index.num_rows_total <= rows_max_number,

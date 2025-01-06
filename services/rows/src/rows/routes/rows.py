@@ -103,10 +103,6 @@ def create_rows_endpoint(
                                 )
                             else:
                                 pa_table = rows_index.query(offset=offset, length=length)
-                            features = Features(
-                                {col: rows_index.parquet_index.features[col] for col in pa_table.column_names}
-                            )
-                            pa_table = cast_table_to_features(pa_table, features)
                         except TooBigRows as err:
                             raise TooBigContentError(str(err)) from None
                     with StepProfiler(method="rows_endpoint", step="transform to a list"):
