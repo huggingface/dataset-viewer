@@ -178,6 +178,7 @@ Currently, statistics are supported for strings, float and integer numbers, list
 * `list` - for lists of any other data types (including lists)
 * `audio` - for audio data
 * `image` - for image data
+* `datetime` - for datetime data 
 
 ### `class_label`
 
@@ -591,3 +592,57 @@ For image data, the distribution of images widths is computed. The following mea
 
 </p>
 </details>
+
+### datetime
+
+The distribution of datetime is computed.
+
+<details><summary>Example </summary>
+<p>
+
+```json
+{
+    "column_name": "date",
+    "column_type": "datetime",
+    "column_statistics": {
+        "nan_count": 0,
+        "nan_proportion": 0.0,
+        "min": "2013-05-18 04:54:11",
+        "max": "2013-06-20 10:01:41",
+        "mean": "2013-05-27 18:03:39",
+        "median": "2013-05-23 11:55:50",
+        "std": "11 days, 4:57:32.322450",
+        "histogram": {
+            "hist": [
+                318776,
+                393036,
+                173904,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                206284
+            ],
+            "bin_edges": [
+                "2013-05-18 04:54:11",
+                "2013-05-21 12:36:57",
+                "2013-05-24 20:19:43",
+                "2013-05-28 04:02:29",
+                "2013-05-31 11:45:15",
+                "2013-06-03 19:28:01",
+                "2013-06-07 03:10:47",
+                "2013-06-10 10:53:33",
+                "2013-06-13 18:36:19",
+                "2013-06-17 02:19:05",
+                "2013-06-20 10:01:41"
+            ]
+        }
+    }
+}
+```
+
+</p>
+</details>
+
