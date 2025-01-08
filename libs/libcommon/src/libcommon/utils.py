@@ -142,7 +142,9 @@ def identify_datetime_format(datetime_string: str) -> Optional[str]:
 
     for fmt in common_formats:
         try:
-            datetime.strptime(datetime_string, fmt)
+            _ = datetime.strptime(datetime_string, fmt)
+            if fmt.endswith("%z") and any(datetime_string.endswith(timezone) for timezone in ["Z", "UTC", "ACST"]):
+                fmt = f"{fmt.rstrip('%z')}%Z"
             return fmt
         except ValueError:
             continue
