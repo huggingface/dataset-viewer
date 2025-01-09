@@ -510,17 +510,34 @@ def count_expected_statistics_for_datetime_column(column: pd.Series, column_name
     if column_name == "datetime_tz":
         bin_edges = [f"{bin_edge}+0200" for bin_edge in bin_edges]
         minv, maxv, mean, median = f"{minv}+0200", f"{maxv}+0200", f"{mean}+0200", f"{median}+0200"
+    elif column_name == "datetime_string_tz":
+        # switch everything to two hours earlier in UTC timezone
+        minv = "2023-12-31 22:00:00+0000"
+        maxv = "2024-01-10 22:00:00+0000"
+        mean = "2024-01-05 22:00:00+0000"
+        median = "2024-01-05 22:00:00+0000"
+        bin_edges = [
+            "2023-12-31 22:00:00+0000",
+            "2024-01-01 22:00:01+0000",
+            "2024-01-02 22:00:02+0000",
+            "2024-01-03 22:00:03+0000",
+            "2024-01-04 22:00:04+0000",
+            "2024-01-05 22:00:05+0000",
+            "2024-01-06 22:00:06+0000",
+            "2024-01-07 22:00:07+0000",
+            "2024-01-08 22:00:08+0000",
+            "2024-01-09 22:00:09+0000",
+            "2024-01-10 22:00:00+0000",
+        ]
 
     # compute std
     seconds_in_day = 24 * 60 * 60
-    if column_name in ["datetime", "datetime_string", "datetime_string_z", "datetime_tz"]:
-        timedeltas = pd.Series(range(0, 11 * seconds_in_day, seconds_in_day))
-        hist = [2, 1, 1, 1, 1, 1, 1, 1, 1, 1]
-    elif column_name == "datetime_null":
+    if column_name == "datetime_null":
         timedeltas = pd.Series(range(0, 6 * 2 * seconds_in_day, 2 * seconds_in_day))  # take every other day
         hist = [1, 1, 0, 1, 0, 1, 0, 1, 0, 1]
     else:
-        raise ValueError("Incorrect column")
+        timedeltas = pd.Series(range(0, 11 * seconds_in_day, seconds_in_day))
+        hist = [2, 1, 1, 1, 1, 1, 1, 1, 1, 1]
 
     std = timedeltas.std()
     std_str = str(datetime.timedelta(seconds=std))
@@ -542,7 +559,16 @@ def count_expected_statistics_for_datetime_column(column: pd.Series, column_name
 
 @pytest.mark.parametrize(
     "column_name",
-    ["datetime", "datetime_string", "datetime_string_z", "datetime_tz", "datetime_null", "datetime_all_null"],
+    [
+        "datetime",
+        "datetime_string",
+        "datetime_string_z",
+        "datetime_string_cet",
+        "datetime_string_tz",
+        "datetime_tz",
+        "datetime_null",
+        "datetime_all_null",
+    ],
 )
 def test_datetime_statistics(
     column_name: str,
