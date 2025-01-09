@@ -109,29 +109,36 @@ def datetime_to_string(dt: datetime, format: str = "%Y-%m-%d %H:%M:%S%z") -> str
 def identify_datetime_format(datetime_string: str) -> Optional[str]:
     # Common datetime formats
     common_formats = [
+        "%Y-%m-%dT%H:%M:%S%Z",
         "%Y-%m-%dT%H:%M:%S%z",
         "%Y-%m-%dT%H:%M:%S",
         "%Y-%m-%dT%H:%M:%S.%f",
+        "%Y-%m-%d %H:%M:%S%Z",
         "%Y-%m-%d %H:%M:%S%z",
         "%Y-%m-%d %H:%M:%S",
         "%Y-%m-%d %H:%M",
         "%Y-%m-%d",
+        "%d-%m-%Y %H:%M:%S%Z",
         "%d-%m-%Y %H:%M:%S%z",
         "%d-%m-%Y %H:%M:%S",
         "%d-%m-%Y %H:%M",
         "%d-%m-%Y",
+        "%m-%d-%Y %H:%M:%S%Z",
         "%m-%d-%Y %H:%M:%S%z",
         "%m-%d-%Y %H:%M:%S",
         "%m-%d-%Y %H:%M",
         "%m-%d-%Y",
+        "%Y/%m/%d %H:%M:%S%Z",
         "%Y/%m/%d %H:%M:%S%z",
         "%Y/%m/%d %H:%M:%S",
         "%Y/%m/%d %H:%M",
         "%Y/%m/%d",
+        "%d/%m/%Y %H:%M:%S%Z",
         "%d/%m/%Y %H:%M:%S%z",
         "%d/%m/%Y %H:%M:%S",
         "%d/%m/%Y %H:%M",
         "%d/%m/%Y",
+        "%m/%d/%Y %H:%M:%S%Z",
         "%m/%d/%Y %H:%M:%S%z",
         "%m/%d/%Y %H:%M:%S",
         "%m/%d/%Y %H:%M",
@@ -143,7 +150,7 @@ def identify_datetime_format(datetime_string: str) -> Optional[str]:
     for fmt in common_formats:
         try:
             _ = datetime.strptime(datetime_string, fmt)
-            if fmt.endswith("%z") and any(datetime_string.endswith(timezone) for timezone in ["Z", "UTC", "ACST"]):
+            if fmt.endswith("%z") and any(datetime_string.endswith(tz) for tz in ["Z", "ACST"]):
                 fmt = f"{fmt.rstrip('%z')}%Z"
             return fmt
         except ValueError:
