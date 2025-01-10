@@ -487,6 +487,9 @@ class StringColumn(Column):
         if _is_datetime:
             formats = [identify_datetime_format(value) for value in values]
             if len(set(formats)) == 1:
+                datetime_format = formats[0]
+                if not datetime_format:
+                    raise ValueError("Values are datetime but format is not identified")
                 return True, formats[0]
             raise StatisticsComputationError("Multiple datetime formats detected. ")
 
