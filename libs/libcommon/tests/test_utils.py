@@ -159,7 +159,7 @@ def test_get_duration() -> None:
 @pytest.mark.parametrize(
     "datetime_string,expected_format",
     [
-        ("2024-01-01 00:00:00CET", "%Y-%m-%d %H:%M:%S%Z"),
+        ("2024-01-01 00:00:00 CET", "%Y-%m-%d %H:%M:%S %Z"),
     ],
 )
 def test_identify_datetime_format(datetime_string: str, expected_format: str) -> None:
