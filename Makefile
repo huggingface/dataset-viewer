@@ -17,7 +17,6 @@ stop: export COMPOSE_PROJECT_NAME := datasets-server
 dev-start: export COMPOSE_PROJECT_NAME := dev-datasets-server
 dev-stop: export COMPOSE_PROJECT_NAME := dev-datasets-server
 
-
 # makefile variables per target
 start: DOCKER_COMPOSE := ./tools/docker-compose-dataset-viewer.yml
 stop: DOCKER_COMPOSE := ./tools/docker-compose-dataset-viewer.yml

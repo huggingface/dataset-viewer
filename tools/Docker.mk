@@ -1,5 +1,3 @@
-
-
 .PHONY: down
 down:	
 	docker compose -f $(DOCKER_COMPOSE) down --remove-orphans --volumes
