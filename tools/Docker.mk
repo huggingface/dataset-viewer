@@ -1,5 +1,4 @@
-export API_HF_JWT_PUBLIC_KEY_URL := https://hub-ci.huggingface.co/api/keys/jwt
-export API_HF_JWT_ADDITIONAL_PUBLIC_KEYS :=
+
 
 .PHONY: down
 down:	

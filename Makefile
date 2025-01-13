@@ -8,12 +8,15 @@ export PORT_SSE_API := 8185
 export PORT_WORKER := 8186
 export PORT_WEBHOOK := 8187
 export PORT_REVERSE_PROXY := 8100
+export API_HF_JWT_PUBLIC_KEY_URL := https://hub-ci.huggingface.co/api/keys/jwt
+export API_HF_JWT_ADDITIONAL_PUBLIC_KEYS :=
 
 # environment variables per target
 start: export COMPOSE_PROJECT_NAME := datasets-server
 stop: export COMPOSE_PROJECT_NAME := datasets-server
 dev-start: export COMPOSE_PROJECT_NAME := dev-datasets-server
 dev-stop: export COMPOSE_PROJECT_NAME := dev-datasets-server
+
 
 # makefile variables per target
 start: DOCKER_COMPOSE := ./tools/docker-compose-dataset-viewer.yml
