@@ -163,4 +163,5 @@ def test_get_duration() -> None:
     ],
 )
 def test_identify_datetime_format(datetime_string: str, expected_format: str) -> None:
+    assert datetime.strptime(datetime_string, expected_format), "datetime error"
     assert identify_datetime_format(datetime_string) == expected_format
