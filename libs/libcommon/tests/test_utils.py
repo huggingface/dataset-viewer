@@ -154,14 +154,3 @@ def test_serialize_and_truncate_raises(obj: Any, max_bytes: int) -> None:
 
 def test_get_duration() -> None:
     assert get_duration(get_datetime() - timedelta(seconds=10)) == pytest.approx(10, rel=0.01)
-
-
-@pytest.mark.parametrize(
-    "datetime_string,expected_format",
-    [
-        ("2024-01-01 00:00:00 CET", "%Y-%m-%d %H:%M:%S %Z"),
-    ],
-)
-def test_identify_datetime_format(datetime_string: str, expected_format: str) -> None:
-    assert datetime.strptime(datetime_string, expected_format), "datetime error"
-    assert identify_datetime_format(datetime_string) == expected_format
