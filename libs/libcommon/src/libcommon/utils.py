@@ -7,7 +7,7 @@ import logging
 import mimetypes
 import time
 from collections.abc import Callable, Sequence
-from datetime import datetime, timedelta, timezone, tzinfo
+from datetime import datetime, timedelta, timezone
 from fnmatch import fnmatch
 from pathlib import Path
 from typing import Any, Optional, TypeVar, Union, cast
@@ -102,11 +102,13 @@ def is_datetime(string: str) -> bool:
         return False
 
 
-def get_timezone(string: str) -> Optional[tzinfo]:
+def get_timezone(string: str) -> Any:
     return parser.parse(string).tzinfo
 
 
 def datetime_to_string(dt: datetime, format: str = "%Y-%m-%d %H:%M:%S%z") -> str:
+    if dt.utcoffset() == timedelta(0):
+        format = "%Y-%m-%d %H:%M:%S"  # do not display +0000
     return dt.strftime(format)
 
 
@@ -154,8 +156,6 @@ def identify_datetime_format(datetime_string: str) -> Optional[str]:
     for fmt in common_formats:
         try:
             _ = datetime.strptime(datetime_string, fmt)
-            if fmt.endswith("%z") and any(datetime_string.endswith(tz) for tz in ["Z", "ACST"]):
-                fmt = f"{fmt.rstrip('%z')}%Z"
             return fmt
         except ValueError:
             continue
