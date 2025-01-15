@@ -479,9 +479,9 @@ class StringColumn(Column):
 
     @staticmethod
     def is_datetime(data: pl.DataFrame, column_name: str) -> tuple[bool, Optional[str]]:
-        """Check if first 1000 non-null samples in a column match datetime format. If true, also return datetime format"""
+        """Check if first 100 non-null samples in a column match datetime format. If true, also return datetime format"""
 
-        values = data.filter(pl.col(column_name).is_not_null()).head(1000)[column_name].to_list()
+        values = data.filter(pl.col(column_name).is_not_null()).head(100)[column_name].to_list()
         _is_datetime = all(is_datetime(value) for value in values) if len(values) > 0 else False
 
         if _is_datetime:
