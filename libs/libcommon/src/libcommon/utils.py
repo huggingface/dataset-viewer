@@ -7,7 +7,7 @@ import logging
 import mimetypes
 import time
 from collections.abc import Callable, Sequence
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone, tzinfo
 from fnmatch import fnmatch
 from pathlib import Path
 from typing import Any, Optional, TypeVar, Union, cast
@@ -100,6 +100,10 @@ def is_datetime(string: str) -> bool:
         return True
     except ValueError:
         return False
+
+
+def get_timezone(string: str) -> Optional[tzinfo]:
+    return parser.parse(string).tzinfo
 
 
 def datetime_to_string(dt: datetime, format: str = "%Y-%m-%d %H:%M:%S%z") -> str:

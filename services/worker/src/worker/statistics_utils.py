@@ -15,7 +15,7 @@ from datasets import Features
 from libcommon.exceptions import (
     StatisticsComputationError,
 )
-from libcommon.utils import datetime_to_string, identify_datetime_format, is_datetime
+from libcommon.utils import datetime_to_string, get_timezone, identify_datetime_format, is_datetime
 from PIL import Image
 from tqdm.contrib.concurrent import thread_map
 
@@ -490,7 +490,7 @@ class StringColumn(Column):
                 datetime_format = formats[0]
                 if not datetime_format:
                     raise ValueError("Values are datetime but format is not identified")
-                return True, formats[0]
+                return True, datetime_format
             raise StatisticsComputationError("Multiple datetime formats detected. ")
 
         return False, None
@@ -792,7 +792,9 @@ class DatetimeColumn(Column):
                 std=None,
                 histogram=None,
             )
+        original_timezone = None
         if isinstance(data[column_name].dtype, pl.String):
+            original_timezone = get_timezone(data[column_name][0])
             data = data.with_columns(pl.col(column_name).str.to_datetime(format=format))
 
         min_date: datetime.datetime = data[column_name].min()  # type: ignore   # mypy infers type of datetime column .min() incorrectly
@@ -810,6 +812,9 @@ class DatetimeColumn(Column):
         assert timedelta_stats["mean"] is not None  # nosec
         assert timedelta_stats["median"] is not None  # nosec
         assert timedelta_stats["std"] is not None  # nosec
+
+        if original_timezone:
+            min_date = min_date.astimezone(original_timezone)
 
         datetime_bin_edges = [
             cls.shift_and_convert_to_string(min_date, seconds) for seconds in timedelta_stats["histogram"]["bin_edges"]

@@ -507,28 +507,9 @@ def count_expected_statistics_for_datetime_column(column: pd.Series, column_name
         "2024-01-10 00:00:09",
         "2024-01-11 00:00:00",
     ]
-    if column_name == "datetime_tz":
+    if column_name in ["datetime_tz", "datetime_string_tz"]:
         bin_edges = [f"{bin_edge}+0200" for bin_edge in bin_edges]
         minv, maxv, mean, median = f"{minv}+0200", f"{maxv}+0200", f"{mean}+0200", f"{median}+0200"
-    elif column_name == "datetime_string_tz":
-        # switch everything to two hours earlier in UTC timezone
-        minv = "2023-12-31 22:00:00+0000"
-        maxv = "2024-01-10 22:00:00+0000"
-        mean = "2024-01-05 22:00:00+0000"
-        median = "2024-01-05 22:00:00+0000"
-        bin_edges = [
-            "2023-12-31 22:00:00+0000",
-            "2024-01-01 22:00:01+0000",
-            "2024-01-02 22:00:02+0000",
-            "2024-01-03 22:00:03+0000",
-            "2024-01-04 22:00:04+0000",
-            "2024-01-05 22:00:05+0000",
-            "2024-01-06 22:00:06+0000",
-            "2024-01-07 22:00:07+0000",
-            "2024-01-08 22:00:08+0000",
-            "2024-01-09 22:00:09+0000",
-            "2024-01-10 22:00:00+0000",
-        ]
 
     # compute std
     seconds_in_day = 24 * 60 * 60
@@ -563,7 +544,7 @@ def count_expected_statistics_for_datetime_column(column: pd.Series, column_name
         "datetime",
         "datetime_string",
         "datetime_string_z",
-        "datetime_string_cet",
+        "datetime_string_t_z",
         "datetime_string_tz",
         "datetime_tz",
         "datetime_null",
