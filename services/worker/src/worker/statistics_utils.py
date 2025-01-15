@@ -795,7 +795,11 @@ class DatetimeColumn(Column):
         original_timezone = None
         if isinstance(data[column_name].dtype, pl.String):
             original_timezone = get_timezone(data[column_name][0])
-            data = data.with_columns(pl.col(column_name).str.to_datetime(format=format))
+            # let polars identify format itself. provide manually in case of error
+            try:
+                data = data.with_columns(pl.col(column_name).str.to_datetime())
+            except pl.ComputeError:
+                data = data.with_columns(pl.col(column_name).str.to_datetime(format=format))
 
         min_date: datetime.datetime = data[column_name].min()  # type: ignore   # mypy infers type of datetime column .min() incorrectly
         timedelta_column_name = f"{column_name}_timedelta"
@@ -806,7 +810,7 @@ class DatetimeColumn(Column):
             column_name=timedelta_column_name,
             n_samples=n_samples,
         )
-        # to assure mypy that there values are not None to pass to conversion functions:
+        # to assure mypy that these values are not None to pass to conversion functions:
         assert timedelta_stats["histogram"] is not None  # nosec
         assert timedelta_stats["max"] is not None  # nosec
         assert timedelta_stats["mean"] is not None  # nosec
