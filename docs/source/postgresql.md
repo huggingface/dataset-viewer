@@ -45,9 +45,7 @@ You can now query the table using standard SQL.
 select * from squad limit 10;
 ```
 
-<Tip>
 Full documentation for the `ai.load_dataset` function can be found [here](https://github.com/timescale/pgai/blob/main/docs/load_dataset_from_huggingface.md).
-</Tip>
 
 ## Import only a subset of the dataset
 
