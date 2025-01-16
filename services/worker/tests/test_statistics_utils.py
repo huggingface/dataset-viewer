@@ -489,6 +489,10 @@ def count_expected_statistics_for_datetime_column(column: pd.Series, column_name
             "histogram": None,
         }
 
+    # testcase contains multiple datetime formats, and we compute string lengths distributions instead of error
+    if column_name == "datetime_string_error":
+        return count_expected_statistics_for_string_column(column)
+
     # hardcode expected values
     minv = "2024-01-01 00:00:00"
     maxv = "2024-01-11 00:00:00"
@@ -546,6 +550,7 @@ def count_expected_statistics_for_datetime_column(column: pd.Series, column_name
         "datetime_string_z",
         "datetime_string_t_z",
         "datetime_string_tz",
+        "datetime_string_error",
         "datetime_tz",
         "datetime_null",
         "datetime_all_null",
@@ -569,8 +574,9 @@ def test_datetime_statistics(
             column_name=column_name,
             n_samples=len(data[column_name]),
         )
+
     computed_std, expected_std = computed.pop("std"), expected.pop("std")
-    if computed_std:
+    if computed_std and column_name != "datetime_string_error":
         assert computed_std.split(".")[0] == expected_std.split(".")[0]  # check with precision up to seconds
     else:
         assert computed_std == expected_std

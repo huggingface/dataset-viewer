@@ -505,12 +505,18 @@ class StringColumn(Column):
         nan_count, nan_proportion = nan_count_proportion(data, column_name, n_samples)
         n_unique = data[column_name].n_unique()
         if cls.is_datetime(data, column_name):
-            datetime_stats: DatetimeStatisticsItem = DatetimeColumn.compute_statistics(
-                data,
-                column_name=column_name,
-                n_samples=n_samples,
-            )
-            return datetime_stats
+            try:
+                stats: DatetimeStatisticsItem = DatetimeColumn.compute_statistics(
+                    data,
+                    column_name=column_name,
+                    n_samples=n_samples,
+                )
+                return stats
+            except Exception as error:
+                logging.info(
+                    f"Column {column_name} is datetime, but datetime stats compute failed ({error}), "
+                    f"compute string stats instead. "
+                )
 
         if cls.is_class(n_unique, n_samples):
             labels2counts: dict[str, int] = value_counts(data, column_name) if nan_count != n_samples else {}
