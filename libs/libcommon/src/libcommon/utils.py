@@ -151,6 +151,11 @@ def identify_datetime_format(datetime_string: str) -> Optional[str]:
         "%m/%d/%Y",
         "%B %d, %Y",
         "%d %B %Y",
+        "%m-%Y",
+        "%Y-%m",
+        "%m/%Y",
+        "%Y/%m",
+        "%Y",
     ]
 
     for fmt in common_formats:
