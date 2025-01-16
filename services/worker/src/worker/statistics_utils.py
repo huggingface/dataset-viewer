@@ -770,7 +770,7 @@ class DatetimeColumn(Column):
                     f"Values are datetime but format is not identified. Example: {values[0]}. "
                 )
         else:
-            raise StatisticsComputationError("Multiple datetime formats detected. ")
+            raise StatisticsComputationError(f"Multiple datetime formats detected: {set(formats)}. ")
 
         return datetime_format
 
