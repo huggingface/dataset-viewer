@@ -3,6 +3,7 @@ export ADMIN_UVICORN_NUM_WORKERS := 2
 export ADMIN_UVICORN_PORT := 9081
 export API_HF_JWT_ALGORITHM := EdDSA
 export API_HF_JWT_PUBLIC_KEY_URL := https://hub-ci.huggingface.co/api/keys/jwt
+export API_HF_JWT_ADDITIONAL_PUBLIC_KEYS :=
 # ^ it's not tested in the e2e tests, but it's good to ensure we're able to fetch it at least.
 export ADMIN_HF_TIMEOUT_SECONDS := 10
 export API_HF_TIMEOUT_SECONDS := 10
