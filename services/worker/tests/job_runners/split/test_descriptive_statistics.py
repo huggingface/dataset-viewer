@@ -341,7 +341,7 @@ def datetime_statistics_expected(datasets: Mapping[str, Dataset]) -> dict[str, A
         statistics = count_expected_statistics_for_datetime_column(column=df[column_name], column_name=column_name)
         expected_statistics[column_name] = {
             "column_name": column_name,
-            "column_type": ColumnType.DATETIME,
+            "column_type": ColumnType.DATETIME if column_name != "datetime_string_error" else ColumnType.STRING_TEXT,
             "column_statistics": statistics,
         }
     return {"num_examples": df.shape[0], "statistics": expected_statistics, "partial": False}
