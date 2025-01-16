@@ -27,7 +27,7 @@ from datasets.arrow_writer import ParquetWriter
 from datasets.builder import DatasetBuilder
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
 from datasets.download import StreamingDownloadManager
-from datasets.packaged_modules.imagefolder.imagefolder import ImageFolder as ImageFolder
+from datasets.packaged_modules.imagefolder.imagefolder import ImageFolder as ImageFolderBuilder
 from datasets.packaged_modules.parquet.parquet import Parquet as ParquetBuilder
 from datasets.packaged_modules.videofolder.videofolder import VideoFolder as VideoFolderBuilder
 from datasets.splits import SplitDict, SplitGenerator, SplitInfo
@@ -97,7 +97,7 @@ MAX_OPERATIONS_PER_COMMIT = 500
 
 T = TypeVar("T")
 
-ImageFolder.EXTENSIONS = list(set(ImageFolder.EXTENSIONS) - {".h5", ".hdf"})  # fix for datasets <= 3.2.0
+ImageFolderBuilder.EXTENSIONS = list(set(ImageFolderBuilder.EXTENSIONS) - {".h5", ".hdf"})  # fix for datasets <= 3.2.0
 
 def http_backoff_with_timeout(method: HTTP_METHOD_T, url: str, **kwargs: Any) -> Response:
     kwargs["timeout"] = kwargs.get("timeout", 10)
