@@ -99,6 +99,7 @@ T = TypeVar("T")
 
 ImageFolderBuilder.EXTENSIONS = list(set(ImageFolderBuilder.EXTENSIONS) - {".h5", ".hdf"})  # fix for datasets <= 3.2.0
 
+
 def http_backoff_with_timeout(method: HTTP_METHOD_T, url: str, **kwargs: Any) -> Response:
     kwargs["timeout"] = kwargs.get("timeout", 10)
     return http_backoff(method, url, **kwargs)
