@@ -1205,13 +1205,13 @@
           "hist": {
             "type": "array",
             "items": {
-              "type": "string"
+              "type": "integer"
             }
           },
           "bin_edges": {
             "type": "array",
             "items": {
-              "type": "number"
+              "type": "string"
             }
           }
         }
@@ -1339,7 +1339,7 @@
           },
           {
             "$ref": "#/components/schemas/BoolStatisticsItem"
-          },
+          }
         ]
       },
       "StatisticsPerColumnItem": {
@@ -6346,7 +6346,7 @@
                           }
                       ],
                       "partial": true
-                  }
+                    }
                   },
                   "A split (nyu-mll/glue) with a string (text) column": {
                     "summary": "Statistics on a string column. The column 'hypothesis' contains more than 30 different strings, so the statistics are a histogram of the string lengths.",
