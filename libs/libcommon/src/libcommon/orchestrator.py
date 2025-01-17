@@ -1047,8 +1047,6 @@ def smart_set_revision(
     """
     Set the current revision of the dataset in a smarter way.
 
-    /!\ This logic is WIP and should only be used on a subset of datasets for now.
-
     If the revision is already set to the same value, this is a no-op.
     Else, if only .gitignore, .gitattributes, or a non-significant (for the
       dataset viewer) part of README.md has been modified in the last
