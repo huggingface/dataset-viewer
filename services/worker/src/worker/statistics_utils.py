@@ -801,13 +801,14 @@ class DatetimeColumn(Column):
             )
         original_timezone = None
         if isinstance(data[column_name].dtype, pl.String):
-            original_timezone = get_timezone(data[column_name][0])
             # let polars identify format itself. provide manually in case of error
             try:
+                original_timezone = get_timezone(data[column_name][0])
                 data = data.with_columns(pl.col(column_name).str.to_datetime())
             except pl.ComputeError:
                 datetime_format = cls.get_format(data, column_name)
                 data = data.with_columns(pl.col(column_name).str.to_datetime(format=datetime_format))
+                original_timezone = None
 
         min_date: datetime.datetime = data[column_name].min()  # type: ignore   # mypy infers type of datetime column .min() incorrectly
         timedelta_column_name = f"{column_name}_timedelta"
