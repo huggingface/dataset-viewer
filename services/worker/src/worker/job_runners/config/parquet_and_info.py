@@ -1182,9 +1182,9 @@ def commit_parquet_conversion(
     parquet_operations: list[CommitOperation],
     commit_message: str,
     target_revision: Optional[str],
-) -> list[CommitInfo]:
+) -> None:
     """
-    Creates one or several commits in the given dataset repo, deleting & uploading files as needed.
+    Creates one or several commits in the given dataset repo, deleting & uploading files as needed, and finally squashing the history to save space.
 
     Args:
         hf_api (`huggingface_hub.HfApi`):
@@ -1217,11 +1217,6 @@ def commit_parquet_conversion(
             but not authenticated or repo does not exist.
         [~`libcommon.exceptions.CreateCommitError`]:
             If one of the commits could not be created on the Hub.
-
-    Returns:
-        `list[huggingface_hub.CommitInfo]`:
-            List of [`CommitInfo`] containing information about the newly created commit (commit hash, commit
-            url, pr url, commit message,...).
     """
     target_dataset_info = hf_api.dataset_info(repo_id=dataset, revision=target_revision, files_metadata=False)
     all_repo_files: set[str] = {f.rfilename for f in target_dataset_info.siblings}
@@ -1230,7 +1225,7 @@ def commit_parquet_conversion(
     )
     operations = delete_operations + parquet_operations
     logging.info(f"{len(operations)} git operations to do for {dataset=} {config=}.")
-    return create_commits(
+    create_commits(
         committer_hf_api,
         repo_id=dataset,
         revision=target_revision,
@@ -1238,6 +1233,27 @@ def commit_parquet_conversion(
         commit_message=commit_message,
         parent_commit=target_dataset_info.sha,
     )
+    # squash the history to save space
+    retry_super_squash_history = retry(on=[HfHubHTTPError], sleeps=HF_HUB_HTTP_ERROR_RETRY_SLEEPS)(
+        committer_hf_api.super_squash_history
+    )
+    try:
+        retry_super_squash_history(
+            repo_id=dataset,
+            repo_type=DATASET_TYPE,
+            commit_message=commit_message,
+            branch=target_revision,
+        )
+    except RuntimeError as e:
+        if e.__cause__ and isinstance(e.__cause__, HfHubHTTPError):
+            raise CreateCommitError(
+                message=(
+                    f"Could not squash the history of the commits (after {len(HF_HUB_HTTP_ERROR_RETRY_SLEEPS)}"
+                    f" attempts)."
+                ),
+                cause=e.__cause__,
+            ) from e.__cause__
+        raise e
 
 
 def compute_config_parquet_and_info_response(

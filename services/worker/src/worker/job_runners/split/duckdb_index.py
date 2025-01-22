@@ -425,6 +425,28 @@ def compute_split_duckdb_index_response(
                     ) from e.__cause__
                 raise e
 
+            # squash the history to save space
+            retry_super_squash_history = retry(on=[HfHubHTTPError], sleeps=HF_HUB_HTTP_ERROR_RETRY_SLEEPS)(
+                committer_hf_api.super_squash_history
+            )
+            try:
+                retry_super_squash_history(
+                    repo_id=dataset,
+                    repo_type=DATASET_TYPE,
+                    commit_message=commit_message,
+                    branch=target_revision,
+                )
+            except RuntimeError as e:
+                if e.__cause__ and isinstance(e.__cause__, HfHubHTTPError):
+                    raise CreateCommitError(
+                        message=(
+                            f"Could not squash the history of the commits (after {len(HF_HUB_HTTP_ERROR_RETRY_SLEEPS)}"
+                            f" attempts)."
+                        ),
+                        cause=e.__cause__,
+                    ) from e.__cause__
+                raise e
+
             logging.debug(f"create commit {commit_message} for {dataset=} {add_operations=}")
 
             # call the API again to get the index file
