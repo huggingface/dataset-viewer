@@ -52,6 +52,7 @@ requires = ["poetry-core>=1.0.0"]
 [tool.pytest.ini_options]
 filterwarnings = ["ignore::DeprecationWarning"]
 markers = [
+    "integration: tests that require external services",
     "real_dataset: tests on the Hub"
 ]
 
