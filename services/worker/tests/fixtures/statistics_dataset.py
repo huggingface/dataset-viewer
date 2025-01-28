@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2024 The HuggingFace Authors.
 
+from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
@@ -1695,6 +1696,130 @@ image_dataset = Dataset.from_dict(
             "image": Image(decode=False),
             "image_null": Image(decode=False),
             "image_all_null": Image(decode=False),
+        }
+    ),
+)
+
+
+datetime_dataset = Dataset.from_dict(
+    {
+        "datetime_string": [
+            "2024-01-01 00:00:00",
+            "2024-01-02 00:00:00",
+            "2024-01-03 00:00:00",
+            "2024-01-04 00:00:00",
+            "2024-01-05 00:00:00",
+            "2024-01-06 00:00:00",
+            "2024-01-07 00:00:00",
+            "2024-01-08 00:00:00",
+            "2024-01-09 00:00:00",
+            "2024-01-10 00:00:00",
+            "2024-01-11 00:00:00",
+        ],
+        "datetime_string_z": [
+            "2024-01-01 00:00:00Z",
+            "2024-01-02 00:00:00Z",
+            "2024-01-03 00:00:00Z",
+            "2024-01-04 00:00:00Z",
+            "2024-01-05 00:00:00Z",
+            "2024-01-06 00:00:00Z",
+            "2024-01-07 00:00:00Z",
+            "2024-01-08 00:00:00Z",
+            "2024-01-09 00:00:00Z",
+            "2024-01-10 00:00:00Z",
+            "2024-01-11 00:00:00Z",
+        ],
+        "datetime_string_t_z": [
+            "2024-01-01T00:00:00Z",
+            "2024-01-02T00:00:00Z",
+            "2024-01-03T00:00:00Z",
+            "2024-01-04T00:00:00Z",
+            "2024-01-05T00:00:00Z",
+            "2024-01-06T00:00:00Z",
+            "2024-01-07T00:00:00Z",
+            "2024-01-08T00:00:00Z",
+            "2024-01-09T00:00:00Z",
+            "2024-01-10T00:00:00Z",
+            "2024-01-11T00:00:00Z",
+        ],
+        "datetime_string_tz": [
+            "2024-01-01 00:00:00+0200",
+            "2024-01-02 00:00:00+0200",
+            "2024-01-03 00:00:00+0200",
+            "2024-01-04 00:00:00+0200",
+            "2024-01-05 00:00:00+0200",
+            "2024-01-06 00:00:00+0200",
+            "2024-01-07 00:00:00+0200",
+            "2024-01-08 00:00:00+0200",
+            "2024-01-09 00:00:00+0200",
+            "2024-01-10 00:00:00+0200",
+            "2024-01-11 00:00:00+0200",
+        ],
+        "datetime_string_error": [
+            "16/01/2023",
+            "17/01/2023",
+            "18/01/2023",
+            "19/01/2023",
+            "01/2023",
+            "02/2023",
+            "20/01/2023",
+            "21/01/2023",
+            "03/2023",
+            "25/01/2023",
+            "26/01/2023",
+        ],
+        "datetime": [
+            datetime.strptime("2024-01-01 00:00:00", "%Y-%m-%d %H:%M:%S"),
+            datetime.strptime("2024-01-02 00:00:00", "%Y-%m-%d %H:%M:%S"),
+            datetime.strptime("2024-01-03 00:00:00", "%Y-%m-%d %H:%M:%S"),
+            datetime.strptime("2024-01-04 00:00:00", "%Y-%m-%d %H:%M:%S"),
+            datetime.strptime("2024-01-05 00:00:00", "%Y-%m-%d %H:%M:%S"),
+            datetime.strptime("2024-01-06 00:00:00", "%Y-%m-%d %H:%M:%S"),
+            datetime.strptime("2024-01-07 00:00:00", "%Y-%m-%d %H:%M:%S"),
+            datetime.strptime("2024-01-08 00:00:00", "%Y-%m-%d %H:%M:%S"),
+            datetime.strptime("2024-01-09 00:00:00", "%Y-%m-%d %H:%M:%S"),
+            datetime.strptime("2024-01-10 00:00:00", "%Y-%m-%d %H:%M:%S"),
+            datetime.strptime("2024-01-11 00:00:00", "%Y-%m-%d %H:%M:%S"),
+        ],
+        "datetime_tz": [
+            datetime.strptime("2024-01-01 00:00:00+0200", "%Y-%m-%d %H:%M:%S%z"),
+            datetime.strptime("2024-01-02 00:00:00+0200", "%Y-%m-%d %H:%M:%S%z"),
+            datetime.strptime("2024-01-03 00:00:00+0200", "%Y-%m-%d %H:%M:%S%z"),
+            datetime.strptime("2024-01-04 00:00:00+0200", "%Y-%m-%d %H:%M:%S%z"),
+            datetime.strptime("2024-01-05 00:00:00+0200", "%Y-%m-%d %H:%M:%S%z"),
+            datetime.strptime("2024-01-06 00:00:00+0200", "%Y-%m-%d %H:%M:%S%z"),
+            datetime.strptime("2024-01-07 00:00:00+0200", "%Y-%m-%d %H:%M:%S%z"),
+            datetime.strptime("2024-01-08 00:00:00+0200", "%Y-%m-%d %H:%M:%S%z"),
+            datetime.strptime("2024-01-09 00:00:00+0200", "%Y-%m-%d %H:%M:%S%z"),
+            datetime.strptime("2024-01-10 00:00:00+0200", "%Y-%m-%d %H:%M:%S%z"),
+            datetime.strptime("2024-01-11 00:00:00+0200", "%Y-%m-%d %H:%M:%S%z"),
+        ],
+        "datetime_null": [
+            datetime.strptime("2024-01-01 00:00:00", "%Y-%m-%d %H:%M:%S"),
+            None,
+            datetime.strptime("2024-01-03 00:00:00", "%Y-%m-%d %H:%M:%S"),
+            None,
+            datetime.strptime("2024-01-05 00:00:00", "%Y-%m-%d %H:%M:%S"),
+            None,
+            datetime.strptime("2024-01-07 00:00:00", "%Y-%m-%d %H:%M:%S"),
+            None,
+            datetime.strptime("2024-01-09 00:00:00", "%Y-%m-%d %H:%M:%S"),
+            None,
+            datetime.strptime("2024-01-11 00:00:00", "%Y-%m-%d %H:%M:%S"),
+        ],
+        "datetime_all_null": [None] * 11,
+    },
+    features=Features(
+        {
+            "datetime_string": Value("string"),
+            "datetime_string_z": Value("string"),
+            "datetime_string_t_z": Value("string"),
+            "datetime_string_tz": Value("string"),
+            "datetime_string_error": Value("string"),
+            "datetime": Value("timestamp[s]"),
+            "datetime_tz": Value("timestamp[s, tz=+02:00]"),
+            "datetime_null": Value("timestamp[s]"),
+            "datetime_all_null": Value("timestamp[s]"),
         }
     ),
 )

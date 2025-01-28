@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2024 The HuggingFace Authors.
+import datetime
 import enum
 import io
 import logging
@@ -14,6 +15,7 @@ from datasets import Features
 from libcommon.exceptions import (
     StatisticsComputationError,
 )
+from libcommon.utils import datetime_to_string, get_timezone, identify_datetime_format, is_datetime
 from PIL import Image
 from tqdm.contrib.concurrent import thread_map
 
@@ -50,6 +52,7 @@ class ColumnType(str, enum.Enum):
     STRING_TEXT = "string_text"
     AUDIO = "audio"
     IMAGE = "image"
+    DATETIME = "datetime"
 
 
 class Histogram(TypedDict):
@@ -57,15 +60,31 @@ class Histogram(TypedDict):
     bin_edges: list[Union[int, float]]
 
 
+class DatetimeHistogram(TypedDict):
+    hist: list[int]
+    bin_edges: list[str]  # edges are string representations of dates
+
+
 class NumericalStatisticsItem(TypedDict):
     nan_count: int
     nan_proportion: float
-    min: Optional[float]  # might be None in very rare cases when the whole column is only None values
-    max: Optional[float]
+    min: Optional[Union[int, float]]  # might be None in very rare cases when the whole column is only None values
+    max: Optional[Union[int, float]]
     mean: Optional[float]
     median: Optional[float]
     std: Optional[float]
     histogram: Optional[Histogram]
+
+
+class DatetimeStatisticsItem(TypedDict):
+    nan_count: int
+    nan_proportion: float
+    min: Optional[str]  # might be None in very rare cases when the whole column is only None values
+    max: Optional[str]
+    mean: Optional[str]
+    median: Optional[str]
+    std: Optional[str]  # string representation of timedelta
+    histogram: Optional[DatetimeHistogram]
 
 
 class CategoricalStatisticsItem(TypedDict):
@@ -83,7 +102,9 @@ class BoolStatisticsItem(TypedDict):
     frequencies: dict[str, int]
 
 
-SupportedStatistics = Union[NumericalStatisticsItem, CategoricalStatisticsItem, BoolStatisticsItem]
+SupportedStatistics = Union[
+    NumericalStatisticsItem, CategoricalStatisticsItem, BoolStatisticsItem, DatetimeStatisticsItem
+]
 
 
 class StatisticsPerColumnItem(TypedDict):
@@ -456,6 +477,13 @@ class StringColumn(Column):
             n_unique / n_samples <= MAX_PROPORTION_STRING_LABELS and n_unique <= MAX_NUM_STRING_LABELS
         ) or n_unique <= NUM_BINS
 
+    @staticmethod
+    def is_datetime(data: pl.DataFrame, column_name: str) -> bool:
+        """Check if first 100 non-null samples in a column match datetime format."""
+
+        values = data.filter(pl.col(column_name).is_not_null()).head(100)[column_name].to_list()
+        return all(is_datetime(value) for value in values) if len(values) > 0 else False
+
     @classmethod
     def compute_transformed_data(
         cls,
@@ -473,9 +501,23 @@ class StringColumn(Column):
         data: pl.DataFrame,
         column_name: str,
         n_samples: int,
-    ) -> Union[CategoricalStatisticsItem, NumericalStatisticsItem]:
+    ) -> Union[CategoricalStatisticsItem, NumericalStatisticsItem, DatetimeStatisticsItem]:
         nan_count, nan_proportion = nan_count_proportion(data, column_name, n_samples)
         n_unique = data[column_name].n_unique()
+        if cls.is_datetime(data, column_name):
+            try:
+                stats: DatetimeStatisticsItem = DatetimeColumn.compute_statistics(
+                    data,
+                    column_name=column_name,
+                    n_samples=n_samples,
+                )
+                return stats
+            except Exception as error:
+                logging.info(
+                    f"Column {column_name} is datetime, but datetime stats compute failed ({error}), "
+                    f"compute string stats instead. "
+                )
+
         if cls.is_class(n_unique, n_samples):
             labels2counts: dict[str, int] = value_counts(data, column_name) if nan_count != n_samples else {}
             logging.debug(f"{n_unique=} {nan_count=} {nan_proportion=} {labels2counts=}")
@@ -499,7 +541,12 @@ class StringColumn(Column):
 
     def compute_and_prepare_response(self, data: pl.DataFrame) -> StatisticsPerColumnItem:
         stats = self.compute_statistics(data, column_name=self.name, n_samples=self.n_samples)
-        string_type = ColumnType.STRING_LABEL if "frequencies" in stats else ColumnType.STRING_TEXT
+        if "frequencies" in stats:
+            string_type = ColumnType.STRING_LABEL
+        elif isinstance(stats["histogram"]["bin_edges"][0], str):
+            string_type = ColumnType.DATETIME
+        else:
+            string_type = ColumnType.STRING_TEXT
         return StatisticsPerColumnItem(
             column_name=self.name,
             column_type=string_type,
@@ -699,3 +746,111 @@ class ImageColumn(MediaColumn):
     @classmethod
     def transform(cls, example: Optional[Union[bytes, dict[str, Any]]]) -> Optional[int]:
         return cls.get_width(example)
+
+
+class DatetimeColumn(Column):
+    transform_column = IntColumn
+
+    @classmethod
+    def compute_transformed_data(
+        cls,
+        data: pl.DataFrame,
+        column_name: str,
+        transformed_column_name: str,
+        min_date: datetime.datetime,
+    ) -> pl.DataFrame:
+        return data.select((pl.col(column_name) - min_date).dt.total_seconds().alias(transformed_column_name))
+
+    @staticmethod
+    def shift_and_convert_to_string(base_date: datetime.datetime, seconds: Union[int, float]) -> str:
+        return datetime_to_string(base_date + datetime.timedelta(seconds=seconds))
+
+    @staticmethod
+    def get_format(data: pl.DataFrame, column_name: str) -> str:
+        values = data.filter(pl.col(column_name).is_not_null()).head(100)[column_name].to_list()
+        formats = [identify_datetime_format(value) for value in values]
+        if len(set(formats)) == 1:
+            datetime_format = formats[0]
+            if not datetime_format:
+                raise StatisticsComputationError(
+                    f"Values are datetime but format is not identified. Example: {values[0]}. "
+                )
+        else:
+            raise StatisticsComputationError(f"Multiple datetime formats detected: {set(formats)}. ")
+
+        return datetime_format
+
+    @classmethod
+    def _compute_statistics(
+        cls,
+        data: pl.DataFrame,
+        column_name: str,
+        n_samples: int,
+    ) -> DatetimeStatisticsItem:
+        nan_count, nan_proportion = nan_count_proportion(data, column_name, n_samples)
+        if nan_count == n_samples:  # all values are None
+            return DatetimeStatisticsItem(
+                nan_count=n_samples,
+                nan_proportion=1.0,
+                min=None,
+                max=None,
+                mean=None,
+                median=None,
+                std=None,
+                histogram=None,
+            )
+        original_timezone = None
+        if isinstance(data[column_name].dtype, pl.String):
+            # let polars identify format itself. provide manually in case of error
+            try:
+                original_timezone = get_timezone(data[column_name][0])
+                data = data.with_columns(pl.col(column_name).str.to_datetime())
+            except pl.ComputeError:
+                datetime_format = cls.get_format(data, column_name)
+                data = data.with_columns(pl.col(column_name).str.to_datetime(format=datetime_format))
+                original_timezone = None
+
+        min_date: datetime.datetime = data[column_name].min()  # type: ignore   # mypy infers type of datetime column .min() incorrectly
+        timedelta_column_name = f"{column_name}_timedelta"
+        # compute distribution of time passed from min date in **seconds**
+        timedelta_df = cls.compute_transformed_data(data, column_name, timedelta_column_name, min_date)
+        timedelta_stats: NumericalStatisticsItem = cls.transform_column.compute_statistics(
+            timedelta_df,
+            column_name=timedelta_column_name,
+            n_samples=n_samples,
+        )
+        # to assure mypy that these values are not None to pass to conversion functions:
+        assert timedelta_stats["histogram"] is not None  # nosec
+        assert timedelta_stats["max"] is not None  # nosec
+        assert timedelta_stats["mean"] is not None  # nosec
+        assert timedelta_stats["median"] is not None  # nosec
+        assert timedelta_stats["std"] is not None  # nosec
+
+        if original_timezone:
+            min_date = min_date.astimezone(original_timezone)
+
+        datetime_bin_edges = [
+            cls.shift_and_convert_to_string(min_date, seconds) for seconds in timedelta_stats["histogram"]["bin_edges"]
+        ]
+
+        return DatetimeStatisticsItem(
+            nan_count=nan_count,
+            nan_proportion=nan_proportion,
+            min=datetime_to_string(min_date),
+            max=cls.shift_and_convert_to_string(min_date, timedelta_stats["max"]),
+            mean=cls.shift_and_convert_to_string(min_date, timedelta_stats["mean"]),
+            median=cls.shift_and_convert_to_string(min_date, timedelta_stats["median"]),
+            std=str(datetime.timedelta(seconds=timedelta_stats["std"])),
+            histogram=DatetimeHistogram(
+                hist=timedelta_stats["histogram"]["hist"],
+                bin_edges=datetime_bin_edges,
+            ),
+        )
+
+    def compute_and_prepare_response(self, data: pl.DataFrame) -> StatisticsPerColumnItem:
+        stats = self.compute_statistics(data, column_name=self.name, n_samples=self.n_samples)
+        return StatisticsPerColumnItem(
+            column_name=self.name,
+            column_type=ColumnType.DATETIME,
+            column_statistics=stats,
+        )
