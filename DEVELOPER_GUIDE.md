@@ -142,16 +142,6 @@ or
 poetry@1.8.2 env use 3.9.18
 ```
 
-Avoid an issue with Apache beam (https://github.com/python-poetry/poetry/issues/4888#issuecomment-1208408509):
-
-```bash
-poetry config experimental.new-installer false
-```
-or
-```bash
-poetry@1.8.2 config experimental.new-installer false
-```
-
 Install the dependencies:
 
 ```bash
