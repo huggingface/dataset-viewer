@@ -39,7 +39,7 @@ class JobRunnerWithDatasetsCache(JobRunnerWithCache):
         datasets.config.EXTRACTED_DATASETS_PATH = (
             datasets.config.HF_DATASETS_CACHE / datasets.config.EXTRACTED_DATASETS_DIR
         )
-        huggingface_hub.constants.HF_HUB_CACHE = cache_subdirectory / "hub"
+        huggingface_hub.constants.HF_HUB_CACHE = str(cache_subdirectory / "hub")
         logging.debug(f"huggingface_hub cache set to: {huggingface_hub.constants.HF_HUB_CACHE}")
 
     def pre_compute(self) -> None:

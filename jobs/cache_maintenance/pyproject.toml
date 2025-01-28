@@ -33,8 +33,7 @@ strict = true
 module = [
     "huggingface_hub.*",
 ]
-# ^ huggingface_hub is not typed since version 0.13.0
-ignore_missing_imports = true
+no_implicit_reexport = false
 
 [tool.ruff]
 line-length = 119

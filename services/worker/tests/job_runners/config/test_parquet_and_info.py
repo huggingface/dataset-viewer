@@ -23,7 +23,7 @@ from datasets.packaged_modules.generator.generator import (
     Generator as ParametrizedGeneratorBasedBuilder,
 )
 from datasets.utils.py_utils import asdict
-from huggingface_hub.hf_api import CommitOperationAdd, HfApi
+from huggingface_hub.hf_api import CommitOperation, CommitOperationAdd, HfApi
 from libcommon.dtos import JobInfo, JobParams, Priority
 from libcommon.queue.jobs import Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
@@ -400,7 +400,7 @@ def test_create_commits(
     else:
         parent_commit = None
     directory = f".test_create_commits_{max_operations_per_commit}_{use_parent_commit}"
-    operations: list[CommitOperationAdd] = [
+    operations: list[CommitOperation] = [
         CommitOperationAdd(path_in_repo=f"{directory}/file{i}.txt", path_or_fileobj=f"content{i}".encode("UTF-8"))
         for i in range(NUM_FILES)
     ]

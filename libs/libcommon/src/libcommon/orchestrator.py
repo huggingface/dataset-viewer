@@ -10,8 +10,8 @@ from http import HTTPStatus
 from typing import Optional, Union
 
 import pandas as pd
-from huggingface_hub import DatasetCard, HfFileSystem
-from huggingface_hub.utils import build_hf_headers, get_session
+from huggingface_hub import DatasetCard, HfFileSystem, get_session
+from huggingface_hub.utils._headers import build_hf_headers
 
 from libcommon.constants import (
     CONFIG_INFO_KIND,

@@ -94,13 +94,13 @@ def compute_filetypes_response(
         raise DatasetNotFoundError(f"Cannot get the dataset info for {dataset=}") from err
 
     # get file types count
-    filetypes = get_filetypes(info.siblings)
+    filetypes = get_filetypes(info.siblings or [])
 
     # look into the zip archives to get the file types
     SUPPORTED_ARCHIVE_EXTENSIONS = [".zip"]
     archive_filenames = [
         sibling.rfilename
-        for sibling in info.siblings
+        for sibling in (info.siblings or [])
         if get_file_extension(sibling.rfilename, recursive=False, clean=False).extension
         in SUPPORTED_ARCHIVE_EXTENSIONS
     ]

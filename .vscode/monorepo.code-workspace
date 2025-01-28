@@ -58,12 +58,12 @@
       "path": "../services/sse-api"
     },
     {
-      "name": "services/worker",
-      "path": "../services/worker"
-    },
-    {
       "name": "services/webhook",
       "path": "../services/webhook"
+    },
+    {
+      "name": "services/worker",
+      "path": "../services/worker"
     }
   ],
   "settings": {

@@ -156,7 +156,8 @@ def hf_hub_open_file(
 ) -> HfFileSystemFile:
     """Open file with the HfFileSystem."""
     fs = HfFileSystem(endpoint=hf_endpoint, token=hf_token)
-    return fs.open(file_url, revision=revision)
+    file: HfFileSystemFile = fs.open(file_url, revision=revision)
+    return file
 
 
 # used by `config-parquet-and-info` and `config-parquet-metadata` steps
@@ -215,7 +216,7 @@ def check_split_exists(dataset: str, config: str, split: str) -> None:
         splits_content = split_names_response["content"]["splits"]
     except Exception as e:
         raise PreviousStepFormatError(
-            "Previous step 'config-split-names' did not return" " the expected content.",
+            "Previous step 'config-split-names' did not return the expected content.",
             e,
         ) from e
 
