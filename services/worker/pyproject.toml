@@ -57,12 +57,13 @@ markers = [
 
 [tool.mypy]
 strict = true
+# allow calling untyped methods in huggingface_hub (eg: DatasetInfo(...))
+untyped_calls_exclude = "huggingface_hub"
 
 [[tool.mypy.overrides]]
 module = [
     "aiolimiter.*",
     "datasets.*",
-    "huggingface_hub.*",
     "pyarrow.*",
     "tqdm.*",
     "fsspec.*",
@@ -72,6 +73,12 @@ module = [
 ]
 ignore_missing_imports = true
 # ^ prometheus_client is now typed, but we use an old version to stick with the other services
+
+[[tool.mypy.overrides]]
+module = [
+    "huggingface_hub.*",
+]
+no_implicit_reexport = false
 
 [tool.ruff]
 line-length = 119

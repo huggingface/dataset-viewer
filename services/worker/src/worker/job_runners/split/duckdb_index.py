@@ -130,7 +130,7 @@ def get_indexable_columns(features: Features) -> list[str]:
     return indexable_columns
 
 
-def get_monolingual_stemmer(card_data: DatasetCardData) -> str:
+def get_monolingual_stemmer(card_data: Optional[DatasetCardData]) -> str:
     if card_data is None:
         return DEFAULT_STEMMER
     all_languages = card_data["language"]
@@ -388,7 +388,7 @@ def compute_split_duckdb_index_response(
 
             logging.debug(f"get dataset info for {dataset=} with {target_revision=}")
             target_dataset_info = hf_api.dataset_info(repo_id=dataset, revision=target_revision, files_metadata=False)
-            all_repo_files: set[str] = {f.rfilename for f in target_dataset_info.siblings}
+            all_repo_files: set[str] = {f.rfilename for f in (target_dataset_info.siblings or [])}
             delete_operations = get_delete_operations(
                 all_repo_files=all_repo_files,
                 split_names=get_split_names(dataset=dataset, config=config),
@@ -458,7 +458,7 @@ def compute_split_duckdb_index_response(
         raise DatasetNotFoundError("The dataset does not exist on the Hub.") from err
 
     repo_files = [
-        repo_file for repo_file in target_dataset_info.siblings if repo_file.rfilename == index_file_location
+        repo_file for repo_file in (target_dataset_info.siblings or []) if repo_file.rfilename == index_file_location
     ]
 
     if not repo_files or len(repo_files) != 1:

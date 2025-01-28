@@ -61,12 +61,13 @@ markers = [
 
 [tool.mypy]
 strict = true
+# allow calling untyped methods in huggingface_hub (eg: DatasetInfo(...))
+untyped_calls_exclude = "huggingface_hub"
 
 [[tool.mypy.overrides]]
 module = [
     "datasets.*",
     "networkx.*",
-    "huggingface_hub.*",
     "prometheus_client.*",
     "pyarrow.*",
     "pymongoarrow.*",
@@ -77,8 +78,17 @@ module = [
     "aiobotocore.*",
     "requests.*",
 ]
-# ^ huggingface_hub is not typed since version 0.13.0
 ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = [
+    "huggingface_hub.*",
+]
+# allow
+#   from huggingface_hub.utils import build_hf_headers
+# even if the module does not explicitly exports the method
+# https://github.com/huggingface/huggingface_hub/blob/07896ee75b37da0d1744c9d03472485b985b3213/src/huggingface_hub/utils/__init__.py
+no_implicit_reexport = false
 
 [tool.ruff]
 line-length = 119

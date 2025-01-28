@@ -51,7 +51,7 @@ from huggingface_hub._commit_api import (
     CommitOperationDelete,
 )
 from huggingface_hub.errors import HfHubHTTPError, RepositoryNotFoundError
-from huggingface_hub.hf_api import CommitInfo, DatasetInfo, HfApi, RepoFile
+from huggingface_hub.hf_api import CommitInfo, DatasetInfo, HfApi, RepoFile, RepoSibling
 from huggingface_hub.utils._http import HTTP_METHOD_T, Response, http_backoff
 from libcommon.constants import (
     PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_ROW_GROUP_SIZE_FOR_AUDIO_DATASETS,
@@ -105,9 +105,7 @@ def http_backoff_with_timeout(method: HTTP_METHOD_T, url: str, **kwargs: Any) ->
     return http_backoff(method, url, **kwargs)
 
 
-def repo_file_rfilename_sort_key(repo_file: RepoFile) -> str:
-    if not isinstance(repo_file.rfilename, str):  # check type for mypy
-        raise ValueError(f"Expected a string for repo_file.rfilename, but got a '{type(repo_file.rfilename)}'.")
+def repo_file_rfilename_sort_key(repo_file: RepoSibling) -> str:
     return repo_file.rfilename
 
 
@@ -178,7 +176,7 @@ def parse_repo_filename(filename: str) -> tuple[str, str]:
 
 
 def create_parquet_file_item(
-    repo_file: RepoFile,
+    repo_file: RepoSibling,
     dataset: str,
     config: str,
     hf_endpoint: str,
@@ -235,7 +233,7 @@ def _is_too_big_from_hub(
     Returns:
         `bool`: if dataset size is bigger than max value.
     """
-    dataset_size: int = sum(sibling.size for sibling in dataset_info.siblings if sibling.size is not None)
+    dataset_size: int = sum(sibling.size for sibling in (dataset_info.siblings or []) if sibling.size is not None)
     return bool(dataset_size > max_dataset_size_bytes)
 
 
@@ -1147,7 +1145,10 @@ def create_commits(
 
 
 def get_delete_operations(
-    parquet_operations: list[CommitOperationAdd], all_repo_files: set[str], config_names: set[str], config: str
+    parquet_operations: Union[list[CommitOperationAdd], list[CommitOperationCopy]],
+    all_repo_files: set[str],
+    config_names: set[str],
+    config: str,
 ) -> list[CommitOperationDelete]:
     # - get files that will be preserved in repo:
     #   1. parquet files belonging to any other config (otherwise outdated files might be preserved)
@@ -1179,7 +1180,7 @@ def commit_parquet_conversion(
     dataset: str,
     config: str,
     config_names: set[str],
-    parquet_operations: list[CommitOperation],
+    parquet_operations: Union[list[CommitOperationAdd], list[CommitOperationCopy]],
     commit_message: str,
     target_revision: Optional[str],
 ) -> None:
@@ -1199,7 +1200,7 @@ def commit_parquet_conversion(
         config_names (`list[str]`):
             The list of all the configurations of this dataset. This is used to clean
             the other fiels and directories in the repo, if any.
-        parquet_operations (`list[huggingface_hub.hf_api.CommitOperation]`):
+        parquet_operations (`Union[list[CommitOperationAdd], list[CommitOperationCopy]]`):
             List of commit operation for the parquet conversion. It could be
             file additions or file copies for example.
         commit_message (`str`):
@@ -1219,11 +1220,11 @@ def commit_parquet_conversion(
             If one of the commits could not be created on the Hub.
     """
     target_dataset_info = hf_api.dataset_info(repo_id=dataset, revision=target_revision, files_metadata=False)
-    all_repo_files: set[str] = {f.rfilename for f in target_dataset_info.siblings}
+    all_repo_files: set[str] = {f.rfilename for f in (target_dataset_info.siblings or [])}
     delete_operations = get_delete_operations(
         parquet_operations=parquet_operations, all_repo_files=all_repo_files, config_names=config_names, config=config
     )
-    operations = delete_operations + parquet_operations
+    operations: list[CommitOperation] = list(delete_operations + parquet_operations)
     logging.info(f"{len(operations)} git operations to do for {dataset=} {config=}.")
     create_commits(
         committer_hf_api,
@@ -1372,6 +1373,7 @@ def compute_config_parquet_and_info_response(
 
     partial = False
     estimated_dataset_info: Optional[dict[str, Any]] = None
+    parquet_operations: Union[list[CommitOperationAdd], list[CommitOperationCopy]] = []
     try:
         if is_parquet_builder_with_hub_files(builder):
             try:
@@ -1481,7 +1483,7 @@ def compute_config_parquet_and_info_response(
 
     repo_files = [
         repo_file
-        for repo_file in target_dataset_info.siblings
+        for repo_file in (target_dataset_info.siblings or [])
         if repo_file.rfilename.startswith(f"{config}/") and repo_file.rfilename.endswith(".parquet")
     ]
     repo_files.sort(key=repo_file_rfilename_sort_key)
