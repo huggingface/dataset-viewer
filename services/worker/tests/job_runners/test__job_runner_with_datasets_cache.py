@@ -76,7 +76,7 @@ def test_set_datasets_cache(app_config: AppConfig, get_job_runner: GetJobRunner)
     dummy_path = base_path / "dummy"
     job_runner.set_datasets_cache(dummy_path)
     assert datasets.config.HF_DATASETS_CACHE.is_relative_to(dummy_path)
-    assert huggingface_hub.constants.HF_HUB_CACHE.is_relative_to(dummy_path)
+    assert Path(huggingface_hub.constants.HF_HUB_CACHE).is_relative_to(dummy_path)
 
 
 def test_pre_compute_post_compute(app_config: AppConfig, get_job_runner: GetJobRunner) -> None:
@@ -105,4 +105,4 @@ def assert_datasets_cache_path(path: Optional[Path], exists: bool) -> None:
             datasets.config.DOWNLOADED_DATASETS_PATH == datasets_cache_path / datasets.config.DOWNLOADED_DATASETS_DIR
         )
         assert datasets.config.EXTRACTED_DATASETS_PATH == datasets_cache_path / datasets.config.EXTRACTED_DATASETS_DIR
-        assert huggingface_hub.constants.HF_HUB_CACHE == hub_cache_path
+        assert huggingface_hub.constants.HF_HUB_CACHE == str(hub_cache_path)

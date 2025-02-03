@@ -130,7 +130,7 @@ def get_indexable_columns(features: Features) -> list[str]:
     return indexable_columns
 
 
-def get_monolingual_stemmer(card_data: DatasetCardData) -> str:
+def get_monolingual_stemmer(card_data: Optional[DatasetCardData]) -> str:
     if card_data is None:
         return DEFAULT_STEMMER
     all_languages = card_data["language"]
@@ -388,7 +388,7 @@ def compute_split_duckdb_index_response(
 
             logging.debug(f"get dataset info for {dataset=} with {target_revision=}")
             target_dataset_info = hf_api.dataset_info(repo_id=dataset, revision=target_revision, files_metadata=False)
-            all_repo_files: set[str] = {f.rfilename for f in target_dataset_info.siblings}
+            all_repo_files: set[str] = {f.rfilename for f in (target_dataset_info.siblings or [])}
             delete_operations = get_delete_operations(
                 all_repo_files=all_repo_files,
                 split_names=get_split_names(dataset=dataset, config=config),
@@ -425,6 +425,28 @@ def compute_split_duckdb_index_response(
                     ) from e.__cause__
                 raise e
 
+            # squash the history to save space
+            retry_super_squash_history = retry(on=[HfHubHTTPError], sleeps=HF_HUB_HTTP_ERROR_RETRY_SLEEPS)(
+                committer_hf_api.super_squash_history
+            )
+            try:
+                retry_super_squash_history(
+                    repo_id=dataset,
+                    repo_type=DATASET_TYPE,
+                    commit_message=commit_message,
+                    branch=target_revision,
+                )
+            except RuntimeError as e:
+                if e.__cause__ and isinstance(e.__cause__, HfHubHTTPError):
+                    raise CreateCommitError(
+                        message=(
+                            f"Could not squash the history of the commits (after {len(HF_HUB_HTTP_ERROR_RETRY_SLEEPS)}"
+                            f" attempts)."
+                        ),
+                        cause=e.__cause__,
+                    ) from e.__cause__
+                raise e
+
             logging.debug(f"create commit {commit_message} for {dataset=} {add_operations=}")
 
             # call the API again to get the index file
@@ -436,7 +458,7 @@ def compute_split_duckdb_index_response(
         raise DatasetNotFoundError("The dataset does not exist on the Hub.") from err
 
     repo_files = [
-        repo_file for repo_file in target_dataset_info.siblings if repo_file.rfilename == index_file_location
+        repo_file for repo_file in (target_dataset_info.siblings or []) if repo_file.rfilename == index_file_location
     ]
 
     if not repo_files or len(repo_files) != 1:
