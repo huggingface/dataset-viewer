@@ -511,6 +511,7 @@ def test_simplify_data_files_patterns(
     assert simplified_data_files == expected_simplified_data_files
 
 
+@pytest.mark.real_dataset
 @pytest.mark.integration
 @pytest.mark.parametrize(
     "dataset,module_name,expected_data_files,expected_library",
@@ -553,6 +554,7 @@ def test_get_builder_configs_with_simplified_data_files(
     assert compatible_library["library"] == expected_library
 
 
+@pytest.mark.real_dataset
 @pytest.mark.integration
 @pytest.mark.parametrize(
     "dataset,builder_name",
