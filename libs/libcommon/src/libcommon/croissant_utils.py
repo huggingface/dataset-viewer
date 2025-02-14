@@ -41,15 +41,25 @@ def truncate_features_from_croissant_crumbs_response(content: Mapping[str, Any])
 HF_TO_CROISSANT_VALUE_TYPE = {
     "binary": "sc:Text",
     "bool": "sc:Boolean",
+    "date32": "sc:Date",
+    "date64": "sc:Date",
     "float8": "sc:Float",
     "float16": "sc:Float",
     "float32": "sc:Float",
     "float64": "sc:Float",
+    "int8": "sc:Integer",
     "int16": "sc:Integer",
     "int32": "sc:Integer",
     "int64": "sc:Integer",
     "large_string": "sc:Text",
     "string": "sc:Text",
+    "time32": "sc:Date",
+    "time64": "sc:Date",
+    "timestamp[ns]": "sc:Date",
+    "uint8": "sc:Integer",
+    "uint16": "sc:Integer",
+    "uint32": "sc:Integer",
+    "uint64": "sc:Integer",
 }
 
 
