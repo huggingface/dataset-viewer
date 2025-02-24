@@ -4,7 +4,7 @@
 import logging
 from http import HTTPStatus
 
-from datasets import Audio, Features, Image, Sequence, Translation, TranslationVariableLanguages, Value
+from datasets import Audio, Features, Image, LargeList, Sequence, Translation, TranslationVariableLanguages, Value
 from datasets.features.features import FeatureType, _visit
 from libcommon.exceptions import PreviousStepFormatError
 from libcommon.simple_cache import (
@@ -65,7 +65,7 @@ def detect_features_modalities(features: Features) -> set[DatasetModality]:
     if any(
         "emb" not in column_name  # ignore lists of floats that may be embeddings
         and (
-            (isinstance(feature, Sequence) and feature.feature == Value("float32"))
+            (isinstance(feature, (LargeList, Sequence)) and feature.feature == Value("float32"))
             or (isinstance(feature, list) and feature[0] == Value("float32"))
         )
         for column_name, feature in features.items()
