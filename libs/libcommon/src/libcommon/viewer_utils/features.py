@@ -19,6 +19,7 @@ from datasets import (
     ClassLabel,
     Features,
     Image,
+    LargeList,
     Sequence,
     Translation,
     TranslationVariableLanguages,
@@ -327,6 +328,25 @@ def get_cell_value(
         if len(fieldType) != 1:
             raise TypeError("the feature type should be a 1-element list.")
         subFieldType = fieldType[0]
+        return [
+            get_cell_value(
+                dataset=dataset,
+                revision=revision,
+                config=config,
+                split=split,
+                row_idx=row_idx,
+                cell=subCell,
+                featureName=featureName,
+                fieldType=subFieldType,
+                storage_client=storage_client,
+                json_path=json_path + [idx] if json_path else [idx],
+            )
+            for (idx, subCell) in enumerate(cell)
+        ]
+    elif isinstance(fieldType, LargeList):
+        if not isinstance(cell, list):
+            raise TypeError("list cell must be a list.")
+        subFieldType = fieldType.feature
         return [
             get_cell_value(
                 dataset=dataset,

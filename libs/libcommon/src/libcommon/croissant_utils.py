@@ -4,7 +4,7 @@
 from collections.abc import Mapping
 from typing import Any, Optional, Union
 
-from datasets import ClassLabel, Image, Sequence, Value
+from datasets import ClassLabel, Image, LargeList, Sequence, Value
 
 
 def get_record_set(dataset: str, config_name: str) -> str:
@@ -125,8 +125,8 @@ def feature_to_croissant_field(
                 for subfeature_name, sub_feature in feature.items()
             ],
         }
-    elif isinstance(feature, (Sequence, list)):
-        if isinstance(feature, Sequence):
+    elif isinstance(feature, (Sequence, LargeList, list)):
+        if isinstance(feature, (Sequence, LargeList)):
             sub_feature = feature.feature
         else:
             if len(feature) != 1:

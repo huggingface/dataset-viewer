@@ -196,7 +196,9 @@ def compute_image_width_height_column(
 def compute_transformed_data(parquet_directory: Path, features: dict[str, Any]) -> Optional[pl.DataFrame]:
     transformed_df = None
     for feature_name, feature in features.items():
-        if isinstance(feature, list) or (isinstance(feature, dict) and feature.get("_type") == "Sequence"):
+        if isinstance(feature, list) or (
+            isinstance(feature, dict) and feature.get("_type") in ("LargeList", "Sequence")
+        ):
             first_parquet_file = list(parquet_directory.glob("*.parquet"))[0]
             if is_list_pa_type(first_parquet_file, feature_name):
                 transformed_df = compute_length_column(parquet_directory, feature_name, transformed_df, dtype="list")
