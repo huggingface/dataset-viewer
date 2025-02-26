@@ -50,7 +50,7 @@ def test_truncate_features_from_croissant_crumbs_response(num_columns: int) -> N
                 "dataType": "sc:Integer",
                 "source": {"fileSet": {"@id": "distribution_name"}, "extract": {"column": "column_name"}},
                 "isArray": True,
-                "arrayShape": "-1,
+                "arrayShape": "-1",
             },
         ),
         (
