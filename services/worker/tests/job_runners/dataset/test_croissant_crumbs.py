@@ -58,6 +58,7 @@ squad_splits = ["train", "validation"]
 v1_context = {
     "@language": "en",
     "@vocab": "https://schema.org/",
+    "arrayShape": "cr:arrayShape",
     "citeAs": "cr:citeAs",
     "column": "cr:column",
     "conformsTo": "dct:conformsTo",
@@ -74,6 +75,7 @@ v1_context = {
     "fileSet": "cr:fileSet",
     "format": "cr:format",
     "includes": "cr:includes",
+    "isArray": "cr:isArray",
     "isLiveDataset": "cr:isLiveDataset",
     "jsonPath": "cr:jsonPath",
     "key": "cr:key",
