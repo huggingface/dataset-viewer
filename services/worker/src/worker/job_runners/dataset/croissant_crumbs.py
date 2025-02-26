@@ -200,7 +200,7 @@ def get_croissant_crumbs_from_dataset_infos(
         {
             "@context": context,
             "@type": "sc:Dataset",
-            "conformsTo": "http://mlcommons.org/croissant/1.0",
+            "conformsTo": "http://mlcommons.org/croissant/1.1",
             "distribution": distribution,
             "recordSet": record_set,
         }
