@@ -107,6 +107,7 @@ def test_get_croissant_crumbs_from_dataset_infos() -> None:
     )
     assert "@context" in croissant_crumbs
     assert "@type" in croissant_crumbs
+    assert croissant_crumbs["conformsTo"] == "http://mlcommons.org/croissant/1.1"
 
     # Test recordSet.
     assert "recordSet" in croissant_crumbs
