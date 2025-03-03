@@ -38,7 +38,7 @@ def test_truncate_features_from_croissant_crumbs_response(num_columns: int) -> N
             {
                 "@type": "cr:Field",
                 "@id": "field_name",
-                "dataType": "sc:Integer",
+                "dataType": "cr:Int32",
                 "source": {"fileSet": {"@id": "distribution_name"}, "extract": {"column": "column_name"}},
             },
         ),
@@ -47,7 +47,7 @@ def test_truncate_features_from_croissant_crumbs_response(num_columns: int) -> N
             {
                 "@type": "cr:Field",
                 "@id": "field_name",
-                "dataType": "sc:Integer",
+                "dataType": "cr:Int32",
                 "source": {"fileSet": {"@id": "distribution_name"}, "extract": {"column": "column_name"}},
                 "isArray": True,
                 "arrayShape": "-1",
@@ -69,7 +69,7 @@ def test_truncate_features_from_croissant_crumbs_response(num_columns: int) -> N
             {
                 "@type": "cr:Field",
                 "@id": "field_name",
-                "dataType": "sc:Integer",
+                "dataType": "cr:Int32",
                 "source": {"fileSet": {"@id": "distribution_name"}, "extract": {"column": "column_name"}},
                 "isArray": True,
                 "arrayShape": "-1",
