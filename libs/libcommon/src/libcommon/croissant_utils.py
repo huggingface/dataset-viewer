@@ -126,16 +126,24 @@ def feature_to_croissant_field(
             ],
         }
     elif isinstance(feature, (LargeList, list, Sequence)):
+        array_shape = []
         if isinstance(feature, list):
             if len(feature) != 1:
                 return None
             sub_feature = feature[0]
-        else:
-            sub_feature = feature.feature
-        array_shape = ["-1"]
-        while isinstance(sub_feature, Sequence):
-            sub_feature = sub_feature.feature
             array_shape.append("-1")
+        else:
+            if shape := feature.length:
+                array_shape.append(str(shape))
+            else:
+                array_shape.append("-1")
+            sub_feature = feature.feature
+        while isinstance(sub_feature, Sequence):
+            if shape := sub_feature.length:
+                array_shape.append(str(shape))
+            else:
+                array_shape.append("-1")
+            sub_feature = sub_feature.feature
         field = feature_to_croissant_field(distribution_name, field_name, column, sub_feature)
         if field:
             field["isArray"] = True
