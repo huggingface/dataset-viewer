@@ -132,7 +132,7 @@ def feature_to_croissant_field(
             sub_feature = feature[0]
         else:
             sub_feature = feature.feature
-        array_shape = ["-1"] 
+        array_shape = ["-1"]
         while isinstance(sub_feature, Sequence):
             sub_feature = sub_feature.feature
             array_shape.append("-1")
