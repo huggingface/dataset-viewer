@@ -131,22 +131,17 @@ def feature_to_croissant_field(
             if len(feature) != 1:
                 return None
             sub_feature = feature[0]
-            array_shape.append("-1")
+            array_shape.append(-1)
         else:
-            if shape := feature.length:
-                array_shape.append(str(shape))
-            else:
-                array_shape.append("-1")
+            array_shape.append(feature.length)
             sub_feature = feature.feature
         while isinstance(sub_feature, Sequence):
-            if shape := sub_feature.length:
-                array_shape.append(str(shape))
-            else:
-                array_shape.append("-1")
+            array_shape.append(sub_feature.length)
             sub_feature = sub_feature.feature
         field = feature_to_croissant_field(distribution_name, field_name, column, sub_feature)
         if field:
             field["isArray"] = True
+            array_shape = [str(shape) if shape else "-1" for shape in array_shape]
             field["arrayShape"] = ",".join(array_shape)
             return field
     return None
