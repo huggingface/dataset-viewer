@@ -54,6 +54,17 @@ def test_truncate_features_from_croissant_crumbs_response(num_columns: int) -> N
             },
         ),
         (
+            Sequence(Sequence(Value(dtype="int32"), length=3)),
+            {
+                "@type": "cr:Field",
+                "@id": "field_name",
+                "dataType": "cr:Int32",
+                "source": {"fileSet": {"@id": "distribution_name"}, "extract": {"column": "column_name"}},
+                "isArray": True,
+                "arrayShape": "-1,3",
+            },
+        ),
+        (
             [Value(dtype="int32")],
             {
                 "@type": "cr:Field",
