@@ -141,7 +141,6 @@ def feature_to_croissant_field(
         field = feature_to_croissant_field(distribution_name, field_name, column, sub_feature)
         if field:
             field["isArray"] = True
-            array_shape = [str(shape) if shape else "-1" for shape in array_shape]
-            field["arrayShape"] = ",".join(array_shape)
+            field["arrayShape"] = ",".join([str(shape) if shape else "-1" for shape in array_shape])
             return field
     return None
