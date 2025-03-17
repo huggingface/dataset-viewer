@@ -67,7 +67,7 @@ def get_source(
     distribution_name: str, column: str, add_transform: bool, json_path: Optional[list[str]] = None
 ) -> dict[str, Any]:
     """Returns a Source dictionary for a Field."""
-    source = {"fileSet": {"@id": distribution_name}, "extract": {"column": column}}
+    source: dict[str, Any] = {"fileSet": {"@id": distribution_name}, "extract": {"column": column}}
     if add_transform and json_path:
         if len(json_path) == 1:
             source["transform"] = {"jsonPath": json_path[0]}
