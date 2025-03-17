@@ -215,8 +215,8 @@ def video(
     storage_client: StorageClient,
     json_path: Optional[list[Union[str, int]]] = None,
 ) -> Any:
-    if datasets.config.DECORD_AVAILABLE:
-        from decord import VideoReader  # type: ignore
+    if datasets.config.TORCHVISION_AVAILABLE:
+        from torchvision.io import VideoReader  # type: ignore
 
     else:
         VideoReader = None
@@ -229,7 +229,7 @@ def video(
         and hasattr(value, "_hf_encoded")
         and isinstance(value._hf_encoded, dict)
     ):
-        value = value._hf_encoded  # `datasets` patches `decord` to store the encoded data here
+        value = value._hf_encoded  # `datasets` patches `torchvision` to store the encoded data here
     elif isinstance(value, dict):
         value = {"path": value.get("path"), "bytes": value["bytes"]}
     elif isinstance(value, bytes):
