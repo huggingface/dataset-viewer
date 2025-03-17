@@ -75,6 +75,33 @@ def test_truncate_features_from_croissant_crumbs_response(num_columns: int) -> N
                 "arrayShape": "-1",
             },
         ),
+        (
+            [{"sub-field": {"sub-sub-field": Value(dtype="int32")}}],
+            {
+                "@type": "cr:Field",
+                "@id": "field_name",
+                "subField": [
+                    {
+                        "@type": "cr:Field",
+                        "@id": "field_name/sub-field",
+                        "subField": [
+                            {
+                                "@type": "cr:Field",
+                                "@id": "field_name/sub-field/sub-sub-field",
+                                "dataType": "cr:Int32",
+                                "source": {
+                                    "fileSet": {"@id": "distribution_name"},
+                                    "extract": {"column": "column_name"},
+                                    "transform": [{"jsonPath": "sub-field"}, {"jsonPath": "sub-sub-field"}],
+                                },
+                            }
+                        ],
+                    }
+                ],
+                "isArray": True,
+                "arrayShape": "-1",
+            },
+        ),
     ],
 )
 def test_feature_to_croissant_field(hf_datasets_feature: Any, croissant_field: Any) -> None:
