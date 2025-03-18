@@ -64,12 +64,15 @@ HF_TO_CROISSANT_VALUE_TYPE = {
 
 
 def get_source(
-    distribution_name: str, column: str, add_transform: bool, json_path: Optional[str] = None
+    distribution_name: str, column: str, add_transform: bool, json_path: Optional[list[str]] = None
 ) -> dict[str, Any]:
     """Returns a Source dictionary for a Field."""
-    source = {"fileSet": {"@id": distribution_name}, "extract": {"column": column}}
+    source: dict[str, Any] = {"fileSet": {"@id": distribution_name}, "extract": {"column": column}}
     if add_transform and json_path:
-        source["transform"] = {"jsonPath": json_path}
+        if len(json_path) == 1:
+            source["transform"] = {"jsonPath": json_path[0]}
+        else:
+            source["transform"] = [{"jsonPath": path} for path in json_path]
     return source
 
 
@@ -79,7 +82,7 @@ def feature_to_croissant_field(
     column: str,
     feature: Any,
     add_transform: bool = False,
-    json_path: Optional[str] = None,
+    json_path: Optional[list[str]] = None,
 ) -> Union[dict[str, Any], None]:
     """Converts a Hugging Face Datasets feature to a Croissant field or None if impossible."""
     if isinstance(feature, Value) and feature.dtype in HF_TO_CROISSANT_VALUE_TYPE:
@@ -110,20 +113,24 @@ def feature_to_croissant_field(
         }
     # Field with sub-fields.
     elif isinstance(feature, dict):
+        sub_fields = []
+        if not json_path:
+            json_path = []
+        for subfeature_name, sub_feature in feature.items():
+            sub_json_path = json_path + [subfeature_name]
+            f = feature_to_croissant_field(
+                distribution_name,
+                f"{field_name}/{subfeature_name}",
+                column,
+                sub_feature,
+                add_transform=True,
+                json_path=sub_json_path,
+            )
+            sub_fields.append(f)
         return {
             "@type": "cr:Field",
             "@id": field_name,
-            "subField": [
-                feature_to_croissant_field(
-                    distribution_name,
-                    f"{field_name}/{subfeature_name}",
-                    column,
-                    sub_feature,
-                    add_transform=True,
-                    json_path=subfeature_name,
-                )
-                for subfeature_name, sub_feature in feature.items()
-            ],
+            "subField": sub_fields,
         }
     elif isinstance(feature, (LargeList, list, Sequence)):
         array_shape = []
