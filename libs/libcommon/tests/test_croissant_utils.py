@@ -42,6 +42,7 @@ def test_truncate_features_from_croissant_crumbs_response(num_columns: int) -> N
         ("feature'with'quote", r"['feature\'with\'quote']"),
         ("feature[with]brackets", r"['feature\[with\]brackets']"),
         ("feature[with/slash]'and'quote", r"['feature\[with/slash\]\'and\'quote']"),
+        (r"feature\'already\'escaped", r"['feature\'already\'escaped']"),
     ],
 )
 def test_escape_jsonpath_key(feature_name, expected_output):

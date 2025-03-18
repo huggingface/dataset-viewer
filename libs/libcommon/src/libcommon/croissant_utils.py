@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2024 The HuggingFace Authors.
 
+import re
 from collections.abc import Mapping
 from typing import Any, Optional, Union
 
@@ -66,7 +67,9 @@ HF_TO_CROISSANT_VALUE_TYPE = {
 def escape_jsonpath_key(feature_name: str) -> str:
     """Escape single quotes and brackets in the feature name so that it constitutes a valid JSONPath."""
     if "/" in feature_name or "'" in feature_name or "]" in feature_name or "[" in feature_name:
-        escaped_name = feature_name.replace("'", r"\'").replace("[", r"\[").replace("]", r"\]")
+        escaped_name = re.sub(r"(?<!\\)'", r"\'", feature_name)
+        escaped_name = re.sub(r"(?<!\\)\[", r"\[", escaped_name)
+        escaped_name = re.sub(r"(?<!\\)\]", r"\]", escaped_name)
         return f"['{escaped_name}']"
     return feature_name
 
