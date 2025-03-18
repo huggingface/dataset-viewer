@@ -63,6 +63,14 @@ HF_TO_CROISSANT_VALUE_TYPE = {
 }
 
 
+def escape_jsonpath_key(feature_name: str) -> str:
+    """Escape single quotes and brackets in the feature name so that it constitutes a valid JSONPath."""
+    if "/" in feature_name or "'" in feature_name or "]" in feature_name or "[" in feature_name:
+        escaped_name = feature_name.replace("'", r"\'").replace("[", r"\[").replace("]", r"\]")
+        return f"['{escaped_name}']"
+    return feature_name
+
+
 def get_source(
     distribution_name: str, column: str, add_transform: bool, json_path: Optional[list[str]] = None
 ) -> dict[str, Any]:
@@ -117,7 +125,8 @@ def feature_to_croissant_field(
         if not json_path:
             json_path = []
         for subfeature_name, sub_feature in feature.items():
-            sub_json_path = json_path + [subfeature_name]
+            subfeature_jsonpath = escape_jsonpath_key(subfeature_name)
+            sub_json_path = json_path + [subfeature_jsonpath]
             f = feature_to_croissant_field(
                 distribution_name,
                 f"{field_name}/{subfeature_name}",

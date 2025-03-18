@@ -8,7 +8,11 @@ from unittest.mock import patch
 import pytest
 from datasets import Sequence, Value
 
-from libcommon.croissant_utils import feature_to_croissant_field, truncate_features_from_croissant_crumbs_response
+from libcommon.croissant_utils import (
+    escape_jsonpath_key,
+    feature_to_croissant_field,
+    truncate_features_from_croissant_crumbs_response,
+)
 
 
 @pytest.mark.parametrize("num_columns", [1, 3])
@@ -28,6 +32,21 @@ def test_truncate_features_from_croissant_crumbs_response(num_columns: int) -> N
     else:
         assert len(content["recordSet"][0]["field"]) == 2
         assert "max number of columns reached" in content["recordSet"][0]["description"]
+
+
+@pytest.mark.parametrize(
+    "feature_name, expected_output",
+    [
+        ("simple_feature", "simple_feature"),
+        ("feature/with/slash", "['feature/with/slash']"),
+        ("feature'with'quote", r"['feature\'with\'quote']"),
+        ("feature[with]brackets", r"['feature\[with\]brackets']"),
+        ("feature[with/slash]'and'quote", r"['feature\[with/slash\]\'and\'quote']"),
+    ],
+)
+def test_escape_jsonpath_key(feature_name, expected_output):
+    """Tests the escape_jsonpath_key function with various inputs."""
+    assert escape_jsonpath_key(feature_name) == expected_output
 
 
 @pytest.mark.parametrize(
