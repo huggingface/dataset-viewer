@@ -78,7 +78,8 @@ def create_rows_endpoint(
                 if dataset == "HuggingFaceFW/fineweb-edu-score-2" and offset > 1_000_000:
                     return get_json_error_response(
                         content="too many requests",
-                        status_code=HTTPStatus.TOO_MANY_REQUESTS
+                        status_code=HTTPStatus.TOO_MANY_REQUESTS,
+                        max_age=max_age_short,
                     )
                 with StepProfiler(method="rows_endpoint", step="check authentication"):
                     # if auth_check fails, it will raise an exception that will be caught below
