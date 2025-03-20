@@ -189,11 +189,23 @@ http://{{ $hubName }}
 {{- end -}}
 
 {{/*
-Return the api ingress anotation
+Return ingress anotations
 note: keep $instanceAnnotations in first position during the merge, to avoid override annotations in other pods
 */}}
 {{- define "datasetsServer.instance.ingress.annotations" -}}
 {{- $instanceAnnotations := .instance.ingress.annotations -}}
+{{- $defaultAnnotations := .context.Values.ingress.annotations -}}
+{{- $dict := merge $instanceAnnotations $defaultAnnotations -}}
+{{- range $key, $value := $dict }}
+{{ $key | quote }}: {{ $value | quote }}
+{{- end }}
+{{- end -}}
+{{/*
+Return ingressInternal anotations
+note: keep $instanceAnnotations in first position during the merge, to avoid override annotations in other pods
+*/}}
+{{- define "datasetsServer.instance.ingressInternal.annotations" -}}
+{{- $instanceAnnotations := .instance.ingressInternal.annotations -}}
 {{- $defaultAnnotations := .context.Values.ingress.annotations -}}
 {{- $dict := merge $instanceAnnotations $defaultAnnotations -}}
 {{- range $key, $value := $dict }}
