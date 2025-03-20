@@ -564,7 +564,7 @@ sseApi:
     enabled: true
     annotations: {}
   ingressInternal:
-    enabled: true
+    enabled: false
     annotations: {}
   tolerations: []
 
