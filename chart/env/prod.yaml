@@ -374,6 +374,7 @@ rows:
     enabled: true
     annotations:
       external-dns.alpha.kubernetes.io/hostname: "internal.datasets-server.huggingface.co"
+      alb.ingress.kubernetes.io/group.order: "2"
       alb.ingress.kubernetes.io/scheme: "internal"
       alb.ingress.kubernetes.io/load-balancer-name: "hub-datasets-server-prod-int"
       alb.ingress.kubernetes.io/group.name: "datasets-server-internal"
@@ -411,6 +412,7 @@ search:
     enabled: true
     annotations:
       external-dns.alpha.kubernetes.io/hostname: "internal.datasets-server.huggingface.co"
+      alb.ingress.kubernetes.io/group.order: "3"
       alb.ingress.kubernetes.io/scheme: "internal"
       alb.ingress.kubernetes.io/load-balancer-name: "hub-datasets-server-prod-int"
       alb.ingress.kubernetes.io/group.name: "datasets-server-internal"
@@ -445,6 +447,7 @@ sseApi:
     enabled: true
     annotations:
       external-dns.alpha.kubernetes.io/hostname: "internal.datasets-server.huggingface.co"
+      alb.ingress.kubernetes.io/group.order: "4"
       alb.ingress.kubernetes.io/scheme: "internal"
       alb.ingress.kubernetes.io/load-balancer-name: "hub-datasets-server-prod-int"
       alb.ingress.kubernetes.io/group.name: "datasets-server-internal"
@@ -568,6 +571,7 @@ webhook:
     enabled: true
     annotations:
       external-dns.alpha.kubernetes.io/hostname: "internal.datasets-server.huggingface.co"
+      alb.ingress.kubernetes.io/group.order: "5"
       alb.ingress.kubernetes.io/scheme: "internal"
       alb.ingress.kubernetes.io/load-balancer-name: "hub-datasets-server-prod-int"
       alb.ingress.kubernetes.io/group.name: "datasets-server-internal"
