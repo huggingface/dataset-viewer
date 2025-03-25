@@ -470,6 +470,7 @@ class IntColumn(Column):
 
 class StringColumn(Column):
     transform_column = IntColumn
+    ENABLE_DATETIME = False
 
     @staticmethod
     def is_class(n_unique: int, n_samples: int) -> bool:
@@ -504,7 +505,7 @@ class StringColumn(Column):
     ) -> Union[CategoricalStatisticsItem, NumericalStatisticsItem, DatetimeStatisticsItem]:
         nan_count, nan_proportion = nan_count_proportion(data, column_name, n_samples)
         n_unique = data[column_name].n_unique()
-        if cls.is_datetime(data, column_name):
+        if cls.ENABLE_DATETIME and cls.is_datetime(data, column_name):
             try:
                 stats: DatetimeStatisticsItem = DatetimeColumn.compute_statistics(
                     data,

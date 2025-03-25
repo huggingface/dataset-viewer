@@ -4,6 +4,7 @@ import logging
 from collections import Counter
 from pathlib import Path
 from typing import Any, Optional, TypedDict, Union
+from unittest.mock import patch
 
 import polars as pl
 import pyarrow.parquet as pq
@@ -256,9 +257,12 @@ def compute_descriptive_statistics_response(
 
     columns: list[SupportedColumns] = []
     all_stats: list[StatisticsPerColumnItem] = []
-    for feature_name, feature in features.items():
-        if (column := _column_from_feature(feature_name, feature)) is not None:
-            columns.append(column)
+    with patch.object(
+        StringColumn, "ENABLE_DATETIME", dataset.startswith("lhoestq/") or dataset.startswith("cfahlgren1/")
+    ):  # TODO(QL): enable for everyone
+        for feature_name, feature in features.items():
+            if (column := _column_from_feature(feature_name, feature)) is not None:
+                columns.append(column)
 
     if not columns:
         raise NoSupportedFeaturesError(
