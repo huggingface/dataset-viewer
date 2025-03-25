@@ -1192,7 +1192,8 @@
           "bool",
           "list",
           "audio",
-          "image"
+          "image",
+          "datetime"
         ]
       },
       "Histogram": {
@@ -1209,6 +1210,24 @@
             "type": "array",
             "items": {
               "type": "number"
+            }
+          }
+        }
+      },
+      "DatetimeHistogram": {
+        "type": "object",
+        "required": ["hist", "bin_edges"],
+        "properties": {
+          "hist": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            }
+          },
+          "bin_edges": {
+            "type": "array",
+            "items": {
+              "type": "string"
             }
           }
         }
@@ -1240,6 +1259,38 @@
           "histogram": {
             "oneOf": [
               { "$ref": "#/components/schemas/Histogram" },
+              { "type": "null" }
+            ]
+          }
+        }
+      },
+      "DatetimeStatisticsItem": {
+        "type": "object",
+        "required": [
+          "nan_count",
+          "nan_proportion",
+          "min",
+          "max",
+          "mean",
+          "median",
+          "std",
+          "histogram"
+        ],
+        "properties": {
+          "nan_count": {
+            "type": "integer"
+          },
+          "nan_proportion": {
+            "type": "number"
+          },
+          "min": { "oneOf": [{ "type": "string" }, { "type": "null" }] },
+          "max": { "oneOf": [{ "type": "string" }, { "type": "null" }] },
+          "mean": { "oneOf": [{ "type": "string" }, { "type": "null" }] },
+          "median": { "oneOf": [{ "type": "string" }, { "type": "null" }] },
+          "std": { "oneOf": [{ "type": "string" }, { "type": "null" }] },
+          "histogram": {
+            "oneOf": [
+              { "$ref": "#/components/schemas/DatetimeHistogram" },
               { "type": "null" }
             ]
           }
@@ -1295,6 +1346,9 @@
         "anyOf": [
           {
             "$ref": "#/components/schemas/NumericalStatisticsItem"
+          },
+          {
+            "$ref": "#/components/schemas/DatetimeStatisticsItem"
           },
           {
             "$ref": "#/components/schemas/CategoricalStatisticsItem"
@@ -5939,6 +5993,375 @@
                         }
                       ],
                       "partial": false
+                    }
+                  },
+                  "A split (CL-ETM/datetimeevents) with a datetime column": {
+                    "summary": "Statistics on a split with datetime columns 'charttime', 'storetime' and 'value'. ",
+                    "description": "Try with https://datasets-server.huggingface.co/statistics?dataset=CL-ETM/datetimeevents&config=mnist&split=train.",
+                    "value": {
+                      "num_examples": 6653174,
+                      "statistics": [
+                          {
+                              "column_name": "caregiver_id",
+                              "column_type": "int",
+                              "column_statistics": {
+                                  "nan_count": 0,
+                                  "nan_proportion": 0.0,
+                                  "min": 45,
+                                  "max": 99872,
+                                  "mean": 49146.20367,
+                                  "median": 46354.0,
+                                  "std": 28893.09204,
+                                  "histogram": {
+                                      "hist": [
+                                          586864,
+                                          696061,
+                                          882127,
+                                          627295,
+                                          759981,
+                                          594546,
+                                          544977,
+                                          653948,
+                                          507192,
+                                          800183
+                                      ],
+                                      "bin_edges": [
+                                          45,
+                                          10028,
+                                          20011,
+                                          29994,
+                                          39977,
+                                          49960,
+                                          59943,
+                                          69926,
+                                          79909,
+                                          89892,
+                                          99872
+                                      ]
+                                  }
+                              }
+                          },
+                          {
+                              "column_name": "charttime",
+                              "column_type": "datetime",
+                              "column_statistics": {
+                                  "nan_count": 0,
+                                  "nan_proportion": 0.0,
+                                  "min": "2110-01-13 09:39:00",
+                                  "max": "2214-07-26 08:00:00",
+                                  "mean": "2153-03-20 23:15:24",
+                                  "median": "2153-01-19 04:19:30",
+                                  "std": "8691 days, 20:22:21.464930",
+                                  "histogram": {
+                                      "hist": [
+                                          644662,
+                                          824869,
+                                          883173,
+                                          884980,
+                                          861445,
+                                          863916,
+                                          838647,
+                                          664347,
+                                          156213,
+                                          30922
+                                      ],
+                                      "bin_edges": [
+                                          "2110-01-13 09:39:00",
+                                          "2120-06-27 07:05:07",
+                                          "2130-12-10 04:31:14",
+                                          "2141-05-24 01:57:21",
+                                          "2151-11-05 23:23:28",
+                                          "2162-04-19 20:49:35",
+                                          "2172-10-01 18:15:42",
+                                          "2183-03-16 15:41:49",
+                                          "2193-08-28 13:07:56",
+                                          "2204-02-11 10:34:03",
+                                          "2214-07-26 08:00:00"
+                                      ]
+                                  }
+                              }
+                          },
+                          {
+                              "column_name": "hadm_id",
+                              "column_type": "int",
+                              "column_statistics": {
+                                  "nan_count": 0,
+                                  "nan_proportion": 0.0,
+                                  "min": 20000094,
+                                  "max": 29999828,
+                                  "mean": 25027899.88926,
+                                  "median": 25052613.0,
+                                  "std": 2869146.55704,
+                                  "histogram": {
+                                      "hist": [
+                                          638196,
+                                          656157,
+                                          656168,
+                                          661133,
+                                          678335,
+                                          693220,
+                                          676587,
+                                          653053,
+                                          674626,
+                                          665699
+                                      ],
+                                      "bin_edges": [
+                                          20000094,
+                                          21000068,
+                                          22000042,
+                                          23000016,
+                                          23999990,
+                                          24999964,
+                                          25999938,
+                                          26999912,
+                                          27999886,
+                                          28999860,
+                                          29999828
+                                      ]
+                                  }
+                              }
+                          },
+                          {
+                              "column_name": "itemid",
+                              "column_type": "int",
+                              "column_statistics": {
+                                  "nan_count": 0,
+                                  "nan_proportion": 0.0,
+                                  "min": 224183,
+                                  "max": 230120,
+                                  "mean": 225487.4805,
+                                  "median": 224290.0,
+                                  "std": 1820.04267,
+                                  "histogram": {
+                                      "hist": [
+                                          3742726,
+                                          568047,
+                                          1012645,
+                                          75427,
+                                          21011,
+                                          41780,
+                                          311155,
+                                          100074,
+                                          249544,
+                                          530765
+                                      ],
+                                      "bin_edges": [
+                                          224183,
+                                          224777,
+                                          225371,
+                                          225965,
+                                          226559,
+                                          227153,
+                                          227747,
+                                          228341,
+                                          228935,
+                                          229529,
+                                          230120
+                                      ]
+                                  }
+                              }
+                          },
+                          {
+                              "column_name": "stay_id",
+                              "column_type": "int",
+                              "column_statistics": {
+                                  "nan_count": 0,
+                                  "nan_proportion": 0.0,
+                                  "min": 30000153,
+                                  "max": 39999858,
+                                  "mean": 34988877.57506,
+                                  "median": 34997302.0,
+                                  "std": 2873138.27766,
+                                  "histogram": {
+                                      "hist": [
+                                          669019,
+                                          638622,
+                                          695479,
+                                          665010,
+                                          659205,
+                                          659496,
+                                          696313,
+                                          662500,
+                                          671230,
+                                          636300
+                                      ],
+                                      "bin_edges": [
+                                          30000153,
+                                          31000124,
+                                          32000095,
+                                          33000066,
+                                          34000037,
+                                          35000008,
+                                          35999979,
+                                          36999950,
+                                          37999921,
+                                          38999892,
+                                          39999858
+                                      ]
+                                  }
+                              }
+                          },
+                          {
+                              "column_name": "storetime",
+                              "column_type": "datetime",
+                              "column_statistics": {
+                                  "nan_count": 0,
+                                  "nan_proportion": 0.0,
+                                  "min": "2110-01-13 13:13:00",
+                                  "max": "2214-07-26 09:20:00",
+                                  "mean": "2153-03-20 23:57:17",
+                                  "median": "2153-01-19 03:42:00",
+                                  "std": "8691 days, 20:22:32.902370",
+                                  "histogram": {
+                                      "hist": [
+                                          644728,
+                                          824803,
+                                          883215,
+                                          884951,
+                                          861438,
+                                          863915,
+                                          838652,
+                                          664336,
+                                          156214,
+                                          30922
+                                      ],
+                                      "bin_edges": [
+                                          "2110-01-13 13:13:00",
+                                          "2120-06-27 10:25:43",
+                                          "2130-12-10 07:38:26",
+                                          "2141-05-24 04:51:09",
+                                          "2151-11-06 02:03:52",
+                                          "2162-04-19 23:16:35",
+                                          "2172-10-01 20:29:18",
+                                          "2183-03-16 17:42:01",
+                                          "2193-08-28 14:54:44",
+                                          "2204-02-11 12:07:27",
+                                          "2214-07-26 09:20:00"
+                                      ]
+                                  }
+                              }
+                          },
+                          {
+                              "column_name": "subject_id",
+                              "column_type": "int",
+                              "column_statistics": {
+                                  "nan_count": 0,
+                                  "nan_proportion": 0.0,
+                                  "min": 10000032,
+                                  "max": 16657691,
+                                  "mean": 13340551.62433,
+                                  "median": 13334004.0,
+                                  "std": 1927957.39956,
+                                  "histogram": {
+                                      "hist": [
+                                          638347,
+                                          684908,
+                                          691450,
+                                          631212,
+                                          672810,
+                                          659625,
+                                          641987,
+                                          654011,
+                                          702989,
+                                          675835
+                                      ],
+                                      "bin_edges": [
+                                          10000032,
+                                          10665798,
+                                          11331564,
+                                          11997330,
+                                          12663096,
+                                          13328862,
+                                          13994628,
+                                          14660394,
+                                          15326160,
+                                          15991926,
+                                          16657691
+                                      ]
+                                  }
+                              }
+                          },
+                          {
+                              "column_name": "value",
+                              "column_type": "datetime",
+                              "column_statistics": {
+                                  "nan_count": 0,
+                                  "nan_proportion": 0.0,
+                                  "min": "2109-08-02 00:00:00",
+                                  "max": "2214-07-24 09:57:00",
+                                  "mean": "2153-03-17 00:32:04",
+                                  "median": "2153-01-15 00:00:00",
+                                  "std": "8691 days, 20:07:56.642090",
+                                  "histogram": {
+                                      "hist": [
+                                          611811,
+                                          820557,
+                                          897262,
+                                          880309,
+                                          876200,
+                                          860348,
+                                          845238,
+                                          673106,
+                                          157352,
+                                          30991
+                                      ],
+                                      "bin_edges": [
+                                          "2109-08-02 00:00:00",
+                                          "2120-01-31 03:23:43",
+                                          "2130-07-31 06:47:26",
+                                          "2141-01-28 10:11:09",
+                                          "2151-07-29 13:34:52",
+                                          "2162-01-26 16:58:35",
+                                          "2172-07-26 20:22:18",
+                                          "2183-01-24 23:46:01",
+                                          "2193-07-25 03:09:44",
+                                          "2204-01-24 06:33:27",
+                                          "2214-07-24 09:57:00"
+                                      ]
+                                  }
+                              }
+                          },
+                          {
+                              "column_name": "valueuom",
+                              "column_type": "string_label",
+                              "column_statistics": {
+                                  "nan_count": 0,
+                                  "nan_proportion": 0.0,
+                                  "no_label_count": 0,
+                                  "no_label_proportion": 0.0,
+                                  "n_unique": 2,
+                                  "frequencies": {
+                                      "Date and Time": 1885855,
+                                      "Date": 4767319
+                                  }
+                              }
+                          },
+                          {
+                              "column_name": "warning",
+                              "column_type": "int",
+                              "column_statistics": {
+                                  "nan_count": 0,
+                                  "nan_proportion": 0.0,
+                                  "min": 0,
+                                  "max": 1,
+                                  "mean": 0.00028,
+                                  "median": 0.0,
+                                  "std": 0.01674,
+                                  "histogram": {
+                                      "hist": [
+                                          6651308,
+                                          1866
+                                      ],
+                                      "bin_edges": [
+                                          0,
+                                          1,
+                                          1
+                                      ]
+                                  }
+                              }
+                          }
+                      ],
+                      "partial": true
                     }
                   },
                   "A split (nyu-mll/glue) with a string (text) column": {

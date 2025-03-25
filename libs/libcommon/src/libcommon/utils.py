@@ -15,6 +15,7 @@ from typing import Any, Optional, TypeVar, Union, cast
 import orjson
 import pandas as pd
 import pytz
+from dateutil import parser
 from huggingface_hub import constants, hf_hub_download
 from requests.exceptions import ReadTimeout
 
@@ -91,6 +92,79 @@ def get_datetime(days: Optional[float] = None) -> datetime:
     if days is not None:
         date = date - timedelta(days=days)
     return date
+
+
+def is_datetime(string: str) -> bool:
+    try:
+        parser.parse(string)
+        return True
+    except ValueError:
+        return False
+
+
+def get_timezone(string: str) -> Any:
+    return parser.parse(string).tzinfo
+
+
+def datetime_to_string(dt: datetime, format: str = "%Y-%m-%d %H:%M:%S%z") -> str:
+    if dt.utcoffset() == timedelta(0):
+        format = "%Y-%m-%d %H:%M:%S"  # do not display +0000
+    return dt.strftime(format)
+
+
+def identify_datetime_format(datetime_string: str) -> Optional[str]:
+    # Common datetime formats
+    common_formats = [
+        "%Y-%m-%dT%H:%M:%S%Z",
+        "%Y-%m-%dT%H:%M:%S%z",
+        "%Y-%m-%dT%H:%M:%S",
+        "%Y-%m-%dT%H:%M:%S.%f",
+        "%Y-%m-%d %H:%M:%S%Z",
+        "%Y-%m-%d %H:%M:%S%z",
+        "%Y-%m-%d %H:%M:%S",
+        "%Y-%m-%d %H:%M",
+        "%Y-%m-%d",
+        "%d-%m-%Y %H:%M:%S%Z",
+        "%d-%m-%Y %H:%M:%S%z",
+        "%d-%m-%Y %H:%M:%S",
+        "%d-%m-%Y %H:%M",
+        "%d-%m-%Y",
+        "%m-%d-%Y %H:%M:%S%Z",
+        "%m-%d-%Y %H:%M:%S%z",
+        "%m-%d-%Y %H:%M:%S",
+        "%m-%d-%Y %H:%M",
+        "%m-%d-%Y",
+        "%Y/%m/%d %H:%M:%S%Z",
+        "%Y/%m/%d %H:%M:%S%z",
+        "%Y/%m/%d %H:%M:%S",
+        "%Y/%m/%d %H:%M",
+        "%Y/%m/%d",
+        "%d/%m/%Y %H:%M:%S%Z",
+        "%d/%m/%Y %H:%M:%S%z",
+        "%d/%m/%Y %H:%M:%S",
+        "%d/%m/%Y %H:%M",
+        "%d/%m/%Y",
+        "%m/%d/%Y %H:%M:%S%Z",
+        "%m/%d/%Y %H:%M:%S%z",
+        "%m/%d/%Y %H:%M:%S",
+        "%m/%d/%Y %H:%M",
+        "%m/%d/%Y",
+        "%B %d, %Y",
+        "%d %B %Y",
+        "%m-%Y",
+        "%Y-%m",
+        "%m/%Y",
+        "%Y/%m",
+        "%Y",
+    ]
+
+    for fmt in common_formats:
+        try:
+            _ = datetime.strptime(datetime_string, fmt)
+            return fmt
+        except ValueError:
+            continue
+    return None
 
 
 def get_duration(started_at: datetime) -> float:

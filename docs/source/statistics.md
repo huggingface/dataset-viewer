@@ -165,7 +165,7 @@ The response JSON contains three keys:
 
 ## Response structure by data type
 
-Currently, statistics are supported for strings, float and integer numbers, lists, audio and image data and the special [`datasets.ClassLabel`](https://huggingface.co/docs/datasets/package_reference/main_classes#datasets.ClassLabel) feature type of the [`datasets`](https://huggingface.co/docs/datasets/) library.
+Currently, statistics are supported for strings, float and integer numbers, lists, datetimes, audio and image data and the special [`datasets.ClassLabel`](https://huggingface.co/docs/datasets/package_reference/main_classes#datasets.ClassLabel) feature type of the [`datasets`](https://huggingface.co/docs/datasets/) library.
 
 `column_type` in response can be one of the following values:
 
@@ -178,6 +178,7 @@ Currently, statistics are supported for strings, float and integer numbers, list
 * `list` - for lists of any other data types (including lists)
 * `audio` - for audio data
 * `image` - for image data
+* `datetime` - for datetime data 
 
 ### `class_label`
 
@@ -216,7 +217,7 @@ This type represents categorical data encoded as [`ClassLabel`](https://huggingf
 
 The following measures are returned for float data types:
 
-* minimum, maximum, mean, and standard deviation values
+* minimum, maximum, mean, median, and standard deviation values
 * number and proportion of `null` and `NaN` values (`NaN` values are treated as `null`)
 * histogram with 10 bins
 
@@ -273,7 +274,7 @@ The following measures are returned for float data types:
 
 The following measures are returned for integer data types:
 
-* minimum, maximum, mean, and standard deviation values
+* minimum, maximum, mean, median, and standard deviation values
 * number and proportion of `null` values
 * histogram with less than or equal to 10 bins
 
@@ -377,7 +378,7 @@ If the proportion of unique values in a string column within requested split is 
 
 If string column does not satisfy the conditions to be treated as a `string_label`, it is considered to be a column containing texts and response contains statistics over text lengths which are calculated by character number. The following measures are computed:
 
-* minimum, maximum, mean, and standard deviation of text lengths
+* minimum, maximum, mean, median, and standard deviation of text lengths
 * number and proportion of `null` values
 * histogram of text lengths with 10 bins
 
@@ -434,7 +435,7 @@ If string column does not satisfy the conditions to be treated as a `string_labe
 
 For lists, the distribution of their lengths is computed. The following measures are returned:
 
-* minimum, maximum, mean, and standard deviation of lists lengths
+* minimum, maximum, mean, median, and standard deviation of lists lengths
 * number and proportion of `null` values
 * histogram of lists lengths with up to 10 bins
 
@@ -480,7 +481,7 @@ Note that dictionaries of lists are not supported.
 
 For audio data, the distribution of audio files durations is computed. The following measures are returned:
 
-* minimum, maximum, mean, and standard deviation of audio files durations
+* minimum, maximum, mean, median, and standard deviation of audio files durations
 * number and proportion of `null` values
 * histogram of audio files durations with 10 bins
 
@@ -539,7 +540,7 @@ For audio data, the distribution of audio files durations is computed. The follo
 
 For image data, the distribution of images widths is computed. The following measures are returned:
 
-* minimum, maximum, mean, and standard deviation of widths of image files
+* minimum, maximum, mean, median, and standard deviation of widths of image files
 * number and proportion of `null` values
 * histogram of images widths with 10 bins
 
@@ -591,3 +592,61 @@ For image data, the distribution of images widths is computed. The following mea
 
 </p>
 </details>
+
+### datetime
+
+The distribution of datetime is computed. The following measures are returned:
+
+* minimum, maximum, mean, median, and standard deviation of datetimes represented as strings with precision up to seconds
+* number and proportion of `null` values
+* histogram of datetimes with 10 bins
+
+<details><summary>Example </summary>
+<p>
+
+```json
+{
+    "column_name": "date",
+    "column_type": "datetime",
+    "column_statistics": {
+        "nan_count": 0,
+        "nan_proportion": 0.0,
+        "min": "2013-05-18 04:54:11",
+        "max": "2013-06-20 10:01:41",
+        "mean": "2013-05-27 18:03:39",
+        "median": "2013-05-23 11:55:50",
+        "std": "11 days, 4:57:32.322450",
+        "histogram": {
+            "hist": [
+                318776,
+                393036,
+                173904,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                206284
+            ],
+            "bin_edges": [
+                "2013-05-18 04:54:11",
+                "2013-05-21 12:36:57",
+                "2013-05-24 20:19:43",
+                "2013-05-28 04:02:29",
+                "2013-05-31 11:45:15",
+                "2013-06-03 19:28:01",
+                "2013-06-07 03:10:47",
+                "2013-06-10 10:53:33",
+                "2013-06-13 18:36:19",
+                "2013-06-17 02:19:05",
+                "2013-06-20 10:01:41"
+            ]
+        }
+    }
+}
+```
+
+</p>
+</details>
+
