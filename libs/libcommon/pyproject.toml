@@ -9,10 +9,10 @@ license = "Apache-2.0"
 python = "3.9.18"
 appdirs = "^1.4.4"
 cryptography = "^43.0.1"
-datasets = {git = "https://github.com/huggingface/datasets.git", rev = "1946182ab6547e4fca4a2e3814d362b1776412cd", extras = ["audio", "vision"]}
+datasets = {version = "3.4.1", extras = ["audio", "vision"]}
 environs = "^9.5.0"
 fsspec = {version = "2024.3.1", extras = ["s3"]}
-huggingface-hub = {version = "^0.25.1", extras = ["hf-transfer"]}
+huggingface-hub = {version = "^0.28.0", extras = ["hf-transfer"]}
 mongo-types = "0.15.1"
 mongoengine = "^0.27.0"
 networkx = "^3.0"
@@ -61,12 +61,13 @@ markers = [
 
 [tool.mypy]
 strict = true
+# allow calling untyped methods in huggingface_hub (eg: DatasetInfo(...))
+untyped_calls_exclude = "huggingface_hub"
 
 [[tool.mypy.overrides]]
 module = [
     "datasets.*",
     "networkx.*",
-    "huggingface_hub.*",
     "prometheus_client.*",
     "pyarrow.*",
     "pymongoarrow.*",
@@ -78,8 +79,17 @@ module = [
     "requests.*",
     "dateutil.*"
 ]
-# ^ huggingface_hub is not typed since version 0.13.0
 ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = [
+    "huggingface_hub.*",
+]
+# allow
+#   from huggingface_hub.utils import build_hf_headers
+# even if the module does not explicitly exports the method
+# https://github.com/huggingface/huggingface_hub/blob/07896ee75b37da0d1744c9d03472485b985b3213/src/huggingface_hub/utils/__init__.py
+no_implicit_reexport = false
 
 [tool.ruff]
 line-length = 119

@@ -376,6 +376,9 @@
             "$ref": "#/components/schemas/SequenceFeature"
           },
           {
+            "$ref": "#/components/schemas/LargeListFeature"
+          },
+          {
             "$ref": "#/components/schemas/DictFeature"
           },
           {
@@ -511,6 +514,19 @@
           },
           "length": {
             "type": "integer"
+          },
+          "feature": {
+            "$ref": "#/components/schemas/Feature"
+          }
+        }
+      },
+      "LargeListFeature": {
+        "type": "object",
+        "required": ["_type", "feature"],
+        "properties": {
+          "_type": {
+            "type": "string",
+            "enum": ["LargeList"]
           },
           "feature": {
             "$ref": "#/components/schemas/Feature"

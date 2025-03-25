@@ -19,6 +19,7 @@ from datasets import (
     ClassLabel,
     Features,
     Image,
+    LargeList,
     Sequence,
     Translation,
     TranslationVariableLanguages,
@@ -214,8 +215,8 @@ def video(
     storage_client: StorageClient,
     json_path: Optional[list[Union[str, int]]] = None,
 ) -> Any:
-    if datasets.config.DECORD_AVAILABLE:
-        from decord import VideoReader  # type: ignore
+    if datasets.config.TORCHVISION_AVAILABLE:
+        from torchvision.io import VideoReader  # type: ignore
 
     else:
         VideoReader = None
@@ -228,7 +229,7 @@ def video(
         and hasattr(value, "_hf_encoded")
         and isinstance(value._hf_encoded, dict)
     ):
-        value = value._hf_encoded  # `datasets` patches `decord` to store the encoded data here
+        value = value._hf_encoded  # `datasets` patches `torchvision` to store the encoded data here
     elif isinstance(value, dict):
         value = {"path": value.get("path"), "bytes": value["bytes"]}
     elif isinstance(value, bytes):
@@ -327,6 +328,25 @@ def get_cell_value(
         if len(fieldType) != 1:
             raise TypeError("the feature type should be a 1-element list.")
         subFieldType = fieldType[0]
+        return [
+            get_cell_value(
+                dataset=dataset,
+                revision=revision,
+                config=config,
+                split=split,
+                row_idx=row_idx,
+                cell=subCell,
+                featureName=featureName,
+                fieldType=subFieldType,
+                storage_client=storage_client,
+                json_path=json_path + [idx] if json_path else [idx],
+            )
+            for (idx, subCell) in enumerate(cell)
+        ]
+    elif isinstance(fieldType, LargeList):
+        if not isinstance(cell, list):
+            raise TypeError("list cell must be a list.")
+        subFieldType = fieldType.feature
         return [
             get_cell_value(
                 dataset=dataset,

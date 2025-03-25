@@ -2,6 +2,7 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
+from http import HTTPStatus
 from typing import Literal, Optional, Union
 
 from fsspec.implementations.http import HTTPFileSystem
@@ -74,6 +75,12 @@ def create_rows_endpoint(
                     offset = get_request_parameter_offset(request)
                     length = get_request_parameter_length(request)
                     logging.info(f"/rows, {dataset=}, {config=}, {split=}, {offset=}, {length=}")
+                if dataset == "HuggingFaceFW/fineweb-edu-score-2" and offset > 1_000_000:
+                    return get_json_error_response(
+                        content="too many requests",
+                        status_code=HTTPStatus.TOO_MANY_REQUESTS,
+                        max_age=max_age_short,
+                    )
                 with StepProfiler(method="rows_endpoint", step="check authentication"):
                     # if auth_check fails, it will raise an exception that will be caught below
                     await auth_check(

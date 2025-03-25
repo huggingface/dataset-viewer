@@ -41,11 +41,16 @@ strict = true
 
 [[tool.mypy.overrides]]
 module = [
-    "huggingface_hub.*",
     "prometheus_client.*"
 ]
 ignore_missing_imports = true
 # ^ prometheus_client is now typed, but starlette-prometheus requires an old version
+
+[[tool.mypy.overrides]]
+module = [
+    "huggingface_hub.*",
+]
+no_implicit_reexport = false
 
 [tool.ruff]
 line-length = 119

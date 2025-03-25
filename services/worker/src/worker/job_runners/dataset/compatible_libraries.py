@@ -115,9 +115,10 @@ def get_builder_configs_with_simplified_data_files(
     builder_configs, _ = create_builder_configs_from_metadata_configs(
         module_path,
         metadata_configs or MetadataConfigs({"default": {}}),
-        supports_metadata=False,
         base_path=base_path,
         download_config=download_config,
+        # No need for default_builder_kwargs since we just need the builder config for the data files
+        # default_builder_kwargs=default_builder_kwargs,
     )
     for config in builder_configs:
         data_files = config.data_files.resolve(base_path=base_path, download_config=download_config)

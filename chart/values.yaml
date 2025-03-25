@@ -418,6 +418,9 @@ admin:
   ingress:
     enabled: true
     annotations: {}
+  ingressInternal:
+    enabled: false
+    annotations: {}
   tolerations: []
 
 hf:
@@ -461,6 +464,9 @@ api:
   ingress:
     enabled: true
     annotations: {}
+  ingressInternal:
+    enabled: false
+    annotations: {}
   tolerations: []
 
 rows:
@@ -490,6 +496,9 @@ rows:
     annotations: {}
   ingress:
     enabled: true
+    annotations: {}
+  ingressInternal:
+    enabled: false
     annotations: {}
   tolerations: []
 
@@ -525,6 +534,9 @@ search:
   ingress:
     enabled: true
     annotations: {}
+  ingressInternal:
+    enabled: false
+    annotations: {}
   tolerations: []
 
 sseApi:
@@ -550,6 +562,9 @@ sseApi:
     annotations: {}
   ingress:
     enabled: true
+    annotations: {}
+  ingressInternal:
+    enabled: false
     annotations: {}
   tolerations: []
 
@@ -607,5 +622,8 @@ webhook:
     annotations: {}
   ingress:
     enabled: true
+    annotations: {}
+  ingressInternal:
+    enabled: false
     annotations: {}
   tolerations: []

@@ -38,7 +38,7 @@ def test_truncate_features_from_croissant_crumbs_response(num_columns: int) -> N
             {
                 "@type": "cr:Field",
                 "@id": "field_name",
-                "dataType": "sc:Integer",
+                "dataType": "cr:Int32",
                 "source": {"fileSet": {"@id": "distribution_name"}, "extract": {"column": "column_name"}},
             },
         ),
@@ -47,9 +47,21 @@ def test_truncate_features_from_croissant_crumbs_response(num_columns: int) -> N
             {
                 "@type": "cr:Field",
                 "@id": "field_name",
-                "dataType": "sc:Integer",
+                "dataType": "cr:Int32",
                 "source": {"fileSet": {"@id": "distribution_name"}, "extract": {"column": "column_name"}},
-                "repeated": True,
+                "isArray": True,
+                "arrayShape": "-1",
+            },
+        ),
+        (
+            Sequence(Sequence(Value(dtype="int32"), length=3)),
+            {
+                "@type": "cr:Field",
+                "@id": "field_name",
+                "dataType": "cr:Int32",
+                "source": {"fileSet": {"@id": "distribution_name"}, "extract": {"column": "column_name"}},
+                "isArray": True,
+                "arrayShape": "-1,3",
             },
         ),
         (
@@ -57,9 +69,37 @@ def test_truncate_features_from_croissant_crumbs_response(num_columns: int) -> N
             {
                 "@type": "cr:Field",
                 "@id": "field_name",
-                "dataType": "sc:Integer",
+                "dataType": "cr:Int32",
                 "source": {"fileSet": {"@id": "distribution_name"}, "extract": {"column": "column_name"}},
-                "repeated": True,
+                "isArray": True,
+                "arrayShape": "-1",
+            },
+        ),
+        (
+            [{"sub-field": {"sub-sub-field": Value(dtype="int32")}}],
+            {
+                "@type": "cr:Field",
+                "@id": "field_name",
+                "subField": [
+                    {
+                        "@type": "cr:Field",
+                        "@id": "field_name/sub-field",
+                        "subField": [
+                            {
+                                "@type": "cr:Field",
+                                "@id": "field_name/sub-field/sub-sub-field",
+                                "dataType": "cr:Int32",
+                                "source": {
+                                    "fileSet": {"@id": "distribution_name"},
+                                    "extract": {"column": "column_name"},
+                                    "transform": [{"jsonPath": "sub-field"}, {"jsonPath": "sub-sub-field"}],
+                                },
+                            }
+                        ],
+                    }
+                ],
+                "isArray": True,
+                "arrayShape": "-1",
             },
         ),
     ],

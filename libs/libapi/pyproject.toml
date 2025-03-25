@@ -35,12 +35,13 @@ filterwarnings = ["ignore::DeprecationWarning"]
 
 [tool.mypy]
 strict = true
+# allow calling untyped methods in huggingface_hub (eg: DatasetInfo(...))
+untyped_calls_exclude = "huggingface_hub"
 
 [[tool.mypy.overrides]]
 module = [
     "datasets.*",
     "ecdsa.*",
-    "huggingface_hub.*",
     "prometheus_client.*",
     "pyarrow.*",
     "tqdm.*"

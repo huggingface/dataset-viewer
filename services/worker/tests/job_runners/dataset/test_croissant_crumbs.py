@@ -58,6 +58,7 @@ squad_splits = ["train", "validation"]
 v1_context = {
     "@language": "en",
     "@vocab": "https://schema.org/",
+    "arrayShape": "cr:arrayShape",
     "citeAs": "cr:citeAs",
     "column": "cr:column",
     "conformsTo": "dct:conformsTo",
@@ -74,6 +75,7 @@ v1_context = {
     "fileSet": "cr:fileSet",
     "format": "cr:format",
     "includes": "cr:includes",
+    "isArray": "cr:isArray",
     "isLiveDataset": "cr:isLiveDataset",
     "jsonPath": "cr:jsonPath",
     "key": "cr:key",
@@ -107,6 +109,7 @@ def test_get_croissant_crumbs_from_dataset_infos() -> None:
     )
     assert "@context" in croissant_crumbs
     assert "@type" in croissant_crumbs
+    assert croissant_crumbs["conformsTo"] == "http://mlcommons.org/croissant/1.1"
 
     # Test recordSet.
     assert "recordSet" in croissant_crumbs

@@ -162,6 +162,7 @@ def get_croissant_crumbs_from_dataset_infos(
     context = {
         "@language": "en",
         "@vocab": "https://schema.org/",
+        "arrayShape": "cr:arrayShape",
         "citeAs": "cr:citeAs",
         "column": "cr:column",
         "conformsTo": "dct:conformsTo",
@@ -178,6 +179,7 @@ def get_croissant_crumbs_from_dataset_infos(
         "fileSet": "cr:fileSet",
         "format": "cr:format",
         "includes": "cr:includes",
+        "isArray": "cr:isArray",
         "isLiveDataset": "cr:isLiveDataset",
         "jsonPath": "cr:jsonPath",
         "key": "cr:key",
@@ -200,7 +202,7 @@ def get_croissant_crumbs_from_dataset_infos(
         {
             "@context": context,
             "@type": "sc:Dataset",
-            "conformsTo": "http://mlcommons.org/croissant/1.0",
+            "conformsTo": "http://mlcommons.org/croissant/1.1",
             "distribution": distribution,
             "recordSet": record_set,
         }

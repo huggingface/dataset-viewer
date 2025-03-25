@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from typing import Any, Callable, Literal, Optional, Union
 
 from datasets import Audio, Features, Image, Video
-from datasets.features.features import FeatureType, Sequence
+from datasets.features.features import FeatureType, LargeList, Sequence
 
 from libcommon.cloudfront import CloudFrontSigner
 from libcommon.dtos import FeatureItem
@@ -57,6 +57,8 @@ def _visit(
         out = func([_visit(feature[0], func, visit_path + [0])], visit_path)
     elif isinstance(feature, Sequence):
         out = func(Sequence(_visit(feature.feature, func, visit_path + [0]), length=feature.length), visit_path)
+    elif isinstance(feature, LargeList):
+        out = func(LargeList(_visit(feature.feature, func, visit_path + [0])), visit_path)
     else:
         out = func(feature, visit_path)
     return feature if out is None else out
