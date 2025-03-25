@@ -45,7 +45,7 @@ def test_truncate_features_from_croissant_crumbs_response(num_columns: int) -> N
         (r"feature\'already\'escaped", r"['feature\'already\'escaped']"),
     ],
 )
-def test_escape_jsonpath_key(feature_name, expected_output):
+def test_escape_jsonpath_key(feature_name: str, expected_output: str) -> None:
     """Tests the escape_jsonpath_key function with various inputs."""
     assert escape_jsonpath_key(feature_name) == expected_output
 
