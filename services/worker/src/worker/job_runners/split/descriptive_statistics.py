@@ -275,7 +275,9 @@ def compute_descriptive_statistics_response(
     )
 
     with patch.object(
-        StringColumn, "ENABLE_DATETIME", dataset.startswith("lhoestq/") or dataset.startswith("cfahlgren1/")
+        StringColumn,
+        "ENABLE_DATETIME",
+        StringColumn.ENABLE_DATETIME or dataset.startswith("lhoestq/") or dataset.startswith("cfahlgren1/"),
     ):  # TODO(QL): enable for everyone
         for column in columns:
             if isinstance(column, AudioColumn) or isinstance(column, ImageColumn):
