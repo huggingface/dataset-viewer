@@ -4,7 +4,6 @@ import logging
 from collections import Counter
 from pathlib import Path
 from typing import Any, Optional, TypedDict, Union
-from unittest.mock import patch
 
 import polars as pl
 import pyarrow.parquet as pq
@@ -274,30 +273,25 @@ def compute_descriptive_statistics_response(
         f"\nColumn types counts: {column_counts}. "
     )
 
-    with patch.object(
-        StringColumn,
-        "ENABLE_DATETIME",
-        StringColumn.ENABLE_DATETIME or dataset.startswith("lhoestq/") or dataset.startswith("cfahlgren1/"),
-    ):  # TODO(QL): enable for everyone
-        for column in columns:
-            if isinstance(column, AudioColumn) or isinstance(column, ImageColumn):
-                column_stats = column.compute_and_prepare_response(local_parquet_split_directory)
-            else:
-                try:
-                    data = pl.DataFrame._from_arrow(
-                        pq.read_table(
-                            local_parquet_split_directory,
-                            columns=[column.name],
-                            schema=Features.from_dict({column.name: features[column.name]}).arrow_schema,
-                        )
+    for column in columns:
+        if isinstance(column, AudioColumn) or isinstance(column, ImageColumn):
+            column_stats = column.compute_and_prepare_response(local_parquet_split_directory)
+        else:
+            try:
+                data = pl.DataFrame._from_arrow(
+                    pq.read_table(
+                        local_parquet_split_directory,
+                        columns=[column.name],
+                        schema=Features.from_dict({column.name: features[column.name]}).arrow_schema,
                     )
-                except Exception as error:
-                    raise PolarsParquetReadError(
-                        f"Error reading parquet file(s) at {local_parquet_split_directory=}, columns=[{column.name}]: {error}",
-                        error,
-                    )
-                column_stats = column.compute_and_prepare_response(data)
-            all_stats.append(column_stats)
+                )
+            except Exception as error:
+                raise PolarsParquetReadError(
+                    f"Error reading parquet file(s) at {local_parquet_split_directory=}, columns=[{column.name}]: {error}",
+                    error,
+                )
+            column_stats = column.compute_and_prepare_response(data)
+        all_stats.append(column_stats)
 
     if not all_stats:
         raise NoSupportedFeaturesError(
