@@ -32,8 +32,6 @@ from worker.statistics_utils import (
     generate_bins,
 )
 
-StringColumn.ENABLE_DATETIME = True  # TODO(QL): remove once it's always enabled
-
 
 @pytest.mark.parametrize(
     "min_value,max_value,column_type,expected_bins",
