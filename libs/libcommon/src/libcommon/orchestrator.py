@@ -224,7 +224,7 @@ class DeleteDatasetCacheEntriesTask(Task):
 
 
 @dataclass
-class DeleteDatasetFilesInParquetRefBranchJobsTask(Task):
+class DeleteDatasetFilesInParquetRefBranchTask(Task):
     dataset: str
     committer_hf_token: str
 
@@ -253,7 +253,7 @@ class DeleteDatasetFilesInParquetRefBranchJobsTask(Task):
             return TasksStatistics(num_emptied_ref_branches=1)
 
 @dataclass
-class DeleteDatasetFilesInDuckdbRefBranchJobsTask(Task):
+class DeleteDatasetFilesInDuckdbRefBranchTask(Task):
     dataset: str
     committer_hf_token: str
 
@@ -1033,6 +1033,7 @@ class DatasetRemovalPlan(Plan):
 
     dataset: str
     storage_clients: Optional[list[StorageClient]]
+    committer_hf_token: Optional[str]
 
     def __post_init__(self) -> None:
         super().__post_init__()
@@ -1041,26 +1042,31 @@ class DatasetRemovalPlan(Plan):
         if self.storage_clients:
             for storage_client in self.storage_clients:
                 self.add_task(DeleteDatasetStorageTask(dataset=self.dataset, storage_client=storage_client))
+        if self.committer_hf_token:
+            self.add_task(DeleteDatasetFilesInParquetRefBranchTask(dataset=self.dataset, committer_hf_token=self.committer_hf_token))
+            self.add_task(DeleteDatasetFilesInDuckdbRefBranchTask(dataset=self.dataset, committer_hf_token=self.committer_hf_token))
 
 
-def remove_dataset(dataset: str, storage_clients: Optional[list[StorageClient]] = None) -> TasksStatistics:
+def remove_dataset(dataset: str, storage_clients: Optional[list[StorageClient]] = None, committer_hf_token: Optional[str] = None) -> TasksStatistics:
     """
     Remove the dataset from the dataset viewer
 
     Args:
         dataset (`str`): The name of the dataset.
         storage_clients (`list[StorageClient]`, *optional*): The storage clients.
+        committer_hf_token (`str`, *optional*): HF token to empty the ref branches (parquet/duckdb)
 
     Returns:
         `TasksStatistics`: The statistics of the deletion.
     """
-    plan = DatasetRemovalPlan(dataset=dataset, storage_clients=storage_clients)
+    plan = DatasetRemovalPlan(dataset=dataset, storage_clients=storage_clients, committer_hf_token=committer_hf_token)
     return plan.run()
     # assets and cached_assets are deleted by the storage clients
-    # TODO: delete the other files: metadata parquet, parquet, duckdb index, etc
+    # parquet and duckdb indexes are deleted using committer_hf_token if present
+    # TODO: delete the other files: metadata parquet
     # note that it's not as important as the assets, because generally, we want to delete a dataset
     # form the dataset viewer because the repository does not exist anymore on the Hub, so: the other files
-    # don't exist anymore either (they were in refs/convert/parquet or refs/convert/duckdb).
+    # don't exist anymore either (they were in refs/convert/parquet or refs/convert/duckdb or in metadata dir).
     # Only exception I see is when we stop supporting a dataset (blocked, disabled viewer, private dataset
     # and the user is not pro anymore, etc.)
 
