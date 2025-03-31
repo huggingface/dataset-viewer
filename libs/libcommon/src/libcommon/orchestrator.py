@@ -10,7 +10,7 @@ from http import HTTPStatus
 from typing import Optional, Union
 
 import pandas as pd
-from huggingface_hub import DatasetCard, HfFileSystem, get_session
+from huggingface_hub import DatasetCard, HfApi, HfFileSystem, get_session
 from huggingface_hub.utils._headers import build_hf_headers
 
 from libcommon.constants import (
@@ -77,6 +77,7 @@ class TasksStatistics:
     num_updated_cache_entries: int = 0
     num_deleted_storage_directories: int = 0
     num_updated_storage_directories: int = 0
+    num_emptied_ref_branches: int = 0
 
     def add(self, other: "TasksStatistics") -> None:
         self.num_created_jobs += other.num_created_jobs
@@ -85,6 +86,7 @@ class TasksStatistics:
         self.num_updated_cache_entries += other.num_updated_cache_entries
         self.num_deleted_storage_directories += other.num_deleted_storage_directories
         self.num_updated_storage_directories += other.num_updated_storage_directories
+        self.num_emptied_ref_branches += other.num_emptied_ref_branches
 
     def has_tasks(self) -> bool:
         return any(
@@ -95,6 +97,7 @@ class TasksStatistics:
                 self.num_updated_cache_entries > 0,
                 self.num_deleted_storage_directories > 0,
                 self.num_updated_storage_directories > 0,
+                self.num_emptied_ref_branches > 0,
             ]
         )
 
@@ -103,7 +106,8 @@ class TasksStatistics:
             f"{self.num_created_jobs} created jobs, {self.num_deleted_waiting_jobs} deleted waiting jobs,"
             f" {self.num_deleted_cache_entries} deleted cache entries, {self.num_updated_cache_entries} updated "
             f"cache entries, {self.num_deleted_storage_directories} deleted"
-            f" storage directories, {self.num_updated_storage_directories} updated storage directories"
+            f" storage directories, {self.num_updated_storage_directories} updated storage directories, "
+            f"{self.num_emptied_ref_branches} emptied ref branches"
         )
 
 
@@ -217,6 +221,65 @@ class DeleteDatasetCacheEntriesTask(Task):
             step="all",
         ):
             return TasksStatistics(num_deleted_cache_entries=delete_dataset_responses(dataset=self.dataset))
+
+
+@dataclass
+class DeleteDatasetFilesInParquetRefBranchJobsTask(Task):
+    dataset: str
+    committer_hf_token: str
+
+    def __post_init__(self) -> None:
+        # for debug and testing
+        self.id = f"DeleteDatasetFilesInParquetRefBranchJobsTask,{self.dataset}"
+        self.long_id = self.id
+
+    def run(self) -> TasksStatistics:
+        """
+        Delete the dataset waiting jobs.
+
+        Returns:
+            `TasksStatistics`: The statistics of the parquet ref branch files deletion.
+        """
+        with StepProfiler(
+            method="DeleteDatasetFilesInParquetRefBranchJobsTask.run",
+            step="all",
+        ):
+            HfApi(token=self.committer_hf_token).delete_files(
+                repo_id=self.dataset,
+                delete_patterns="**/*",
+                repo_type="dataset",
+                revision="refs/convert/parquet"
+            )
+            return TasksStatistics(num_emptied_ref_branches=1)
+
+@dataclass
+class DeleteDatasetFilesInDuckdbRefBranchJobsTask(Task):
+    dataset: str
+    committer_hf_token: str
+
+    def __post_init__(self) -> None:
+        # for debug and testing
+        self.id = f"DeleteDatasetFilesInDuckdbRefBranchJobsTask,{self.dataset}"
+        self.long_id = self.id
+
+    def run(self) -> TasksStatistics:
+        """
+        Delete the dataset waiting jobs.
+
+        Returns:
+            `TasksStatistics`: The statistics of the parquet ref branch files deletion.
+        """
+        with StepProfiler(
+            method="DeleteDatasetFilesInDuckdbRefBranchJobsTask.run",
+            step="all",
+        ):
+            HfApi(token=self.committer_hf_token).delete_files(
+                repo_id=self.dataset,
+                delete_patterns="**/*",
+                repo_type="dataset",
+                revision="refs/convert/duckdb"
+            )
+            return TasksStatistics(num_emptied_ref_branches=1)
 
 
 @dataclass
