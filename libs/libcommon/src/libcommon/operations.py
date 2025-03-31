@@ -192,7 +192,9 @@ class OperationsStatistics:
         self.tasks.add(other.tasks)
 
 
-def delete_dataset(dataset: str, storage_clients: Optional[list[StorageClient]] = None, committer_hf_token: Optional[str] = None) -> OperationsStatistics:
+def delete_dataset(
+    dataset: str, storage_clients: Optional[list[StorageClient]] = None, committer_hf_token: Optional[str] = None
+) -> OperationsStatistics:
     """
     Delete a dataset
 
@@ -206,7 +208,8 @@ def delete_dataset(dataset: str, storage_clients: Optional[list[StorageClient]] 
     """
     logging.debug(f"delete cache for dataset='{dataset}'")
     return OperationsStatistics(
-        num_deleted_datasets=1, tasks=remove_dataset(dataset=dataset, storage_clients=storage_clients, committer_hf_token=committer_hf_token)
+        num_deleted_datasets=1,
+        tasks=remove_dataset(dataset=dataset, storage_clients=storage_clients, committer_hf_token=committer_hf_token),
     )
 
 

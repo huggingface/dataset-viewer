@@ -149,6 +149,7 @@ COMMON_HF_ENDPOINT = "https://huggingface.co"
 COMMON_HF_TOKEN = None
 COMMON_COMMITTER_HF_TOKEN = None
 
+
 @dataclass(frozen=True)
 class CommonConfig:
     blocked_datasets: list[str] = field(default_factory=COMMON_BLOCKED_DATASETS.copy)

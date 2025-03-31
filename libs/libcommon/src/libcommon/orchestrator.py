@@ -245,12 +245,10 @@ class DeleteDatasetFilesInParquetRefBranchTask(Task):
             step="all",
         ):
             HfApi(token=self.committer_hf_token).delete_files(
-                repo_id=self.dataset,
-                delete_patterns="**/*",
-                repo_type="dataset",
-                revision="refs/convert/parquet"
+                repo_id=self.dataset, delete_patterns="**/*", repo_type="dataset", revision="refs/convert/parquet"
             )
             return TasksStatistics(num_emptied_ref_branches=1)
+
 
 @dataclass
 class DeleteDatasetFilesInDuckdbRefBranchTask(Task):
@@ -274,10 +272,7 @@ class DeleteDatasetFilesInDuckdbRefBranchTask(Task):
             step="all",
         ):
             HfApi(token=self.committer_hf_token).delete_files(
-                repo_id=self.dataset,
-                delete_patterns="**/*",
-                repo_type="dataset",
-                revision="refs/convert/duckdb"
+                repo_id=self.dataset, delete_patterns="**/*", repo_type="dataset", revision="refs/convert/duckdb"
             )
             return TasksStatistics(num_emptied_ref_branches=1)
 
@@ -1043,11 +1038,21 @@ class DatasetRemovalPlan(Plan):
             for storage_client in self.storage_clients:
                 self.add_task(DeleteDatasetStorageTask(dataset=self.dataset, storage_client=storage_client))
         if self.committer_hf_token:
-            self.add_task(DeleteDatasetFilesInParquetRefBranchTask(dataset=self.dataset, committer_hf_token=self.committer_hf_token))
-            self.add_task(DeleteDatasetFilesInDuckdbRefBranchTask(dataset=self.dataset, committer_hf_token=self.committer_hf_token))
+            self.add_task(
+                DeleteDatasetFilesInParquetRefBranchTask(
+                    dataset=self.dataset, committer_hf_token=self.committer_hf_token
+                )
+            )
+            self.add_task(
+                DeleteDatasetFilesInDuckdbRefBranchTask(
+                    dataset=self.dataset, committer_hf_token=self.committer_hf_token
+                )
+            )
 
 
-def remove_dataset(dataset: str, storage_clients: Optional[list[StorageClient]] = None, committer_hf_token: Optional[str] = None) -> TasksStatistics:
+def remove_dataset(
+    dataset: str, storage_clients: Optional[list[StorageClient]] = None, committer_hf_token: Optional[str] = None
+) -> TasksStatistics:
     """
     Remove the dataset from the dataset viewer
 
