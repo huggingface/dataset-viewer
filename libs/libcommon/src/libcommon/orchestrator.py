@@ -368,6 +368,8 @@ SupportedTask = Union[
     DeleteDatasetWaitingJobsTask,
     DeleteDatasetCacheEntriesTask,
     DeleteDatasetStorageTask,
+    DeleteDatasetFilesInDuckdbRefBranchTask,
+    DeleteDatasetFilesInParquetRefBranchTask,
     UpdateRevisionOfDatasetCacheEntriesTask,
     UpdateRevisionOfDatasetStorageTask,
 ]
