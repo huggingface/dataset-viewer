@@ -245,7 +245,10 @@ class DeleteDatasetFilesInParquetRefBranchTask(Task):
             step="all",
         ):
             HfApi(token=self.committer_hf_token).delete_files(
-                repo_id=self.dataset, delete_patterns="**/*", repo_type="dataset", revision="refs/convert/parquet"
+                repo_id=self.dataset, repo_type="dataset", revision="refs/convert/parquet", delete_patterns="**/*"
+            )
+            HfApi(token=self.committer_hf_token).super_squash_history(
+                repo_id=self.dataset, repo_type="dataset", revision="refs/convert/parquet"
             )
             return TasksStatistics(num_emptied_ref_branches=1)
 
@@ -265,14 +268,17 @@ class DeleteDatasetFilesInDuckdbRefBranchTask(Task):
         Delete the dataset waiting jobs.
 
         Returns:
-            `TasksStatistics`: The statistics of the parquet ref branch files deletion.
+            `TasksStatistics`: The statistics of the duckdb ref branch files deletion.
         """
         with StepProfiler(
             method="DeleteDatasetFilesInDuckdbRefBranchJobsTask.run",
             step="all",
         ):
             HfApi(token=self.committer_hf_token).delete_files(
-                repo_id=self.dataset, delete_patterns="**/*", repo_type="dataset", revision="refs/convert/duckdb"
+                repo_id=self.dataset, repo_type="dataset", revision="refs/convert/duckdb", delete_patterns="**/*"
+            )
+            HfApi(token=self.committer_hf_token).super_squash_history(
+                repo_id=self.dataset, repo_type="dataset", revision="refs/convert/duckdb"
             )
             return TasksStatistics(num_emptied_ref_branches=1)
 
