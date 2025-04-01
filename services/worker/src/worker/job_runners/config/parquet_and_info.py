@@ -1528,6 +1528,7 @@ class ConfigParquetAndInfoJobRunner(ConfigJobRunnerWithDatasetsCache):
             hf_datasets_cache=hf_datasets_cache,
         )
         self.parquet_and_info_config = app_config.parquet_and_info
+        self.committer_config = app_config.committer
 
     def compute(self) -> CompleteJobResult:
         return CompleteJobResult(
@@ -1537,7 +1538,7 @@ class ConfigParquetAndInfoJobRunner(ConfigJobRunnerWithDatasetsCache):
                 config=self.config,
                 hf_endpoint=self.app_config.common.hf_endpoint,
                 hf_token=self.app_config.common.hf_token,
-                committer_hf_token=self.parquet_and_info_config.committer_hf_token,
+                committer_hf_token=self.committer_config.hf_token,
                 source_revision=self.parquet_and_info_config.source_revision,
                 target_revision=self.parquet_and_info_config.target_revision,
                 commit_message=self.parquet_and_info_config.commit_message,

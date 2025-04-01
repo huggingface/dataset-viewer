@@ -218,7 +218,6 @@ PARQUET_AND_INFO_URL_TEMPLATE = "/datasets/%s/resolve/%s/%s"
 @dataclass(frozen=True)
 class ParquetAndInfoConfig:
     commit_message: str = PARQUET_AND_INFO_COMMIT_MESSAGE
-    committer_hf_token: Optional[str] = PARQUET_AND_INFO_COMMITTER_HF_TOKEN
     max_dataset_size_bytes: int = PARQUET_AND_INFO_MAX_DATASET_SIZE_BYTES
     max_row_group_byte_size_for_copy: int = PARQUET_AND_INFO_MAX_ROW_GROUP_BYTE_SIZE_FOR_COPY
     source_revision: str = PARQUET_AND_INFO_SOURCE_REVISION
@@ -231,7 +230,6 @@ class ParquetAndInfoConfig:
         with env.prefixed("PARQUET_AND_INFO_"):
             return cls(
                 commit_message=env.str(name="COMMIT_MESSAGE", default=PARQUET_AND_INFO_COMMIT_MESSAGE),
-                committer_hf_token=env.str(name="COMMITTER_HF_TOKEN", default=PARQUET_AND_INFO_COMMITTER_HF_TOKEN),
                 max_dataset_size_bytes=env.int(
                     name="MAX_DATASET_SIZE_BYTES", default=PARQUET_AND_INFO_MAX_DATASET_SIZE_BYTES
                 ),
@@ -303,7 +301,6 @@ DUCKDB_INDEX_EXTENSIONS_DIRECTORY: Optional[str] = None
 class DuckDbIndexConfig:
     cache_directory: Optional[str] = DUCKDB_INDEX_CACHE_DIRECTORY
     commit_message: str = DUCKDB_INDEX_COMMIT_MESSAGE
-    committer_hf_token: Optional[str] = DUCKDB_INDEX_COMMITTER_HF_TOKEN
     target_revision: str = DUCKDB_INDEX_TARGET_REVISION
     url_template: str = DUCKDB_INDEX_URL_TEMPLATE
     max_split_size_bytes: int = DUCKDB_INDEX_MAX_SPLIT_SIZE_BYTES
@@ -316,7 +313,6 @@ class DuckDbIndexConfig:
             return cls(
                 cache_directory=env.str(name="CACHE_DIRECTORY", default=DUCKDB_INDEX_CACHE_DIRECTORY),
                 commit_message=env.str(name="COMMIT_MESSAGE", default=DUCKDB_INDEX_COMMIT_MESSAGE),
-                committer_hf_token=env.str(name="COMMITTER_HF_TOKEN", default=DUCKDB_INDEX_COMMITTER_HF_TOKEN),
                 target_revision=env.str(name="TARGET_REVISION", default=DUCKDB_INDEX_TARGET_REVISION),
                 url_template=env.str(name="URL_TEMPLATE", default=DUCKDB_INDEX_URL_TEMPLATE),
                 max_split_size_bytes=env.int(name="MAX_SPLIT_SIZE_BYTES", default=DUCKDB_INDEX_MAX_SPLIT_SIZE_BYTES),
@@ -347,6 +343,21 @@ class DescriptiveStatisticsConfig:
                 ),
             )
 
+COMMITTER_HF_TOKEN = None
+
+
+@dataclass(frozen=True)
+class CommitterConfig:
+    hf_token: Optional[str] = COMMITTER_HF_TOKEN
+
+    @classmethod
+    def from_env(cls) -> "CommitterConfig":
+        env = Env(expand_vars=True)
+        with env.prefixed("COMMITTER_"):
+            return cls(
+                hf_token=env.str(name="HF_TOKEN", default=COMMITTER_HF_TOKEN),
+            )
+
 
 @dataclass(frozen=True)
 class AppConfig:
@@ -369,6 +380,7 @@ class AppConfig:
     parquet_metadata: ParquetMetadataConfig = field(default_factory=ParquetMetadataConfig)
     duckdb_index: DuckDbIndexConfig = field(default_factory=DuckDbIndexConfig)
     descriptive_statistics: DescriptiveStatisticsConfig = field(default_factory=DescriptiveStatisticsConfig)
+    committer: CommitterConfig = field(default_factory=CommitterConfig)
 
     @classmethod
     def from_env(cls) -> "AppConfig":
@@ -383,6 +395,7 @@ class AppConfig:
             numba=NumbaConfig.from_env(),
             parquet_and_info=ParquetAndInfoConfig.from_env(),
             queue=QueueConfig.from_env(),
+            rows_index=RowsIndexConfig.from_env(),
             s3=S3Config.from_env(),
             split_names=SplitNamesConfig.from_env(),
             worker=WorkerConfig.from_env(),
@@ -391,5 +404,5 @@ class AppConfig:
             parquet_metadata=ParquetMetadataConfig.from_env(),
             duckdb_index=DuckDbIndexConfig.from_env(),
             descriptive_statistics=DescriptiveStatisticsConfig.from_env(),
-            rows_index=RowsIndexConfig.from_env(),
+            committer=CommitterConfig.from_env(),
         )

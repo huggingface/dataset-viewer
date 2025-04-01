@@ -46,8 +46,7 @@ jobs:
           COMMON_HF_TOKEN: "hf_app_datasets-server_token"
           # ^ hard coded, see e2e/tests/fixtures/hub.py
           LOG_LEVEL: "DEBUG"
-          PARQUET_AND_INFO_COMMITTER_HF_TOKEN: "hf_app_datasets-server-parquet-converter_token"
-          DUCKDB_INDEX_COMMITTER_HF_TOKEN: "hf_app_datasets-server-parquet-converter_token"
+          COMMITTER_HF_TOKEN: "hf_app_datasets-server-parquet-converter_token"
           PORT_REVERSE_PROXY: "8000"
           PROMETHEUS_MULTIPROC_DIR: "/tmp"
           WORKER_SLEEP_SECONDS: "1"
@@ -107,8 +106,7 @@ jobs:
           COMMON_HF_TOKEN: "hf_app_datasets-server_token"
           # ^ hard coded, see e2e/tests/fixtures/hub.py
           LOG_LEVEL: "DEBUG"
-          PARQUET_AND_INFO_COMMITTER_HF_TOKEN: "hf_app_datasets-server-parquet-converter_token"
-          DUCKDB_INDEX_COMMITTER_HF_TOKEN: "hf_app_datasets-server-parquet-converter_token"
+          COMMITTER_HF_TOKEN: "hf_app_datasets-server-parquet-converter_token"
           PORT_REVERSE_PROXY: "8000"
           PROMETHEUS_MULTIPROC_DIR: "/tmp"
           WORKER_SLEEP_SECONDS: "1"
