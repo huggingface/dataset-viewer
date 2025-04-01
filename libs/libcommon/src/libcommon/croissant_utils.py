@@ -57,10 +57,10 @@ HF_TO_CROISSANT_VALUE_TYPE = {
     "time32": "sc:Date",
     "time64": "sc:Date",
     "timestamp[ns]": "sc:Date",
-    "uint8": "sc:Integer",
-    "uint16": "sc:Integer",
-    "uint32": "sc:Integer",
-    "uint64": "sc:Integer",
+    "uint8": "cr:UInt8",
+    "uint16": "cr:UInt16",
+    "uint32": "cr:UInt32",
+    "uint64": "cr:UInt64",
 }
 
 
