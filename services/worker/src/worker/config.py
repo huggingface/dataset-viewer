@@ -8,6 +8,7 @@ from environs import Env
 from libcommon.config import (
     AssetsConfig,
     CacheConfig,
+    CommitterConfig,
     CommonConfig,
     LogConfig,
     ParquetMetadataConfig,
@@ -341,21 +342,6 @@ class DescriptiveStatisticsConfig:
                 max_split_size_bytes=env.int(
                     name="MAX_SPLIT_SIZE_BYTES", default=DESCRIPTIVE_STATISTICS_MAX_SPLIT_SIZE_BYTES
                 ),
-            )
-
-COMMITTER_HF_TOKEN = None
-
-
-@dataclass(frozen=True)
-class CommitterConfig:
-    hf_token: Optional[str] = COMMITTER_HF_TOKEN
-
-    @classmethod
-    def from_env(cls) -> "CommitterConfig":
-        env = Env(expand_vars=True)
-        with env.prefixed("COMMITTER_"):
-            return cls(
-                hf_token=env.str(name="HF_TOKEN", default=COMMITTER_HF_TOKEN),
             )
 
 

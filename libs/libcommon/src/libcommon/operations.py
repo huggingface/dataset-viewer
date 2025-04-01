@@ -257,6 +257,7 @@ def smart_update_dataset(
     hf_token: Optional[str] = None,
     hf_timeout_seconds: Optional[float] = None,
     storage_clients: Optional[list[StorageClient]] = None,
+    committer_hf_token: Optional[str] = None,
 ) -> None:
     """
       blocked_datasets (`list[str]`): The list of blocked datasets. Supports Unix shell-style wildcards in the dataset
@@ -278,7 +279,7 @@ def smart_update_dataset(
         )
     except NotSupportedError as e:
         logging.warning(f"Dataset {dataset} is not supported ({type(e)}). Let's delete the dataset.")
-        delete_dataset(dataset=dataset, storage_clients=storage_clients)
+        delete_dataset(dataset=dataset, storage_clients=storage_clients, committer_hf_token=committer_hf_token)
         raise
     smart_set_revision(
         dataset=dataset,

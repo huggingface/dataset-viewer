@@ -9,6 +9,7 @@ from libcommon.config import (
     CacheConfig,
     CachedAssetsConfig,
     CloudFrontConfig,
+    CommitterConfig,
     CommonConfig,
     LogConfig,
     QueueConfig,
@@ -27,6 +28,7 @@ class AppConfig:
     log: LogConfig = field(default_factory=LogConfig)
     queue: QueueConfig = field(default_factory=QueueConfig)
     s3: S3Config = field(default_factory=S3Config)
+    committer: CommitterConfig = field(default_factory=CommitterConfig)
 
     @classmethod
     def from_env(cls) -> "AppConfig":
@@ -41,4 +43,5 @@ class AppConfig:
             queue=QueueConfig.from_env(),
             api=ApiConfig.from_env(hf_endpoint=common_config.hf_endpoint),
             s3=S3Config.from_env(),
+            committer=CommitterConfig.from_env(),
         )

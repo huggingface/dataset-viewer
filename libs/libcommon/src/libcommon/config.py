@@ -218,3 +218,19 @@ class QueueConfig:
                 mongo_database=env.str(name="MONGO_DATABASE", default=QUEUE_MONGO_DATABASE),
                 mongo_url=env.str(name="MONGO_URL", default=QUEUE_MONGO_URL),
             )
+
+
+COMMITTER_HF_TOKEN = None
+
+
+@dataclass(frozen=True)
+class CommitterConfig:
+    hf_token: Optional[str] = COMMITTER_HF_TOKEN
+
+    @classmethod
+    def from_env(cls) -> "CommitterConfig":
+        env = Env(expand_vars=True)
+        with env.prefixed("COMMITTER_"):
+            return cls(
+                hf_token=env.str(name="HF_TOKEN", default=COMMITTER_HF_TOKEN),
+            )
