@@ -77,7 +77,7 @@ class TasksStatistics:
     num_updated_cache_entries: int = 0
     num_deleted_storage_directories: int = 0
     num_updated_storage_directories: int = 0
-    num_emptied_ref_branches: int = 0
+    num_deleted_ref_branches: int = 0
 
     def add(self, other: "TasksStatistics") -> None:
         self.num_created_jobs += other.num_created_jobs
@@ -86,7 +86,7 @@ class TasksStatistics:
         self.num_updated_cache_entries += other.num_updated_cache_entries
         self.num_deleted_storage_directories += other.num_deleted_storage_directories
         self.num_updated_storage_directories += other.num_updated_storage_directories
-        self.num_emptied_ref_branches += other.num_emptied_ref_branches
+        self.num_deleted_ref_branches += other.num_deleted_ref_branches
 
     def has_tasks(self) -> bool:
         return any(
@@ -97,7 +97,7 @@ class TasksStatistics:
                 self.num_updated_cache_entries > 0,
                 self.num_deleted_storage_directories > 0,
                 self.num_updated_storage_directories > 0,
-                self.num_emptied_ref_branches > 0,
+                self.num_deleted_ref_branches > 0,
             ]
         )
 
@@ -107,7 +107,7 @@ class TasksStatistics:
             f" {self.num_deleted_cache_entries} deleted cache entries, {self.num_updated_cache_entries} updated "
             f"cache entries, {self.num_deleted_storage_directories} deleted"
             f" storage directories, {self.num_updated_storage_directories} updated storage directories, "
-            f"{self.num_emptied_ref_branches} emptied ref branches"
+            f"{self.num_deleted_ref_branches} emptied ref branches"
         )
 
 
@@ -244,13 +244,10 @@ class DeleteDatasetFilesInParquetRefBranchTask(Task):
             method="DeleteDatasetFilesInParquetRefBranchJobsTask.run",
             step="all",
         ):
-            HfApi(token=self.committer_hf_token).delete_files(
-                repo_id=self.dataset, repo_type="dataset", revision="refs/convert/parquet", delete_patterns="**/*"
+            HfApi(token=self.committer_hf_token).delete_branch(
+                repo_id=self.dataset, branch="refs/convert/parquet", repo_type="dataset"
             )
-            HfApi(token=self.committer_hf_token).super_squash_history(
-                repo_id=self.dataset, repo_type="dataset", revision="refs/convert/parquet"
-            )
-            return TasksStatistics(num_emptied_ref_branches=1)
+            return TasksStatistics(num_deleted_ref_branches=1)
 
 
 @dataclass
@@ -274,13 +271,10 @@ class DeleteDatasetFilesInDuckdbRefBranchTask(Task):
             method="DeleteDatasetFilesInDuckdbRefBranchJobsTask.run",
             step="all",
         ):
-            HfApi(token=self.committer_hf_token).delete_files(
-                repo_id=self.dataset, repo_type="dataset", revision="refs/convert/duckdb", delete_patterns="**/*"
+            HfApi(token=self.committer_hf_token).delete_branch(
+                repo_id=self.dataset, branch="refs/convert/duckdb", repo_type="dataset"
             )
-            HfApi(token=self.committer_hf_token).super_squash_history(
-                repo_id=self.dataset, repo_type="dataset", revision="refs/convert/duckdb"
-            )
-            return TasksStatistics(num_emptied_ref_branches=1)
+            return TasksStatistics(num_deleted_ref_branches=1)
 
 
 @dataclass
