@@ -78,7 +78,7 @@ def process_payload(
     hf_token: Optional[str] = None,
     hf_timeout_seconds: Optional[float] = None,
     storage_clients: Optional[list[StorageClient]] = None,
-    committer_hf_token: Optional[str] = None
+    committer_hf_token: Optional[str] = None,
 ) -> None:
     if payload["repo"]["type"] != "dataset" or payload["scope"] not in ("repo", "repo.content", "repo.config"):
         # ^ it filters out the webhook calls for non-dataset repos and discussions in dataset repos
