@@ -279,7 +279,10 @@ def smart_update_dataset(
         )
     except NotSupportedError as e:
         logging.warning(f"Dataset {dataset} is not supported ({type(e)}). Let's delete the dataset.")
-        delete_dataset(dataset=dataset, storage_clients=storage_clients, committer_hf_token=committer_hf_token)
+        try:
+            delete_dataset(dataset=dataset, storage_clients=storage_clients, committer_hf_token=committer_hf_token)
+        except Exception as err:
+            logging.info(f"Couldn't delete dataset: {err}")
         raise
     smart_set_revision(
         dataset=dataset,
