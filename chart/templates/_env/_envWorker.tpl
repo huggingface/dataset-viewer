@@ -35,16 +35,6 @@
 # specific to 'config-parquet-and-info' job runner
 - name: PARQUET_AND_INFO_COMMIT_MESSAGE
   value: {{ .Values.parquetAndInfo.commitMessage | quote }}
-- name: PARQUET_AND_INFO_COMMITTER_HF_TOKEN
-  {{- if .Values.secrets.appParquetConverterHfToken.fromSecret }}
-  valueFrom:
-    secretKeyRef:
-      name: {{ .Values.secrets.appParquetConverterHfToken.secretName | default (include "datasetsServer.infisical.secretName" $) | quote }}
-      key: PARQUET_CONVERTER_HF_TOKEN
-      optional: false
-  {{- else }}
-  value: {{ .Values.secrets.appParquetConverterHfToken.value }}
-  {{- end }}
 - name: PARQUET_AND_INFO_MAX_DATASET_SIZE_BYTES
   value: {{ .Values.parquetAndInfo.maxDatasetSizeBytes | quote }}
 - name: PARQUET_AND_INFO_MAX_ROW_GROUP_BYTE_SIZE_FOR_COPY
@@ -83,16 +73,6 @@
 # specific to 'split-duckdb-index' job runner
 - name: DUCKDB_INDEX_COMMIT_MESSAGE
   value: {{ .Values.duckDBIndex.commitMessage | quote }}
-- name: DUCKDB_INDEX_COMMITTER_HF_TOKEN
-  {{- if .Values.secrets.appParquetConverterHfToken.fromSecret }}
-  valueFrom:
-    secretKeyRef:
-      name: {{ .Values.secrets.appParquetConverterHfToken.secretName | default (include "datasetsServer.infisical.secretName" $) | quote }}
-      key: PARQUET_CONVERTER_HF_TOKEN
-      optional: false
-  {{- else }}
-  value: {{ .Values.secrets.appParquetConverterHfToken.value }}
-  {{- end }}
 - name: DUCKDB_INDEX_TARGET_REVISION
   value: {{ .Values.duckDBIndex.targetRevision | quote }}
 - name: DUCKDB_INDEX_URL_TEMPLATE

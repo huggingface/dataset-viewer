@@ -17,6 +17,7 @@
   # storage
   {{ include "envAssets" . | nindent 2 }}
   {{ include "envCachedAssets" . | nindent 2 }}
+  {{ include "envCommitter" . | nindent 2 }}
   # service
   - name: API_MAX_AGE_LONG
     value: {{ .Values.webhook.maxAgeLong | quote }}

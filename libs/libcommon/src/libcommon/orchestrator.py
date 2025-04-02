@@ -10,7 +10,7 @@ from http import HTTPStatus
 from typing import Optional, Union
 
 import pandas as pd
-from huggingface_hub import DatasetCard, HfFileSystem, get_session
+from huggingface_hub import DatasetCard, HfApi, HfFileSystem, get_session
 from huggingface_hub.utils._headers import build_hf_headers
 
 from libcommon.constants import (
@@ -77,6 +77,7 @@ class TasksStatistics:
     num_updated_cache_entries: int = 0
     num_deleted_storage_directories: int = 0
     num_updated_storage_directories: int = 0
+    num_deleted_ref_branches: int = 0
 
     def add(self, other: "TasksStatistics") -> None:
         self.num_created_jobs += other.num_created_jobs
@@ -85,6 +86,7 @@ class TasksStatistics:
         self.num_updated_cache_entries += other.num_updated_cache_entries
         self.num_deleted_storage_directories += other.num_deleted_storage_directories
         self.num_updated_storage_directories += other.num_updated_storage_directories
+        self.num_deleted_ref_branches += other.num_deleted_ref_branches
 
     def has_tasks(self) -> bool:
         return any(
@@ -95,6 +97,7 @@ class TasksStatistics:
                 self.num_updated_cache_entries > 0,
                 self.num_deleted_storage_directories > 0,
                 self.num_updated_storage_directories > 0,
+                self.num_deleted_ref_branches > 0,
             ]
         )
 
@@ -103,7 +106,8 @@ class TasksStatistics:
             f"{self.num_created_jobs} created jobs, {self.num_deleted_waiting_jobs} deleted waiting jobs,"
             f" {self.num_deleted_cache_entries} deleted cache entries, {self.num_updated_cache_entries} updated "
             f"cache entries, {self.num_deleted_storage_directories} deleted"
-            f" storage directories, {self.num_updated_storage_directories} updated storage directories"
+            f" storage directories, {self.num_updated_storage_directories} updated storage directories, "
+            f"{self.num_deleted_ref_branches} emptied ref branches"
         )
 
 
@@ -220,6 +224,60 @@ class DeleteDatasetCacheEntriesTask(Task):
 
 
 @dataclass
+class DeleteDatasetFilesInParquetRefBranchTask(Task):
+    dataset: str
+    committer_hf_token: str
+
+    def __post_init__(self) -> None:
+        # for debug and testing
+        self.id = f"DeleteDatasetFilesInParquetRefBranchJobsTask,{self.dataset}"
+        self.long_id = self.id
+
+    def run(self) -> TasksStatistics:
+        """
+        Delete the dataset waiting jobs.
+
+        Returns:
+            `TasksStatistics`: The statistics of the parquet ref branch files deletion.
+        """
+        with StepProfiler(
+            method="DeleteDatasetFilesInParquetRefBranchJobsTask.run",
+            step="all",
+        ):
+            HfApi(token=self.committer_hf_token).delete_branch(
+                repo_id=self.dataset, branch="refs/convert/parquet", repo_type="dataset"
+            )
+            return TasksStatistics(num_deleted_ref_branches=1)
+
+
+@dataclass
+class DeleteDatasetFilesInDuckdbRefBranchTask(Task):
+    dataset: str
+    committer_hf_token: str
+
+    def __post_init__(self) -> None:
+        # for debug and testing
+        self.id = f"DeleteDatasetFilesInDuckdbRefBranchJobsTask,{self.dataset}"
+        self.long_id = self.id
+
+    def run(self) -> TasksStatistics:
+        """
+        Delete the dataset waiting jobs.
+
+        Returns:
+            `TasksStatistics`: The statistics of the duckdb ref branch files deletion.
+        """
+        with StepProfiler(
+            method="DeleteDatasetFilesInDuckdbRefBranchJobsTask.run",
+            step="all",
+        ):
+            HfApi(token=self.committer_hf_token).delete_branch(
+                repo_id=self.dataset, branch="refs/convert/duckdb", repo_type="dataset"
+            )
+            return TasksStatistics(num_deleted_ref_branches=1)
+
+
+@dataclass
 class UpdateRevisionOfDatasetCacheEntriesTask(Task):
     dataset: str
     old_revision: str
@@ -310,6 +368,8 @@ SupportedTask = Union[
     DeleteDatasetWaitingJobsTask,
     DeleteDatasetCacheEntriesTask,
     DeleteDatasetStorageTask,
+    DeleteDatasetFilesInDuckdbRefBranchTask,
+    DeleteDatasetFilesInParquetRefBranchTask,
     UpdateRevisionOfDatasetCacheEntriesTask,
     UpdateRevisionOfDatasetStorageTask,
 ]
@@ -970,6 +1030,7 @@ class DatasetRemovalPlan(Plan):
 
     dataset: str
     storage_clients: Optional[list[StorageClient]]
+    committer_hf_token: Optional[str]
 
     def __post_init__(self) -> None:
         super().__post_init__()
@@ -978,26 +1039,41 @@ class DatasetRemovalPlan(Plan):
         if self.storage_clients:
             for storage_client in self.storage_clients:
                 self.add_task(DeleteDatasetStorageTask(dataset=self.dataset, storage_client=storage_client))
+        if self.committer_hf_token:
+            self.add_task(
+                DeleteDatasetFilesInParquetRefBranchTask(
+                    dataset=self.dataset, committer_hf_token=self.committer_hf_token
+                )
+            )
+            self.add_task(
+                DeleteDatasetFilesInDuckdbRefBranchTask(
+                    dataset=self.dataset, committer_hf_token=self.committer_hf_token
+                )
+            )
 
 
-def remove_dataset(dataset: str, storage_clients: Optional[list[StorageClient]] = None) -> TasksStatistics:
+def remove_dataset(
+    dataset: str, storage_clients: Optional[list[StorageClient]] = None, committer_hf_token: Optional[str] = None
+) -> TasksStatistics:
     """
     Remove the dataset from the dataset viewer
 
     Args:
         dataset (`str`): The name of the dataset.
         storage_clients (`list[StorageClient]`, *optional*): The storage clients.
+        committer_hf_token (`str`, *optional*): HF token to empty the ref branches (parquet/duckdb)
 
     Returns:
         `TasksStatistics`: The statistics of the deletion.
     """
-    plan = DatasetRemovalPlan(dataset=dataset, storage_clients=storage_clients)
+    plan = DatasetRemovalPlan(dataset=dataset, storage_clients=storage_clients, committer_hf_token=committer_hf_token)
     return plan.run()
     # assets and cached_assets are deleted by the storage clients
-    # TODO: delete the other files: metadata parquet, parquet, duckdb index, etc
+    # parquet and duckdb indexes are deleted using committer_hf_token if present
+    # TODO: delete the other files: metadata parquet
     # note that it's not as important as the assets, because generally, we want to delete a dataset
     # form the dataset viewer because the repository does not exist anymore on the Hub, so: the other files
-    # don't exist anymore either (they were in refs/convert/parquet or refs/convert/duckdb).
+    # don't exist anymore either (they were in refs/convert/parquet or refs/convert/duckdb or in metadata dir).
     # Only exception I see is when we stop supporting a dataset (blocked, disabled viewer, private dataset
     # and the user is not pro anymore, etc.)
 

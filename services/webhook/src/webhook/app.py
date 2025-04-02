@@ -86,6 +86,7 @@ def create_app_with_config(app_config: AppConfig) -> Starlette:
                 hf_token=app_config.common.hf_token,
                 hf_timeout_seconds=app_config.api.hf_timeout_seconds,
                 storage_clients=storage_clients,
+                committer_hf_token=app_config.committer.hf_token,
             ),
             methods=["POST"],
         ),

@@ -78,6 +78,7 @@ def process_payload(
     hf_token: Optional[str] = None,
     hf_timeout_seconds: Optional[float] = None,
     storage_clients: Optional[list[StorageClient]] = None,
+    committer_hf_token: Optional[str] = None,
 ) -> None:
     if payload["repo"]["type"] != "dataset" or payload["scope"] not in ("repo", "repo.content", "repo.config"):
         # ^ it filters out the webhook calls for non-dataset repos and discussions in dataset repos
@@ -126,11 +127,12 @@ def process_payload(
                     hf_token=hf_token,
                     hf_timeout_seconds=hf_timeout_seconds,
                     storage_clients=storage_clients,
+                    committer_hf_token=committer_hf_token,
                 )
                 return None
             except Exception as err:
                 logging.error(f"smart_update_dataset failed with {type(err).__name__}: {err}")
-        delete_dataset(dataset=dataset, storage_clients=storage_clients)
+        delete_dataset(dataset=dataset, storage_clients=storage_clients, committer_hf_token=committer_hf_token)
         # ^ delete the old contents (cache + jobs + assets) to avoid mixed content
         update_dataset(
             dataset=new_dataset,
@@ -140,6 +142,7 @@ def process_payload(
             hf_token=hf_token,
             hf_timeout_seconds=hf_timeout_seconds,
             storage_clients=storage_clients,
+            committer_hf_token=committer_hf_token,
         )
     return None
 
@@ -151,6 +154,7 @@ def create_webhook_endpoint(
     hf_timeout_seconds: Optional[float] = None,
     hf_webhook_secret: Optional[str] = None,
     storage_clients: Optional[list[StorageClient]] = None,
+    committer_hf_token: Optional[str] = None,
 ) -> Endpoint:
     async def webhook_endpoint(request: Request) -> Response:
         with StepProfiler(method="webhook_endpoint", step="all"):
@@ -196,6 +200,7 @@ def create_webhook_endpoint(
                         hf_token=hf_token,
                         hf_timeout_seconds=hf_timeout_seconds,
                         storage_clients=storage_clients,
+                        committer_hf_token=committer_hf_token,
                     )
                 except CustomError as e:
                     content = {"status": "error", "error": "the dataset is not supported"}

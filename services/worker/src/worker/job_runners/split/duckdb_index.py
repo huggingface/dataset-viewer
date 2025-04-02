@@ -512,6 +512,7 @@ class SplitDuckDbIndexJobRunner(SplitJobRunnerWithCache):
             cache_directory=Path(duckdb_index_cache_directory) / DUCKDB_INDEX_JOB_RUNNER_SUBDIRECTORY,
         )
         self.duckdb_index_config = app_config.duckdb_index
+        self.committer_config = app_config.committer
         self.parquet_metadata_directory = parquet_metadata_directory
 
     @staticmethod
@@ -532,7 +533,7 @@ class SplitDuckDbIndexJobRunner(SplitJobRunnerWithCache):
                 url_template=self.duckdb_index_config.url_template,
                 commit_message=self.duckdb_index_config.commit_message,
                 extensions_directory=self.duckdb_index_config.extensions_directory,
-                committer_hf_token=self.duckdb_index_config.committer_hf_token,
+                committer_hf_token=self.committer_config.hf_token,
                 hf_endpoint=self.app_config.common.hf_endpoint,
                 target_revision=self.duckdb_index_config.target_revision,
                 source_revision=self.app_config.parquet_and_info.target_revision,

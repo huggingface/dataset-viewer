@@ -15,6 +15,7 @@
   {{ include "envNumba" . | nindent 2 }}
   {{ include "envParquetMetadata" . | nindent 2 }}
   {{ include "envQueue" . | nindent 2 }}
+  {{ include "envCommitter" . | nindent 2 }}
   {{ include "envWorker" . | nindent 2 }}
   - name: DATASETS_BASED_HF_DATASETS_CACHE
     value: {{ printf "%s/%s/datasets" .Values.hfDatasetsCache.cacheDirectory .workerValues.deployName | quote }}

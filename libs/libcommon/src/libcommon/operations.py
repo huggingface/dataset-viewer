@@ -192,20 +192,24 @@ class OperationsStatistics:
         self.tasks.add(other.tasks)
 
 
-def delete_dataset(dataset: str, storage_clients: Optional[list[StorageClient]] = None) -> OperationsStatistics:
+def delete_dataset(
+    dataset: str, storage_clients: Optional[list[StorageClient]] = None, committer_hf_token: Optional[str] = None
+) -> OperationsStatistics:
     """
     Delete a dataset
 
     Args:
         dataset (`str`): the dataset
         storage_clients (`list[StorageClient]`, *optional*): the storage clients to use to delete the dataset
+        committer_hf_token (`str`, *optional*): HF token to empty the ref branches (parquet/duckdb)
 
     Returns:
         `OperationsStatistics`: the statistics of the deletion
     """
     logging.debug(f"delete cache for dataset='{dataset}'")
     return OperationsStatistics(
-        num_deleted_datasets=1, tasks=remove_dataset(dataset=dataset, storage_clients=storage_clients)
+        num_deleted_datasets=1,
+        tasks=remove_dataset(dataset=dataset, storage_clients=storage_clients, committer_hf_token=committer_hf_token),
     )
 
 
@@ -217,6 +221,7 @@ def update_dataset(
     hf_timeout_seconds: Optional[float] = None,
     priority: Priority = Priority.LOW,
     storage_clients: Optional[list[StorageClient]] = None,
+    committer_hf_token: Optional[str] = None,
 ) -> None:
     """
       blocked_datasets (`list[str]`): The list of blocked datasets. Supports Unix shell-style wildcards in the dataset
@@ -234,7 +239,7 @@ def update_dataset(
         )
     except NotSupportedError as e:
         logging.warning(f"Dataset {dataset} is not supported ({type(e)}). Let's delete the dataset.")
-        delete_dataset(dataset=dataset, storage_clients=storage_clients)
+        delete_dataset(dataset=dataset, storage_clients=storage_clients, committer_hf_token=committer_hf_token)
         raise
     set_revision(
         dataset=dataset,
@@ -252,6 +257,7 @@ def smart_update_dataset(
     hf_token: Optional[str] = None,
     hf_timeout_seconds: Optional[float] = None,
     storage_clients: Optional[list[StorageClient]] = None,
+    committer_hf_token: Optional[str] = None,
 ) -> None:
     """
       blocked_datasets (`list[str]`): The list of blocked datasets. Supports Unix shell-style wildcards in the dataset
@@ -273,7 +279,7 @@ def smart_update_dataset(
         )
     except NotSupportedError as e:
         logging.warning(f"Dataset {dataset} is not supported ({type(e)}). Let's delete the dataset.")
-        delete_dataset(dataset=dataset, storage_clients=storage_clients)
+        delete_dataset(dataset=dataset, storage_clients=storage_clients, committer_hf_token=committer_hf_token)
         raise
     smart_set_revision(
         dataset=dataset,
