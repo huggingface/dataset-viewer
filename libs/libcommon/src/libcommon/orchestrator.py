@@ -11,6 +11,7 @@ from typing import Optional, Union
 
 import pandas as pd
 from huggingface_hub import DatasetCard, HfApi, HfFileSystem, get_session
+from huggingface_hub.errors import RepositoryNotFoundError, RevisionNotFoundError
 from huggingface_hub.utils._headers import build_hf_headers
 
 from libcommon.constants import (
@@ -224,56 +225,62 @@ class DeleteDatasetCacheEntriesTask(Task):
 
 
 @dataclass
-class DeleteDatasetFilesInParquetRefBranchTask(Task):
+class DeleteDatasetParquetRefBranchTask(Task):
     dataset: str
     committer_hf_token: str
 
     def __post_init__(self) -> None:
         # for debug and testing
-        self.id = f"DeleteDatasetFilesInParquetRefBranchJobsTask,{self.dataset}"
+        self.id = f"DeleteDatasetParquetRefBranchTask,{self.dataset}"
         self.long_id = self.id
 
     def run(self) -> TasksStatistics:
         """
-        Delete the dataset waiting jobs.
+        Delete the dataset refs/convert/parquet branch.
 
         Returns:
-            `TasksStatistics`: The statistics of the parquet ref branch files deletion.
+            `TasksStatistics`: The statistics of the parquet ref branch deletion.
         """
         with StepProfiler(
-            method="DeleteDatasetFilesInParquetRefBranchJobsTask.run",
+            method="DeleteDatasetParquetRefBranchTask.run",
             step="all",
         ):
-            HfApi(token=self.committer_hf_token).delete_branch(
-                repo_id=self.dataset, branch="refs/convert/parquet", repo_type="dataset"
-            )
+            try:
+                HfApi(token=self.committer_hf_token).delete_branch(
+                    repo_id=self.dataset, branch="refs/convert/parquet", repo_type="dataset"
+                )
+            except (RevisionNotFoundError, RepositoryNotFoundError):
+                return TasksStatistics(num_deleted_ref_branches=0)
             return TasksStatistics(num_deleted_ref_branches=1)
 
 
 @dataclass
-class DeleteDatasetFilesInDuckdbRefBranchTask(Task):
+class DeleteDatasetDuckdbRefBranchTask(Task):
     dataset: str
     committer_hf_token: str
 
     def __post_init__(self) -> None:
         # for debug and testing
-        self.id = f"DeleteDatasetFilesInDuckdbRefBranchJobsTask,{self.dataset}"
+        self.id = f"DeleteDatasetDuckdbRefBranchTask,{self.dataset}"
         self.long_id = self.id
 
     def run(self) -> TasksStatistics:
         """
-        Delete the dataset waiting jobs.
+        Delete the dataset refs/convert/duckdb branch.
 
         Returns:
-            `TasksStatistics`: The statistics of the duckdb ref branch files deletion.
+            `TasksStatistics`: The statistics of the duckdb ref branch deletion.
         """
         with StepProfiler(
-            method="DeleteDatasetFilesInDuckdbRefBranchJobsTask.run",
+            method="DeleteDatasetDuckdbRefBranchTask.run",
             step="all",
         ):
-            HfApi(token=self.committer_hf_token).delete_branch(
-                repo_id=self.dataset, branch="refs/convert/duckdb", repo_type="dataset"
-            )
+            try:
+                HfApi(token=self.committer_hf_token).delete_branch(
+                    repo_id=self.dataset, branch="refs/convert/duckdb", repo_type="dataset"
+                )
+            except (RevisionNotFoundError, RepositoryNotFoundError):
+                return TasksStatistics(num_deleted_ref_branches=0)
             return TasksStatistics(num_deleted_ref_branches=1)
 
 
@@ -368,8 +375,8 @@ SupportedTask = Union[
     DeleteDatasetWaitingJobsTask,
     DeleteDatasetCacheEntriesTask,
     DeleteDatasetStorageTask,
-    DeleteDatasetFilesInDuckdbRefBranchTask,
-    DeleteDatasetFilesInParquetRefBranchTask,
+    DeleteDatasetDuckdbRefBranchTask,
+    DeleteDatasetParquetRefBranchTask,
     UpdateRevisionOfDatasetCacheEntriesTask,
     UpdateRevisionOfDatasetStorageTask,
 ]
@@ -1041,14 +1048,10 @@ class DatasetRemovalPlan(Plan):
                 self.add_task(DeleteDatasetStorageTask(dataset=self.dataset, storage_client=storage_client))
         if self.committer_hf_token:
             self.add_task(
-                DeleteDatasetFilesInParquetRefBranchTask(
-                    dataset=self.dataset, committer_hf_token=self.committer_hf_token
-                )
+                DeleteDatasetParquetRefBranchTask(dataset=self.dataset, committer_hf_token=self.committer_hf_token)
             )
             self.add_task(
-                DeleteDatasetFilesInDuckdbRefBranchTask(
-                    dataset=self.dataset, committer_hf_token=self.committer_hf_token
-                )
+                DeleteDatasetDuckdbRefBranchTask(dataset=self.dataset, committer_hf_token=self.committer_hf_token)
             )
 
 
