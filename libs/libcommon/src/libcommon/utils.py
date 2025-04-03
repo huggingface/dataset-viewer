@@ -286,16 +286,16 @@ def download_file_from_hub(
     revision: str,
     repo_id: str,
     filename: str,
-    local_dir: Union[str, Path],
-    hf_token: Optional[str],
+    local_dir: Optional[Union[str, Path]] = None,
+    hf_token: Optional[str] = None,
     cache_dir: Union[str, Path, None] = None,
     force_download: bool = False,
     resume_download: bool = False,
-) -> None:
+) -> str:
     logging.debug(f"Using {constants.HF_HUB_ENABLE_HF_TRANSFER} for hf_transfer")
     retry_on = [RuntimeError] if constants.HF_HUB_ENABLE_HF_TRANSFER else [ReadTimeout]
     retry_download_hub_file = retry(on=retry_on, sleeps=HF_HUB_HTTP_ERROR_RETRY_SLEEPS)(hf_hub_download)
-    retry_download_hub_file(
+    return retry_download_hub_file(
         repo_type=repo_type,
         revision=revision,
         repo_id=repo_id,

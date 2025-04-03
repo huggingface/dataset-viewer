@@ -13,6 +13,7 @@ from libcommon.config import (
     CloudFrontConfig,
     CommonConfig,
     LogConfig,
+    ParquetMetadataConfig,
     QueueConfig,
     S3Config,
 )
@@ -63,6 +64,7 @@ class AppConfig:
     queue: QueueConfig = field(default_factory=QueueConfig)
     duckdb_index: DuckDbIndexConfig = field(default_factory=DuckDbIndexConfig)
     s3: S3Config = field(default_factory=S3Config)
+    parquet_metadata: ParquetMetadataConfig = field(default_factory=ParquetMetadataConfig)
 
     @classmethod
     def from_env(cls) -> "AppConfig":
@@ -78,4 +80,5 @@ class AppConfig:
             api=ApiConfig.from_env(hf_endpoint=common_config.hf_endpoint),
             duckdb_index=DuckDbIndexConfig.from_env(),
             s3=S3Config.from_env(),
+            parquet_metadata=ParquetMetadataConfig.from_env()
         )
