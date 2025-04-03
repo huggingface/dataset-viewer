@@ -975,7 +975,11 @@ class SmartDatasetUpdatePlan(Plan):
                 )
 
     def get_diff(self) -> str:
-        headers = build_hf_headers(token=self.hf_token, library_name="dataset-viewer")
+        # Temporary fix for https://github.com/huggingface-internal/moon-landing/pull/13232
+        # Don't use thee app token until it's allowed on this endpoint
+        # This way, it can still work for public repos
+        # headers = build_hf_headers(token=self.hf_token, library_name="dataset-viewer")
+        headers = build_hf_headers(library_name="dataset-viewer")
         resp = get_session().get(
             self.hf_endpoint + f"/datasets/{self.dataset}/commit/{self.revision}.diff", timeout=10, headers=headers
         )
