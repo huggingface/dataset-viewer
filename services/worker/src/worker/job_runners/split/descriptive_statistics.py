@@ -31,7 +31,7 @@ from libcommon.utils import download_file_from_hub
 from worker.config import AppConfig, DescriptiveStatisticsConfig
 from worker.dtos import CompleteJobResult
 from worker.job_runners.split.split_job_runner import SplitJobRunnerWithCache
-from worker.statistics_utils import (
+from libcommon.statistics_utils import (
     FLOAT_DTYPES,
     INTEGER_DTYPES,
     NUMERICAL_DTYPES,
