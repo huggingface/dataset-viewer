@@ -63,6 +63,7 @@ class MoonWebhookV2Payload(TypedDict):
     repo: MoonWebhookV2PayloadRepo
     scope: str
     updatedRefs: Optional[list[UpdatedRefDict]]
+    updatedConfig: Optional[dict[str, str]]
 
 
 def parse_payload(json: Any) -> MoonWebhookV2Payload:
@@ -90,11 +91,11 @@ def process_payload(
     if event == "remove":
         delete_dataset(dataset=dataset, storage_clients=storage_clients)
     elif event in ["add", "update", "move"]:
-        revision = payload["repo"]["headSha"]
+        revision = payload["repo"].get("headSha")
         if (
             event == "update"
             and get_current_revision(dataset) == revision
-            and not payload.get("updatedConfig", {}).get("private", False)
+            and not (payload.get("updatedConfig") or {}).get("private", False)
         ):
             # ^ it filters out the webhook calls when the refs/convert/parquet branch is updated
             # ^ it also filters switching from private to public if the headSha is in the cache (i.e. if the user is PRO/Enterprise)
