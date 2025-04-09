@@ -155,7 +155,7 @@ def generate_bins(
             )
     else:
         raise ValueError(f"Incorrect column type of {column_name=}: {column_type}. ")
-    return bin_edges + [max_value]
+    return bin_edges + [max_value + 1]
 
 
 def compute_histogram(
@@ -194,7 +194,7 @@ def compute_histogram(
         )
         hist_reverted = hist_df_reverted["count"].cast(int).to_list()
         hist = hist_reverted[::-1]
-        hist = [hist[0] + hist[1]] + hist[2:-2] + [hist[-2] + hist[-1]]
+        hist = [hist[0], hist[1]] + hist[2:-2] + [hist[-2], hist[-1]]
     else:
         raise StatisticsComputationError(
             f"Got unexpected result during histogram computation for {column_name=}, {column_type=}: "
