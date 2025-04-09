@@ -12,8 +12,7 @@ import pyarrow.parquet as pq
 import pytest
 from datasets import ClassLabel, Dataset
 from datasets.table import embed_table_storage
-
-from worker.statistics_utils import (
+from libcommon.statistics_utils import (
     DECIMALS,
     MAX_NUM_STRING_LABELS,
     MAX_PROPORTION_STRING_LABELS,

@@ -18,6 +18,19 @@ from huggingface_hub.errors import HfHubHTTPError, RepositoryNotFoundError
 from huggingface_hub.hf_api import HfApi
 from libcommon.constants import DUCKDB_INDEX_JOB_RUNNER_SUBDIRECTORY, ROW_IDX_COLUMN
 from libcommon.dtos import JobInfo
+from libcommon.duckdb_utils import (
+    CREATE_INDEX_COMMAND,
+    CREATE_INDEX_ID_COLUMN_COMMANDS,
+    CREATE_TABLE_COMMAND_FROM_LIST_OF_PARQUET_FILES,
+    CREATE_TABLE_JOIN_WITH_TRANSFORMED_DATA_COMMAND_FROM_LIST_OF_PARQUET_FILES,
+    DUCKDB_DEFAULT_INDEX_FILENAME,
+    DUCKDB_DEFAULT_PARTIAL_INDEX_FILENAME,
+    INSTALL_AND_LOAD_EXTENSION_COMMAND,
+    SET_EXTENSIONS_DIRECTORY_COMMAND,
+    compute_transformed_data,
+    get_indexable_columns,
+    get_monolingual_stemmer,
+)
 from libcommon.exceptions import (
     CacheDirectoryNotInitializedError,
     CreateCommitError,
@@ -30,7 +43,6 @@ from libcommon.exceptions import (
 from libcommon.parquet_utils import (
     extract_split_directory_from_parquet_url,
     get_num_parquet_files_to_process,
-    is_list_pa_type,
     parquet_export_is_partial,
 )
 from libcommon.queue.lock import lock
@@ -41,19 +53,6 @@ from libcommon.utils import HF_HUB_HTTP_ERROR_RETRY_SLEEPS, download_file_from_h
 from worker.config import AppConfig, DuckDbIndexConfig
 from worker.dtos import CompleteJobResult, SplitDuckdbIndex
 from worker.job_runners.split.split_job_runner import SplitJobRunnerWithCache
-from libcommon.duckdb_utils import (
-    DUCKDB_DEFAULT_PARTIAL_INDEX_FILENAME,
-    DUCKDB_DEFAULT_INDEX_FILENAME,
-    get_indexable_columns,
-    compute_transformed_data,
-    CREATE_TABLE_JOIN_WITH_TRANSFORMED_DATA_COMMAND,
-    CREATE_TABLE_COMMAND,
-    CREATE_INDEX_ID_COLUMN_COMMANDS,
-    SET_EXTENSIONS_DIRECTORY_COMMAND,
-    INSTALL_AND_LOAD_EXTENSION_COMMAND,
-    get_monolingual_stemmer,
-    CREATE_INDEX_COMMAND
-)
 from worker.utils import (
     LOCK_GIT_BRANCH_RETRY_SLEEPS,
     create_branch,
@@ -156,24 +155,27 @@ def compute_split_duckdb_index_response(
             f"Previous step '{config_parquet_metadata_step}' did not return the expected content.", e
         ) from e
 
+    all_split_parquets: list[Path] = []
     for parquet_file in parquet_file_names:
-        download_file_from_hub(
-            repo_type="dataset",
-            revision=source_revision,
-            repo_id=dataset,
-            filename=f"{config}/{split_directory}/{parquet_file}",
-            local_dir=duckdb_index_file_directory,
-            hf_token=hf_token,
-            cache_dir=duckdb_index_file_directory,
-            force_download=True,
-            resume_download=False,
+        all_split_parquets.append(
+            Path(
+                download_file_from_hub(
+                    repo_type="dataset",
+                    revision=source_revision,
+                    repo_id=dataset,
+                    filename=f"{config}/{split_directory}/{parquet_file}",
+                    local_dir=duckdb_index_file_directory,
+                    hf_token=hf_token,
+                    cache_dir=duckdb_index_file_directory,
+                    force_download=True,
+                    resume_download=False,
+                )
+            )
         )
-    split_parquet_directory = duckdb_index_file_directory / config / split_directory
-    all_split_parquets = str(split_parquet_directory / "*.parquet")
 
     transformed_df = None
     try:
-        transformed_df = compute_transformed_data(split_parquet_directory, features)
+        transformed_df = compute_transformed_data(all_split_parquets, features)
     except Exception as err:
         logging.info(f"Unable to compute transformed data {err}, skipping statistics.")
 
@@ -189,12 +191,14 @@ def compute_split_duckdb_index_response(
             logging.debug(transformed_df.head())
             # update original data with results of transformations (string lengths, audio durations, etc.):
             logging.info(f"Updating data with {transformed_df.columns}")
-            create_command_sql = CREATE_TABLE_JOIN_WITH_TRANSFORMED_DATA_COMMAND.format(
-                columns=column_names, source=all_split_parquets
+            create_command_sql = CREATE_TABLE_JOIN_WITH_TRANSFORMED_DATA_COMMAND_FROM_LIST_OF_PARQUET_FILES.format(
+                columns=column_names, source=[str(p) for p in all_split_parquets]
             )
 
         else:
-            create_command_sql = CREATE_TABLE_COMMAND.format(columns=column_names, source=all_split_parquets)
+            create_command_sql = CREATE_TABLE_COMMAND_FROM_LIST_OF_PARQUET_FILES.format(
+                columns=column_names, source=[str(p) for p in all_split_parquets]
+            )
 
         logging.info(create_command_sql)
         con.sql(create_command_sql)

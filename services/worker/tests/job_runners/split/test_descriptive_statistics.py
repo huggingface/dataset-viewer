@@ -11,6 +11,9 @@ from datasets import Dataset
 from libcommon.dtos import Priority
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import upsert_response
+from libcommon.statistics_utils import (
+    ColumnType,
+)
 from libcommon.storage import StrPath
 
 from worker.config import AppConfig
@@ -19,9 +22,6 @@ from worker.job_runners.config.parquet_and_info import ConfigParquetAndInfoJobRu
 from worker.job_runners.config.parquet_metadata import ConfigParquetMetadataJobRunner
 from worker.job_runners.split.descriptive_statistics import SplitDescriptiveStatisticsJobRunner
 from worker.resources import LibrariesResource
-from worker.statistics_utils import (
-    ColumnType,
-)
 
 from ...fixtures.hub import HubDatasetTest
 from ...test_statistics_utils import (

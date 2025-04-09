@@ -183,12 +183,12 @@ def build_index_file(
             # update original data with results of transformations (string lengths, audio durations, etc.):
             logging.info(f"Updating data with {transformed_df.columns}")
             create_command_sql = CREATE_TABLE_JOIN_WITH_TRANSFORMED_DATA_COMMAND_FROM_LIST_OF_PARQUET_FILES.format(
-                columns=column_names, source=all_split_parquets
+                columns=column_names, source=[str(p) for p in all_split_parquets]
             )
 
         else:
             create_command_sql = CREATE_TABLE_COMMAND_FROM_LIST_OF_PARQUET_FILES.format(
-                columns=column_names, source=all_split_parquets
+                columns=column_names, source=[str(p) for p in all_split_parquets]
             )
 
         logging.info(create_command_sql)

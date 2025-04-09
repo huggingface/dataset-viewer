@@ -288,7 +288,7 @@ def download_file_from_hub(
     filename: str,
     local_dir: Optional[Union[str, Path]] = None,
     hf_token: Optional[str] = None,
-    cache_dir: Union[str, Path, None] = None,
+    cache_dir: Optional[Union[str, Path]] = None,
     force_download: bool = False,
     resume_download: bool = False,
 ) -> str:

@@ -663,11 +663,11 @@ class MediaColumn(Column):
     @classmethod
     def _compute_statistics(
         cls,
-        parquet_directory: Path,
+        parquet_paths: list[Path],
         column_name: str,
         n_samples: int,
     ) -> SupportedStatistics:
-        transformed_values = cls.compute_transformed_data(parquet_directory, column_name, cls.transform)
+        transformed_values = cls.compute_transformed_data(parquet_paths, column_name, cls.transform)
         nan_count = sum(value is None for value in transformed_values)
         if nan_count == n_samples:
             return all_nan_statistics_item(n_samples)
