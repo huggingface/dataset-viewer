@@ -28,7 +28,9 @@ DUCKDB_DEFAULT_PARTIAL_INDEX_FILENAME = "partial-index.duckdb"
 CREATE_INDEX_COMMAND = (
     f"PRAGMA create_fts_index('data', '{ROW_IDX_COLUMN}', {{columns}}, stemmer='{{stemmer}}', overwrite=1);"
 )
-CREATE_TABLE_COMMAND_FROM_LIST_OF_PARQUET_FILES = "CREATE OR REPLACE TABLE data AS SELECT {columns} FROM read_parquet({source});"
+CREATE_TABLE_COMMAND_FROM_LIST_OF_PARQUET_FILES = (
+    "CREATE OR REPLACE TABLE data AS SELECT {columns} FROM read_parquet({source});"
+)
 CREATE_TABLE_JOIN_WITH_TRANSFORMED_DATA_COMMAND_FROM_LIST_OF_PARQUET_FILES = """
     CREATE OR REPLACE TABLE data AS 
     SELECT {columns}, transformed_df.* FROM read_parquet({source}) 
