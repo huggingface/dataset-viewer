@@ -80,5 +80,5 @@ class AppConfig:
             api=ApiConfig.from_env(hf_endpoint=common_config.hf_endpoint),
             duckdb_index=DuckDbIndexConfig.from_env(),
             s3=S3Config.from_env(),
-            parquet_metadata=ParquetMetadataConfig.from_env()
+            parquet_metadata=ParquetMetadataConfig.from_env(),
         )

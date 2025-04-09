@@ -10,7 +10,7 @@ from collections.abc import Callable, Sequence
 from datetime import datetime, timedelta, timezone
 from fnmatch import fnmatch
 from pathlib import Path
-from typing import Any, Optional, TypeVar, Union, cast
+from typing import Any, Optional, TypeVar, cast
 
 import orjson
 import pandas as pd
@@ -20,6 +20,7 @@ from huggingface_hub import constants, hf_hub_download
 from requests.exceptions import ReadTimeout
 
 from libcommon.exceptions import DatasetInBlockListError
+from libcommon.storage import StrPath
 
 
 # orjson is used to get rid of errors with datetime (see allenai/c4)
@@ -286,9 +287,9 @@ def download_file_from_hub(
     revision: str,
     repo_id: str,
     filename: str,
-    local_dir: Optional[Union[str, Path]] = None,
+    local_dir: Optional[StrPath] = None,
     hf_token: Optional[str] = None,
-    cache_dir: Optional[Union[str, Path]] = None,
+    cache_dir: Optional[StrPath] = None,
     force_download: bool = False,
     resume_download: bool = False,
 ) -> str:
@@ -300,10 +301,10 @@ def download_file_from_hub(
         revision=revision,
         repo_id=repo_id,
         filename=filename,
-        local_dir=local_dir,
+        local_dir=Path(local_dir) if local_dir is not None else None,
         local_dir_use_symlinks=False,
         token=hf_token,
         force_download=force_download,
-        cache_dir=cache_dir,
+        cache_dir=Path(cache_dir) if cache_dir is not None else None,
         resume_download=resume_download,
     )

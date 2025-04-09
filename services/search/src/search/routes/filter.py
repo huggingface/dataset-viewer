@@ -15,6 +15,7 @@ from datasets import Features
 from libapi.authentication import auth_check
 from libapi.duckdb import (
     get_cache_entry_from_duckdb_index_job,
+    get_cache_entry_from_parquet_metadata_job,
     get_index_file_location_and_build_if_missing,
     get_index_file_location_and_download_if_missing,
 )
@@ -109,19 +110,45 @@ def create_filter_endpoint(
                     )
                 if fnmatch(dataset, DISABLED_DUCKDB_REF_BRANCH_DATASET_NAME_PATTERN):
                     with StepProfiler(method="filter_endpoint", step="build index if missing"):
+                        # get parquet urls and dataset_info
+                        parquet_metadata_response = get_cache_entry_from_parquet_metadata_job(
+                            dataset=dataset,
+                            config=config,
+                            split=split,
+                            hf_endpoint=hf_endpoint,
+                            hf_token=hf_token,
+                            hf_timeout_seconds=hf_timeout_seconds,
+                            blocked_datasets=blocked_datasets,
+                            storage_clients=storage_clients,
+                        )
+                        revision = parquet_metadata_response["dataset_git_revision"]
+                        if parquet_metadata_response["http_status"] != HTTPStatus.OK:
+                            return get_json_error_response(
+                                content=parquet_metadata_response["content"],
+                                status_code=parquet_metadata_response["http_status"],
+                                max_age=max_age_short,
+                                error_code=parquet_metadata_response["error_code"],
+                                revision=revision,
+                            )
+                        content_parquet_metadata = parquet_metadata_response["content"]
+                        split_parquet_files = [
+                            parquet_file
+                            for parquet_file in content_parquet_metadata["parquet_files_metadata"]
+                            if parquet_file["config"] == config and parquet_file["split"] == split
+                        ]
+                        features = Features.from_dict(content_parquet_metadata["features"])
                         index_file_location, partial = await get_index_file_location_and_build_if_missing(
                             duckdb_index_file_directory=duckdb_index_file_directory,
                             dataset=dataset,
                             config=config,
                             split=split,
                             revision=revision,
-                            filename=filename,  # TODO
-                            size_bytes=index_size,  # TODO
-                            url=url,  # TODO
                             hf_token=hf_token,
                             max_split_size_bytes=max_split_size_bytes,
                             extensions_directory=extensions_directory,
-                            parquet_metadata_directory=parquet_metadata_directory
+                            parquet_metadata_directory=parquet_metadata_directory,
+                            split_parquet_files=split_parquet_files,
+                            features=features,
                         )
                 else:
                     with StepProfiler(method="filter_endpoint", step="validate indexing was done"):
@@ -166,10 +193,10 @@ def create_filter_endpoint(
                             target_revision=target_revision,
                             hf_token=hf_token,
                         )
-                with StepProfiler(method="filter_endpoint", step="get features"):
-                    # in split-duckdb-index we always add the ROW_IDX_COLUMN column
-                    # see https://github.com/huggingface/dataset-viewer/blob/main/services/worker/src/worker/job_runners/split/duckdb_index.py#L305
-                    features = Features.from_dict(duckdb_index_cache_entry["content"]["features"])
+                    with StepProfiler(method="filter_endpoint", step="get features"):
+                        # in split-duckdb-index we always add the ROW_IDX_COLUMN column
+                        # see https://github.com/huggingface/dataset-viewer/blob/main/services/worker/src/worker/job_runners/split/duckdb_index.py#L305
+                        features = Features.from_dict(duckdb_index_cache_entry["content"]["features"])
                 with StepProfiler(method="filter_endpoint", step="get supported and unsupported columns"):
                     supported_columns, unsupported_columns = get_supported_unsupported_columns(
                         features,
