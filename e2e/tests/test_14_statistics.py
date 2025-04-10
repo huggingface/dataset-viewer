@@ -136,7 +136,7 @@ def test_statistics_endpoint(normal_user_public_jsonl_dataset: str) -> None:
         "median": 4,
         "std": 1.0,
         "histogram": {
-            "hist": [1, 1, 1],
-            "bin_edges": [3, 4, 5, 5],
+            "hist": [1, 2],
+            "bin_edges": [3, 4, 5],
         },
     }
