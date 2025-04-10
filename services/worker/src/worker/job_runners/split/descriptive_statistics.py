@@ -273,14 +273,15 @@ def compute_descriptive_statistics_response(
         f"\nColumn types counts: {column_counts}. "
     )
 
+    local_parquet_paths = list(local_parquet_split_directory.glob("*.parquet"))
     for column in columns:
         if isinstance(column, AudioColumn) or isinstance(column, ImageColumn):
-            column_stats = column.compute_and_prepare_response(local_parquet_split_directory)
+            column_stats = column.compute_and_prepare_response(local_parquet_paths)
         else:
             try:
                 data = pl.DataFrame._from_arrow(
                     pq.read_table(
-                        local_parquet_split_directory,
+                        local_parquet_paths,
                         columns=[column.name],
                         schema=Features.from_dict({column.name: features[column.name]}).arrow_schema,
                     )

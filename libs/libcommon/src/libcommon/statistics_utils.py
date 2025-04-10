@@ -138,24 +138,18 @@ def generate_bins(
     """
     if column_type is ColumnType.FLOAT:
         if min_value == max_value:
-            bin_edges = [min_value]
+            bin_edges = [min_value, max_value]
         else:
             bin_size = (max_value - min_value) / n_bins
             bin_edges = np.arange(min_value, max_value, bin_size).astype(float).tolist()
-            if len(bin_edges) != n_bins:
-                raise StatisticsComputationError(
-                    f"Incorrect number of bins generated for {column_name=}, expected {n_bins}, got {len(bin_edges)}."
-                )
     elif column_type is ColumnType.INT:
         bin_size = np.ceil((max_value - min_value + 1) / n_bins)
-        bin_edges = np.arange(min_value, max_value + 1, bin_size).astype(int).tolist()
-        if len(bin_edges) > n_bins:
-            raise StatisticsComputationError(
-                f"Incorrect number of bins generated for {column_name=}, expected {n_bins}, got {len(bin_edges)}."
-            )
+        bin_edges = np.arange(min_value, max_value, bin_size).astype(int).tolist()
     else:
         raise ValueError(f"Incorrect column type of {column_name=}: {column_type}. ")
-    return bin_edges + [max_value + 1]
+    if bin_edges[-1] != max_value:
+        bin_edges.append(max_value)
+    return bin_edges
 
 
 def compute_histogram(
@@ -188,13 +182,13 @@ def compute_histogram(
             )
         hist = [int(df[column_name].is_not_null().sum())]
     elif len(bin_edges) > 2:
-        bins_edges_reverted = [-1 * b for b in bin_edges[::-1]]
-        hist_df_reverted = df.with_columns(pl.col(column_name).mul(-1).alias("reverse"))["reverse"].hist(
-            bins=bins_edges_reverted
+        hist_df = (
+            df.with_columns(pl.col(column_name).mul(-1).alias("reverse"))["reverse"]
+            .hist(bins=-np.array(bin_edges)[::-1])
+            .with_columns(pl.col("breakpoint").mul(-1), pl.col("count"))
+            .reverse()
         )
-        hist_reverted = hist_df_reverted["count"].cast(int).to_list()
-        hist = hist_reverted[::-1]
-        hist = [hist[0], hist[1]] + hist[2:-2] + [hist[-2], hist[-1]]
+        hist = hist_df["count"].to_list()
     else:
         raise StatisticsComputationError(
             f"Got unexpected result during histogram computation for {column_name=}, {column_type=}: "
@@ -694,9 +688,9 @@ class MediaColumn(Column):
     def get_column_type(cls) -> ColumnType:
         return ColumnType(cls.__name__.split("Column")[0].lower())
 
-    def compute_and_prepare_response(self, parquet_directory: Path) -> StatisticsPerColumnItem:
+    def compute_and_prepare_response(self, parquet_paths: list[Path]) -> StatisticsPerColumnItem:
         stats = self.compute_statistics(
-            parquet_directory=parquet_directory,
+            parquet_paths=parquet_paths,
             column_name=self.name,
             n_samples=self.n_samples,
         )

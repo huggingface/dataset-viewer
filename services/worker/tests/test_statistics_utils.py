@@ -412,7 +412,7 @@ def test_audio_statistics(
     dataset_table_embedded = embed_table_storage(dataset_table)  # store audio as bytes instead of paths to files
     pq.write_table(dataset_table_embedded, parquet_filename)
     computed = AudioColumn.compute_statistics(
-        parquet_directory=parquet_directory,
+        parquet_paths=[parquet_filename],
         column_name=column_name,
         n_samples=4,
     )
@@ -425,7 +425,7 @@ def test_audio_statistics(
     )
     pq.write_table(pa_table_bytes, parquet_filename)
     computed = AudioColumn.compute_statistics(
-        parquet_directory=parquet_directory,
+        parquet_paths=[parquet_filename],
         column_name=column_name,
         n_samples=4,
     )
@@ -453,7 +453,7 @@ def test_image_statistics(
     dataset_table_embedded = embed_table_storage(dataset_table)  # store image as bytes instead of paths to files
     pq.write_table(dataset_table_embedded, parquet_filename)
     computed = ImageColumn.compute_statistics(
-        parquet_directory=parquet_directory,
+        parquet_paths=[parquet_filename],
         column_name=column_name,
         n_samples=4,
     )
@@ -466,7 +466,7 @@ def test_image_statistics(
     )
     pq.write_table(pa_table_bytes, parquet_filename)
     computed = ImageColumn.compute_statistics(
-        parquet_directory=parquet_directory,
+        parquet_paths=[parquet_filename],
         column_name=column_name,
         n_samples=4,
     )
