@@ -136,12 +136,11 @@ def generate_bins(
     Returns:
         `list[Union[int, float]]`: List of bin edges of lengths <= n_bins + 1 and >= 2.
     """
-    if column_type is ColumnType.FLOAT:
-        if min_value == max_value:
-            bin_edges = [min_value, max_value]
-        else:
-            bin_size = (max_value - min_value) / n_bins
-            bin_edges = np.arange(min_value, max_value, bin_size).astype(float).tolist()
+    if min_value == max_value:
+        bin_edges = [min_value, max_value]
+    elif column_type is ColumnType.FLOAT:
+        bin_size = (max_value - min_value) / n_bins
+        bin_edges = np.arange(min_value, max_value, bin_size).astype(float).tolist()
     elif column_type is ColumnType.INT:
         bin_size = np.ceil((max_value - min_value + 1) / n_bins)
         bin_edges = np.arange(min_value, max_value, bin_size).astype(int).tolist()
