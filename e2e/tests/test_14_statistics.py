@@ -54,7 +54,7 @@ def test_statistics_endpoint(normal_user_public_jsonl_dataset: str) -> None:
     assert int_column["column_type"] == "int"
     assert isinstance(int_column["column_statistics"], dict)
     assert int_column["column_statistics"] == {
-        "histogram": {"bin_edges": [0, 1, 2, 3, 3], "hist": [1, 1, 1, 1]},
+        "histogram": {"bin_edges": [0, 1, 2, 3], "hist": [1, 1, 2]},
         "max": 3,
         "mean": 1.5,
         "median": 1.5,
