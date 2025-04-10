@@ -184,7 +184,7 @@ def compute_histogram(
     elif len(bin_edges) > 2:
         hist_df = (
             df.with_columns(pl.col(column_name).mul(-1).alias("reverse"))["reverse"]
-            .hist(bins=-np.array(bin_edges)[::-1])
+            .hist(bins=[-1 * edge for edge in bin_edges[::-1]])
             .with_columns(pl.col("breakpoint").mul(-1), pl.col("count"))
             .reverse()
         )
