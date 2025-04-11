@@ -4,6 +4,7 @@
 import logging
 import random
 import re
+from fnmatch import fnmatch
 from http import HTTPStatus
 from typing import Optional
 
@@ -14,6 +15,8 @@ from datasets import Features
 from libapi.authentication import auth_check
 from libapi.duckdb import (
     get_cache_entry_from_duckdb_index_job,
+    get_cache_entry_from_parquet_metadata_job,
+    get_index_file_location_and_build_if_missing,
     get_index_file_location_and_download_if_missing,
 )
 from libapi.exceptions import ApiError, InvalidParameterError, UnexpectedApiError
@@ -29,7 +32,7 @@ from libapi.utils import (
     get_json_error_response,
     get_json_ok_response,
 )
-from libcommon.duckdb_utils import duckdb_index_is_partial
+from libcommon.duckdb_utils import DISABLED_DUCKDB_REF_BRANCH_DATASET_NAME_PATTERN, duckdb_index_is_partial
 from libcommon.prometheus import StepProfiler
 from libcommon.storage import StrPath, clean_dir
 from libcommon.storage_client import StorageClient
@@ -62,6 +65,7 @@ def create_filter_endpoint(
     duckdb_index_file_directory: StrPath,
     target_revision: str,
     cached_assets_storage_client: StorageClient,
+    parquet_metadata_directory: StrPath,
     blocked_datasets: list[str],
     hf_endpoint: str,
     hf_token: Optional[str] = None,
@@ -75,6 +79,7 @@ def create_filter_endpoint(
     extensions_directory: Optional[str] = None,
     clean_cache_proba: float = 0.0,
     expiredTimeIntervalSeconds: int = 60,
+    max_split_size_bytes: int = 5_000_000_000,
 ) -> Endpoint:
     async def filter_endpoint(request: Request) -> Response:
         revision: Optional[str] = None
@@ -103,52 +108,95 @@ def create_filter_endpoint(
                         hf_jwt_algorithm=hf_jwt_algorithm,
                         hf_timeout_seconds=hf_timeout_seconds,
                     )
-                with StepProfiler(method="filter_endpoint", step="validate indexing was done"):
-                    # no cache data is needed to download the index file
-                    # but will help to validate if indexing was done
-                    duckdb_index_cache_entry = get_cache_entry_from_duckdb_index_job(
-                        dataset=dataset,
-                        config=config,
-                        split=split,
-                        hf_endpoint=hf_endpoint,
-                        hf_token=hf_token,
-                        hf_timeout_seconds=hf_timeout_seconds,
-                        blocked_datasets=blocked_datasets,
-                        storage_clients=storage_clients,
-                    )
-                    revision = duckdb_index_cache_entry["dataset_git_revision"]
-                    if duckdb_index_cache_entry["http_status"] != HTTPStatus.OK:
-                        return get_json_error_response(
-                            content=duckdb_index_cache_entry["content"],
-                            status_code=duckdb_index_cache_entry["http_status"],
-                            max_age=max_age_short,
-                            error_code=duckdb_index_cache_entry["error_code"],
-                            revision=revision,
+                if fnmatch(dataset, DISABLED_DUCKDB_REF_BRANCH_DATASET_NAME_PATTERN):
+                    with StepProfiler(method="filter_endpoint", step="build index if missing"):
+                        # get parquet urls and dataset_info
+                        parquet_metadata_response = get_cache_entry_from_parquet_metadata_job(
+                            dataset=dataset,
+                            config=config,
+                            split=split,
+                            hf_endpoint=hf_endpoint,
+                            hf_token=hf_token,
+                            hf_timeout_seconds=hf_timeout_seconds,
+                            blocked_datasets=blocked_datasets,
+                            storage_clients=storage_clients,
                         )
+                        revision = parquet_metadata_response["dataset_git_revision"]
+                        if parquet_metadata_response["http_status"] != HTTPStatus.OK:
+                            return get_json_error_response(
+                                content=parquet_metadata_response["content"],
+                                status_code=parquet_metadata_response["http_status"],
+                                max_age=max_age_short,
+                                error_code=parquet_metadata_response["error_code"],
+                                revision=revision,
+                            )
+                        content_parquet_metadata = parquet_metadata_response["content"]
+                        split_parquet_files = [
+                            parquet_file
+                            for parquet_file in content_parquet_metadata["parquet_files_metadata"]
+                            if parquet_file["config"] == config and parquet_file["split"] == split
+                        ]
+                        features = Features.from_dict(content_parquet_metadata["features"])
+                        index_file_location, partial = await get_index_file_location_and_build_if_missing(
+                            duckdb_index_file_directory=duckdb_index_file_directory,
+                            dataset=dataset,
+                            config=config,
+                            split=split,
+                            revision=revision,
+                            hf_token=hf_token,
+                            max_split_size_bytes=max_split_size_bytes,
+                            extensions_directory=extensions_directory,
+                            parquet_metadata_directory=parquet_metadata_directory,
+                            split_parquet_files=split_parquet_files,
+                            features=features,
+                        )
+                else:
+                    with StepProfiler(method="filter_endpoint", step="validate indexing was done"):
+                        # no cache data is needed to download the index file
+                        # but will help to validate if indexing was done
+                        duckdb_index_cache_entry = get_cache_entry_from_duckdb_index_job(
+                            dataset=dataset,
+                            config=config,
+                            split=split,
+                            hf_endpoint=hf_endpoint,
+                            hf_token=hf_token,
+                            hf_timeout_seconds=hf_timeout_seconds,
+                            blocked_datasets=blocked_datasets,
+                            storage_clients=storage_clients,
+                        )
+                        revision = duckdb_index_cache_entry["dataset_git_revision"]
+                        if duckdb_index_cache_entry["http_status"] != HTTPStatus.OK:
+                            return get_json_error_response(
+                                content=duckdb_index_cache_entry["content"],
+                                status_code=duckdb_index_cache_entry["http_status"],
+                                max_age=max_age_short,
+                                error_code=duckdb_index_cache_entry["error_code"],
+                                revision=revision,
+                            )
 
-                    # check if the index is on the full dataset or if it's partial
-                    url = duckdb_index_cache_entry["content"]["url"]
-                    filename = duckdb_index_cache_entry["content"]["filename"]
-                    index_size = duckdb_index_cache_entry["content"]["size"]
-                    partial = duckdb_index_is_partial(url)
+                        # check if the index is on the full dataset or if it's partial
+                        url = duckdb_index_cache_entry["content"]["url"]
+                        filename = duckdb_index_cache_entry["content"]["filename"]
+                        index_size = duckdb_index_cache_entry["content"]["size"]
+                        partial = duckdb_index_is_partial(url)
 
-                with StepProfiler(method="filter_endpoint", step="download index file if missing"):
-                    index_file_location = await get_index_file_location_and_download_if_missing(
-                        duckdb_index_file_directory=duckdb_index_file_directory,
-                        dataset=dataset,
-                        config=config,
-                        split=split,
-                        revision=revision,
-                        filename=filename,
-                        size_bytes=index_size,
-                        url=url,
-                        target_revision=target_revision,
-                        hf_token=hf_token,
-                    )
-                with StepProfiler(method="filter_endpoint", step="get features"):
-                    # in split-duckdb-index we always add the ROW_IDX_COLUMN column
-                    # see https://github.com/huggingface/dataset-viewer/blob/main/services/worker/src/worker/job_runners/split/duckdb_index.py#L305
-                    features = Features.from_dict(duckdb_index_cache_entry["content"]["features"])
+                    with StepProfiler(method="filter_endpoint", step="download index file if missing"):
+                        index_file_location = await get_index_file_location_and_download_if_missing(
+                            duckdb_index_file_directory=duckdb_index_file_directory,
+                            dataset=dataset,
+                            config=config,
+                            split=split,
+                            revision=revision,
+                            filename=filename,
+                            size_bytes=index_size,
+                            url=url,
+                            target_revision=target_revision,
+                            hf_token=hf_token,
+                        )
+                    with StepProfiler(method="filter_endpoint", step="get features"):
+                        # in split-duckdb-index we always add the ROW_IDX_COLUMN column
+                        # see https://github.com/huggingface/dataset-viewer/blob/main/services/worker/src/worker/job_runners/split/duckdb_index.py#L305
+                        features = Features.from_dict(duckdb_index_cache_entry["content"]["features"])
                 with StepProfiler(method="filter_endpoint", step="get supported and unsupported columns"):
                     supported_columns, unsupported_columns = get_supported_unsupported_columns(
                         features,

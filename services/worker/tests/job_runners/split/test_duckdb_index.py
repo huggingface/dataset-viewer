@@ -23,6 +23,14 @@ from datasets.table import embed_table_storage
 from huggingface_hub.repocard_data import DatasetCardData
 from libcommon.constants import HF_FTS_SCORE, ROW_IDX_COLUMN
 from libcommon.dtos import Priority
+from libcommon.duckdb_utils import (
+    CREATE_INDEX_COMMAND,
+    CREATE_INDEX_ID_COLUMN_COMMANDS,
+    CREATE_TABLE_COMMAND_FROM_LIST_OF_PARQUET_FILES,
+    DEFAULT_STEMMER,
+    get_indexable_columns,
+    get_monolingual_stemmer,
+)
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import upsert_response
 from libcommon.storage import StrPath
@@ -32,14 +40,8 @@ from worker.job_runners.config.parquet import ConfigParquetJobRunner
 from worker.job_runners.config.parquet_and_info import ConfigParquetAndInfoJobRunner
 from worker.job_runners.config.parquet_metadata import ConfigParquetMetadataJobRunner
 from worker.job_runners.split.duckdb_index import (
-    CREATE_INDEX_COMMAND,
-    CREATE_INDEX_ID_COLUMN_COMMANDS,
-    CREATE_TABLE_COMMAND,
-    DEFAULT_STEMMER,
     SplitDuckDbIndexJobRunner,
     get_delete_operations,
-    get_indexable_columns,
-    get_monolingual_stemmer,
 )
 from worker.resources import LibrariesResource
 
@@ -579,10 +581,12 @@ FTS_COMMAND = (
         ),
     ],
 )
-def test_index_command(df: pd.DataFrame, query: str, expected_ids: list[int]) -> None:
+def test_index_command(df: pd.DataFrame, query: str, expected_ids: list[int], tmp_path: Path) -> None:
+    parquet_path = str(tmp_path / "0000.parquet")
+    df.to_parquet(parquet_path, index=False)
     columns = ",".join('"' + str(column) + '"' for column in df.columns)
     con = duckdb.connect()
-    con.sql(CREATE_TABLE_COMMAND.format(columns=columns, source="df"))
+    con.sql(CREATE_TABLE_COMMAND_FROM_LIST_OF_PARQUET_FILES.format(columns=columns, source=[parquet_path]))
     con.sql(CREATE_INDEX_ID_COLUMN_COMMANDS)
     con.sql(CREATE_INDEX_COMMAND.format(columns=columns, stemmer=DEFAULT_STEMMER))
     result = con.execute(FTS_COMMAND, parameters=[query]).df()
@@ -596,7 +600,7 @@ def test_table_column_hf_index_id_is_monotonic_increasing(tmp_path: Path) -> Non
     db_path = str(tmp_path / "index.duckdb")
     column_names = ",".join(f'"{column}"' for column in pa_table.column_names)
     with duckdb.connect(db_path) as con:
-        con.sql(CREATE_TABLE_COMMAND.format(columns=column_names, source=parquet_path))
+        con.sql(CREATE_TABLE_COMMAND_FROM_LIST_OF_PARQUET_FILES.format(columns=column_names, source=[parquet_path]))
         con.sql(CREATE_INDEX_ID_COLUMN_COMMANDS)
     with duckdb.connect(db_path) as con:
         df = con.sql("SELECT * FROM data").to_df()

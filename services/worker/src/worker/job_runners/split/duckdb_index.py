@@ -5,11 +5,10 @@ import copy
 import logging
 import re
 from pathlib import Path
-from typing import Any, Literal, Optional
+from typing import Optional
 
 import duckdb
-import polars as pl
-from datasets.features.features import Features, FeatureType, Translation, TranslationVariableLanguages, Value, _visit
+from datasets.features.features import Features
 from huggingface_hub._commit_api import (
     CommitOperation,
     CommitOperationAdd,
@@ -17,9 +16,21 @@ from huggingface_hub._commit_api import (
 )
 from huggingface_hub.errors import HfHubHTTPError, RepositoryNotFoundError
 from huggingface_hub.hf_api import HfApi
-from huggingface_hub.repocard_data import DatasetCardData
 from libcommon.constants import DUCKDB_INDEX_JOB_RUNNER_SUBDIRECTORY, ROW_IDX_COLUMN
 from libcommon.dtos import JobInfo
+from libcommon.duckdb_utils import (
+    CREATE_INDEX_COMMAND,
+    CREATE_INDEX_ID_COLUMN_COMMANDS,
+    CREATE_TABLE_COMMAND_FROM_LIST_OF_PARQUET_FILES,
+    CREATE_TABLE_JOIN_WITH_TRANSFORMED_DATA_COMMAND_FROM_LIST_OF_PARQUET_FILES,
+    DUCKDB_DEFAULT_INDEX_FILENAME,
+    DUCKDB_DEFAULT_PARTIAL_INDEX_FILENAME,
+    INSTALL_AND_LOAD_EXTENSION_COMMAND,
+    SET_EXTENSIONS_DIRECTORY_COMMAND,
+    compute_transformed_data,
+    get_indexable_columns,
+    get_monolingual_stemmer,
+)
 from libcommon.exceptions import (
     CacheDirectoryNotInitializedError,
     CreateCommitError,
@@ -32,7 +43,6 @@ from libcommon.exceptions import (
 from libcommon.parquet_utils import (
     extract_split_directory_from_parquet_url,
     get_num_parquet_files_to_process,
-    is_list_pa_type,
     parquet_export_is_partial,
 )
 from libcommon.queue.lock import lock
@@ -43,177 +53,12 @@ from libcommon.utils import HF_HUB_HTTP_ERROR_RETRY_SLEEPS, download_file_from_h
 from worker.config import AppConfig, DuckDbIndexConfig
 from worker.dtos import CompleteJobResult, SplitDuckdbIndex
 from worker.job_runners.split.split_job_runner import SplitJobRunnerWithCache
-from worker.statistics_utils import (
-    STRING_DTYPES,
-    AudioColumn,
-    ImageColumn,
-    ListColumn,
-    StringColumn,
-)
 from worker.utils import (
     LOCK_GIT_BRANCH_RETRY_SLEEPS,
     create_branch,
     get_split_names,
     hf_hub_url,
 )
-
-DATASET_TYPE = "dataset"
-DEFAULT_STEMMER = "none"  # Exact word matches
-DUCKDB_DEFAULT_INDEX_FILENAME = "index.duckdb"
-DUCKDB_DEFAULT_PARTIAL_INDEX_FILENAME = "partial-index.duckdb"
-CREATE_INDEX_COMMAND = (
-    f"PRAGMA create_fts_index('data', '{ROW_IDX_COLUMN}', {{columns}}, stemmer='{{stemmer}}', overwrite=1);"
-)
-CREATE_TABLE_COMMAND = "CREATE OR REPLACE TABLE data AS SELECT {columns} FROM '{source}';"
-CREATE_TABLE_JOIN_WITH_TRANSFORMED_DATA_COMMAND = """
-    CREATE OR REPLACE TABLE data AS 
-    SELECT {columns}, transformed_df.* FROM '{source}' 
-    POSITIONAL JOIN transformed_df;
-"""
-CREATE_SEQUENCE_COMMAND = "CREATE OR REPLACE SEQUENCE serial START 0 MINVALUE 0;"
-ALTER_TABLE_BY_ADDING_SEQUENCE_COLUMN = (
-    f"ALTER TABLE data ADD COLUMN {ROW_IDX_COLUMN} BIGINT DEFAULT nextval('serial');"
-)
-CREATE_INDEX_ID_COLUMN_COMMANDS = CREATE_SEQUENCE_COMMAND + ALTER_TABLE_BY_ADDING_SEQUENCE_COLUMN
-INSTALL_AND_LOAD_EXTENSION_COMMAND = "INSTALL 'fts'; LOAD 'fts';"
-SET_EXTENSIONS_DIRECTORY_COMMAND = "SET extension_directory='{directory}';"
-REPO_TYPE = "dataset"
-# Only some languages are supported, see: https://duckdb.org/docs/extensions/full_text_search.html#pragma-create_fts_index
-STEMMER_MAPPING = {
-    # Stemmer : ["value ISO 639-1", "value ISO 639-2/3"]
-    "arabic": ["ar", "ara"],
-    "basque": ["eu", "eus"],
-    "catalan": ["ca", "cat"],
-    "danish": ["da", "dan"],
-    "dutch": ["nl", "nld"],
-    "english": ["en", "eng"],
-    "finnish": ["fi", "fin"],
-    "french": ["fr", "fra"],
-    "german": ["de", "deu"],
-    "greek": ["el", "ell"],
-    "hindi": ["hi", "hin"],
-    "hungarian": ["hu", "hun"],
-    "indonesian": ["id", "ind"],
-    "irish": ["ga", "gle"],
-    "italian": ["it", "ita"],
-    "lithuanian": ["lt", "lit"],
-    "nepali": ["ne", "nep"],
-    "norwegian": ["no", "nor"],
-    "portuguese": ["pt", "por"],
-    "romanian": ["ro", "ron"],
-    "russian": ["ru", "rus"],
-    "serbian": ["sr", "srp"],
-    "spanish": ["es", "spa"],
-    "swedish": ["sv", "swe"],
-    "tamil": ["ta", "tam"],
-    "turkish": ["tr", "tur"],
-}
-
-LengthDtype = Literal["string", "list"]
-
-
-def get_indexable_columns(features: Features) -> list[str]:
-    indexable_columns: list[str] = []
-    for column, feature in features.items():
-        indexable = False
-
-        def check_indexable(feature: FeatureType) -> None:
-            nonlocal indexable
-            if isinstance(feature, Value) and feature.dtype in STRING_DTYPES:
-                indexable = True
-            elif isinstance(feature, (Translation, TranslationVariableLanguages)):
-                indexable = True
-
-        _visit(feature, check_indexable)
-        if indexable:
-            indexable_columns.append(column)
-    return indexable_columns
-
-
-def get_monolingual_stemmer(card_data: Optional[DatasetCardData]) -> str:
-    if card_data is None:
-        return DEFAULT_STEMMER
-    all_languages = card_data["language"]
-    if isinstance(all_languages, list) and len(all_languages) == 1:
-        first_language = all_languages[0]
-    elif isinstance(all_languages, str):
-        first_language = all_languages
-    else:
-        return DEFAULT_STEMMER
-
-    return next((language for language, codes in STEMMER_MAPPING.items() if first_language in codes), DEFAULT_STEMMER)
-
-
-def compute_length_column(
-    parquet_directory: Path,
-    column_name: str,
-    target_df: Optional[pl.DataFrame],
-    dtype: LengthDtype,
-) -> pl.DataFrame:
-    column_class = ListColumn if dtype == "list" else StringColumn
-    df = pl.read_parquet(str(parquet_directory / "*.parquet"), columns=[column_name])
-    lengths_column_name = f"{column_name}.length"
-    lengths_df: pl.DataFrame = column_class.compute_transformed_data(
-        df, column_name, transformed_column_name=lengths_column_name
-    )
-    if target_df is None:
-        return lengths_df.select(pl.col(lengths_column_name))
-
-    target_df.insert_column(target_df.shape[1], lengths_df[lengths_column_name])
-    return target_df
-
-
-def compute_audio_duration_column(
-    parquet_directory: Path,
-    column_name: str,
-    target_df: Optional[pl.DataFrame],
-) -> pl.DataFrame:
-    duration_column_name = f"{column_name}.duration"
-    durations = AudioColumn.compute_transformed_data(parquet_directory, column_name, AudioColumn.get_duration)
-    duration_df = pl.from_dict({duration_column_name: durations})
-    if target_df is None:
-        return duration_df
-    target_df.insert_column(target_df.shape[1], duration_df[duration_column_name])
-    return target_df
-
-
-def compute_image_width_height_column(
-    parquet_directory: Path,
-    column_name: str,
-    target_df: Optional[pl.DataFrame],
-) -> pl.DataFrame:
-    shapes = ImageColumn.compute_transformed_data(parquet_directory, column_name, ImageColumn.get_shape)
-    widths, heights = list(zip(*shapes))
-    width_column_name, height_column_name = f"{column_name}.width", f"{column_name}.height"
-    shapes_df = pl.from_dict({width_column_name: widths, height_column_name: heights})
-    if target_df is None:
-        return shapes_df
-    target_df.insert_column(target_df.shape[1], shapes_df[width_column_name])
-    target_df.insert_column(target_df.shape[1], shapes_df[height_column_name])
-    return target_df
-
-
-def compute_transformed_data(parquet_directory: Path, features: dict[str, Any]) -> Optional[pl.DataFrame]:
-    transformed_df = None
-    for feature_name, feature in features.items():
-        if isinstance(feature, list) or (
-            isinstance(feature, dict) and feature.get("_type") in ("LargeList", "Sequence")
-        ):
-            first_parquet_file = list(parquet_directory.glob("*.parquet"))[0]
-            if is_list_pa_type(first_parquet_file, feature_name):
-                transformed_df = compute_length_column(parquet_directory, feature_name, transformed_df, dtype="list")
-
-        elif isinstance(feature, dict):
-            if feature.get("_type") == "Value" and feature.get("dtype") in STRING_DTYPES:
-                transformed_df = compute_length_column(parquet_directory, feature_name, transformed_df, dtype="string")
-
-            elif feature.get("_type") == "Audio":
-                transformed_df = compute_audio_duration_column(parquet_directory, feature_name, transformed_df)
-
-            elif feature.get("_type") == "Image":
-                transformed_df = compute_image_width_height_column(parquet_directory, feature_name, transformed_df)
-
-    return transformed_df
 
 
 def get_delete_operations(all_repo_files: set[str], split_names: set[str], config: str) -> list[CommitOperationDelete]:
@@ -310,24 +155,27 @@ def compute_split_duckdb_index_response(
             f"Previous step '{config_parquet_metadata_step}' did not return the expected content.", e
         ) from e
 
+    all_split_parquets: list[Path] = []
     for parquet_file in parquet_file_names:
-        download_file_from_hub(
-            repo_type=REPO_TYPE,
-            revision=source_revision,
-            repo_id=dataset,
-            filename=f"{config}/{split_directory}/{parquet_file}",
-            local_dir=duckdb_index_file_directory,
-            hf_token=hf_token,
-            cache_dir=duckdb_index_file_directory,
-            force_download=True,
-            resume_download=False,
+        all_split_parquets.append(
+            Path(
+                download_file_from_hub(
+                    repo_type="dataset",
+                    revision=source_revision,
+                    repo_id=dataset,
+                    filename=f"{config}/{split_directory}/{parquet_file}",
+                    local_dir=duckdb_index_file_directory,
+                    hf_token=hf_token,
+                    cache_dir=duckdb_index_file_directory,
+                    force_download=True,
+                    resume_download=False,
+                )
+            )
         )
-    split_parquet_directory = duckdb_index_file_directory / config / split_directory
-    all_split_parquets = str(split_parquet_directory / "*.parquet")
 
     transformed_df = None
     try:
-        transformed_df = compute_transformed_data(split_parquet_directory, features)
+        transformed_df = compute_transformed_data(all_split_parquets, features)
     except Exception as err:
         logging.info(f"Unable to compute transformed data {err}, skipping statistics.")
 
@@ -343,12 +191,14 @@ def compute_split_duckdb_index_response(
             logging.debug(transformed_df.head())
             # update original data with results of transformations (string lengths, audio durations, etc.):
             logging.info(f"Updating data with {transformed_df.columns}")
-            create_command_sql = CREATE_TABLE_JOIN_WITH_TRANSFORMED_DATA_COMMAND.format(
-                columns=column_names, source=all_split_parquets
+            create_command_sql = CREATE_TABLE_JOIN_WITH_TRANSFORMED_DATA_COMMAND_FROM_LIST_OF_PARQUET_FILES.format(
+                columns=column_names, source=[str(p) for p in all_split_parquets]
             )
 
         else:
-            create_command_sql = CREATE_TABLE_COMMAND.format(columns=column_names, source=all_split_parquets)
+            create_command_sql = CREATE_TABLE_COMMAND_FROM_LIST_OF_PARQUET_FILES.format(
+                columns=column_names, source=[str(p) for p in all_split_parquets]
+            )
 
         logging.info(create_command_sql)
         con.sql(create_command_sql)
@@ -410,7 +260,7 @@ def compute_split_duckdb_index_response(
             try:
                 retry_create_commit(
                     repo_id=dataset,
-                    repo_type=DATASET_TYPE,
+                    repo_type="dataset",
                     revision=target_revision,
                     operations=delete_operations + add_operations,
                     commit_message=commit_message,
@@ -434,7 +284,7 @@ def compute_split_duckdb_index_response(
             try:
                 retry_super_squash_history(
                     repo_id=dataset,
-                    repo_type=DATASET_TYPE,
+                    repo_type="dataset",
                     commit_message=commit_message,
                     branch=target_revision,
                 )

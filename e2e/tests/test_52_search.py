@@ -9,8 +9,8 @@ def test_search_endpoint(normal_user_public_dataset: str) -> None:
     dataset = normal_user_public_dataset
     config, split = get_default_config_split()
     # ensure the /search endpoint works as well
-    offset = 1
-    length = 2
+    offset = 0
+    length = 3
     query = "Lord Vader"
     search_response = poll_until_ready_and_assert(
         relative_url=(

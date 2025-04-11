@@ -49,7 +49,7 @@ from search.duckdb_connection import duckdb_connect
 logger = logging.getLogger(__name__)
 
 FTS_STAGE_TABLE_COMMAND = f"SELECT * FROM (SELECT {ROW_IDX_COLUMN}, fts_main_data.match_bm25({ROW_IDX_COLUMN}, ?) AS {HF_FTS_SCORE} FROM data) A WHERE {HF_FTS_SCORE} IS NOT NULL;"  # nosec
-JOIN_STAGE_AND_DATA_COMMAND = "SELECT {columns} FROM fts_stage_table JOIN data USING({row_idx_column}) ORDER BY fts_stage_table.{hf_fts_score} DESC;"  # nosec
+JOIN_STAGE_AND_DATA_COMMAND = "SELECT {columns} FROM memory.fts_stage_table JOIN db.data USING({row_idx_column}) ORDER BY memory.fts_stage_table.{hf_fts_score} DESC;"  # nosec
 # ^ "no sec" to remove https://bandit.readthedocs.io/en/1.7.5/plugins/b608_hardcoded_sql_expressions.html
 # the string substitutions here are constants, not user inputs
 
@@ -72,6 +72,9 @@ def full_text_search(
             row_idx_column=ROW_IDX_COLUMN,
             hf_fts_score=HF_FTS_SCORE,
         )
+        con.execute("USE memory;")
+        con.from_arrow(fts_stage_table).create_view("fts_stage_table")
+        con.execute("USE db;")
         pa_table = con.execute(query=join_stage_and_data_query).arrow()
     return num_rows_total, pa_table
 
