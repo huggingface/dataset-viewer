@@ -11,6 +11,7 @@
   {{ include "envS3" . | nindent 2 }}
   {{ include "envCloudfront" . | nindent 2 }}
   {{ include "envCache" . | nindent 2 }}
+  {{ include "envParquetMetadata" . | nindent 2 }}
   {{ include "envQueue" . | nindent 2 }}
   {{ include "envCommon" . | nindent 2 }}
   {{ include "envHf" . | nindent 2 }}
