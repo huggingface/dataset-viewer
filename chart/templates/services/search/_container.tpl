@@ -11,6 +11,7 @@
   {{ include "envS3" . | nindent 2 }}
   {{ include "envCloudfront" . | nindent 2 }}
   {{ include "envCache" . | nindent 2 }}
+  {{ include "envParquetMetadata" . | nindent 2 }}
   {{ include "envQueue" . | nindent 2 }}
   {{ include "envCommon" . | nindent 2 }}
   {{ include "envHf" . | nindent 2 }}
@@ -43,6 +44,8 @@
     value: "/tmp/duckdb-extensions"
   - name: HF_HUB_ENABLE_HF_TRANSFER
     value: "1"
+  volumeMounts:
+  {{ include "volumeMountParquetMetadataRW" . | nindent 2 }}
   securityContext:
     allowPrivilegeEscalation: false
   readinessProbe:
