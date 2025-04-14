@@ -12,8 +12,7 @@ import pyarrow.parquet as pq
 import pytest
 from datasets import ClassLabel, Dataset
 from datasets.table import embed_table_storage
-
-from worker.statistics_utils import (
+from libcommon.statistics_utils import (
     DECIMALS,
     MAX_NUM_STRING_LABELS,
     MAX_PROPORTION_STRING_LABELS,
@@ -36,11 +35,11 @@ from worker.statistics_utils import (
 @pytest.mark.parametrize(
     "min_value,max_value,column_type,expected_bins",
     [
-        (0, 1, ColumnType.INT, [0, 1, 1]),
-        (0, 12, ColumnType.INT, [0, 2, 4, 6, 8, 10, 12, 12]),
+        (0, 1, ColumnType.INT, [0, 1]),
+        (0, 12, ColumnType.INT, [0, 2, 4, 6, 8, 10, 12]),
         (-10, 15, ColumnType.INT, [-10, -7, -4, -1, 2, 5, 8, 11, 14, 15]),
-        (0, 9, ColumnType.INT, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 9]),
-        (0, 10, ColumnType.INT, [0, 2, 4, 6, 8, 10, 10]),
+        (0, 9, ColumnType.INT, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]),
+        (0, 10, ColumnType.INT, [0, 2, 4, 6, 8, 10]),
         (0.0, 10.0, ColumnType.FLOAT, [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0]),
         (0.0, 0.1, ColumnType.FLOAT, [0.0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1]),
         (0, 0, ColumnType.INT, [0, 0]),
@@ -413,7 +412,7 @@ def test_audio_statistics(
     dataset_table_embedded = embed_table_storage(dataset_table)  # store audio as bytes instead of paths to files
     pq.write_table(dataset_table_embedded, parquet_filename)
     computed = AudioColumn.compute_statistics(
-        parquet_directory=parquet_directory,
+        parquet_paths=[parquet_filename],
         column_name=column_name,
         n_samples=4,
     )
@@ -426,7 +425,7 @@ def test_audio_statistics(
     )
     pq.write_table(pa_table_bytes, parquet_filename)
     computed = AudioColumn.compute_statistics(
-        parquet_directory=parquet_directory,
+        parquet_paths=[parquet_filename],
         column_name=column_name,
         n_samples=4,
     )
@@ -454,7 +453,7 @@ def test_image_statistics(
     dataset_table_embedded = embed_table_storage(dataset_table)  # store image as bytes instead of paths to files
     pq.write_table(dataset_table_embedded, parquet_filename)
     computed = ImageColumn.compute_statistics(
-        parquet_directory=parquet_directory,
+        parquet_paths=[parquet_filename],
         column_name=column_name,
         n_samples=4,
     )
@@ -467,7 +466,7 @@ def test_image_statistics(
     )
     pq.write_table(pa_table_bytes, parquet_filename)
     computed = ImageColumn.compute_statistics(
-        parquet_directory=parquet_directory,
+        parquet_paths=[parquet_filename],
         column_name=column_name,
         n_samples=4,
     )

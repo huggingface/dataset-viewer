@@ -7,6 +7,7 @@ from typing import Any
 
 import pytest
 from libcommon.dtos import Priority
+from libcommon.duckdb_utils import DEFAULT_STEMMER
 from libcommon.exceptions import PreviousStepFormatError
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import (
@@ -17,7 +18,6 @@ from libcommon.simple_cache import (
 
 from worker.config import AppConfig
 from worker.job_runners.config.duckdb_index_size import ConfigDuckdbIndexSizeJobRunner
-from worker.job_runners.split.duckdb_index import DEFAULT_STEMMER
 
 from ..utils import REVISION_NAME
 

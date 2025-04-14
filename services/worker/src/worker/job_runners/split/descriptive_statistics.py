@@ -25,13 +25,7 @@ from libcommon.parquet_utils import (
     parquet_export_is_partial,
 )
 from libcommon.simple_cache import get_previous_step_or_raise
-from libcommon.storage import StrPath
-from libcommon.utils import download_file_from_hub
-
-from worker.config import AppConfig, DescriptiveStatisticsConfig
-from worker.dtos import CompleteJobResult
-from worker.job_runners.split.split_job_runner import SplitJobRunnerWithCache
-from worker.statistics_utils import (
+from libcommon.statistics_utils import (
     FLOAT_DTYPES,
     INTEGER_DTYPES,
     NUMERICAL_DTYPES,
@@ -47,6 +41,12 @@ from worker.statistics_utils import (
     StatisticsPerColumnItem,
     StringColumn,
 )
+from libcommon.storage import StrPath
+from libcommon.utils import download_file_from_hub
+
+from worker.config import AppConfig, DescriptiveStatisticsConfig
+from worker.dtos import CompleteJobResult
+from worker.job_runners.split.split_job_runner import SplitJobRunnerWithCache
 
 REPO_TYPE = "dataset"
 
@@ -273,14 +273,15 @@ def compute_descriptive_statistics_response(
         f"\nColumn types counts: {column_counts}. "
     )
 
+    local_parquet_paths = list(local_parquet_split_directory.glob("*.parquet"))
     for column in columns:
         if isinstance(column, AudioColumn) or isinstance(column, ImageColumn):
-            column_stats = column.compute_and_prepare_response(local_parquet_split_directory)
+            column_stats = column.compute_and_prepare_response(local_parquet_paths)
         else:
             try:
                 data = pl.DataFrame._from_arrow(
                     pq.read_table(
-                        local_parquet_split_directory,
+                        local_parquet_paths,
                         columns=[column.name],
                         schema=Features.from_dict({column.name: features[column.name]}).arrow_schema,
                     )

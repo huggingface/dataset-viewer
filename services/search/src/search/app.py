@@ -10,7 +10,7 @@ from libapi.utils import EXPOSED_HEADERS
 from libcommon.cloudfront import get_cloudfront_signer
 from libcommon.log import init_logging
 from libcommon.resources import CacheMongoResource, QueueMongoResource, Resource
-from libcommon.storage import exists, init_duckdb_index_cache_dir
+from libcommon.storage import exists, init_duckdb_index_cache_dir, init_parquet_metadata_dir
 from libcommon.storage_client import StorageClient
 from libcommon.url_preparator import URLPreparator
 from starlette.applications import Starlette
@@ -37,6 +37,9 @@ def create_app_with_config(app_config: AppConfig) -> Starlette:
     duckdb_index_cache_directory = init_duckdb_index_cache_dir(directory=app_config.duckdb_index.cache_directory)
     if not exists(duckdb_index_cache_directory):
         raise RuntimeError("The duckdb_index cache directory could not be accessed. Exiting.")
+    parquet_metadata_directory = init_parquet_metadata_dir(directory=app_config.parquet_metadata.storage_directory)
+    if not exists(parquet_metadata_directory):
+        raise RuntimeError("The parquet metadata storage directory could not be accessed. Exiting.")
 
     hf_jwt_public_keys = get_jwt_public_keys(
         algorithm_name=app_config.api.hf_jwt_algorithm,
@@ -96,6 +99,7 @@ def create_app_with_config(app_config: AppConfig) -> Starlette:
             endpoint=create_search_endpoint(
                 duckdb_index_file_directory=duckdb_index_cache_directory,
                 cached_assets_storage_client=cached_assets_storage_client,
+                parquet_metadata_directory=parquet_metadata_directory,
                 target_revision=app_config.duckdb_index.target_revision,
                 hf_endpoint=app_config.common.hf_endpoint,
                 hf_token=app_config.common.hf_token,
@@ -118,6 +122,7 @@ def create_app_with_config(app_config: AppConfig) -> Starlette:
                 duckdb_index_file_directory=duckdb_index_cache_directory,
                 target_revision=app_config.duckdb_index.target_revision,
                 cached_assets_storage_client=cached_assets_storage_client,
+                parquet_metadata_directory=parquet_metadata_directory,
                 hf_endpoint=app_config.common.hf_endpoint,
                 hf_token=app_config.common.hf_token,
                 blocked_datasets=app_config.common.blocked_datasets,
