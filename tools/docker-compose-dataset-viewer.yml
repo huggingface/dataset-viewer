@@ -116,7 +116,7 @@ services:
     volumes:
       - storage:${STORAGE_DIRECTORY-/storage}
       - parquet-metadata:${PARQUET_METADATA_STORAGE_DIRECTORY-/parquet_metadata}:rw
-      - duckdb-index:${DUCKDB_INDEX_CACHE_DIRECTORY-/duckdb-index}
+      - duckdb-index:${DUCKDB_INDEX_CACHE_DIRECTORY-/duckdb-index}:rw
     environment:
       DUCKDB_INDEX_CACHE_DIRECTORY: ${DUCKDB_INDEX_CACHE_DIRECTORY-/duckdb-index}
       DUCKDB_INDEX_EXTENSIONS_DIRECTORY: ${DUCKDB_INDEX_EXTENSIONS_DIRECTORY-/tmp/duckdb-extensions}

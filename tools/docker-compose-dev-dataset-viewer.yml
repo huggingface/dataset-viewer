@@ -122,7 +122,7 @@ services:
     volumes:
       - storage:${STORAGE_DIRECTORY-/storage}
       - parquet-metadata:${PARQUET_METADATA_STORAGE_DIRECTORY-/parquet_metadata}:rw
-      - duckdb-index:${DUCKDB_INDEX_CACHE_DIRECTORY-/duckdb-index}
+      - duckdb-index:${DUCKDB_INDEX_CACHE_DIRECTORY-/duckdb-index}:rw
       # volumes to local source directory for development
       - ../services/search/src:/src/services/search/src
     environment:
