@@ -1,7 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2023 The HuggingFace Authors.
 
-import copy
 import logging
 import re
 from pathlib import Path
@@ -145,10 +144,7 @@ def compute_split_duckdb_index_response(
         column_names = ",".join(f'"{column}"' for column in features)
 
         # look for indexable columns (= possibly nested columns containing string data)
-        # copy the features is needed but will be fixed with https://github.com/huggingface/datasets/pull/6189
-        indexable_columns = ",".join(
-            f'"{column}"' for column in get_indexable_columns(Features.from_dict(copy.deepcopy(features)))
-        )
+        indexable_columns = ",".join(f'"{column}"' for column in get_indexable_columns(Features.from_dict(features)))
 
     except KeyError as e:
         raise PreviousStepFormatError(

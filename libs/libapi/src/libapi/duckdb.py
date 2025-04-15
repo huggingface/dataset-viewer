@@ -1,7 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2023 The HuggingFace Authors.
 
-import copy
 import errno
 import json
 import logging
@@ -9,7 +8,7 @@ import os
 import re
 from hashlib import sha1
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 import anyio
 import duckdb
@@ -100,7 +99,7 @@ def build_index_file(
     extensions_directory: Optional[str],
     parquet_metadata_directory: StrPath,
     split_parquet_files: list[ParquetFileMetadataItem],
-    features: Features,
+    features: dict[str, Any],
 ) -> None:
     logging.info(f"compute and cache duckdb index on-the-fly for {dataset=} {config=} {split=}")
     if not split_parquet_files:
@@ -122,10 +121,7 @@ def build_index_file(
     column_names = ",".join(f'"{column}"' for column in features)
 
     # look for indexable columns (= possibly nested columns containing string data)
-    # copy the features is needed but will be fixed with https://github.com/huggingface/datasets/pull/6189
-    indexable_columns = ",".join(
-        f'"{column}"' for column in get_indexable_columns(Features.from_dict(copy.deepcopy(features)))
-    )
+    indexable_columns = ",".join(f'"{column}"' for column in get_indexable_columns(Features.from_dict(features)))
 
     all_split_parquets: list[Path] = []
     for parquet_file in parquet_file_names:
@@ -201,7 +197,7 @@ async def get_index_file_location_and_build_if_missing(
     extensions_directory: Optional[str],
     parquet_metadata_directory: StrPath,
     split_parquet_files: list[ParquetFileMetadataItem],
-    features: Features,
+    features: dict[str, Any],
 ) -> tuple[str, bool]:
     with StepProfiler(method="get_index_file_location_and_build_if_missing", step="all"):
         size_bytes = 100 << 30  # 100GiB - arbitrary, just to avoid filling the disk
