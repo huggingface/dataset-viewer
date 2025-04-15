@@ -115,6 +115,7 @@ services:
       service: libapi
     volumes:
       - storage:${STORAGE_DIRECTORY-/storage}
+      - parquet-metadata:${PARQUET_METADATA_STORAGE_DIRECTORY-/parquet_metadata}:rw
       - duckdb-index:${DUCKDB_INDEX_CACHE_DIRECTORY-/duckdb-index}
     environment:
       DUCKDB_INDEX_CACHE_DIRECTORY: ${DUCKDB_INDEX_CACHE_DIRECTORY-/duckdb-index}
