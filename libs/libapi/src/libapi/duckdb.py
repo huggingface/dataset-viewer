@@ -146,7 +146,8 @@ def build_index_file(
         logging.info(f"Unable to compute transformed data {err}, skipping statistics.")
 
     # index all columns
-    db_path = Path(index_folder).resolve() / filename
+    Path(index_folder).mkdir(exist_ok=True, parents=True)
+    db_path = Path(index_folder) / filename
     con = duckdb.connect(str(db_path.resolve()))
 
     hf_api = HfApi(token=hf_token)
