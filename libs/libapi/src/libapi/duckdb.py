@@ -145,7 +145,7 @@ def build_index_file(
     except Exception as err:
         logging.info(f"Unable to compute transformed data {err}, skipping statistics.")
 
-    # index all columns
+    # create index
     index_file_location = f"{index_folder}/{repo_file_location}"
     Path(index_file_location).parent.mkdir(exist_ok=True, parents=True)
     con = duckdb.connect(str(Path(index_file_location).resolve()))

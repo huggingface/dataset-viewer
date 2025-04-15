@@ -175,7 +175,7 @@ def compute_split_duckdb_index_response(
     except Exception as err:
         logging.info(f"Unable to compute transformed data {err}, skipping statistics.")
 
-    # index all columns
+    # create index
     db_path = duckdb_index_file_directory.resolve() / index_filename
     con = duckdb.connect(str(db_path.resolve()))
 
