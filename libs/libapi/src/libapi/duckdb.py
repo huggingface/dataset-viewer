@@ -329,7 +329,6 @@ def get_cache_entry_from_duckdb_index_job(
 def get_cache_entry_from_parquet_metadata_job(
     dataset: str,
     config: str,
-    split: str,
     hf_endpoint: str,
     hf_token: Optional[str],
     hf_timeout_seconds: Optional[float],
@@ -340,7 +339,7 @@ def get_cache_entry_from_parquet_metadata_job(
         processing_step_name=CONFIG_PARQUET_METADATA_KIND,
         dataset=dataset,
         config=config,
-        split=split,
+        split=None,
         hf_endpoint=hf_endpoint,
         hf_token=hf_token,
         hf_timeout_seconds=hf_timeout_seconds,
