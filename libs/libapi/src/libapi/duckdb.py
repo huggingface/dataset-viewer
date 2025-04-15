@@ -93,7 +93,7 @@ def build_index_file(
     dataset: str,
     config: str,
     split: str,
-    filename: str,
+    repo_file_location: str,
     hf_token: Optional[str],
     max_split_size_bytes: int,
     extensions_directory: Optional[str],
@@ -146,9 +146,9 @@ def build_index_file(
         logging.info(f"Unable to compute transformed data {err}, skipping statistics.")
 
     # index all columns
-    Path(index_folder).mkdir(exist_ok=True, parents=True)
-    db_path = Path(index_folder) / filename
-    con = duckdb.connect(str(db_path.resolve()))
+    index_file_location = f"{index_folder}/{repo_file_location}"
+    Path(index_file_location).parent.mkdir(exist_ok=True, parents=True)
+    con = duckdb.connect(str(Path(index_file_location).resolve()))
 
     hf_api = HfApi(token=hf_token)
     stemmer = None
@@ -240,7 +240,7 @@ async def get_index_file_location_and_build_if_missing(
                         dataset,
                         config,
                         split,
-                        index_filename,
+                        repo_file_location,
                         hf_token,
                         max_split_size_bytes,
                         extensions_directory,
