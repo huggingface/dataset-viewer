@@ -223,7 +223,9 @@ async def get_index_file_location_and_build_if_missing(
         # We can expect the duckdb index to be around the same size as the num_bytes.
         # But we apply a factor since we also add the full-text-search index and additional columns
         size_factor = 5
-        index_folder = get_download_folder(duckdb_index_file_directory, size_factor * num_bytes, dataset, config, split, revision)
+        index_folder = get_download_folder(
+            duckdb_index_file_directory, size_factor * num_bytes, dataset, config, split, revision
+        )
         index_file_location = f"{index_folder}/{repo_file_location}"
         index_path = anyio.Path(index_file_location)
         if not await index_path.is_file():
