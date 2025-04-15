@@ -192,7 +192,6 @@ def create_search_endpoint(
                             for parquet_file in content_parquet_metadata["parquet_files_metadata"]
                             if parquet_file["config"] == config and parquet_file["split"] == split
                         ]
-                        features = Features.from_dict(content_parquet_metadata["features"])
                         index_file_location, partial = await get_index_file_location_and_build_if_missing(
                             duckdb_index_file_directory=duckdb_index_file_directory,
                             dataset=dataset,
@@ -204,8 +203,9 @@ def create_search_endpoint(
                             extensions_directory=extensions_directory,
                             parquet_metadata_directory=parquet_metadata_directory,
                             split_parquet_files=split_parquet_files,
-                            features=features,
+                            features=content_parquet_metadata["features"],
                         )
+                        features = Features.from_dict(content_parquet_metadata["features"])
                 else:
                     with StepProfiler(method="search_endpoint", step="validate indexing was done"):
                         # no cache data is needed to download the index file
