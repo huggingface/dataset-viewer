@@ -339,6 +339,7 @@ def get_cache_entry_from_parquet_metadata_job(
         processing_step_name=CONFIG_PARQUET_METADATA_KIND,
         dataset=dataset,
         config=config,
+        split=None,
         hf_endpoint=hf_endpoint,
         hf_token=hf_token,
         hf_timeout_seconds=hf_timeout_seconds,
