@@ -19,7 +19,7 @@ from libcommon.statistics_utils import (
     StringColumn,
 )
 
-DISABLED_DUCKDB_REF_BRANCH_DATASET_NAME_PATTERN = "*"  # TODO: revert, this is for debugging
+DISABLED_DUCKDB_REF_BRANCH_DATASET_NAME_PATTERN = "*NoDuckdbRef*"
 
 DATASET_TYPE = "dataset"
 DEFAULT_STEMMER = "none"  # Exact word matches
