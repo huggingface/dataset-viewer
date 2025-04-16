@@ -184,7 +184,7 @@ services:
       file: docker-compose-dev-base.yml
       service: libcommon
     environment:
-      COMMITTER_HF_TOKEN: ${COMMITTER_HF_TOKEN-}
+      COMMITTER_HF_TOKEN: ${COMMITTER_HF_TOKEN-hf_app_datasets-server-parquet-converter_token}
       CONFIG_NAMES_MAX_NUMBER: ${CONFIG_NAMES_MAX_NUMBER-3_000}
       DESCRIPTIVE_STATISTICS_CACHE_DIRECTORY: ${DESCRIPTIVE_STATISTICS_CACHE_DIRECTORY-/stats-cache}
       DESCRIPTIVE_STATISTICS_MAX_SPLIT_SIZE_BYTES: ${DESCRIPTIVE_STATISTICS_MAX_SPLIT_SIZE_BYTES-100_000_000}
@@ -254,6 +254,7 @@ services:
       file: docker-compose-dev-base.yml
       service: libapi
     environment:
+      COMMITTER_HF_TOKEN: ${COMMITTER_HF_TOKEN-hf_app_datasets-server-parquet-converter_token}
       # prometheus
       PROMETHEUS_MULTIPROC_DIR: ${PROMETHEUS_MULTIPROC_DIR-}
       # uvicorn
