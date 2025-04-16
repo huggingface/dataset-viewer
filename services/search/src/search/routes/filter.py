@@ -11,7 +11,7 @@ from typing import Optional
 import anyio
 import duckdb
 import pyarrow as pa
-from datasets import Features
+from datasets import Features, Value
 from libapi.authentication import auth_check
 from libapi.duckdb import (
     get_cache_entry_from_duckdb_index_job,
@@ -32,6 +32,7 @@ from libapi.utils import (
     get_json_error_response,
     get_json_ok_response,
 )
+from libcommon.constants import ROW_IDX_COLUMN
 from libcommon.duckdb_utils import DISABLED_DUCKDB_REF_BRANCH_DATASET_NAME_PATTERN, duckdb_index_is_partial
 from libcommon.prometheus import StepProfiler
 from libcommon.storage import StrPath, clean_dir
@@ -148,7 +149,9 @@ def create_filter_endpoint(
                             split_parquet_files=split_parquet_files,
                             features=content_parquet_metadata["features"],
                         )
+                        # features must contain the row idx column for full_text_search
                         features = Features.from_dict(content_parquet_metadata["features"])
+                        features[ROW_IDX_COLUMN] = Value("int64")
                 else:
                     with StepProfiler(method="filter_endpoint", step="validate indexing was done"):
                         # no cache data is needed to download the index file
@@ -193,8 +196,7 @@ def create_filter_endpoint(
                             hf_token=hf_token,
                         )
                     with StepProfiler(method="filter_endpoint", step="get features"):
-                        # in split-duckdb-index we always add the ROW_IDX_COLUMN column
-                        # see https://github.com/huggingface/dataset-viewer/blob/main/services/worker/src/worker/job_runners/split/duckdb_index.py#L305
+                        # features contain the row idx column
                         features = Features.from_dict(duckdb_index_cache_entry["content"]["features"])
                 with StepProfiler(method="filter_endpoint", step="get supported and unsupported columns"):
                     supported_columns, unsupported_columns = get_supported_unsupported_columns(

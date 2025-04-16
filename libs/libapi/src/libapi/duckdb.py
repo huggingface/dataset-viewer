@@ -93,7 +93,7 @@ def build_index_file(
     dataset: str,
     config: str,
     split: str,
-    filename: str,
+    repo_file_location: str,
     hf_token: Optional[str],
     max_split_size_bytes: int,
     extensions_directory: Optional[str],
@@ -145,9 +145,10 @@ def build_index_file(
     except Exception as err:
         logging.info(f"Unable to compute transformed data {err}, skipping statistics.")
 
-    # index all columns
-    db_path = Path(index_folder).resolve() / filename
-    con = duckdb.connect(str(db_path.resolve()))
+    # create index
+    index_file_location = f"{index_folder}/{repo_file_location}"
+    Path(index_file_location).parent.mkdir(exist_ok=True, parents=True)
+    con = duckdb.connect(str(Path(index_file_location).resolve()))
 
     hf_api = HfApi(token=hf_token)
     stemmer = None
@@ -200,8 +201,6 @@ async def get_index_file_location_and_build_if_missing(
     features: dict[str, Any],
 ) -> tuple[str, bool]:
     with StepProfiler(method="get_index_file_location_and_build_if_missing", step="all"):
-        size_bytes = 100 << 30  # 100GiB - arbitrary, just to avoid filling the disk
-        index_folder = get_download_folder(duckdb_index_file_directory, size_bytes, dataset, config, split, revision)
         # For directories like "partial-train" for the file at "en/partial-train/0000.parquet" in the C4 dataset.
         # Note that "-" is forbidden for split names so it doesn't create directory names collisions.
         split_directory = extract_split_directory_from_parquet_url(split_parquet_files[0]["url"])
@@ -220,6 +219,13 @@ async def get_index_file_location_and_build_if_missing(
         )
         partial = partial_parquet_export or (num_parquet_files_to_index < len(split_parquet_files))
         repo_file_location = f"{config}/{split_directory}/{index_filename}"
+
+        # We can expect the duckdb index to be around the same size as the num_bytes.
+        # But we apply a factor since we also add the full-text-search index and additional columns
+        size_factor = 5
+        index_folder = get_download_folder(
+            duckdb_index_file_directory, size_factor * num_bytes, dataset, config, split, revision
+        )
         index_file_location = f"{index_folder}/{repo_file_location}"
         index_path = anyio.Path(index_file_location)
         if not await index_path.is_file():
@@ -234,7 +240,7 @@ async def get_index_file_location_and_build_if_missing(
                         dataset,
                         config,
                         split,
-                        index_filename,
+                        repo_file_location,
                         hf_token,
                         max_split_size_bytes,
                         extensions_directory,

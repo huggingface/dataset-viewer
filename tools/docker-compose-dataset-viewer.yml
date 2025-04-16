@@ -115,10 +115,12 @@ services:
       service: libapi
     volumes:
       - storage:${STORAGE_DIRECTORY-/storage}
-      - duckdb-index:${DUCKDB_INDEX_CACHE_DIRECTORY-/duckdb-index}
+      - parquet-metadata:${PARQUET_METADATA_STORAGE_DIRECTORY-/parquet_metadata}:rw
+      - duckdb-index:${DUCKDB_INDEX_CACHE_DIRECTORY-/duckdb-index}:rw
     environment:
       DUCKDB_INDEX_CACHE_DIRECTORY: ${DUCKDB_INDEX_CACHE_DIRECTORY-/duckdb-index}
       DUCKDB_INDEX_EXTENSIONS_DIRECTORY: ${DUCKDB_INDEX_EXTENSIONS_DIRECTORY-/tmp/duckdb-extensions}
+      PARQUET_METADATA_STORAGE_DIRECTORY: ${PARQUET_METADATA_STORAGE_DIRECTORY-/parquet_metadata}
       # prometheus
       PROMETHEUS_MULTIPROC_DIR: ${PROMETHEUS_MULTIPROC_DIR-}
       # uvicorn
