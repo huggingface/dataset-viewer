@@ -228,7 +228,6 @@ async def to_rows_list(
             row_idx_column=row_idx_column,
         )
     except Exception as err:
-        raise  # TODO: revert, this is for debugging
         raise TransformRowsProcessingError(
             "Server error while post-processing the split rows. Please report the issue."
         ) from err
