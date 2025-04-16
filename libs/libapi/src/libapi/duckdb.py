@@ -183,6 +183,9 @@ def build_index_file(
             logging.info(create_index_sql)
             con.sql(create_index_sql)
 
+        # make sure there is no WAL at the end
+        con.sql("CHECKPOINT;")
+
     finally:
         con.close()
 
@@ -228,11 +231,13 @@ async def get_index_file_location_and_build_if_missing(
         )
         index_file_location = f"{index_folder}/{repo_file_location}"
         index_path = anyio.Path(index_file_location)
-        if not await index_path.is_file():
-            with StepProfiler(method="get_index_file_location_and_build_if_missing", step="build duckdb index"):
-                cache_folder = Path(duckdb_index_file_directory) / HUB_DOWNLOAD_CACHE_FOLDER
-                cache_folder.mkdir(exist_ok=True, parents=True)
-                async with AsyncFileLock(cache_folder / ".lock"):
+
+        # use a lock in case another worker is currently writing
+        cache_folder = Path(duckdb_index_file_directory) / HUB_DOWNLOAD_CACHE_FOLDER
+        cache_folder.mkdir(exist_ok=True, parents=True)
+        async with AsyncFileLock(cache_folder / ".lock", timeout=60):
+            if not await index_path.is_file():
+                with StepProfiler(method="get_index_file_location_and_build_if_missing", step="build duckdb index"):
                     await anyio.to_thread.run_sync(
                         build_index_file,
                         cache_folder,
