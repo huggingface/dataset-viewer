@@ -47,7 +47,7 @@ from libcommon.viewer_utils.features import (
 from starlette.requests import Request
 from starlette.responses import Response
 
-from search.duckdb_connection import duckdb_connect
+from search.duckdb_connection import duckdb_connect_readonly
 
 logger = logging.getLogger(__name__)
 
@@ -65,7 +65,7 @@ def full_text_search(
     length: int,
     extensions_directory: Optional[str] = None,
 ) -> tuple[int, pa.Table]:
-    with duckdb_connect(extensions_directory=extensions_directory, database=index_file_location) as con:
+    with duckdb_connect_readonly(extensions_directory=extensions_directory, database=index_file_location) as con:
         fts_stage_table = con.execute(query=FTS_STAGE_TABLE_COMMAND, parameters=[query]).arrow()
         num_rows_total = fts_stage_table.num_rows
         logging.info(f"got {num_rows_total=} results for {query=} using {offset=} {length=}")

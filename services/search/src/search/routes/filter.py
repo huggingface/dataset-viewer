@@ -41,7 +41,7 @@ from libcommon.viewer_utils.features import get_supported_unsupported_columns
 from starlette.requests import Request
 from starlette.responses import Response
 
-from search.duckdb_connection import duckdb_connect
+from search.duckdb_connection import duckdb_connect_readonly
 
 FILTER_QUERY = """\
     SELECT {columns}
@@ -255,7 +255,7 @@ def execute_filter_query(
     offset: int,
     extensions_directory: Optional[str] = None,
 ) -> tuple[int, pa.Table]:
-    with duckdb_connect(extensions_directory=extensions_directory, database=index_file_location) as con:
+    with duckdb_connect_readonly(extensions_directory=extensions_directory, database=index_file_location) as con:
         filter_query = FILTER_QUERY.format(
             columns=",".join([f'"{column}"' for column in columns]),
             where=f"WHERE {where}" if where else "",
