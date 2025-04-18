@@ -24,7 +24,7 @@ DISABLED_DUCKDB_REF_BRANCH_DATASET_NAME_PATTERNS = [
     "openai/*",
     "EleutherAI/*",
     "HuggingFaceFW/*",
-    "TIGER-Lab/*", 
+    "TIGER-Lab/*",
     "Rapidata/*",  # images
     "MrDragonFox/*",  # audios
     "*NoDuckdbRef*",
