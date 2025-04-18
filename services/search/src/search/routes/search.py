@@ -36,7 +36,7 @@ from libapi.utils import (
 )
 from libcommon.constants import HF_FTS_SCORE, MAX_NUM_ROWS_PER_PAGE, ROW_IDX_COLUMN
 from libcommon.dtos import PaginatedResponse
-from libcommon.duckdb_utils import DISABLED_DUCKDB_REF_BRANCH_DATASET_NAME_PATTERN, duckdb_index_is_partial
+from libcommon.duckdb_utils import DISABLED_DUCKDB_REF_BRANCH_DATASET_NAME_PATTERNS, duckdb_index_is_partial
 from libcommon.prometheus import StepProfiler
 from libcommon.storage import StrPath, clean_dir
 from libcommon.storage_client import StorageClient
@@ -165,7 +165,7 @@ def create_search_endpoint(
 
                 logging.info(f"/search {dataset=} {config=} {split=} {query=} {offset=} {length=}")
 
-                if fnmatch(dataset, DISABLED_DUCKDB_REF_BRANCH_DATASET_NAME_PATTERN):
+                if any(fnmatch(dataset, pat) for pat in DISABLED_DUCKDB_REF_BRANCH_DATASET_NAME_PATTERNS):
                     with StepProfiler(method="filter_endpoint", step="build index if missing"):
                         # get parquet urls and dataset_info
                         parquet_metadata_response = get_cache_entry_from_parquet_metadata_job(
