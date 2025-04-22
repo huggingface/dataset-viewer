@@ -15,17 +15,15 @@ import duckdb
 from datasets import Features
 from filelock import AsyncFileLock
 from huggingface_hub import HfApi
-from libcommon.constants import CONFIG_PARQUET_METADATA_KIND, PARQUET_REVISION, SPLIT_DUCKDB_INDEX_KIND
+from libcommon.constants import CONFIG_PARQUET_METADATA_KIND, PARQUET_REVISION, ROW_IDX_COLUMN, SPLIT_DUCKDB_INDEX_KIND
 from libcommon.duckdb_utils import (
-    CREATE_INDEX_COMMAND,
     CREATE_INDEX_ID_COLUMN_COMMANDS,
     CREATE_TABLE_COMMAND_FROM_LIST_OF_PARQUET_FILES,
     CREATE_TABLE_JOIN_WITH_TRANSFORMED_DATA_COMMAND_FROM_LIST_OF_PARQUET_FILES,
     DUCKDB_DEFAULT_INDEX_FILENAME,
     DUCKDB_DEFAULT_PARTIAL_INDEX_FILENAME,
-    INSTALL_AND_LOAD_EXTENSION_COMMAND,
-    SET_EXTENSIONS_DIRECTORY_COMMAND,
     compute_transformed_data,
+    create_index,
     get_indexable_columns,
     get_monolingual_stemmer,
 )
@@ -118,10 +116,10 @@ def build_index_file(
     split_parquet_files = split_parquet_files[:num_parquet_files_to_index]
     parquet_file_names = [parquet_file["filename"] for parquet_file in split_parquet_files]
 
-    column_names = ",".join(f'"{column}"' for column in features)
+    column_names_sql = ",".join(f'"{column}"' for column in features)
 
     # look for indexable columns (= possibly nested columns containing string data)
-    indexable_columns = ",".join(f'"{column}"' for column in get_indexable_columns(Features.from_dict(features)))
+    indexable_columns = get_indexable_columns(Features.from_dict(features))
 
     all_split_parquets: list[Path] = []
     for parquet_file in parquet_file_names:
@@ -148,46 +146,46 @@ def build_index_file(
     # create index
     index_file_location = f"{index_folder}/{repo_file_location}"
     Path(index_file_location).parent.mkdir(exist_ok=True, parents=True)
-    con = duckdb.connect(str(Path(index_file_location).resolve()))
-
-    hf_api = HfApi(token=hf_token)
-    stemmer = None
 
     try:
-        if transformed_df is not None:
-            logging.debug(transformed_df.head())
-            # update original data with results of transformations (string lengths, audio durations, etc.):
-            logging.info(f"Updating data with {transformed_df.columns}")
-            create_command_sql = CREATE_TABLE_JOIN_WITH_TRANSFORMED_DATA_COMMAND_FROM_LIST_OF_PARQUET_FILES.format(
-                columns=column_names, source=[str(p) for p in all_split_parquets]
-            )
+        with duckdb.connect(index_file_location) as con:
+            if transformed_df is not None:
+                logging.debug(transformed_df.head())
+                # update original data with results of transformations (string lengths, audio durations, etc.):
+                logging.info(f"Updating data with {transformed_df.columns}")
+                create_command_sql = CREATE_TABLE_JOIN_WITH_TRANSFORMED_DATA_COMMAND_FROM_LIST_OF_PARQUET_FILES.format(
+                    columns=column_names_sql, source=[str(p) for p in all_split_parquets]
+                )
 
-        else:
-            create_command_sql = CREATE_TABLE_COMMAND_FROM_LIST_OF_PARQUET_FILES.format(
-                columns=column_names, source=[str(p) for p in all_split_parquets]
-            )
+            else:
+                create_command_sql = CREATE_TABLE_COMMAND_FROM_LIST_OF_PARQUET_FILES.format(
+                    columns=column_names_sql, source=[str(p) for p in all_split_parquets]
+                )
 
-        logging.info(create_command_sql)
-        con.sql(create_command_sql)
-        con.sql(CREATE_INDEX_ID_COLUMN_COMMANDS)
-        logging.debug(con.sql("SELECT * FROM data LIMIT 5;"))
-        logging.debug(con.sql("SELECT count(*) FROM data;"))
+            logging.info(create_command_sql)
+            con.sql(create_command_sql)
+            con.sql(CREATE_INDEX_ID_COLUMN_COMMANDS)
+            logging.debug(con.sql("SELECT * FROM data LIMIT 5;"))
+            logging.debug(con.sql("SELECT count(*) FROM data;"))
+            # make sure there is no WAL at the end
+            con.sql("CHECKPOINT;")
 
         if len(indexable_columns) > 0:
-            # configure duckdb extensions
-            if extensions_directory is not None:
-                con.execute(SET_EXTENSIONS_DIRECTORY_COMMAND.format(directory=extensions_directory))
-            con.execute(INSTALL_AND_LOAD_EXTENSION_COMMAND)
-            stemmer = get_monolingual_stemmer(hf_api.dataset_info(repo_id=dataset).card_data)
-            create_index_sql = CREATE_INDEX_COMMAND.format(columns=indexable_columns, stemmer=stemmer)
-            logging.info(create_index_sql)
-            con.sql(create_index_sql)
-
-        # make sure there is no WAL at the end
-        con.sql("CHECKPOINT;")
-
-    finally:
-        con.close()
+            stemmer = get_monolingual_stemmer(HfApi(token=hf_token).dataset_info(repo_id=dataset).card_data)
+            logging.info(f"Indexing {dataset} ({config=}, {split=})")
+            create_index(
+                database=index_file_location,
+                input_table="data",
+                columns=indexable_columns,
+                stemmer=stemmer,
+                input_id=ROW_IDX_COLUMN,
+                fts_schema="fts_main_data",
+                extensions_directory=extensions_directory,
+            )
+            logging.info(f"Done indexing {dataset} ({config=}, {split=})")
+    except Exception:
+        os.remove(index_file_location)
+        raise
 
 
 async def get_index_file_location_and_build_if_missing(
