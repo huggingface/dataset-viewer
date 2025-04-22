@@ -254,7 +254,11 @@ def create_index(
                 con,
                 "CREATE TABLE IF NOT EXISTS %input_table% AS SELECT *, row_number() OVER () AS %input_id% FROM read_parquet('data/split_0/partial-split_0/*.parquet');",
             )
-            count = _sql(con, "SELECT count(*) FROM %input_table%;").fetchone()[0]
+            _count = _sql(con, "SELECT count(*) FROM %input_table%;").fetchone()
+            if _count and isinstance(_count[0], int):
+                count = _count[0]
+            else:
+                raise RuntimeError(f"failed to count rows from {input_table}")
 
             # create fts schema
             _sql(con, "DROP SCHEMA IF EXISTS %fts_schema% CASCADE;")
