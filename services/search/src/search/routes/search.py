@@ -36,7 +36,7 @@ from libapi.utils import (
 )
 from libcommon.constants import HF_FTS_SCORE, MAX_NUM_ROWS_PER_PAGE, ROW_IDX_COLUMN
 from libcommon.dtos import PaginatedResponse
-from libcommon.duckdb_utils import DISABLED_DUCKDB_REF_BRANCH_DATASET_NAME_PATTERN, duckdb_index_is_partial
+from libcommon.duckdb_utils import DISABLED_DUCKDB_REF_BRANCH_DATASET_NAME_PATTERNS, duckdb_index_is_partial
 from libcommon.prometheus import StepProfiler
 from libcommon.storage import StrPath, clean_dir
 from libcommon.storage_client import StorageClient
@@ -47,7 +47,7 @@ from libcommon.viewer_utils.features import (
 from starlette.requests import Request
 from starlette.responses import Response
 
-from search.duckdb_connection import duckdb_connect
+from search.duckdb_connection import duckdb_connect_readonly
 
 logger = logging.getLogger(__name__)
 
@@ -65,7 +65,7 @@ def full_text_search(
     length: int,
     extensions_directory: Optional[str] = None,
 ) -> tuple[int, pa.Table]:
-    with duckdb_connect(extensions_directory=extensions_directory, database=index_file_location) as con:
+    with duckdb_connect_readonly(extensions_directory=extensions_directory, database=index_file_location) as con:
         fts_stage_table = con.execute(query=FTS_STAGE_TABLE_COMMAND, parameters=[query]).arrow()
         num_rows_total = fts_stage_table.num_rows
         logging.info(f"got {num_rows_total=} results for {query=} using {offset=} {length=}")
@@ -165,7 +165,7 @@ def create_search_endpoint(
 
                 logging.info(f"/search {dataset=} {config=} {split=} {query=} {offset=} {length=}")
 
-                if fnmatch(dataset, DISABLED_DUCKDB_REF_BRANCH_DATASET_NAME_PATTERN):
+                if any(fnmatch(dataset, pat) for pat in DISABLED_DUCKDB_REF_BRANCH_DATASET_NAME_PATTERNS):
                     with StepProfiler(method="filter_endpoint", step="build index if missing"):
                         # get parquet urls and dataset_info
                         parquet_metadata_response = get_cache_entry_from_parquet_metadata_job(
