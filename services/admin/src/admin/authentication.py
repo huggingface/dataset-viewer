@@ -16,6 +16,7 @@ async def auth_check(
     organization: Optional[str] = None,
     hf_timeout_seconds: Optional[float] = None,
     require_fine_grained_permissions: Sequence[str] = ("repo.write",),
+    require_token_and_org_permissions: Sequence[tuple[str, str]] = (("write", "write"), ("write", "admin")),
 ) -> Literal[True]:
     """check if the user is member of the organization
 
@@ -29,6 +30,8 @@ async def auth_check(
           service.
         require_fine_grained_permissions (`Sequence[str]`): require a fine-grained token with certain permissions
           for the organization, if organization is provided. Defaults to ("repo.write",).
+        require_org_role_permissions (`str`): alternatively, require a token with certain permissions
+          for the organization and a certain role, if organization is provided. Defaults to (("write", "write"), ("write", "admin")).
 
     Returns:
         `Literal[True]`: the user is authorized
@@ -46,11 +49,27 @@ async def auth_check(
             if organization is None or (
                 organization in {org["name"] for org in json["orgs"]}
                 and json["auth"]["type"] == "access_token"
-                and "fineGrained" in json["auth"]["accessToken"]
-                and any(
-                    set(permission for permission in scope["permissions"]) >= set(require_fine_grained_permissions)
-                    for scope in json["auth"]["accessToken"]["fineGrained"]["scoped"]
-                    if scope["entity"]["name"] == organization and scope["entity"]["type"] == "org"
+                and (
+                    (
+                        "fineGrained" in json["auth"]["accessToken"]
+                        and any(
+                            set(permission for permission in scope["permissions"])
+                            >= set(require_fine_grained_permissions)
+                            for scope in json["auth"]["accessToken"]["fineGrained"]["scoped"]
+                            if scope["entity"]["name"] == organization and scope["entity"]["type"] == "org"
+                        )
+                    )
+                    or (
+                        "role" in json["auth"]["accessToken"]
+                        and any(
+                            json["auth"]["accessToken"]["role"] == require_token_and_org_permission[0]
+                            and any(
+                                org["name"] == organization and org["roleInOrg"] == require_token_and_org_permission[1]
+                                for org in json["orgs"]
+                            )
+                            for require_token_and_org_permission in require_token_and_org_permissions
+                        )
+                    )
                 )
             ):
                 return True
