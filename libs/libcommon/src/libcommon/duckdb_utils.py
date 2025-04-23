@@ -251,11 +251,7 @@ def create_index(
             _sql(con, "ATTACH '%database%' as db;")
             _sql(con, "USE db;")
 
-            # ingest data
-            _sql(
-                con,
-                "CREATE TABLE IF NOT EXISTS %input_table% AS SELECT *, row_number() OVER () AS %input_id% FROM read_parquet('data/split_0/partial-split_0/*.parquet');",
-            )
+            # check input_table and get number of rows
             _count = _sql(con, "SELECT count(*) FROM %input_table%;").fetchone()
             if _count and isinstance(_count[0], int):
                 count = _count[0]
