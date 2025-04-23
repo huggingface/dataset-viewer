@@ -297,7 +297,7 @@ def create_search_endpoint(
                 with StepProfiler(method="search_endpoint", step="generate the OK response"):
                     return get_json_ok_response(response, max_age=max_age_long, revision=revision)
             except Exception as e:
-                error = e if isinstance(e, ApiError) else UnexpectedApiError(f"Unexpected error {type(e).__name__}: {e}", e)
+                error = e if isinstance(e, ApiError) else UnexpectedApiError("Unexpected error.", e)
                 with StepProfiler(method="search_endpoint", step="generate API error response"):
                     return get_json_api_error_response(error=error, max_age=max_age_short, revision=revision)
 

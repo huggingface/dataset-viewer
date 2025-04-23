@@ -33,7 +33,7 @@ from libapi.utils import (
     get_json_ok_response,
 )
 from libcommon.constants import ROW_IDX_COLUMN
-from libcommon.duckdb_utils import DISABLED_DUCKDB_REF_BRANCH_DATASET_NAME_PATTERNS, duckdb_index_is_partial
+from libcommon.duckdb_utils import DISABLED_DUCKDB_REF_BRANCH_DATASET_NAME_PATTERN, duckdb_index_is_partial
 from libcommon.prometheus import StepProfiler
 from libcommon.storage import StrPath, clean_dir
 from libcommon.storage_client import StorageClient
@@ -109,7 +109,7 @@ def create_filter_endpoint(
                         hf_jwt_algorithm=hf_jwt_algorithm,
                         hf_timeout_seconds=hf_timeout_seconds,
                     )
-                if any(fnmatch(dataset, pat) for pat in DISABLED_DUCKDB_REF_BRANCH_DATASET_NAME_PATTERNS):
+                if fnmatch(dataset, DISABLED_DUCKDB_REF_BRANCH_DATASET_NAME_PATTERN):
                     with StepProfiler(method="filter_endpoint", step="build index if missing"):
                         # get parquet urls and dataset_info
                         parquet_metadata_response = get_cache_entry_from_parquet_metadata_job(
@@ -239,7 +239,7 @@ def create_filter_endpoint(
                 with StepProfiler(method="filter_endpoint", step="generate the OK response"):
                     return get_json_ok_response(content=response, max_age=max_age_long, revision=revision)
             except Exception as e:
-                error = e if isinstance(e, ApiError) else UnexpectedApiError(f"Unexpected error {type(e).__name__}: {e}", e)
+                error = e if isinstance(e, ApiError) else UnexpectedApiError("Unexpected error.", e)
                 with StepProfiler(method="filter_endpoint", step="generate API error response"):
                     return get_json_api_error_response(error=error, max_age=max_age_short, revision=revision)
 
