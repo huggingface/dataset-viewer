@@ -292,7 +292,7 @@ def create_index(
             _sql(con, "CREATE TABLE %fts_schema%.fields (fieldid BIGINT, field VARCHAR);")
             _sql(
                 con,
-                f"INSERT INTO %fts_schema%.fields VALUES {field_values};",
+                f"INSERT INTO %fts_schema%.fields VALUES {field_values};",  # nosec - field_values is safe
             )
             _sql(con, "CHECKPOINT;")
 
@@ -308,7 +308,7 @@ def create_index(
                 )
                 + INSTALL_AND_LOAD_EXTENSION_COMMAND
                 + (
-                    "ATTACH '%database%' as db (READ_ONLY);"
+                    "ATTACH '%database%' as db (READ_ONLY);"  # nosec - tmp_dir, batch_size, rank and i are safe
                     "USE db;"
                     f"ATTACH '{tmp_dir}/tmp_{rank}_{i}.duckdb' as tmp_{rank}_{i};"
                     f"""
@@ -354,13 +354,13 @@ def create_index(
             con.execute(INSTALL_AND_LOAD_EXTENSION_COMMAND)
 
             # init
-            _sql(con, f"ATTACH '{tmp_dir}/tmp.duckdb' as tmp;")
+            _sql(con, f"ATTACH '{tmp_dir}/tmp.duckdb' as tmp;")  # nosec - tmp_dir is safe
             _sql(con, "ATTACH '%database%' as db;")
             _sql(con, "USE db;")
             _sql(
                 con,
                 ";".join(
-                    f"ATTACH '{tmp_dir}/tmp_{rank}_{i}.duckdb' as tmp_{rank}_{i} (READ_ONLY);"
+                    f"ATTACH '{tmp_dir}/tmp_{rank}_{i}.duckdb' as tmp_{rank}_{i} (READ_ONLY);"  # nosec - tmp_dir, rank and i are safe
                     for rank in range(num_jobs)
                     for i in range(len(columns))
                 ),
@@ -368,7 +368,9 @@ def create_index(
 
             # merge tokenizations
             union_fields_query = " UNION ALL ".join(
-                f"SELECT * FROM tmp_{rank}_{i}.tokenized" for rank in range(num_jobs) for i in range(len(columns))
+                f"SELECT * FROM tmp_{rank}_{i}.tokenized"  # nosec - rank and i are safe
+                for rank in range(num_jobs)
+                for i in range(len(columns))
             )
             _sql(con, f"CREATE TABLE tmp.tokenized AS {union_fields_query}")
 
