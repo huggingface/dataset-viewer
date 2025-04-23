@@ -299,7 +299,7 @@ def create_index(
             _sql(con, "CHECKPOINT;")
 
         # tokenize in parallel (see https://github.com/duckdb/duckdb-fts/issues/7)
-        num_jobs = min(16, count // 4)
+        num_jobs = min(16, max(1, count // 4))
         batch_size = 1 + count // num_jobs
         commands = [
             (
