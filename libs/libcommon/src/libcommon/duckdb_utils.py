@@ -23,16 +23,7 @@ from libcommon.statistics_utils import (
     StringColumn,
 )
 
-DISABLED_DUCKDB_REF_BRANCH_DATASET_NAME_PATTERNS = [
-    "vevotx/*",
-    "openai/*",
-    "EleutherAI/*",
-    "HuggingFaceFW/*",
-    "TIGER-Lab/*",
-    "Rapidata/*",  # images
-    "MrDragonFox/*",  # audios
-    "*NoDuckdbRef*",
-]
+DISABLED_DUCKDB_REF_BRANCH_DATASET_NAME_PATTERNS = ["*"]  # TODO: revert, this is for debugging
 
 DATASET_TYPE = "dataset"
 DEFAULT_STEMMER = "none"  # Exact word matches
