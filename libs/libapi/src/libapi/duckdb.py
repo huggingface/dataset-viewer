@@ -1,14 +1,17 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2023 The HuggingFace Authors.
 
+import asyncio
 import errno
 import json
 import logging
 import os
 import re
+import traceback
+from collections.abc import Coroutine
 from hashlib import sha1
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Optional, TypeVar
 
 import anyio
 import duckdb
@@ -39,12 +42,41 @@ from libcommon.storage import StrPath, init_dir
 from libcommon.storage_client import StorageClient
 from libcommon.utils import download_file_from_hub
 
-from libapi.exceptions import DownloadIndexError
+from libapi.exceptions import DownloadIndexError, ResponseNotReadyError
 from libapi.utils import get_cache_entry_from_step
 
 REPO_TYPE = "dataset"
 DUCKDB_INDEX_DOWNLOADS_SUBDIRECTORY = "downloads"
 HUB_DOWNLOAD_CACHE_FOLDER = "cache"
+
+T = TypeVar("T")
+
+_all_tasks: list[asyncio.Task[Any]] = []  # kinda like threading.all_threads()
+
+
+def _handle_errors(task: asyncio.Task[Any]) -> None:
+    try:
+        exc = task.exception()  # Also marks that the exception has been handled
+        if exc:
+            traceback.print_exception(type(exc), exc, exc.__traceback__)
+    except asyncio.exceptions.CancelledError:
+        pass
+
+
+def _task_done(task: asyncio.Task[Any]) -> None:
+    _all_tasks.remove(task)
+    _handle_errors(task)
+
+
+def create_task(awaitable: Coroutine[None, None, T]) -> asyncio.Task[T]:
+    """
+    Spawn an awaitable as a stand-alone task.
+    This allows for fire-and-forget with errors logging.
+    """
+    task = asyncio.create_task(awaitable)
+    _all_tasks.append(task)
+    task.add_done_callback(_task_done)
+    return task
 
 
 async def get_index_file_location_and_download_if_missing(
@@ -237,21 +269,32 @@ async def get_index_file_location_and_build_if_missing(
                 cache_folder = Path(duckdb_index_file_directory) / HUB_DOWNLOAD_CACHE_FOLDER
                 cache_folder.mkdir(exist_ok=True, parents=True)
                 with StepProfiler(method="get_index_file_location_and_build_if_missing", step="build duckdb index"):
-                    await anyio.to_thread.run_sync(
-                        build_index_file,
-                        cache_folder,
-                        index_folder,
-                        dataset,
-                        config,
-                        split,
-                        repo_file_location,
-                        hf_token,
-                        max_split_size_bytes,
-                        extensions_directory,
-                        parquet_metadata_directory,
-                        split_parquet_files,
-                        features,
-                    )
+                    try:
+                        await asyncio.wait_for(
+                            asyncio.shield(
+                                create_task(
+                                    anyio.to_thread.run_sync(
+                                        build_index_file,
+                                        cache_folder,
+                                        index_folder,
+                                        dataset,
+                                        config,
+                                        split,
+                                        repo_file_location,
+                                        hf_token,
+                                        max_split_size_bytes,
+                                        extensions_directory,
+                                        parquet_metadata_directory,
+                                        split_parquet_files,
+                                        features,
+                                    )
+                                )
+                            ),
+                            timeout=20,
+                        )
+                    except asyncio.TimeoutError:
+                        _msg = "this can take a minute" if len(_all_tasks) < 20 else "this may take longer than usual"
+                        raise ResponseNotReadyError("the dataset index is loading, " + _msg)
         # Update its modification time
         await index_path.touch()
         return index_file_location, partial
