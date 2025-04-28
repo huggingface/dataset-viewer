@@ -15,6 +15,7 @@ from typing import Any, Optional, TypeVar
 
 import anyio
 import duckdb
+import filelock
 from datasets import Features
 from filelock import AsyncFileLock
 from huggingface_hub import HfApi
@@ -264,12 +265,12 @@ async def get_index_file_location_and_build_if_missing(
 
         # use a lock in case another worker is currently writing
         Path(index_file_location).parent.mkdir(exist_ok=True, parents=True)
-        async with AsyncFileLock(index_file_location + ".lock", timeout=60):
-            if not await index_path.is_file():
-                cache_folder = Path(duckdb_index_file_directory) / HUB_DOWNLOAD_CACHE_FOLDER
-                cache_folder.mkdir(exist_ok=True, parents=True)
-                with StepProfiler(method="get_index_file_location_and_build_if_missing", step="build duckdb index"):
-                    try:
+        try:
+            async with AsyncFileLock(index_file_location + ".lock", timeout=20):
+                if not await index_path.is_file():
+                    cache_folder = Path(duckdb_index_file_directory) / HUB_DOWNLOAD_CACHE_FOLDER
+                    cache_folder.mkdir(exist_ok=True, parents=True)
+                    with StepProfiler(method="get_index_file_location_and_build_if_missing", step="build duckdb index"):
                         await asyncio.wait_for(
                             asyncio.shield(
                                 create_task(
@@ -292,9 +293,9 @@ async def get_index_file_location_and_build_if_missing(
                             ),
                             timeout=20,
                         )
-                    except asyncio.TimeoutError:
-                        _msg = "this can take a minute" if len(_all_tasks) < 20 else "this may take longer than usual"
-                        raise ResponseNotReadyError("the dataset index is loading, " + _msg)
+        except (filelock.Timeout, asyncio.TimeoutError):
+            _msg = "this can take a minute" if len(_all_tasks) < 20 else "this may take longer than usual"
+            raise ResponseNotReadyError("the dataset index is loading, " + _msg)
         # Update its modification time
         await index_path.touch()
         return index_file_location, partial
