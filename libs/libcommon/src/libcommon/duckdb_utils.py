@@ -33,6 +33,7 @@ DISABLED_DUCKDB_REF_BRANCH_DATASET_NAME_PATTERNS = [
     "MrDragonFox/*",  # audios
     "*NoDuckdbRef*",
 ]
+DISABLED_DUCKDB_REF_BRANCH_USER_OR_ORG_NAME_MIN_LENGTH = 10  # ~40% of users/orgs have a string length >= 10
 
 DATASET_TYPE = "dataset"
 DEFAULT_STEMMER = "none"  # Exact word matches
