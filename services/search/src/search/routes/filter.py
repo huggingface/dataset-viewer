@@ -33,7 +33,11 @@ from libapi.utils import (
     get_json_ok_response,
 )
 from libcommon.constants import ROW_IDX_COLUMN
-from libcommon.duckdb_utils import DISABLED_DUCKDB_REF_BRANCH_DATASET_NAME_PATTERNS, duckdb_index_is_partial
+from libcommon.duckdb_utils import (
+    DISABLED_DUCKDB_REF_BRANCH_DATASET_NAME_PATTERNS,
+    DISABLED_DUCKDB_REF_BRANCH_USER_OR_ORG_NAME_MIN_LENGTH,
+    duckdb_index_is_partial,
+)
 from libcommon.prometheus import StepProfiler
 from libcommon.storage import StrPath, clean_dir
 from libcommon.storage_client import StorageClient
@@ -109,7 +113,10 @@ def create_filter_endpoint(
                         hf_jwt_algorithm=hf_jwt_algorithm,
                         hf_timeout_seconds=hf_timeout_seconds,
                     )
-                if any(fnmatch(dataset, pat) for pat in DISABLED_DUCKDB_REF_BRANCH_DATASET_NAME_PATTERNS):
+                if (
+                    any(fnmatch(dataset, pat) for pat in DISABLED_DUCKDB_REF_BRANCH_DATASET_NAME_PATTERNS)
+                    or len(dataset.split("/")[0]) >= DISABLED_DUCKDB_REF_BRANCH_USER_OR_ORG_NAME_MIN_LENGTH
+                ):
                     with StepProfiler(method="filter_endpoint", step="build index if missing"):
                         # get parquet urls and dataset_info
                         parquet_metadata_response = get_cache_entry_from_parquet_metadata_job(
