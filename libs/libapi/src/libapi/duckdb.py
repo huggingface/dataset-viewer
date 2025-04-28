@@ -270,7 +270,9 @@ async def get_index_file_location_and_build_if_missing(
                 if not await index_path.is_file():
                     cache_folder = Path(duckdb_index_file_directory) / HUB_DOWNLOAD_CACHE_FOLDER
                     cache_folder.mkdir(exist_ok=True, parents=True)
-                    with StepProfiler(method="get_index_file_location_and_build_if_missing", step="build duckdb index"):
+                    with StepProfiler(
+                        method="get_index_file_location_and_build_if_missing", step="build duckdb index"
+                    ):
                         await asyncio.wait_for(
                             asyncio.shield(
                                 create_task(
