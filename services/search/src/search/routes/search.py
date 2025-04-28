@@ -101,7 +101,8 @@ async def create_response(
 ) -> PaginatedResponse:
     features_without_key = features.copy()
     features_without_key.pop(ROW_IDX_COLUMN, None)
-    pa_table = pa_table.drop(unsupported_columns)
+    if len(pa_table) > 0:
+        pa_table = pa_table.drop(unsupported_columns)
     logging.info(f"create response for {dataset=} {config=} {split=}")
 
     return PaginatedResponse(
