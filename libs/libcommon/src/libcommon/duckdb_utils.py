@@ -23,17 +23,8 @@ from libcommon.statistics_utils import (
     StringColumn,
 )
 
-DISABLED_DUCKDB_REF_BRANCH_DATASET_NAME_PATTERNS = [
-    "vevotx/*",
-    "openai/*",
-    "EleutherAI/*",
-    "HuggingFaceFW/*",
-    "TIGER-Lab/*",
-    "Rapidata/*",  # images
-    "MrDragonFox/*",  # audios
-    "*NoDuckdbRef*",
-]
-DISABLED_DUCKDB_REF_BRANCH_USER_OR_ORG_NAME_MIN_LENGTH = 10  # ~40% of users/orgs have a string length >= 10
+DISABLED_DUCKDB_REF_BRANCH_DATASET_NAME_PATTERNS = ["*"]  # all datasets
+DISABLED_DUCKDB_REF_BRANCH_USER_OR_ORG_NAME_MIN_LENGTH = 10  # TODO: remove since enabled for "*"
 
 DATASET_TYPE = "dataset"
 DEFAULT_STEMMER = "none"  # Exact word matches
