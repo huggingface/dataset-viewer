@@ -101,13 +101,10 @@ def create_rows_endpoint(
                         revision = rows_index.revision
                     with StepProfiler(method="rows_endpoint", step="query the rows"):
                         try:
-                            truncated_columns: list[str] = []
-                            if dataset == "Major-TOM/Core-S2L2A" or dataset == "foursquare/fsq-os-places":
-                                pa_table, truncated_columns = rows_index.query_truncated_binary(
-                                    offset=offset, length=length
-                                )
-                            else:
-                                pa_table = rows_index.query(offset=offset, length=length)
+                            # Some datasets have very long binary data that we truncate
+                            pa_table, truncated_columns = rows_index.query_truncated_binary(
+                                offset=offset, length=length
+                            )
                         except TooBigRows as err:
                             raise TooBigContentError(str(err)) from None
                     with StepProfiler(method="rows_endpoint", step="transform to a list"):
