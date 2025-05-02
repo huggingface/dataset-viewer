@@ -27,7 +27,6 @@ from libcommon.prometheus import StepProfiler
 from libcommon.simple_cache import CachedArtifactError, CachedArtifactNotFoundError
 from libcommon.storage import StrPath
 from libcommon.storage_client import StorageClient
-from libcommon.viewer_utils.features import UNSUPPORTED_FEATURES
 from starlette.requests import Request
 from starlette.responses import Response
 
@@ -59,7 +58,6 @@ def create_rows_endpoint(
         parquet_metadata_directory=parquet_metadata_directory,
         httpfs=HTTPFileSystem(headers={"authorization": f"Bearer {hf_token}"}),
         max_arrow_data_in_memory=max_arrow_data_in_memory,
-        unsupported_features=UNSUPPORTED_FEATURES,
         all_columns_supported_datasets_allow_list=ALL_COLUMNS_SUPPORTED_DATASETS_ALLOW_LIST,
     )
 
