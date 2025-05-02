@@ -38,7 +38,6 @@ from libcommon.viewer_utils.asset import (
     create_video_file,
 )
 
-UNSUPPORTED_FEATURES = [Value("binary")]
 AUDIO_FILE_MAGIC_NUMBERS: dict[str, Any] = {
     ".wav": [(b"\x52\x49\x46\x46", 0), (b"\x57\x41\x56\x45", 8)],  # AND: (magic_number, start)
     ".mp3": (b"\xff\xfb", b"\xff\xf3", b"\xff\xf2", b"\x49\x44\x33"),  # OR
@@ -464,7 +463,7 @@ def to_features_list(features: Features) -> list[FeatureItem]:
 
 def get_supported_unsupported_columns(
     features: Features,
-    unsupported_features: list[FeatureType] = UNSUPPORTED_FEATURES,
+    unsupported_features: list[FeatureType] = [],
 ) -> tuple[list[str], list[str]]:
     supported_columns, unsupported_columns = [], []
 

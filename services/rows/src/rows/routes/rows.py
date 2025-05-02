@@ -27,7 +27,6 @@ from libcommon.prometheus import StepProfiler
 from libcommon.simple_cache import CachedArtifactError, CachedArtifactNotFoundError
 from libcommon.storage import StrPath
 from libcommon.storage_client import StorageClient
-from libcommon.viewer_utils.features import UNSUPPORTED_FEATURES
 from starlette.requests import Request
 from starlette.responses import Response
 
@@ -59,7 +58,6 @@ def create_rows_endpoint(
         parquet_metadata_directory=parquet_metadata_directory,
         httpfs=HTTPFileSystem(headers={"authorization": f"Bearer {hf_token}"}),
         max_arrow_data_in_memory=max_arrow_data_in_memory,
-        unsupported_features=UNSUPPORTED_FEATURES,
         all_columns_supported_datasets_allow_list=ALL_COLUMNS_SUPPORTED_DATASETS_ALLOW_LIST,
     )
 
@@ -101,13 +99,10 @@ def create_rows_endpoint(
                         revision = rows_index.revision
                     with StepProfiler(method="rows_endpoint", step="query the rows"):
                         try:
-                            truncated_columns: list[str] = []
-                            if dataset == "Major-TOM/Core-S2L2A" or dataset == "foursquare/fsq-os-places":
-                                pa_table, truncated_columns = rows_index.query_truncated_binary(
-                                    offset=offset, length=length
-                                )
-                            else:
-                                pa_table = rows_index.query(offset=offset, length=length)
+                            # Some datasets have very long binary data that we truncate
+                            pa_table, truncated_columns = rows_index.query_truncated_binary(
+                                offset=offset, length=length
+                            )
                         except TooBigRows as err:
                             raise TooBigContentError(str(err)) from None
                     with StepProfiler(method="rows_endpoint", step="transform to a list"):

@@ -98,11 +98,8 @@ def compute_first_rows_from_parquet_response(
     # get the rows
     def get_rows_content(rows_max_number: int) -> RowsContent:
         try:
-            truncated_columns: list[str] = []
-            if dataset == "Major-TOM/Core-S2L2A":
-                pa_table, truncated_columns = rows_index.query_truncated_binary(offset=0, length=rows_max_number)
-            else:
-                pa_table = rows_index.query(offset=0, length=rows_max_number)
+            # Some datasets have very long binary data that we truncate
+            pa_table, truncated_columns = rows_index.query_truncated_binary(offset=0, length=rows_max_number)
             return RowsContent(
                 rows=pa_table.to_pylist(),
                 all_fetched=rows_index.parquet_index.num_rows_total <= rows_max_number,
