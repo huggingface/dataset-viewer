@@ -88,11 +88,10 @@ UPSTREAM_RESPONSE_SPLIT_FIRST_ROWS_ERROR: UpstreamResponse = UpstreamResponse(
     content={},
 )
 UPSTREAM_RESPONSE_SPLIT_DUCKDB_INDEX_ERROR: UpstreamResponse = UpstreamResponse(
-    kind="split-duckdb-index",
+    kind="config-parquet-metadata",
     dataset=DATASET,
     dataset_git_revision=REVISION_NAME,
     config=CONFIG,
-    split=SPLIT,
     http_status=HTTPStatus.INTERNAL_SERVER_ERROR,
     content={},
 )
