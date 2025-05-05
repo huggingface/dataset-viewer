@@ -206,7 +206,7 @@ def test_plan_job_creation_and_termination() -> None:
                 "dataset-filetypes,dataset,revision",
             ]
         },
-        tasks=["CreateJobs,15"],
+        tasks=["CreateJobs,16"],
     )
 
 
