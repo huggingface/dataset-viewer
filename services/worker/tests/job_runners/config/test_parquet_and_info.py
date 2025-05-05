@@ -548,14 +548,14 @@ def test_concurrency(
     [
         (
             set(),
-            {"dummy", "c1/dummy", "c1/0.parquet", "c2/0.parquet", "c1/index.duckdb"},
+            {"dummy", "c1/dummy", "c1/0.parquet", "c2/0.parquet"},
             {"c1", "c2"},
             "c1",
             {"dummy", "c1/dummy", "c1/0.parquet"},
         ),
         (
             {"c1/0.parquet"},
-            {"dummy", "c1/dummy", "c1/0.parquet", "c2/0.parquet", "c1/index.duckdb"},
+            {"dummy", "c1/dummy", "c1/0.parquet", "c2/0.parquet"},
             {"c1", "c2"},
             "c1",
             {"dummy", "c1/dummy"},
