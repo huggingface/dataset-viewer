@@ -6,7 +6,6 @@ import sys
 from libcommon.log import init_logging
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.storage import (
-    init_duckdb_index_cache_dir,
     init_parquet_metadata_dir,
     init_statistics_cache_dir,
 )

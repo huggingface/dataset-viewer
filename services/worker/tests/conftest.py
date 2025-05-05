@@ -9,7 +9,6 @@ from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import _clean_cache_database
 from libcommon.storage import (
     StrPath,
-    init_duckdb_index_cache_dir,
     init_parquet_metadata_dir,
     init_statistics_cache_dir,
 )
@@ -148,6 +147,7 @@ def libraries_resource(app_config: AppConfig) -> Iterator[LibrariesResource]:
 @fixture
 def parquet_metadata_directory(app_config: AppConfig) -> StrPath:
     return init_parquet_metadata_dir(app_config.parquet_metadata.storage_directory)
+
 
 # Import fixture modules as plugins
 pytest_plugins = ["tests.fixtures.datasets", "tests.fixtures.files", "tests.fixtures.hub", "tests.fixtures.fsspec"]
