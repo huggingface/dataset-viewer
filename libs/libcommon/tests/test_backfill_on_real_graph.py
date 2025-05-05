@@ -50,7 +50,6 @@ def test_plan_job_creation_and_termination() -> None:
             "cache_is_outdated_by_parent": [],
             "cache_is_empty": [
                 "dataset-config-names,dataset,revision",
-                "dataset-duckdb-index-size,dataset,revision",
                 "dataset-hub-cache,dataset,revision",
                 "dataset-info,dataset,revision",
                 "dataset-is-valid,dataset,revision",
@@ -89,7 +88,6 @@ def test_plan_job_creation_and_termination() -> None:
             "cache_is_outdated_by_parent": [],
             "cache_is_empty": [
                 "dataset-config-names,dataset,revision",
-                "dataset-duckdb-index-size,dataset,revision",
                 "dataset-hub-cache,dataset,revision",
                 "dataset-info,dataset,revision",
                 "dataset-is-valid,dataset,revision",
@@ -111,7 +109,6 @@ def test_plan_job_creation_and_termination() -> None:
         queue_status={
             "in_process": [
                 "dataset-config-names,dataset,revision",
-                "dataset-duckdb-index-size,dataset,revision",
                 "dataset-hub-cache,dataset,revision",
                 "dataset-info,dataset,revision",
                 "dataset-is-valid,dataset,revision",
@@ -159,8 +156,6 @@ def test_plan_job_creation_and_termination() -> None:
             "cache_has_different_git_revision": [],
             "cache_is_outdated_by_parent": [],
             "cache_is_empty": [
-                "config-duckdb-index-size,dataset,revision,config1",
-                "config-duckdb-index-size,dataset,revision,config2",
                 "config-split-names,dataset,revision,config1",
                 "config-split-names,dataset,revision,config2",
                 "config-info,dataset,revision,config1",
@@ -177,7 +172,6 @@ def test_plan_job_creation_and_termination() -> None:
                 "config-size,dataset,revision,config2",
                 "config-is-valid,dataset,revision,config1",
                 "config-is-valid,dataset,revision,config2",
-                "dataset-duckdb-index-size,dataset,revision",
                 "dataset-hub-cache,dataset,revision",
                 "dataset-info,dataset,revision",
                 "dataset-is-valid,dataset,revision",
@@ -198,7 +192,6 @@ def test_plan_job_creation_and_termination() -> None:
         # the job "dataset-config-names,dataset,revision" is no more in process
         queue_status={
             "in_process": [
-                "dataset-duckdb-index-size,dataset,revision",
                 "dataset-hub-cache,dataset,revision",
                 "dataset-info,dataset,revision",
                 "dataset-is-valid,dataset,revision",

@@ -55,7 +55,6 @@ def test_graph() -> None:
             [
                 "config-split-names",
                 "config-parquet-and-info",
-                "dataset-duckdb-index-size",
                 "dataset-opt-in-out-urls-count",
                 "dataset-split-names",
                 "dataset-parquet",
@@ -79,7 +78,6 @@ def test_graph() -> None:
         (
             "config-split-names",
             [
-                "config-duckdb-index-size",
                 "config-opt-in-out-urls-count",
                 "split-first-rows",
                 "dataset-split-names",
