@@ -149,11 +149,5 @@ def libraries_resource(app_config: AppConfig) -> Iterator[LibrariesResource]:
 def parquet_metadata_directory(app_config: AppConfig) -> StrPath:
     return init_parquet_metadata_dir(app_config.parquet_metadata.storage_directory)
 
-
-@fixture
-def duckdb_index_cache_directory(app_config: AppConfig) -> StrPath:
-    return init_duckdb_index_cache_dir(app_config.duckdb_index.cache_directory)
-
-
 # Import fixture modules as plugins
 pytest_plugins = ["tests.fixtures.datasets", "tests.fixtures.files", "tests.fixtures.hub", "tests.fixtures.fsspec"]

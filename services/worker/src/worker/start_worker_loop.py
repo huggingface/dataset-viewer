@@ -29,7 +29,6 @@ if __name__ == "__main__":
     init_logging(level=app_config.log.level)
     # ^ set first to have logs as soon as possible
     parquet_metadata_directory = init_parquet_metadata_dir(directory=app_config.parquet_metadata.storage_directory)
-    duckdb_index_cache_directory = init_duckdb_index_cache_dir(directory=app_config.duckdb_index.cache_directory)
     statistics_cache_directory = init_statistics_cache_dir(app_config.descriptive_statistics.cache_directory)
 
     storage_client = StorageClient(
@@ -63,7 +62,6 @@ if __name__ == "__main__":
             app_config=app_config,
             hf_datasets_cache=libraries_resource.hf_datasets_cache,
             parquet_metadata_directory=parquet_metadata_directory,
-            duckdb_index_cache_directory=duckdb_index_cache_directory,
             statistics_cache_directory=statistics_cache_directory,
             storage_client=storage_client,
         )
