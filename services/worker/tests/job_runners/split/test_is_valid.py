@@ -58,7 +58,6 @@ UPSTREAM_RESPONSE_SPLIT_DUCKDB_INDEX_ONLY_DATA: UpstreamResponse = UpstreamRespo
     dataset=DATASET,
     dataset_git_revision=REVISION_NAME,
     config=CONFIG,
-    split=SPLIT,
     http_status=HTTPStatus.OK,
     content={"features": {"id": {"dtype": "int64", "_type": "Value"}}},
 )
