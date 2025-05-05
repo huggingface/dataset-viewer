@@ -81,18 +81,6 @@ Set environment variables to configure the `parquet-and-info` worker (`PARQUET_A
 - `PARQUET_AND_INFO_TARGET_REVISION`: the git revision of the dataset where to store the parquet files. Make sure the committer token (`PARQUET_AND_INFO_COMMITTER_HF_TOKEN`) has the permission to write there. Defaults to `refs/convert/parquet`.
 - `PARQUET_AND_INFO_URL_TEMPLATE`: the URL template to build the parquet file URLs. Defaults to `/datasets/%s/resolve/%s/%s`.
 
-### Duckdb Index worker
-
-Set environment variables to configure the `duckdb-index` worker (`DUCKDB_INDEX_` prefix):
-
-- `DUCKDB_INDEX_CACHE_DIRECTORY`: directory where the temporal duckdb index files are stored. Defaults to empty.
-- `DUCKDB_INDEX_COMMIT_MESSAGE`: the git commit message when the worker uploads the duckdb index file to the Hub. Defaults to `Update duckdb index file`.
-- `COMMITTER_HF_TOKEN`: the HuggingFace token to commit the duckdb index file to the Hub. The token must be an app token associated with a user that has the right to 1. create the `refs/convert/duckdb` branch (see `DUCKDB_INDEX_TARGET_REVISION`) and 2. push commits to it on any dataset. [Datasets maintainers](https://huggingface.co/datasets-maintainers) members have these rights. The token must have permission to write. If not set, the worker will fail. Defaults to None.
-- `DUCKDB_INDEX_MAX_SPLIT_SIZE_BYTES`: if size in bytes of raw uncompressed split data is larger than this value, only first `n` parquet files are used so that their sum of uncompressed content in bytes is not greater than approximately `DUCKDB_INDEX_MAX_SPLIT_SIZE_BYTES`. Defaults to `100_000_000`.
-- `DUCKDB_INDEX_TARGET_REVISION`: the git revision of the dataset where to store the duckdb index file. Make sure the committer token (`DUCKDB_INDEX_COMMITTER_HF_TOKEN`) has the permission to write there. Defaults to `refs/convert/duckdb`.
-- `DUCKDB_INDEX_URL_TEMPLATE`: the URL template to build the duckdb index file URL. Defaults to `/datasets/%s/resolve/%s/%s`.
-- `DUCKDB_INDEX_EXTENSIONS_DIRECTORY`: directory where the duckdb extensions will be downloaded. Defaults to empty.
-
 ### Descriptive statistics worker
 
 Set environment variables to configure the `descriptive-statistics` worker (`DESCRIPTIVE_STATISTICS_` prefix):

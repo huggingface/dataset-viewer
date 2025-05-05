@@ -11,9 +11,6 @@ from libcommon.storage_client import StorageClient
 
 from worker.config import AppConfig
 from worker.job_runner import JobRunner
-from worker.job_runners.config.duckdb_index_size import (
-    ConfigDuckdbIndexSizeJobRunner,
-)
 from worker.job_runners.config.info import ConfigInfoJobRunner
 from worker.job_runners.config.is_valid import ConfigIsValidJobRunner
 from worker.job_runners.config.opt_in_out_urls_count import (
@@ -27,9 +24,6 @@ from worker.job_runners.config.split_names import ConfigSplitNamesJobRunner
 from worker.job_runners.dataset.compatible_libraries import DatasetCompatibleLibrariesJobRunner
 from worker.job_runners.dataset.config_names import DatasetConfigNamesJobRunner
 from worker.job_runners.dataset.croissant_crumbs import DatasetCroissantCrumbsJobRunner
-from worker.job_runners.dataset.duckdb_index_size import (
-    DatasetDuckdbIndexSizeJobRunner,
-)
 from worker.job_runners.dataset.filetypes import DatasetFiletypesJobRunner
 from worker.job_runners.dataset.hub_cache import DatasetHubCacheJobRunner
 from worker.job_runners.dataset.info import DatasetInfoJobRunner
@@ -45,7 +39,6 @@ from worker.job_runners.dataset.split_names import DatasetSplitNamesJobRunner
 from worker.job_runners.split.descriptive_statistics import (
     SplitDescriptiveStatisticsJobRunner,
 )
-from worker.job_runners.split.duckdb_index import SplitDuckDbIndexJobRunner
 from worker.job_runners.split.first_rows import SplitFirstRowsJobRunner
 from worker.job_runners.split.image_url_columns import SplitImageUrlColumnsJobRunner
 from worker.job_runners.split.is_valid import SplitIsValidJobRunner
@@ -218,23 +211,6 @@ class JobRunnerFactory(BaseJobRunnerFactory):
                 app_config=self.app_config,
                 statistics_cache_directory=self.statistics_cache_directory,
                 parquet_metadata_directory=self.parquet_metadata_directory,
-            )
-        if job_type == SplitDuckDbIndexJobRunner.get_job_type():
-            return SplitDuckDbIndexJobRunner(
-                job_info=job_info,
-                app_config=self.app_config,
-                duckdb_index_cache_directory=self.duckdb_index_cache_directory,
-                parquet_metadata_directory=self.parquet_metadata_directory,
-            )
-        if job_type == ConfigDuckdbIndexSizeJobRunner.get_job_type():
-            return ConfigDuckdbIndexSizeJobRunner(
-                job_info=job_info,
-                app_config=self.app_config,
-            )
-        if job_type == DatasetDuckdbIndexSizeJobRunner.get_job_type():
-            return DatasetDuckdbIndexSizeJobRunner(
-                job_info=job_info,
-                app_config=self.app_config,
             )
         if job_type == DatasetHubCacheJobRunner.get_job_type():
             return DatasetHubCacheJobRunner(

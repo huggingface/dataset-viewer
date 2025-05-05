@@ -55,7 +55,6 @@ def test_graph() -> None:
             [
                 "config-split-names",
                 "config-parquet-and-info",
-                "dataset-duckdb-index-size",
                 "dataset-opt-in-out-urls-count",
                 "dataset-split-names",
                 "dataset-parquet",
@@ -79,7 +78,6 @@ def test_graph() -> None:
         (
             "config-split-names",
             [
-                "config-duckdb-index-size",
                 "config-opt-in-out-urls-count",
                 "split-first-rows",
                 "dataset-split-names",
@@ -125,7 +123,7 @@ def test_graph() -> None:
         ),
         (
             "config-parquet-metadata",
-            ["split-first-rows", "split-duckdb-index", "split-descriptive-statistics", "split-presidio-scan"],
+            ["split-first-rows", "split-is-valid", "split-descriptive-statistics", "split-presidio-scan"],
             ["config-parquet"],
             ["dataset-config-names", "config-parquet-and-info", "config-parquet"],
         ),
@@ -200,7 +198,6 @@ def test_graph() -> None:
                 "split-first-rows",
                 "config-is-valid",
                 "split-is-valid",
-                "split-duckdb-index",
                 "split-descriptive-statistics",
             ],
         ),
@@ -311,46 +308,6 @@ def test_graph() -> None:
             ],
         ),
         (
-            "split-duckdb-index",
-            ["config-duckdb-index-size", "split-is-valid"],
-            ["config-parquet-metadata"],
-            [
-                "config-parquet",
-                "config-parquet-and-info",
-                "config-parquet-metadata",
-                "dataset-config-names",
-            ],
-        ),
-        (
-            "config-duckdb-index-size",
-            ["dataset-duckdb-index-size"],
-            ["split-duckdb-index", "config-split-names"],
-            [
-                "config-split-names",
-                "config-parquet",
-                "config-parquet-and-info",
-                "config-parquet-metadata",
-                "config-info",
-                "dataset-config-names",
-                "split-duckdb-index",
-            ],
-        ),
-        (
-            "dataset-duckdb-index-size",
-            [],
-            ["config-duckdb-index-size", "dataset-config-names"],
-            [
-                "config-duckdb-index-size",
-                "config-split-names",
-                "config-parquet",
-                "config-parquet-and-info",
-                "config-parquet-metadata",
-                "config-info",
-                "dataset-config-names",
-                "split-duckdb-index",
-            ],
-        ),
-        (
             "split-descriptive-statistics",
             ["split-is-valid"],
             ["config-parquet-metadata"],
@@ -380,7 +337,6 @@ def test_graph() -> None:
                 "dataset-compatible-libraries",
                 "dataset-modalities",
                 "dataset-size",
-                "split-duckdb-index",
                 "split-first-rows",
                 "split-image-url-columns",
                 "split-is-valid",
@@ -390,7 +346,7 @@ def test_graph() -> None:
         (
             "split-is-valid",
             ["config-is-valid"],
-            ["split-first-rows", "split-duckdb-index", "split-descriptive-statistics", "config-size"],
+            ["split-first-rows", "config-parquet-metadata", "split-descriptive-statistics", "config-size"],
             [
                 "config-parquet-metadata",
                 "config-split-names",
@@ -399,7 +355,6 @@ def test_graph() -> None:
                 "config-info",
                 "config-size",
                 "dataset-config-names",
-                "split-duckdb-index",
                 "split-first-rows",
                 "split-descriptive-statistics",
             ],
@@ -416,7 +371,6 @@ def test_graph() -> None:
                 "config-info",
                 "config-size",
                 "dataset-config-names",
-                "split-duckdb-index",
                 "split-first-rows",
                 "split-descriptive-statistics",
                 "split-is-valid",
