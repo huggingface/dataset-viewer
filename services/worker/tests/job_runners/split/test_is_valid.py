@@ -46,22 +46,21 @@ UPSTREAM_RESPONSE_SPLIT_FIRST_ROWS: UpstreamResponse = UpstreamResponse(
     content={},
 )
 UPSTREAM_RESPONSE_SPLIT_DUCKDB_INDEX: UpstreamResponse = UpstreamResponse(
-    kind="split-duckdb-index",
+    kind="config-parquet-metadata",
     dataset=DATASET,
     dataset_git_revision=REVISION_NAME,
     config=CONFIG,
-    split=SPLIT,
     http_status=HTTPStatus.OK,
-    content={"stemmer": "porter"},
+    content={"features": {"text": {"dtype": "string", "_type": "Value"}}},
 )
 UPSTREAM_RESPONSE_SPLIT_DUCKDB_INDEX_ONLY_DATA: UpstreamResponse = UpstreamResponse(
-    kind="split-duckdb-index",
+    kind="config-parquet-metadata",
     dataset=DATASET,
     dataset_git_revision=REVISION_NAME,
     config=CONFIG,
     split=SPLIT,
     http_status=HTTPStatus.OK,
-    content={"stemmer": None},
+    content={"features": {"id": {"dtype": "int64", "_type": "Value"}}},
 )
 UPSTREAM_RESPONSE_SPLIT_DESCRIPTIVE_STATISTICS: UpstreamResponse = UpstreamResponse(
     kind="split-descriptive-statistics",
