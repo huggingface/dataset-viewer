@@ -70,19 +70,6 @@
   value: {{ .Values.optInOutUrlsScan.spawningUrl | quote }}
 - name: CONFIG_NAMES_MAX_NUMBER
   value: {{ .Values.configNames.maxNumber | quote }}
-# specific to 'split-duckdb-index' job runner
-- name: DUCKDB_INDEX_COMMIT_MESSAGE
-  value: {{ .Values.duckDBIndex.commitMessage | quote }}
-- name: DUCKDB_INDEX_TARGET_REVISION
-  value: {{ .Values.duckDBIndex.targetRevision | quote }}
-- name: DUCKDB_INDEX_URL_TEMPLATE
-  value: {{ .Values.duckDBIndex.urlTemplate | quote }}
-- name: DUCKDB_INDEX_MAX_SPLIT_SIZE_BYTES
-  value: {{ .Values.duckDBIndex.maxSplitSizeBytes | quote }}
-- name: DUCKDB_INDEX_CACHE_DIRECTORY
-  value: {{ .Values.duckDBIndex.workerDirectory | quote }}
-- name: DUCKDB_INDEX_EXTENSIONS_DIRECTORY
-  value: "/tmp/duckdb-extensions"
 # specific to 'split-descriptive-statistics'
 - name: DESCRIPTIVE_STATISTICS_MAX_SPLIT_SIZE_BYTES
   value: {{ .Values.descriptiveStatistics.maxSplitSizeBytes | quote }}
