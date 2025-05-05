@@ -289,38 +289,6 @@ class SplitNamesConfig:
             )
 
 
-DUCKDB_INDEX_CACHE_DIRECTORY = None
-DUCKDB_INDEX_COMMIT_MESSAGE = "Update duckdb index file"
-DUCKDB_INDEX_COMMITTER_HF_TOKEN = None
-DUCKDB_INDEX_MAX_SPLIT_SIZE_BYTES = 100_000_000
-DUCKDB_INDEX_TARGET_REVISION = "refs/convert/duckdb"
-DUCKDB_INDEX_URL_TEMPLATE = "/datasets/%s/resolve/%s/%s"
-DUCKDB_INDEX_EXTENSIONS_DIRECTORY: Optional[str] = None
-
-
-@dataclass(frozen=True)
-class DuckDbIndexConfig:
-    cache_directory: Optional[str] = DUCKDB_INDEX_CACHE_DIRECTORY
-    commit_message: str = DUCKDB_INDEX_COMMIT_MESSAGE
-    target_revision: str = DUCKDB_INDEX_TARGET_REVISION
-    url_template: str = DUCKDB_INDEX_URL_TEMPLATE
-    max_split_size_bytes: int = DUCKDB_INDEX_MAX_SPLIT_SIZE_BYTES
-    extensions_directory: Optional[str] = DUCKDB_INDEX_EXTENSIONS_DIRECTORY
-
-    @classmethod
-    def from_env(cls) -> "DuckDbIndexConfig":
-        env = Env(expand_vars=True)
-        with env.prefixed("DUCKDB_INDEX_"):
-            return cls(
-                cache_directory=env.str(name="CACHE_DIRECTORY", default=DUCKDB_INDEX_CACHE_DIRECTORY),
-                commit_message=env.str(name="COMMIT_MESSAGE", default=DUCKDB_INDEX_COMMIT_MESSAGE),
-                target_revision=env.str(name="TARGET_REVISION", default=DUCKDB_INDEX_TARGET_REVISION),
-                url_template=env.str(name="URL_TEMPLATE", default=DUCKDB_INDEX_URL_TEMPLATE),
-                max_split_size_bytes=env.int(name="MAX_SPLIT_SIZE_BYTES", default=DUCKDB_INDEX_MAX_SPLIT_SIZE_BYTES),
-                extensions_directory=env.str(name="EXTENSIONS_DIRECTORY", default=DUCKDB_INDEX_EXTENSIONS_DIRECTORY),
-            )
-
-
 DESCRIPTIVE_STATISTICS_CACHE_DIRECTORY = None
 DESCRIPTIVE_STATISTICS_MAX_SPLIT_SIZE_BYTES = 100_000_000
 
@@ -364,7 +332,6 @@ class AppConfig:
     urls_scan: OptInOutUrlsScanConfig = field(default_factory=OptInOutUrlsScanConfig)
     presidio_scan: PresidioEntitiesScanConfig = field(default_factory=PresidioEntitiesScanConfig)
     parquet_metadata: ParquetMetadataConfig = field(default_factory=ParquetMetadataConfig)
-    duckdb_index: DuckDbIndexConfig = field(default_factory=DuckDbIndexConfig)
     descriptive_statistics: DescriptiveStatisticsConfig = field(default_factory=DescriptiveStatisticsConfig)
     committer: CommitterConfig = field(default_factory=CommitterConfig)
 
@@ -388,7 +355,6 @@ class AppConfig:
             urls_scan=OptInOutUrlsScanConfig.from_env(),
             presidio_scan=PresidioEntitiesScanConfig.from_env(),
             parquet_metadata=ParquetMetadataConfig.from_env(),
-            duckdb_index=DuckDbIndexConfig.from_env(),
             descriptive_statistics=DescriptiveStatisticsConfig.from_env(),
             committer=CommitterConfig.from_env(),
         )

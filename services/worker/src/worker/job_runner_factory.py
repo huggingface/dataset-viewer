@@ -73,7 +73,6 @@ class JobRunnerFactory(BaseJobRunnerFactory):
     app_config: AppConfig
     hf_datasets_cache: Path
     parquet_metadata_directory: StrPath
-    duckdb_index_cache_directory: StrPath
     statistics_cache_directory: StrPath
     storage_client: StorageClient
 

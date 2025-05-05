@@ -1152,17 +1152,12 @@ def get_delete_operations(
 ) -> list[CommitOperationDelete]:
     # - get files that will be preserved in repo:
     #   1. parquet files belonging to any other config (otherwise outdated files might be preserved)
-    #   2. duckdb files belonging to any config
-    #   3. .gitattributes
-    pattern_in_any_config_dir = re.compile(f"^({'|'.join(re.escape(conf) for conf in config_names)})/")
+    #   2. .gitattributes
     pattern_in_any_other_config_dir = re.compile(
         f"^({'|'.join(re.escape(conf) for conf in config_names.difference({config}))})/"
     )
     files_to_ignore: set[str] = {
-        file
-        for file in all_repo_files
-        if (pattern_in_any_other_config_dir.match(file) and file.endswith(".parquet"))
-        or (pattern_in_any_config_dir.match(file) and file.endswith(".duckdb"))
+        file for file in all_repo_files if pattern_in_any_other_config_dir.match(file) and file.endswith(".parquet")
     }.union({".gitattributes"})
     # - get files to be deleted - all files except for:
     #   - the files to be preserved
