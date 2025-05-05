@@ -589,7 +589,7 @@ specification: ProcessingGraphSpecification = {
         "triggered_by": [
             "config-size",
             "split-first-rows",
-            "split-duckdb-index",
+            "config-parquet-metadata",
             "split-descriptive-statistics",
         ],
         "job_runner_version": 4,
@@ -660,31 +660,6 @@ specification: ProcessingGraphSpecification = {
         "triggered_by": [
             "dataset-split-names",  # required in case the dataset has no configs (error in previous step)
             "split-presidio-scan",
-        ],
-        "job_runner_version": 1,
-        "difficulty": 20,
-    },
-    "split-duckdb-index": {
-        "input_type": "split",
-        "triggered_by": "config-parquet-metadata",
-        "job_runner_version": 3,
-        "difficulty": 70,
-        "bonus_difficulty_if_dataset_is_big": 20,
-    },
-    "config-duckdb-index-size": {
-        "input_type": "config",
-        "triggered_by": [
-            "config-split-names",  # required in case the config has no splits (error in previous step)
-            "split-duckdb-index",
-        ],
-        "job_runner_version": 2,
-        "difficulty": 20,
-    },
-    "dataset-duckdb-index-size": {
-        "input_type": "dataset",
-        "triggered_by": [
-            "dataset-config-names",  # required in case the dataset has no configs (error in previous step)
-            "config-duckdb-index-size",
         ],
         "job_runner_version": 1,
         "difficulty": 20,

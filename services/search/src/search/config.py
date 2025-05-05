@@ -22,7 +22,6 @@ DUCKDB_INDEX_CACHE_DIRECTORY = None
 DUCKDB_INDEX_CACHE_CLEAN_CACHE_PROBA = 0.05
 DUCKDB_INDEX_CACHE_EXPIRED_TIME_INTERVAL_SECONDS = 3_600  # 1 hour
 
-DUCKDB_INDEX_TARGET_REVISION = "refs/convert/duckdb"
 DUCKDB_INDEX_EXTENSIONS_DIRECTORY: Optional[str] = None
 
 
@@ -31,7 +30,6 @@ class DuckDbIndexConfig:
     cache_directory: Optional[str] = DUCKDB_INDEX_CACHE_DIRECTORY
     clean_cache_proba: float = DUCKDB_INDEX_CACHE_CLEAN_CACHE_PROBA
     expired_time_interval_seconds: int = DUCKDB_INDEX_CACHE_EXPIRED_TIME_INTERVAL_SECONDS
-    target_revision: str = DUCKDB_INDEX_TARGET_REVISION
     extensions_directory: Optional[str] = DUCKDB_INDEX_EXTENSIONS_DIRECTORY
 
     @classmethod
@@ -47,7 +45,6 @@ class DuckDbIndexConfig:
                     name="CACHE_EXPIRED_TIME_INTERVAL_SECONDS",
                     default=DUCKDB_INDEX_CACHE_EXPIRED_TIME_INTERVAL_SECONDS,
                 ),
-                target_revision=env.str(name="TARGET_REVISION", default=DUCKDB_INDEX_TARGET_REVISION),
                 extensions_directory=env.str(name="EXTENSIONS_DIRECTORY", default=DUCKDB_INDEX_EXTENSIONS_DIRECTORY),
             )
 

@@ -3,13 +3,15 @@
 
 import logging
 
+from datasets import Features
 from libcommon.constants import (
     CONFIG_HAS_VIEWER_KIND,
+    CONFIG_PARQUET_METADATA_KIND,
     SPLIT_HAS_PREVIEW_KIND,
-    SPLIT_HAS_SEARCH_KIND,
     SPLIT_HAS_STATISTICS_KIND,
 )
 from libcommon.dtos import JobInfo
+from libcommon.duckdb_utils import get_indexable_columns
 from libcommon.simple_cache import (
     get_previous_step_or_raise,
     is_successful_response,
@@ -54,15 +56,17 @@ def compute_is_valid_response(dataset: str, config: str, split: str) -> IsValidR
     )
 
     try:
-        duckdb_response = get_previous_step_or_raise(
-            kind=SPLIT_HAS_SEARCH_KIND,
+        parquet_metadata_response = get_previous_step_or_raise(
+            kind=CONFIG_PARQUET_METADATA_KIND,
             dataset=dataset,
             config=config,
-            split=split,
         )
-        search_content = duckdb_response["content"]
+        features = parquet_metadata_response["content"]["features"]
         filter = True
-        search = search_content["stemmer"] is not None
+        if isinstance(features, dict):
+            search = len(get_indexable_columns(Features.from_dict(features))) > 0
+        else:
+            search = False
     except Exception:
         filter = False
         search = False

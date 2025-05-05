@@ -3,7 +3,6 @@
 
 import logging
 import random
-from fnmatch import fnmatch
 from http import HTTPStatus
 from typing import Optional
 
@@ -12,14 +11,11 @@ import pyarrow as pa
 from datasets import Features, Value
 from libapi.authentication import auth_check
 from libapi.duckdb import (
-    get_cache_entry_from_duckdb_index_job,
     get_cache_entry_from_parquet_metadata_job,
     get_index_file_location_and_build_if_missing,
-    get_index_file_location_and_download_if_missing,
 )
 from libapi.exceptions import (
     ApiError,
-    SearchFeatureNotAvailableError,
     UnexpectedApiError,
 )
 from libapi.request import (
@@ -36,11 +32,6 @@ from libapi.utils import (
 )
 from libcommon.constants import HF_FTS_SCORE, MAX_NUM_ROWS_PER_PAGE, ROW_IDX_COLUMN
 from libcommon.dtos import PaginatedResponse
-from libcommon.duckdb_utils import (
-    DISABLED_DUCKDB_REF_BRANCH_DATASET_NAME_PATTERNS,
-    DISABLED_DUCKDB_REF_BRANCH_USER_OR_ORG_NAME_MIN_LENGTH,
-    duckdb_index_is_partial,
-)
 from libcommon.prometheus import StepProfiler
 from libcommon.storage import StrPath, clean_dir
 from libcommon.storage_client import StorageClient
@@ -129,7 +120,6 @@ def create_search_endpoint(
     duckdb_index_file_directory: StrPath,
     cached_assets_storage_client: StorageClient,
     parquet_metadata_directory: StrPath,
-    target_revision: str,
     hf_endpoint: str,
     blocked_datasets: list[str],
     external_auth_url: Optional[str] = None,
@@ -170,100 +160,48 @@ def create_search_endpoint(
 
                 logging.info(f"/search {dataset=} {config=} {split=} {query=} {offset=} {length=}")
 
-                if (
-                    any(fnmatch(dataset, pat) for pat in DISABLED_DUCKDB_REF_BRANCH_DATASET_NAME_PATTERNS)
-                    or len(dataset.split("/")[0]) >= DISABLED_DUCKDB_REF_BRANCH_USER_OR_ORG_NAME_MIN_LENGTH
-                ):
-                    with StepProfiler(method="filter_endpoint", step="build index if missing"):
-                        # get parquet urls and dataset_info
-                        parquet_metadata_response = get_cache_entry_from_parquet_metadata_job(
-                            dataset=dataset,
-                            config=config,
-                            hf_endpoint=hf_endpoint,
-                            hf_token=hf_token,
-                            hf_timeout_seconds=hf_timeout_seconds,
-                            blocked_datasets=blocked_datasets,
-                            storage_clients=storage_clients,
-                        )
-                        revision = parquet_metadata_response["dataset_git_revision"]
-                        if parquet_metadata_response["http_status"] != HTTPStatus.OK:
-                            return get_json_error_response(
-                                content=parquet_metadata_response["content"],
-                                status_code=parquet_metadata_response["http_status"],
-                                max_age=max_age_short,
-                                error_code=parquet_metadata_response["error_code"],
-                                revision=revision,
-                            )
-                        content_parquet_metadata = parquet_metadata_response["content"]
-                        split_parquet_files = [
-                            parquet_file
-                            for parquet_file in content_parquet_metadata["parquet_files_metadata"]
-                            if parquet_file["config"] == config and parquet_file["split"] == split
-                        ]
-                        index_file_location, partial = await get_index_file_location_and_build_if_missing(
-                            duckdb_index_file_directory=duckdb_index_file_directory,
-                            dataset=dataset,
-                            config=config,
-                            split=split,
+                with StepProfiler(method="filter_endpoint", step="build index if missing"):
+                    # get parquet urls and dataset_info
+                    parquet_metadata_response = get_cache_entry_from_parquet_metadata_job(
+                        dataset=dataset,
+                        config=config,
+                        hf_endpoint=hf_endpoint,
+                        hf_token=hf_token,
+                        hf_timeout_seconds=hf_timeout_seconds,
+                        blocked_datasets=blocked_datasets,
+                        storage_clients=storage_clients,
+                    )
+                    revision = parquet_metadata_response["dataset_git_revision"]
+                    if parquet_metadata_response["http_status"] != HTTPStatus.OK:
+                        return get_json_error_response(
+                            content=parquet_metadata_response["content"],
+                            status_code=parquet_metadata_response["http_status"],
+                            max_age=max_age_short,
+                            error_code=parquet_metadata_response["error_code"],
                             revision=revision,
-                            hf_token=hf_token,
-                            max_split_size_bytes=max_split_size_bytes,
-                            extensions_directory=extensions_directory,
-                            parquet_metadata_directory=parquet_metadata_directory,
-                            split_parquet_files=split_parquet_files,
-                            features=content_parquet_metadata["features"],
                         )
-                        # features must contain the row idx column for full_text_search
-                        features = Features.from_dict(content_parquet_metadata["features"])
-                        features[ROW_IDX_COLUMN] = Value("int64")
-                else:
-                    with StepProfiler(method="search_endpoint", step="validate indexing was done"):
-                        # no cache data is needed to download the index file
-                        # but will help to validate if indexing was done
-                        duckdb_index_cache_entry = get_cache_entry_from_duckdb_index_job(
-                            dataset=dataset,
-                            config=config,
-                            split=split,
-                            hf_endpoint=hf_endpoint,
-                            hf_token=hf_token,
-                            hf_timeout_seconds=hf_timeout_seconds,
-                            blocked_datasets=blocked_datasets,
-                            storage_clients=storage_clients,
-                        )
-                        revision = duckdb_index_cache_entry["dataset_git_revision"]
-                        if duckdb_index_cache_entry["http_status"] != HTTPStatus.OK:
-                            return get_json_error_response(
-                                content=duckdb_index_cache_entry["content"],
-                                status_code=duckdb_index_cache_entry["http_status"],
-                                max_age=max_age_short,
-                                error_code=duckdb_index_cache_entry["error_code"],
-                                revision=revision,
-                            )
-                        if duckdb_index_cache_entry["content"]["stemmer"] is None:
-                            raise SearchFeatureNotAvailableError("The split does not have search feature enabled.")
-
-                        # check if the index is on the full dataset or if it's partial
-                        url = duckdb_index_cache_entry["content"]["url"]
-                        filename = duckdb_index_cache_entry["content"]["filename"]
-                        index_size = duckdb_index_cache_entry["content"]["size"]
-                        partial = duckdb_index_is_partial(url)
-
-                    with StepProfiler(method="search_endpoint", step="download index file if missing"):
-                        index_file_location = await get_index_file_location_and_download_if_missing(
-                            duckdb_index_file_directory=duckdb_index_file_directory,
-                            dataset=dataset,
-                            config=config,
-                            split=split,
-                            revision=revision,
-                            filename=filename,
-                            size_bytes=index_size,
-                            url=url,
-                            target_revision=target_revision,
-                            hf_token=hf_token,
-                        )
-                    with StepProfiler(method="search_endpoint", step="get features"):
-                        # features contain the row idx column
-                        features = Features.from_dict(duckdb_index_cache_entry["content"]["features"])
+                    content_parquet_metadata = parquet_metadata_response["content"]
+                    split_parquet_files = [
+                        parquet_file
+                        for parquet_file in content_parquet_metadata["parquet_files_metadata"]
+                        if parquet_file["config"] == config and parquet_file["split"] == split
+                    ]
+                    index_file_location, partial = await get_index_file_location_and_build_if_missing(
+                        duckdb_index_file_directory=duckdb_index_file_directory,
+                        dataset=dataset,
+                        config=config,
+                        split=split,
+                        revision=revision,
+                        hf_token=hf_token,
+                        max_split_size_bytes=max_split_size_bytes,
+                        extensions_directory=extensions_directory,
+                        parquet_metadata_directory=parquet_metadata_directory,
+                        split_parquet_files=split_parquet_files,
+                        features=content_parquet_metadata["features"],
+                    )
+                    # features must contain the row idx column for full_text_search
+                    features = Features.from_dict(content_parquet_metadata["features"])
+                    features[ROW_IDX_COLUMN] = Value("int64")
                 with StepProfiler(method="search_endpoint", step="get supported and unsupported columns"):
                     supported_columns, unsupported_columns = get_supported_unsupported_columns(
                         features,
