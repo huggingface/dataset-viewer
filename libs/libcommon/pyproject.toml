@@ -9,12 +9,12 @@ license = "Apache-2.0"
 python = "3.9.18"
 appdirs = "^1.4.4"
 cryptography = "^43.0.1"
-datasets = {version = "3.4.1", extras = ["audio", "vision"]}
+datasets = {version = "3.6.0", extras = ["audio", "vision"]}
 duckdb = "^1.2.2"
 environs = "^9.5.0"
 filelock = "^3.18.0"
 fsspec = {version = "2024.3.1", extras = ["s3"]}
-huggingface-hub = {version = "^0.28.0", extras = ["hf-transfer"]}
+huggingface-hub = {version = "^0.31.0", extras = ["hf-transfer"]}
 mongo-types = "0.15.1"
 mongoengine = "^0.27.0"
 networkx = "^3.0"
