@@ -41,6 +41,8 @@ class JobRunnerWithDatasetsCache(JobRunnerWithCache):
         )
         huggingface_hub.constants.HF_HUB_CACHE = str(cache_subdirectory / "hub")
         logging.debug(f"huggingface_hub cache set to: {huggingface_hub.constants.HF_HUB_CACHE}")
+        huggingface_hub.constants.HF_XET_CACHE = str(cache_subdirectory / "xet")
+        logging.debug(f"huggingface_hub xet cache set to: {huggingface_hub.constants.HF_XET_CACHE}")
 
     def pre_compute(self) -> None:
         super().pre_compute()
