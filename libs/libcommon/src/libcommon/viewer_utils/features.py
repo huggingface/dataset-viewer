@@ -9,6 +9,7 @@ from zlib import adler32
 
 import datasets.config
 import numpy as np
+import pdfplumber
 import soundfile  # type: ignore
 from datasets import (
     Array2D,
@@ -20,6 +21,7 @@ from datasets import (
     Features,
     Image,
     LargeList,
+    Pdf,
     Sequence,
     Translation,
     TranslationVariableLanguages,
@@ -35,6 +37,7 @@ from libcommon.viewer_utils.asset import (
     SUPPORTED_AUDIO_EXTENSIONS,
     create_audio_file,
     create_image_file,
+    create_pdf_file,
     create_video_file,
 )
 
@@ -270,6 +273,61 @@ def get_video_file_extension(value: Any) -> str:
     return video_file_extension
 
 
+def pdf(
+    dataset: str,
+    revision: str,
+    config: str,
+    split: str,
+    row_idx: int,
+    value: Any,
+    featureName: str,
+    storage_client: StorageClient,
+    json_path: Optional[list[Union[str, int]]] = None,
+) -> Any:
+    if value is None:
+        return None
+    if isinstance(value, dict) and value.get("bytes"):
+        bytes_obj = BytesIO(value["bytes"])
+        pdf_obj = pdfplumber.open(value)
+    elif isinstance(value, bytes):
+        bytes_obj = BytesIO(value)
+        pdf_obj = pdfplumber.open(value)
+    elif (
+        isinstance(value, dict)
+        and "path" in value
+        and isinstance(value["path"], str)
+        and os.path.exists(value["path"])
+    ):
+        with open(value["path"], "rb") as f:
+            bytes_obj = BytesIO(f.read())
+        pdf_obj = pdfplumber.open(value["path"])
+    elif isinstance(value, pdfplumber.pdf.PDF):
+        bytes_obj = value.stream
+        pdf_obj = value
+
+    if not isinstance(value, pdfplumber.pdf.PDF):
+        raise TypeError(
+            "PDF cell must be a pdfplumber.pdf.PDF object or an encoded dict of a PDF, "
+            f"but got {str(value)[:300]}{'...' if len(str(value)) > 300 else ''}"
+        )
+
+    thumbnail = pdf_obj.pages[0].to_image(resolution=300)
+
+    # this function can raise, we don't catch it
+    return create_pdf_file(
+        dataset=dataset,
+        revision=revision,
+        config=config,
+        split=split,
+        row_idx=row_idx,
+        column=featureName,
+        thumbnail=thumbnail,
+        pdf=bytes_obj,
+        storage_client=storage_client,
+        filename=f"{append_hash_suffix('pdf', json_path)}.pdf",
+    )
+
+
 def get_cell_value(
     dataset: str,
     revision: str,
@@ -311,6 +369,18 @@ def get_cell_value(
         )
     elif isinstance(fieldType, Video):
         return video(
+            dataset=dataset,
+            revision=revision,
+            config=config,
+            split=split,
+            row_idx=row_idx,
+            value=cell,
+            featureName=featureName,
+            storage_client=storage_client,
+            json_path=json_path,
+        )
+    elif isinstance(fieldType, Pdf):
+        return pdf(
             dataset=dataset,
             revision=revision,
             config=config,

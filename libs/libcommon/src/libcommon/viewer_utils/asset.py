@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any, Optional, TypedDict
 
 from PIL import Image, ImageOps
 from pydub import AudioSegment  # type:ignore
+from pydub.playback import PageImage
 
 if TYPE_CHECKING:
     from libcommon.storage_client import StorageClient
@@ -30,6 +31,11 @@ class AudioSource(TypedDict):
 
 class VideoSource(TypedDict):
     src: str
+
+
+class PDFSource(TypedDict):
+    src: str
+    thumbnail: str
 
 
 def create_image_file(
@@ -122,6 +128,56 @@ def create_audio_file(
                 with storage_client._fs.open(audio_path, "wb") as f:
                     f.write(buffer.read())
     return [AudioSource(src=storage_client.get_url(object_path, revision=revision), type=media_type)]
+
+
+def create_pdf_file(
+    dataset: str,
+    revision: str,
+    config: str,
+    split: str,
+    row_idx: int,
+    column: str,
+    filename: str,
+    thumbnail: PageImage,
+    pdf: BytesIO,
+    storage_client: "StorageClient",
+) -> PDFSource:
+    thumbnail_path = storage_client.generate_object_path(
+        dataset=dataset,
+        revision=DATASET_GIT_REVISION_PLACEHOLDER,
+        config=config,
+        split=split,
+        row_idx=row_idx,
+        column=column,
+        filename=f"{filename}.png",
+    )
+
+    path = replace_dataset_git_revision_placeholder(thumbnail_path, revision=revision)
+    if storage_client.overwrite or not storage_client.exists(path):
+        buffer = BytesIO()
+        thumbnail.save(buffer)
+        buffer.seek(0)
+        with storage_client._fs.open(storage_client.get_full_path(path), "wb") as f:
+            f.write(buffer.read())
+
+    pdf_path = storage_client.generate_object_path(
+        dataset=dataset,
+        revision=DATASET_GIT_REVISION_PLACEHOLDER,
+        config=config,
+        split=split,
+        row_idx=row_idx,
+        column=column,
+        filename=f"{filename}.pdf",
+    )
+    path = replace_dataset_git_revision_placeholder(pdf_path, revision=revision)
+    if storage_client.overwrite or not storage_client.exists(path):
+        with storage_client._fs.open(storage_client.get_full_path(path), "wb") as f:
+            f.write(pdf.read())
+
+    return PDFSource(
+        src=storage_client.get_url(pdf_path, revision=revision),
+        thumbnail=storage_client.get_url(thumbnail_path, revision=revision),
+    )
 
 
 def replace_dataset_git_revision_placeholder(url_or_object_path: str, revision: str) -> str:
