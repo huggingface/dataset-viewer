@@ -1,23 +1,36 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-name: e2e
-on:
-  workflow_dispatch:
-  push:
-    branches:
-      - main
-    paths:
-      - "e2e/**"
-      - "libs/**"
-      - "services/**"
-      - "docs/source/openapi.json"
-      - ".github/workflows/_e2e_tests.yml"
-      - ".github/workflows/_quality-python.yml"
-      - ".github/workflows/e2e.yml"
-      - "tools/Python.mk"
-      - "tools/docker-compose-dataset-viewer.yml"
-  pull_request:
+jobs:
+  e2e-tests:
+    uses: ./.github/workflows/_e2e_tests.yml
+    secrets: inherit
+    with:
+      working-directory: e2e
+    steps:
+      - name: Install Dependencies with Poetry
+        run: |
+          poetry install --no-root
+      - name: Check for Missing Dependencies
+        run: |
+          if [ ! -d "path-to-required-package" ]; then echo "Missing package detected"; exit 1; fix
+          jobs:
+  e2e-tests:
+    uses: ./.github/workflows/_e2e_tests.yml
+    secrets: inherit
+    with:
+      working-directory: e2e
+    steps:
+      - name: Install Dependencies with Poetry
+        run: |
+          poetry install --no-root
+      - name: Check for Missing Dependencies
+        run: |
+          if [ ! -d "path-to-required-package" ]; then echo "Missing package detected"; exit 1; fi
+                - name: Setup Test Dataset
+        run: |
+          curl -X POST http://localhost:8000/datasets --data '{"id": "tmp-dataset-123"}'
+          
     paths:
       - "e2e/**"
       - "libs/**"
