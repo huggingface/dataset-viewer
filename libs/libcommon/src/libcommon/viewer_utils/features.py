@@ -2,6 +2,7 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import json
+import logging
 import os
 from io import BytesIO
 from typing import Any, Optional, Union
@@ -45,6 +46,8 @@ AUDIO_FILE_MAGIC_NUMBERS: dict[str, Any] = {
     ".wav": [(b"\x52\x49\x46\x46", 0), (b"\x57\x41\x56\x45", 8)],  # AND: (magic_number, start)
     ".mp3": (b"\xff\xfb", b"\xff\xf3", b"\xff\xf2", b"\x49\x44\x33"),  # OR
 }
+
+logging.getLogger("pdfminer").setLevel(logging.ERROR)
 
 
 def append_hash_suffix(string: str, json_path: Optional[list[Union[str, int]]] = None) -> str:
@@ -286,32 +289,33 @@ def pdf(
 ) -> Any:
     if value is None:
         return None
+
     if isinstance(value, dict) and value.get("bytes"):
-        bytes_obj = BytesIO(value["bytes"])
-        pdf_obj = pdfplumber.open(value)
+        pdf_bytes = BytesIO(value["bytes"])
+        pdf_object = pdfplumber.open(pdf_bytes)
     elif isinstance(value, bytes):
-        bytes_obj = BytesIO(value)
-        pdf_obj = pdfplumber.open(value)
+        pdf_bytes = BytesIO(value)
+        pdf_object = pdfplumber.open(pdf_bytes)
     elif (
         isinstance(value, dict)
         and "path" in value
         and isinstance(value["path"], str)
         and os.path.exists(value["path"])
     ):
-        with open(value["path"], "rb") as f:
-            bytes_obj = BytesIO(f.read())
-        pdf_obj = pdfplumber.open(value["path"])
+        with open(value["path"], "rb") as file:
+            pdf_bytes = BytesIO(file.read())
+        pdf_object = pdfplumber.open(value["path"])
     elif isinstance(value, pdfplumber.pdf.PDF):
-        bytes_obj = value.stream
-        pdf_obj = value
+        pdf_bytes = value.stream  # type: ignore
+        pdf_object = value
 
-    if not isinstance(value, pdfplumber.pdf.PDF):
+    if not isinstance(pdf_object, pdfplumber.pdf.PDF):
         raise TypeError(
             "PDF cell must be a pdfplumber.pdf.PDF object or an encoded dict of a PDF, "
             f"but got {str(value)[:300]}{'...' if len(str(value)) > 300 else ''}"
         )
 
-    thumbnail = pdf_obj.pages[0].to_image(resolution=300)
+    thumbnail_image = pdf_object.pages[0].to_image(resolution=300)
 
     # this function can raise, we don't catch it
     return create_pdf_file(
@@ -321,8 +325,8 @@ def pdf(
         split=split,
         row_idx=row_idx,
         column=featureName,
-        thumbnail=thumbnail,
-        pdf=bytes_obj,
+        thumbnail=thumbnail_image,
+        pdf_data=pdf_bytes,
         storage_client=storage_client,
         filename=f"{append_hash_suffix('pdf', json_path)}.pdf",
     )

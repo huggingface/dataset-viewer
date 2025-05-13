@@ -12,6 +12,7 @@ jsonschema = "^4.17.0"
 libapi = {path = "../../libs/libapi", develop = true}
 uvicorn = "^0.30.1"
 watchdog = { extras = ["watchmedo"], version = "^2.2.1" }
+pdfplumber = "^0.11.6"
 
 [tool.poetry.group.dev.dependencies]
 bandit = "^1.7.4"
