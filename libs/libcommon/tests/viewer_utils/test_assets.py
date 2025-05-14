@@ -4,6 +4,7 @@ from pathlib import Path
 
 import pytest
 import validators  # type: ignore
+from pdfplumber import open
 from PIL import Image as PILImage
 
 from libcommon.storage_client import StorageClient
@@ -12,6 +13,7 @@ from libcommon.viewer_utils.asset import (
     SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE,
     create_audio_file,
     create_image_file,
+    create_pdf_file,
 )
 
 from ..constants import (
@@ -85,6 +87,39 @@ def test_create_audio_file(
         },
     ]
     assert storage_client_with_url_preparator.exists(audio_key)
+
+
+@pytest.mark.parametrize("pdf_file,expected_size", [("test_A4.pdf", (596, 842)), ("test_us_letter.pdf", (612, 792))])
+def test_create_pdf_file(
+    pdf_file: str,
+    expected_size: tuple[int, int],
+    shared_datadir: Path,
+    storage_client_with_url_preparator: StorageClient,
+) -> None:
+    pdf = open(shared_datadir / pdf_file)
+    value = create_pdf_file(
+        dataset="dataset",
+        revision="revision",
+        config="config",
+        split="split",
+        row_idx=7,
+        column="col",
+        filename=pdf_file,
+        pdf=pdf,
+        storage_client=storage_client_with_url_preparator,
+    )
+    pdf_key = value["src"].removeprefix(f"{ASSETS_BASE_URL}/")
+    pdf_path = pdf_key.replace(DATASET_GIT_REVISION_PLACEHOLDER, DEFAULT_REVISION)
+    assert storage_client_with_url_preparator.exists(pdf_path)
+    new_pdf = open(storage_client_with_url_preparator.get_full_path(pdf_path))
+    assert new_pdf is not None
+
+    thumbnail_key = value["thumbnail_src"].removeprefix(f"{ASSETS_BASE_URL}/")
+    thumbnail_path = thumbnail_key.replace(DATASET_GIT_REVISION_PLACEHOLDER, DEFAULT_REVISION)
+    assert storage_client_with_url_preparator.exists(thumbnail_path)
+    image = PILImage.open(storage_client_with_url_preparator.get_full_path(thumbnail_path))
+    assert image is not None
+    assert image.size == expected_size
 
 
 @pytest.mark.parametrize(

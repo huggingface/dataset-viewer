@@ -5,7 +5,7 @@ from io import BufferedReader, BytesIO
 from tempfile import NamedTemporaryFile
 from typing import TYPE_CHECKING, Any, Optional, TypedDict, Union
 
-from pdfplumber.display import PageImage
+from pdfplumber.pdf import PDF
 from PIL import Image, ImageOps
 from pydub import AudioSegment  # type:ignore
 
@@ -140,10 +140,7 @@ def create_pdf_file(
     row_idx: int,
     column: str,
     filename: str,
-    thumbnail: PageImage,
-    thumbnail_width: int,
-    thumbnail_height: int,
-    pdf_data: Union[BufferedReader, BytesIO],
+    pdf: PDF,
     storage_client: "StorageClient",
 ) -> PDFSource:
     thumbnail_object_path = storage_client.generate_object_path(
@@ -156,6 +153,7 @@ def create_pdf_file(
         filename=f"{filename}.png",
     )
     thumbnail_storage_path = replace_dataset_git_revision_placeholder(thumbnail_object_path, revision=revision)
+    thumbnail = pdf.pages[0].to_image()
 
     if storage_client.overwrite or not storage_client.exists(thumbnail_storage_path):
         thumbnail_buffer = BytesIO()
@@ -183,6 +181,7 @@ def create_pdf_file(
         finally:
             pdf_stream.seek(current_position)
 
+    pdf_data = pdf.stream
     if not is_valid_pdf(pdf_data):
         raise ValueError("The provided data is not a valid PDF.")
 
@@ -194,8 +193,8 @@ def create_pdf_file(
     return PDFSource(
         src=storage_client.get_url(pdf_object_path, revision=revision),
         thumbnail_src=storage_client.get_url(thumbnail_object_path, revision=revision),
-        thumbnail_height=thumbnail_height,
-        thumbnail_width=thumbnail_width,
+        thumbnail_height=thumbnail.annotated.height,
+        thumbnail_width=thumbnail.annotated.width,
     )
 
 

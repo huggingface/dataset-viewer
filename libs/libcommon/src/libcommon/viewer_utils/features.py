@@ -32,7 +32,6 @@ from datasets import (
 from datasets.features.features import FeatureType, _visit
 from PIL import Image as PILImage
 
-from libcommon.constants import DEFAULT_THUMBNAIL_HEIGHT, DEFAULT_THUMBNAIL_WIDTH
 from libcommon.dtos import FeatureItem
 from libcommon.storage_client import StorageClient
 from libcommon.viewer_utils.asset import (
@@ -290,34 +289,23 @@ def pdf(
 ) -> Any:
     if value is None:
         return None
-
     if isinstance(value, dict) and value.get("bytes"):
-        pdf_bytes = BytesIO(value["bytes"])
-        pdf_object = pdfplumber.open(pdf_bytes)
+        value = pdfplumber.open(BytesIO(value["bytes"]))
     elif isinstance(value, bytes):
-        pdf_bytes = BytesIO(value)
-        pdf_object = pdfplumber.open(pdf_bytes)
+        value = pdfplumber.open(BytesIO(value))
     elif (
         isinstance(value, dict)
         and "path" in value
         and isinstance(value["path"], str)
         and os.path.exists(value["path"])
     ):
-        with open(value["path"], "rb") as file:
-            pdf_bytes = BytesIO(file.read())
-        pdf_object = pdfplumber.open(value["path"])
-    elif isinstance(value, pdfplumber.pdf.PDF):
-        pdf_bytes = value.stream  # type: ignore
-        pdf_object = value
+        value = pdfplumber.open(value["path"])
 
-    if not isinstance(pdf_object, pdfplumber.pdf.PDF):
+    if not isinstance(value, pdfplumber.pdf.PDF):
         raise TypeError(
             "PDF cell must be a pdfplumber.pdf.PDF object or an encoded dict of a PDF, "
             f"but got {str(value)[:300]}{'...' if len(str(value)) > 300 else ''}"
         )
-
-    # Default thumbnail widht and height will result in a 150 PPI image
-    thumbnail_image = pdf_object.pages[0].to_image(width=DEFAULT_THUMBNAIL_WIDTH, height=DEFAULT_THUMBNAIL_HEIGHT)
 
     # this function can raise, we don't catch it
     return create_pdf_file(
@@ -327,10 +315,7 @@ def pdf(
         split=split,
         row_idx=row_idx,
         column=featureName,
-        thumbnail=thumbnail_image,
-        thumbnail_width=DEFAULT_THUMBNAIL_WIDTH,
-        thumbnail_height=DEFAULT_THUMBNAIL_HEIGHT,
-        pdf_data=pdf_bytes,
+        pdf=value,
         storage_client=storage_client,
         filename=f"{append_hash_suffix('pdf', json_path)}.pdf",
     )
