@@ -15,7 +15,6 @@ libcommon = {path = "../../libs/libcommon", develop = true}
 mirakuru = "^2.4.2"
 numpy = "^1.22.4"
 openpyxl = "^3.1.1"
-pdfplumber = ">=0.11.4"
 pillow = "^10.3.0"
 polars = ">=0.20.0"
 prometheus_client = "^0.12.0"
