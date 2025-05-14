@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+import os
 import logging
 from pathlib import Path
 from typing import Optional
@@ -39,9 +40,12 @@ class JobRunnerWithDatasetsCache(JobRunnerWithCache):
         datasets.config.EXTRACTED_DATASETS_PATH = (
             datasets.config.HF_DATASETS_CACHE / datasets.config.EXTRACTED_DATASETS_DIR
         )
+
         huggingface_hub.constants.HF_HUB_CACHE = str(cache_subdirectory / "hub")
+        os.environ["HF_HUB_CACHE"] = str(cache_subdirectory / "hub")
         logging.debug(f"huggingface_hub cache set to: {huggingface_hub.constants.HF_HUB_CACHE}")
         huggingface_hub.constants.HF_XET_CACHE = str(cache_subdirectory / "xet")
+        os.environ["HF_XET_CACHE"] = str(cache_subdirectory / "xet")
         logging.debug(f"huggingface_hub xet cache set to: {huggingface_hub.constants.HF_XET_CACHE}")
 
     def pre_compute(self) -> None:
