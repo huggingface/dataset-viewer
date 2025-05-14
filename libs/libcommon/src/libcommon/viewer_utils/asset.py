@@ -35,7 +35,9 @@ class VideoSource(TypedDict):
 
 class PDFSource(TypedDict):
     src: str
-    thumbnail: str
+    thumbnail_src: str
+    thumbnail_height: int
+    thumbnail_width: int
 
 
 def create_image_file(
@@ -139,6 +141,8 @@ def create_pdf_file(
     column: str,
     filename: str,
     thumbnail: PageImage,
+    thumbnail_width: int,
+    thumbnail_height: int,
     pdf_data: Union[BufferedReader, BytesIO],
     storage_client: "StorageClient",
 ) -> PDFSource:
@@ -189,7 +193,9 @@ def create_pdf_file(
 
     return PDFSource(
         src=storage_client.get_url(pdf_object_path, revision=revision),
-        thumbnail=storage_client.get_url(thumbnail_object_path, revision=revision),
+        thumbnail_src=storage_client.get_url(thumbnail_object_path, revision=revision),
+        thumbnail_height=thumbnail_height,
+        thumbnail_width=thumbnail_width,
     )
 
 

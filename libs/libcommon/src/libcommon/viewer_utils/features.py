@@ -32,6 +32,7 @@ from datasets import (
 from datasets.features.features import FeatureType, _visit
 from PIL import Image as PILImage
 
+from libcommon.constants import DEFAULT_THUMBNAIL_HEIGHT, DEFAULT_THUMBNAIL_WIDTH
 from libcommon.dtos import FeatureItem
 from libcommon.storage_client import StorageClient
 from libcommon.viewer_utils.asset import (
@@ -315,7 +316,8 @@ def pdf(
             f"but got {str(value)[:300]}{'...' if len(str(value)) > 300 else ''}"
         )
 
-    thumbnail_image = pdf_object.pages[0].to_image(resolution=300)
+    # Default thumbnail widht and height will result in a 150 PPI image
+    thumbnail_image = pdf_object.pages[0].to_image(width=DEFAULT_THUMBNAIL_WIDTH, height=DEFAULT_THUMBNAIL_HEIGHT)
 
     # this function can raise, we don't catch it
     return create_pdf_file(
@@ -326,6 +328,8 @@ def pdf(
         row_idx=row_idx,
         column=featureName,
         thumbnail=thumbnail_image,
+        thumbnail_width=DEFAULT_THUMBNAIL_WIDTH,
+        thumbnail_height=DEFAULT_THUMBNAIL_HEIGHT,
         pdf_data=pdf_bytes,
         storage_client=storage_client,
         filename=f"{append_hash_suffix('pdf', json_path)}.pdf",
