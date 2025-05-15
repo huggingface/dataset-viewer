@@ -89,10 +89,14 @@ def test_create_audio_file(
     assert storage_client_with_url_preparator.exists(audio_key)
 
 
-@pytest.mark.parametrize("pdf_file,expected_size", [("test_A4.pdf", (596, 842)), ("test_us_letter.pdf", (612, 792))])
+@pytest.mark.parametrize(
+    "pdf_file,thumbnail_size,expected_size",
+    [("test_A4.pdf", (596, 842), 8810), ("test_us_letter.pdf", (612, 792), 1319)],
+)
 def test_create_pdf_file(
     pdf_file: str,
-    expected_size: tuple[int, int],
+    thumbnail_size: tuple[int, int],
+    expected_size: int,
     shared_datadir: Path,
     storage_client_with_url_preparator: StorageClient,
 ) -> None:
@@ -119,7 +123,8 @@ def test_create_pdf_file(
     assert storage_client_with_url_preparator.exists(thumbnail_path)
     image = PILImage.open(storage_client_with_url_preparator.get_full_path(thumbnail_path))
     assert image is not None
-    assert image.size == expected_size
+    assert image.size == thumbnail_size
+    assert value["size_bytes"] == expected_size
 
 
 @pytest.mark.parametrize(

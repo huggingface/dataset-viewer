@@ -35,6 +35,7 @@ class VideoSource(TypedDict):
 
 class PDFSource(TypedDict):
     src: str
+    size_bytes: int
     thumbnail_src: str
     thumbnail_height: int
     thumbnail_width: int
@@ -190,8 +191,14 @@ def create_pdf_file(
             pdf_data.seek(0)
             pdf_file.write(pdf_data.read())
 
+    # Get the size of the PDF file, probably not needed
+    pdf_data.seek(0, 2)
+    size_bytes = pdf_data.tell()
+    pdf_data.seek(0)
+
     return PDFSource(
         src=storage_client.get_url(pdf_object_path, revision=revision),
+        size_bytes=size_bytes,
         thumbnail_src=storage_client.get_url(thumbnail_object_path, revision=revision),
         thumbnail_height=thumbnail.annotated.height,
         thumbnail_width=thumbnail.annotated.width,
