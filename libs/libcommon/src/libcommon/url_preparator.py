@@ -23,7 +23,7 @@ VisitPath = list[Union[str, Literal[0]]]
 
 @dataclass
 class AssetUrlPath:
-    feature_type: Literal["Audio", "Image", "Video"]
+    feature_type: Literal["Audio", "Image", "Video", "Pdf"]
     path: VisitPath
 
     def enter(self) -> "AssetUrlPath":
