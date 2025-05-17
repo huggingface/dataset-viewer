@@ -6,7 +6,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Any, Callable, Literal, Optional, Union
 
-from datasets import Audio, Features, Image, Video
+from datasets import Audio, Features, Image, Pdf, Video
 from datasets.features.features import FeatureType, LargeList, Sequence
 
 from libcommon.cloudfront import CloudFrontSigner
@@ -76,6 +76,8 @@ def get_asset_url_paths(features: Features) -> list[AssetUrlPath]:
                 asset_url_paths.append(AssetUrlPath(feature_type="Audio", path=visit_path + [0]))
             elif isinstance(feature, Video):
                 asset_url_paths.append(AssetUrlPath(feature_type="Video", path=visit_path))
+            elif isinstance(feature, Pdf):
+                asset_url_paths.append(AssetUrlPath(feature_type="Pdf", path=visit_path))
 
         _visit(feature, classify, [column])
     return asset_url_paths
@@ -113,10 +115,12 @@ class URLPreparator(ABC):
         elif len(asset_url_path.path) == 0:
             if not isinstance(cell, dict):
                 raise InvalidFirstRowsError("Expected the cell to be a dict")
-            src = cell.get("src")
-            if not isinstance(src, str):
-                raise InvalidFirstRowsError('Expected cell["src"] to be a string')
-            cell["src"] = self.prepare_url(src, revision=revision)
+            for key in cell.keys():
+                if "src" in key:
+                    src = cell.get(key)
+                    if not isinstance(src, str):
+                        raise InvalidFirstRowsError(f'Expected cell["{key}"] to be a string')
+                    cell[key] = self.prepare_url(src, revision=revision)
             # ^ prepare the url in place
         else:
             key = asset_url_path.path[0]

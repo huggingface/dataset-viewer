@@ -18,7 +18,7 @@ import pandas as pd
 import pyarrow.parquet as pq
 import pytest
 import requests
-from datasets import Audio, Features, Image, StreamingDownloadManager, Value, load_dataset, load_dataset_builder
+from datasets import Audio, Features, Image, Pdf, StreamingDownloadManager, Value, load_dataset, load_dataset_builder
 from datasets.packaged_modules.generator.generator import (
     Generator as ParametrizedGeneratorBasedBuilder,
 )
@@ -376,6 +376,7 @@ def test_parse_repo_filename(filename: str, split: str, config: str, raises: boo
         (datasets.info.DatasetInfo(features=Features({"text": Value("string")})), False),
         (datasets.info.DatasetInfo(features=Features({"image": Image()})), True),
         (datasets.info.DatasetInfo(features=Features({"audio": Audio()})), True),
+        (datasets.info.DatasetInfo(features=Features({"pdf": Pdf()})), True),
         (datasets.info.DatasetInfo(features=Features({"nested": [{"image": Image()}]})), True),
         (datasets.info.DatasetInfo(features=Features({"blob": Value("binary")})), True),
     ],

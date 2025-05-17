@@ -630,8 +630,8 @@ def datasets_fixtures() -> Mapping[str, DatasetFixture]:
                     path=[
                         DEFAULT_COLUMN_NAME,
                     ],
-                )
+                ),
             ],
-            1,
+            2,  # One for the pdf file and one for the thumbnail
         ),
     }
