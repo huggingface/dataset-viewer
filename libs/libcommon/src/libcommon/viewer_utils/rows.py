@@ -4,7 +4,7 @@
 
 from typing import Protocol
 
-from datasets import Audio, Features, Image, Value
+from datasets import Audio, Features, Image, Pdf, Value
 
 from libcommon.dtos import Row, RowsContent, SplitFirstRowsResponse
 from libcommon.exceptions import (
@@ -160,7 +160,7 @@ def create_first_rows_response(
     columns_to_keep_untruncated = [
         col
         for col, feature in features.items()
-        if isinstance(feature, (Image, Audio))
+        if isinstance(feature, (Image, Audio, Pdf))
         or (  # column of URLs
             isinstance(feature, Value)
             and feature.dtype == "string"

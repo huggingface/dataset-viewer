@@ -4,7 +4,7 @@
 import logging
 from http import HTTPStatus
 
-from datasets import Audio, Features, Image, LargeList, Sequence, Translation, TranslationVariableLanguages, Value
+from datasets import Audio, Features, Image, LargeList, Pdf, Sequence, Translation, TranslationVariableLanguages, Value
 from datasets.features.features import FeatureType, _visit
 from libcommon.exceptions import PreviousStepFormatError
 from libcommon.simple_cache import (
@@ -44,6 +44,8 @@ def detect_features_modalities(features: Features) -> set[DatasetModality]:
             modalities.add("text")
         elif isinstance(feature, (Translation, TranslationVariableLanguages)):
             modalities.add("text")
+        elif isinstance(feature, Pdf):
+            modalities.add("document")
 
     _visit(features, classify_modality)
 
@@ -254,6 +256,8 @@ _3D_EXTENSIONS = {
 TEXT_EXTENSIONS = {
     ".txt",
 }
+DOCUMENT_EXTENSIONS = {".pdf"}
+
 MULTI_ROWS_EXTENSIONS = {".parquet", ".csv", ".json", ".jsonl", ".arrow"}
 ALL_EXTENSIONS = (
     IMAGE_EXTENSIONS
@@ -320,6 +324,8 @@ def detect_modalities_from_filetypes(dataset: str) -> set[DatasetModality]:
                 modalities.add("3d")
             elif filetype["extension"] in TEXT_EXTENSIONS:
                 modalities.add("text")
+            elif filetype["extension"] in DOCUMENT_EXTENSIONS:
+                modalities.add("document")
     except Exception as e:
         raise PreviousStepFormatError("Previous step did not return the expected content.", e) from e
 
