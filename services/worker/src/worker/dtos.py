@@ -277,7 +277,7 @@ class DatasetCompatibleLibrariesResponse(TypedDict):
     formats: list[DatasetFormat]
 
 
-DatasetModality = Literal["image", "audio", "text", "video", "geospatial", "3d", "tabular", "timeseries"]
+DatasetModality = Literal["image", "audio", "text", "video", "geospatial", "3d", "tabular", "timeseries", "document"]
 
 
 class DatasetModalitiesResponse(TypedDict):
