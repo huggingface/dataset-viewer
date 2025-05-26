@@ -94,3 +94,17 @@ def normal_user_audios_public_dataset() -> Iterator[str]:
         },
     ) as dataset:
         yield dataset
+
+
+@pytest.fixture(scope="session")
+def normal_user_pdfs_public_dataset() -> Iterator[str]:
+    with tmp_dataset(
+        namespace=NORMAL_USER,
+        token=NORMAL_USER_TOKEN,
+        files={
+            "1.pdf": str(Path(__file__).resolve().parent / "data" / "pdfs" / "1.pdf"),
+            "2.pdf": str(Path(__file__).resolve().parent / "data" / "pdfs" / "2.pdf"),
+            "metadata.csv": str(Path(__file__).resolve().parent / "data" / "pdfs" / "metadata.csv"),
+        },
+    ) as dataset:
+        yield dataset
