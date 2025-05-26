@@ -178,7 +178,7 @@ def test_filter_pdfs_endpoint(normal_user_pdfs_public_dataset: str) -> None:
 
     # ensure the URL is signed
     url = content["rows"][0]["row"]["pdf"]["src"]
-    assert "document.pdf]?Expires=" in url, url
+    assert "document.pdf?Expires=" in url, url
     assert "&Signature=" in url, url
     assert "&Key-Pair-Id=" in url, url
     # ensure the URL is valid
