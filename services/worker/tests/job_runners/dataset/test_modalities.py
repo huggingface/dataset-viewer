@@ -34,6 +34,7 @@ IMAGE_TEXT_DATASET = "image-text-dataset"
 IMAGE_DATASET = "image-dataset"
 TIME_SERIES_DATASET = "time-series-dataset"
 IMAGE_URLS_DATASET = "image-urls-dataset"
+PDF_DATASET = "pdf-dataset"
 ERROR_DATASET = "error-dataset"
 
 text_features = Features({"conversations": [{"from": Value("string"), "value": Value("string")}]})
@@ -170,11 +171,27 @@ UPSTREAM_RESPONSE_FILETYPES_ALL: UpstreamResponse = UpstreamResponse(
             {"extension": ".jpg", "count": 1},
             {"extension": ".wav", "count": 1},
             {"extension": ".gltf", "count": 1},
+            {"extension": ".pdf", "count": 1},
         ],
         "partial": False,
     },
     progress=1.0,
 )
+
+UPSTREAM_RESPONSE_PDF_DATASET: UpstreamResponse = UpstreamResponse(
+    kind="dataset-filetypes",
+    dataset=PDF_DATASET,
+    dataset_git_revision=REVISION_NAME,
+    http_status=HTTPStatus.OK,
+    content={
+        "filetypes": [
+            {"extension": ".pdf", "count": 1},
+        ],
+        "partial": False,
+    },
+    progress=1.0,
+)
+
 UPSTREAM_RESPONSE_IMAGE_URL_DATASET_SPLITS: UpstreamResponse = UpstreamResponse(
     kind="dataset-split-names",
     dataset=IMAGE_URLS_DATASET,
@@ -215,6 +232,7 @@ EXPECTED_ALL_MODALITIES: tuple[DatasetModalitiesResponse, float] = (
         "modalities": [
             "3d",
             "audio",
+            "document",
             "geospatial",
             "image",
             "text",
@@ -233,6 +251,10 @@ EXPECTED_TIME_SERIES: tuple[DatasetModalitiesResponse, float] = (
 )
 EXPECTED_IMAGE_URLS: tuple[DatasetModalitiesResponse, float] = (
     {"modalities": ["image"]},
+    1.0,
+)
+EXPECTED_DOCUMENT: tuple[DatasetModalitiesResponse, float] = (
+    {"modalities": ["document"]},
     1.0,
 )
 
@@ -355,6 +377,11 @@ def get_job_runner(
                 UPSTREAM_RESPONSE_IMAGE_URL_COLUMNS,
             ],
             EXPECTED_IMAGE_URLS,
+        ),
+        (
+            PDF_DATASET,
+            [UPSTREAM_RESPONSE_PDF_DATASET],
+            EXPECTED_DOCUMENT,
         ),
     ],
 )

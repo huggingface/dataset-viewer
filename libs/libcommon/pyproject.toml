@@ -9,7 +9,7 @@ license = "Apache-2.0"
 python = "3.9.18"
 appdirs = "^1.4.4"
 cryptography = "^43.0.1"
-datasets = {version = "3.6.0", extras = ["audio", "vision"]}
+datasets = {git = "https://github.com/huggingface/datasets.git", rev = "da1db8a5b89fc0badaa0f571b36e122e52ae8c61", extras = ["audio", "vision"]}
 duckdb = "^1.2.2"
 environs = "^9.5.0"
 filelock = "^3.18.0"
