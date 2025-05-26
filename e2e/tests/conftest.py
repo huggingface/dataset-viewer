@@ -107,4 +107,5 @@ def normal_user_pdfs_public_dataset() -> Iterator[str]:
             "metadata.csv": str(Path(__file__).resolve().parent / "data" / "pdfs" / "metadata.csv"),
         },
     ) as dataset:
+        print("Created dataset:", dataset)
         yield dataset

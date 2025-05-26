@@ -317,7 +317,7 @@ def pdf(
         column=featureName,
         pdf=value,
         storage_client=storage_client,
-        filename=f"{append_hash_suffix('pdf', json_path)}.pdf",
+        filename=f"{append_hash_suffix('document', json_path)}.pdf",
     )
 
 

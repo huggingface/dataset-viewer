@@ -115,7 +115,7 @@ def test_search_pdfs_endpoint(normal_user_pdfs_public_dataset: str) -> None:
         # ^ I had 404 errors without it. It should return something else at one point.
     )
     content = rows_response.json()
-
+    print(content)
     # ensure the URL is signed
     url = content["rows"][0]["row"]["pdf"][0]["src"]
     assert "pdf.pdf?Expires=" in url, url
