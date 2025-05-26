@@ -96,7 +96,7 @@ def test_rows_pdfs_endpoint(normal_user_pdfs_public_dataset: str) -> None:
 
     # ensure the PDF URL is signed
     url = content["rows"][0]["row"]["pdf"]["src"]
-    assert "pdf.pdf?Expires=" in url, url
+    assert "document.pdf?Expires=" in url, url
     assert "&Signature=" in url, url
     assert "&Key-Pair-Id=" in url, url
     # ensure the PDF URL is valid
@@ -105,7 +105,7 @@ def test_rows_pdfs_endpoint(normal_user_pdfs_public_dataset: str) -> None:
 
     # ensure the PDF's thumbnail URL is signed
     thumbnail_url = content["rows"][0]["row"]["pdf"]["thumbnail_src"]
-    assert "pdf.pdf.png?Expires=" in thumbnail_url, thumbnail_url
+    assert "document.pdf.png?Expires=" in thumbnail_url, thumbnail_url
     assert "&Signature=" in thumbnail_url, thumbnail_url
     assert "&Key-Pair-Id=" in thumbnail_url, thumbnail_url
     # ensure the PDF's thumbnail URL is valid
