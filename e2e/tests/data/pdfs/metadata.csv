@@ -1,3 +1,3 @@
-file_name,text,size_bytes
-1.pdf,This is a PDF with an embedded image below,8810
-2.pdf,This is a dummy PDF in US Letter size,1319
+file_name,text,has_images
+1.pdf,This is a PDF with an embedded image below,1
+2.pdf,This is a dummy PDF in US Letter size,0

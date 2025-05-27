@@ -619,9 +619,11 @@ def datasets_fixtures() -> Mapping[str, DatasetFixture]:
             {"_type": "Pdf"},
             {
                 "src": f"{ASSETS_BASE_URL}/pdf/--/{DEFAULT_REVISION}/--/{DEFAULT_CONFIG}/{DEFAULT_SPLIT}/{DEFAULT_ROW_IDX}/col/document.pdf",
-                "thumbnail_src": f"{ASSETS_BASE_URL}/pdf/--/{DEFAULT_REVISION}/--/{DEFAULT_CONFIG}/{DEFAULT_SPLIT}/{DEFAULT_ROW_IDX}/col/document.pdf.png",
-                "thumbnail_height": 842,
-                "thumbnail_width": 596,
+                "thumbnail": {
+                    "src": f"{ASSETS_BASE_URL}/pdf/--/{DEFAULT_REVISION}/--/{DEFAULT_CONFIG}/{DEFAULT_SPLIT}/{DEFAULT_ROW_IDX}/col/document.pdf.png",
+                    "height": 842,
+                    "width": 596,
+                },
                 "size_bytes": 8810,
             },
             [

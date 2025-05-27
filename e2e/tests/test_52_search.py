@@ -126,7 +126,7 @@ def test_search_pdfs_endpoint(normal_user_pdfs_public_dataset: str) -> None:
     assert response.status_code == 200, response
 
     # ensure the PDF's thumbnail URL is signed
-    thumbnail_url = content["rows"][0]["row"]["pdf"]["thumbnail_src"]
+    thumbnail_url = content["rows"][0]["row"]["pdf"]["thumbnail"]["src"]
     assert "document.pdf.png?Expires=" in thumbnail_url, thumbnail_url
     assert "&Signature=" in thumbnail_url, thumbnail_url
     assert "&Key-Pair-Id=" in thumbnail_url, thumbnail_url

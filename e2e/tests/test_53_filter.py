@@ -167,7 +167,7 @@ def test_filter_audios_endpoint(normal_user_audios_public_dataset: str) -> None:
 def test_filter_pdfs_endpoint(normal_user_pdfs_public_dataset: str) -> None:
     dataset = normal_user_pdfs_public_dataset
     config, split = get_default_config_split()
-    where = "size_bytes=1319"
+    where = "has_images=1"
     rows_response = poll_until_ready_and_assert(
         relative_url=f"/filter?dataset={dataset}&config={config}&split={split}&where={where}",
         dataset=dataset,
@@ -186,7 +186,7 @@ def test_filter_pdfs_endpoint(normal_user_pdfs_public_dataset: str) -> None:
     assert response.status_code == 200, response
 
     # ensure the PDF's thumbnail URL is signed
-    thumbnail_url = content["rows"][0]["row"]["pdf"]["thumbnail_src"]
+    thumbnail_url = content["rows"][0]["row"]["pdf"]["thumbnail"]["src"]
     assert "document.pdf.png?Expires=" in thumbnail_url, thumbnail_url
     assert "&Signature=" in thumbnail_url, thumbnail_url
     assert "&Key-Pair-Id=" in thumbnail_url, thumbnail_url

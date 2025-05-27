@@ -115,8 +115,11 @@ class URLPreparator(ABC):
         elif len(asset_url_path.path) == 0:
             if not isinstance(cell, dict):
                 raise InvalidFirstRowsError("Expected the cell to be a dict")
-            for key in cell.keys():
-                if "src" in key:
+            for key, value in cell.items():
+                if isinstance(value, dict):
+                    # if the value is a dict, we have to prepare the URL in it for nested assets
+                    self._prepare_asset_url_path_in_place(cell=value, asset_url_path=asset_url_path, revision=revision)
+                elif key == "src":
                     src = cell.get(key)
                     if not isinstance(src, str):
                         raise InvalidFirstRowsError(f'Expected cell["{key}"] to be a string')
