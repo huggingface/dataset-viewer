@@ -392,6 +392,9 @@
           },
           {
             "$ref": "#/components/schemas/VideoFeature"
+          },
+          {
+            "$ref": "#/components/schemas/PdfFeature"
           }
         ]
       },
@@ -577,6 +580,19 @@
           }
         }
       },
+      "PdfFeature": {
+        "type": "object",
+        "required": ["_type"],
+        "properties": {
+          "_type": {
+            "type": "string",
+            "enum": ["Pdf"]
+          },
+          "decode": {
+            "type": "boolean"
+          }
+        }
+      },
       "VideoFeature": {
         "type": "object",
         "required": ["_type"],
@@ -657,6 +673,9 @@
           },
           {
             "$ref": "#/components/schemas/VideoCell"
+          },
+          {
+            "$ref": "#/components/schemas/PdfCell"
           }
         ]
       },
@@ -803,6 +822,22 @@
             }
           ]
         }
+      },
+      "PdfCell": {
+        "type": "object",
+        "properties": {
+          "src": {
+            "type": "string",
+            "format": "uri"
+          },
+          "thumbnail":{
+            "$ref": "#/components/schemas/ImageCell"
+          },
+          "size_bytes": {
+            "type": "integer"
+          }
+        },
+        "required": ["src", "thumbnail", "size_bytes"]
       },
       "VideoCell": {
         "type": "object",
