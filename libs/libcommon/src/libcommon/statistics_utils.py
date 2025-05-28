@@ -4,6 +4,7 @@ import datetime
 import enum
 import io
 import logging
+from functools import partial
 from pathlib import Path
 from typing import Any, Callable, Optional, TypedDict, Union
 
@@ -12,6 +13,7 @@ import numpy as np
 import polars as pl
 import pyarrow.parquet as pq
 from datasets import Features
+from huggingface_hub import HfFileSystem
 from PIL import Image
 from tqdm.contrib.concurrent import thread_map
 
@@ -363,7 +365,7 @@ class ClassLabelColumn(Column):
             frequencies=labels2counts,
         )
 
-    def compute_and_prepare_response(self, data: pl.DataFrame) -> StatisticsPerColumnItem:
+    def compute_and_prepare_response(self, data: pl.DataFrame, **kwargs: Any) -> StatisticsPerColumnItem:  # noqa:
         stats = self.compute_statistics(
             data, column_name=self.name, n_samples=self.n_samples, feature_dict=self.feature_dict
         )
@@ -411,7 +413,7 @@ class FloatColumn(Column):
             histogram=hist,
         )
 
-    def compute_and_prepare_response(self, data: pl.DataFrame) -> StatisticsPerColumnItem:
+    def compute_and_prepare_response(self, data: pl.DataFrame, **kwargs: Any) -> StatisticsPerColumnItem:
         stats = self.compute_statistics(data, column_name=self.name, n_samples=self.n_samples)
         return StatisticsPerColumnItem(
             column_name=self.name,
@@ -457,7 +459,7 @@ class IntColumn(Column):
             histogram=hist,
         )
 
-    def compute_and_prepare_response(self, data: pl.DataFrame) -> StatisticsPerColumnItem:
+    def compute_and_prepare_response(self, data: pl.DataFrame, **kwargs: Any) -> StatisticsPerColumnItem:
         stats = self.compute_statistics(data, column_name=self.name, n_samples=self.n_samples)
         return StatisticsPerColumnItem(
             column_name=self.name,
@@ -537,7 +539,7 @@ class StringColumn(Column):
         )
         return lengths_stats
 
-    def compute_and_prepare_response(self, data: pl.DataFrame) -> StatisticsPerColumnItem:
+    def compute_and_prepare_response(self, data: pl.DataFrame, **kwargs: Any) -> StatisticsPerColumnItem:
         stats = self.compute_statistics(data, column_name=self.name, n_samples=self.n_samples)
         if "frequencies" in stats:
             string_type = ColumnType.STRING_LABEL
@@ -566,7 +568,7 @@ class BoolColumn(Column):
             frequencies={str(key): freq for key, freq in sorted(values2counts.items())},
         )
 
-    def compute_and_prepare_response(self, data: pl.DataFrame) -> StatisticsPerColumnItem:
+    def compute_and_prepare_response(self, data: pl.DataFrame, **kwargs: Any) -> StatisticsPerColumnItem:
         stats = self.compute_statistics(data, column_name=self.name, n_samples=self.n_samples)
         return StatisticsPerColumnItem(
             column_name=self.name,
@@ -621,7 +623,7 @@ class ListColumn(Column):
             histogram=lengths_stats["histogram"],
         )
 
-    def compute_and_prepare_response(self, data: pl.DataFrame) -> StatisticsPerColumnItem:
+    def compute_and_prepare_response(self, data: pl.DataFrame, **kwargs: Any) -> StatisticsPerColumnItem:
         stats = self.compute_statistics(data, column_name=self.name, n_samples=self.n_samples)
         return StatisticsPerColumnItem(
             column_name=self.name,
@@ -663,8 +665,9 @@ class MediaColumn(Column):
         parquet_paths: list[Path],
         column_name: str,
         n_samples: int,
+        **kwargs: Any,
     ) -> SupportedStatistics:
-        transformed_values = cls.compute_transformed_data(parquet_paths, column_name, cls.transform)
+        transformed_values = cls.compute_transformed_data(parquet_paths, column_name, partial(cls.transform, **kwargs))
         nan_count = sum(value is None for value in transformed_values)
         if nan_count == n_samples:
             return all_nan_statistics_item(n_samples)
@@ -691,11 +694,9 @@ class MediaColumn(Column):
     def get_column_type(cls) -> ColumnType:
         return ColumnType(cls.__name__.split("Column")[0].lower())
 
-    def compute_and_prepare_response(self, parquet_paths: list[Path]) -> StatisticsPerColumnItem:
+    def compute_and_prepare_response(self, parquet_paths: list[Path], **kwargs: Any) -> StatisticsPerColumnItem:
         stats = self.compute_statistics(
-            parquet_paths=parquet_paths,
-            column_name=self.name,
-            n_samples=self.n_samples,
+            parquet_paths=parquet_paths, column_name=self.name, n_samples=self.n_samples, **kwargs
         )
         return StatisticsPerColumnItem(
             column_name=self.name,
@@ -708,17 +709,30 @@ class AudioColumn(MediaColumn):
     transform_column = FloatColumn
 
     @staticmethod
-    def get_duration(example: Optional[Union[bytes, dict[str, Any]]]) -> Optional[float]:
+    def get_duration(
+        example: Optional[Union[bytes, str, dict[str, Any]]], hf_token: Optional[str] = None
+    ) -> Optional[float]:
         """Get audio durations"""
         if example is None:
             return None
-        example_bytes = example["bytes"] if isinstance(example, dict) else example
-        with io.BytesIO(example_bytes) as f:
+        if isinstance(example, dict):
+            if example["bytes"]:
+                f = io.BytesIO(example["bytes"])
+            else:
+                f = HfFileSystem(token=hf_token).open(example["path"])
+        elif isinstance(example, str):
+            f = HfFileSystem(token=hf_token).open(example)
+        else:
+            f = io.BytesIO(example)
+
+        with f:
             return librosa.get_duration(path=f)  # type: ignore   # expects PathLike but BytesIO also works
 
     @classmethod
-    def transform(cls, example: Optional[Union[bytes, dict[str, Any]]]) -> Optional[float]:
-        return cls.get_duration(example)
+    def transform(
+        cls, example: Optional[Union[bytes, dict[str, Any]]], hf_token: Optional[str] = None, **kwargs: Any
+    ) -> Optional[float]:
+        return cls.get_duration(example, hf_token=hf_token)
 
 
 class ImageColumn(MediaColumn):
@@ -741,7 +755,7 @@ class ImageColumn(MediaColumn):
             return image.size
 
     @classmethod
-    def transform(cls, example: Optional[Union[bytes, dict[str, Any]]]) -> Optional[int]:
+    def transform(cls, example: Optional[Union[bytes, dict[str, Any]]], **kwargs: Any) -> Optional[int]:
         return cls.get_width(example)
 
 
@@ -844,7 +858,7 @@ class DatetimeColumn(Column):
             ),
         )
 
-    def compute_and_prepare_response(self, data: pl.DataFrame) -> StatisticsPerColumnItem:
+    def compute_and_prepare_response(self, data: pl.DataFrame, **kwargs: Any) -> StatisticsPerColumnItem:
         stats = self.compute_statistics(data, column_name=self.name, n_samples=self.n_samples)
         return StatisticsPerColumnItem(
             column_name=self.name,

@@ -291,7 +291,7 @@ def compute_descriptive_statistics_response(
                     f"Error reading parquet file(s) at {local_parquet_split_directory=}, columns=[{column.name}]: {error}",
                     error,
                 )
-            column_stats = column.compute_and_prepare_response(data)
+            column_stats = column.compute_and_prepare_response(data, hf_token=hf_token)
         all_stats.append(column_stats)
 
     if not all_stats:

@@ -107,3 +107,6 @@ extend-select = [
     "UP006",  # non-pep585-annotation
     "UP035",  # deprecated-import
 ]
+
+[tool.ruff.lint.flake8-unused-arguments]
+ignore-variadic-names = true

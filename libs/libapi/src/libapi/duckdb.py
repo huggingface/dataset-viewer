@@ -133,7 +133,7 @@ def build_index_file(
 
     transformed_df = None
     try:
-        transformed_df = compute_transformed_data(all_split_parquets, features)
+        transformed_df = compute_transformed_data(all_split_parquets, features, hf_token=hf_token)
     except Exception as err:
         logging.info(f"Unable to compute transformed data {err}, skipping statistics.")
 
