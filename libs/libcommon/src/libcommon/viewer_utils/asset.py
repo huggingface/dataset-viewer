@@ -5,6 +5,8 @@ from io import BytesIO
 from tempfile import NamedTemporaryFile
 from typing import TYPE_CHECKING, Any, Optional, TypedDict
 
+import numpy as np
+import soundfile
 from PIL import Image, ImageOps
 from pydub import AudioSegment  # type:ignore
 
@@ -84,6 +86,16 @@ def create_audio_file(
     audio_file_extension: Optional[str],
     storage_client: "StorageClient",
 ) -> list[AudioSource]:
+    if (
+        "array" in encoded_audio
+        and isinstance(encoded_audio["array"], np.ndarray)
+        and "sampling_rate" in encoded_audio
+        and isinstance(encoded_audio["sampling_rate"], int)
+    ):
+        buffer = BytesIO()
+        soundfile.write(buffer, encoded_audio["array"], encoded_audio["sampling_rate"], format="wav")
+        encoded_audio = {"path": "audio.wav", "bytes": buffer.getvalue()}
+
     # We use a placeholder revision in the JSON stored in the database,
     # while the path of the file stored on the disk/s3 contains the revision.
     # The placeholder will be replaced later by the

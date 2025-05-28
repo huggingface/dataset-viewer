@@ -8,8 +8,6 @@ from typing import Any, Optional, Union
 from zlib import adler32
 
 import datasets.config
-import numpy as np
-import soundfile  # type: ignore
 from datasets import (
     Array2D,
     Array3D,
@@ -132,9 +130,6 @@ def audio(
             f"but got {str(value)[:300]}{'...' if len(str(value)) > 300 else ''}"
         )
     audio_file_extension = get_audio_file_extension(value)
-    audio_file_bytes = get_audio_file_bytes(value)
-    if not audio_file_extension:
-        audio_file_extension = infer_audio_file_extension(audio_file_bytes)
     # convert to wav if the audio file extension is not supported
     target_audio_file_extension = (
         audio_file_extension if audio_file_extension in SUPPORTED_AUDIO_EXTENSIONS else ".wav"
@@ -154,36 +149,16 @@ def audio(
     )
 
 
-def get_audio_file_bytes(value: Any) -> bytes:
-    if "bytes" in value and isinstance(value["bytes"], bytes):
-        audio_file_bytes = value["bytes"]
-    elif "path" in value and isinstance(value["path"], str) and os.path.exists(value["path"]):
-        with open(value["path"], "rb") as f:
-            audio_file_bytes = f.read()
-    elif (
-        "array" in value
-        and isinstance(value["array"], np.ndarray)
-        and "sampling_rate" in value
-        and isinstance(value["sampling_rate"], int)
-    ):
-        buffer = BytesIO()
-        soundfile.write(buffer, value["array"], value["sampling_rate"], format="wav")
-        audio_file_bytes = buffer.getvalue()
-    else:
-        raise ValueError(
-            "An audio sample should have 'path' and 'bytes' (or 'array' and 'sampling_rate') but got"
-            f" {', '.join(value)}."
-        )
-    return audio_file_bytes
-
-
 def get_audio_file_extension(value: Any) -> Optional[str]:
+    # audio are always streamed, so no need to account for `datasets` cached files that have no extension
     if "path" in value and isinstance(value["path"], str):
         # .split("::")[0] for chained URLs like zip://audio.wav::https://foo.bar/data.zip
         # It might be "" for audio files downloaded from the Hub: make it None
         audio_file_extension = os.path.splitext(value["path"].split("::")[0])[1] or None
     elif ("path" in value and value["path"] is None) or "array" in value:
         audio_file_extension = ".wav"
+    elif "bytes" in value and isinstance(value["bytes"], bytes):
+        audio_file_extension = infer_audio_file_extension(value["bytes"])
     else:
         raise ValueError(
             "An audio sample should have 'path' and 'bytes' (or 'array' and 'sampling_rate') but got"
