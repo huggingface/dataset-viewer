@@ -72,7 +72,7 @@ def test_create_audio_file(
         split="split",
         row_idx=7,
         audio_file_extension=audio_file_extension,
-        audio_file_bytes=audio_file_bytes,
+        encoded_audio={"bytes": audio_file_bytes},
         column="col",
         filename=filename,
         storage_client=storage_client_with_url_preparator,

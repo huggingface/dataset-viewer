@@ -147,10 +147,10 @@ def audio(
         split=split,
         row_idx=row_idx,
         column=featureName,
-        audio_file_bytes=audio_file_bytes,
+        filename=f"{append_hash_suffix('audio', json_path)}{target_audio_file_extension}",
+        encoded_audio=value,
         audio_file_extension=audio_file_extension,
         storage_client=storage_client,
-        filename=f"{append_hash_suffix('audio', json_path)}{target_audio_file_extension}",
     )
 
 

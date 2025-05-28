@@ -79,48 +79,57 @@ def create_audio_file(
     split: str,
     row_idx: int,
     column: str,
-    audio_file_bytes: bytes,
-    audio_file_extension: Optional[str],
     filename: str,
+    encoded_audio: dict[str, Any],
+    audio_file_extension: Optional[str],
     storage_client: "StorageClient",
 ) -> list[AudioSource]:
-    # We use a placeholder revision that will be replaced later by the
+    # We use a placeholder revision in the JSON stored in the database,
+    # while the path of the file stored on the disk/s3 contains the revision.
+    # The placeholder will be replaced later by the
     # dataset_git_revision of cache responses when the data will be accessed.
     # This is useful to allow moving files to a newer revision without having
     # to modify the cached rows content.
-    object_path = storage_client.generate_object_path(
-        dataset=dataset,
-        revision=DATASET_GIT_REVISION_PLACEHOLDER,
-        config=config,
-        split=split,
-        row_idx=row_idx,
-        column=column,
-        filename=filename,
-    )
-    suffix = f".{filename.split('.')[-1]}"
-    if suffix not in SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE:
-        raise ValueError(
-            f"Audio format {suffix} is not supported. Supported formats are"
-            f" {','.join(SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE)}."
+    if "path" in encoded_audio and isinstance(encoded_audio["path"], str) and "://" in encoded_audio["path"]:
+        # in general video files are stored in the dataset repository, we can just get the URL
+        # (`datasets` doesn't embed the video bytes in Parquet when the file is already on HF)
+        object_path = encoded_audio["path"].replace(revision, DATASET_GIT_REVISION_PLACEHOLDER)
+    elif "bytes" in encoded_audio and isinstance(encoded_audio["bytes"], bytes):
+        object_path = storage_client.generate_object_path(
+            dataset=dataset,
+            revision=DATASET_GIT_REVISION_PLACEHOLDER,
+            config=config,
+            split=split,
+            row_idx=row_idx,
+            column=column,
+            filename=filename,
         )
-    media_type = SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE[suffix]
+        suffix = f".{filename.split('.')[-1]}"
+        if suffix not in SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE:
+            raise ValueError(
+                f"Audio format {suffix} is not supported. Supported formats are"
+                f" {','.join(SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE)}."
+            )
+        media_type = SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE[suffix]
 
-    path = replace_dataset_git_revision_placeholder(object_path, revision=revision)
-    if storage_client.overwrite or not storage_client.exists(path):
-        audio_path = storage_client.get_full_path(path)
-        if audio_file_extension == suffix:
-            with storage_client._fs.open(audio_path, "wb") as f:
-                f.write(audio_file_bytes)
-        else:  # we need to convert
-            # might spawn a process to convert the audio file using ffmpeg
-            with NamedTemporaryFile("wb", suffix=audio_file_extension) as tmpfile:
-                tmpfile.write(audio_file_bytes)
-                segment: AudioSegment = AudioSegment.from_file(tmpfile.name)
-                buffer = BytesIO()
-                segment.export(buffer, format=suffix[1:])
-                buffer.seek(0)
+        path = replace_dataset_git_revision_placeholder(object_path, revision=revision)
+        if storage_client.overwrite or not storage_client.exists(path):
+            audio_path = storage_client.get_full_path(path)
+            if audio_file_extension == suffix:
                 with storage_client._fs.open(audio_path, "wb") as f:
-                    f.write(buffer.read())
+                    f.write(encoded_audio["bytes"])
+            else:  # we need to convert
+                # might spawn a process to convert the audio file using ffmpeg
+                with NamedTemporaryFile("wb", suffix=audio_file_extension) as tmpfile:
+                    tmpfile.write(encoded_audio["bytes"])
+                    segment: AudioSegment = AudioSegment.from_file(tmpfile.name)
+                    buffer = BytesIO()
+                    segment.export(buffer, format=suffix[1:])
+                    buffer.seek(0)
+                    with storage_client._fs.open(audio_path, "wb") as f:
+                        f.write(buffer.read())
+    else:
+        raise ValueError("The video cell doesn't contain a valid path or bytes")
     return [AudioSource(src=storage_client.get_url(object_path, revision=revision), type=media_type)]
 
 
