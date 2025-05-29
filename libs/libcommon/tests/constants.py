@@ -66,6 +66,7 @@ DATASETS_NAMES = [
     "dict_of_audios_and_images",
     "sequence_of_dicts",
     "none_value",
+    "pdf",
 ]
 
 TEN_CHARS_TEXT = "a" * 10

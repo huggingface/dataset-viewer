@@ -1,10 +1,11 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-from io import BytesIO
+from io import BufferedReader, BytesIO
 from tempfile import NamedTemporaryFile
-from typing import TYPE_CHECKING, Any, Optional, TypedDict
+from typing import TYPE_CHECKING, Any, Optional, TypedDict, Union
 
+from pdfplumber.pdf import PDF
 from PIL import Image, ImageOps
 from pydub import AudioSegment  # type:ignore
 
@@ -30,6 +31,12 @@ class AudioSource(TypedDict):
 
 class VideoSource(TypedDict):
     src: str
+
+
+class PDFSource(TypedDict):
+    src: str
+    size_bytes: int
+    thumbnail: ImageSource
 
 
 def create_image_file(
@@ -122,6 +129,80 @@ def create_audio_file(
                 with storage_client._fs.open(audio_path, "wb") as f:
                     f.write(buffer.read())
     return [AudioSource(src=storage_client.get_url(object_path, revision=revision), type=media_type)]
+
+
+def create_pdf_file(
+    dataset: str,
+    revision: str,
+    config: str,
+    split: str,
+    row_idx: int,
+    column: str,
+    filename: str,
+    pdf: PDF,
+    storage_client: "StorageClient",
+) -> PDFSource:
+    thumbnail_object_path = storage_client.generate_object_path(
+        dataset=dataset,
+        revision=DATASET_GIT_REVISION_PLACEHOLDER,
+        config=config,
+        split=split,
+        row_idx=row_idx,
+        column=column,
+        filename=f"{filename}.png",
+    )
+    thumbnail_storage_path = replace_dataset_git_revision_placeholder(thumbnail_object_path, revision=revision)
+    thumbnail = pdf.pages[0].to_image()
+
+    if storage_client.overwrite or not storage_client.exists(thumbnail_storage_path):
+        thumbnail_buffer = BytesIO()
+        thumbnail.save(thumbnail_buffer)
+        thumbnail_buffer.seek(0)
+        with storage_client._fs.open(storage_client.get_full_path(thumbnail_storage_path), "wb") as thumbnail_file:
+            thumbnail_file.write(thumbnail_buffer.read())
+
+    pdf_object_path = storage_client.generate_object_path(
+        dataset=dataset,
+        revision=DATASET_GIT_REVISION_PLACEHOLDER,
+        config=config,
+        split=split,
+        row_idx=row_idx,
+        column=column,
+        filename=filename,
+    )
+    pdf_storage_path = replace_dataset_git_revision_placeholder(pdf_object_path, revision=revision)
+
+    def is_valid_pdf(pdf_stream: Union[BufferedReader, BytesIO]) -> bool:
+        current_position = pdf_stream.tell()
+        try:
+            pdf_stream.seek(0)
+            return pdf_stream.read(5) == b"%PDF-"
+        finally:
+            pdf_stream.seek(current_position)
+
+    pdf_data = pdf.stream
+    if not is_valid_pdf(pdf_data):
+        raise ValueError("The provided data is not a valid PDF.")
+
+    if storage_client.overwrite or not storage_client.exists(pdf_storage_path):
+        with storage_client._fs.open(storage_client.get_full_path(pdf_storage_path), "wb") as pdf_file:
+            pdf_data.seek(0)
+            pdf_file.write(pdf_data.read())
+
+    # Get the size of the PDF file, probably not needed
+    pdf_data.seek(0, 2)
+    size_bytes = pdf_data.tell()
+    pdf_data.seek(0)
+
+    return PDFSource(
+        src=storage_client.get_url(pdf_object_path, revision=revision),
+        size_bytes=size_bytes,
+        thumbnail=ImageSource(
+            src=storage_client.get_url(thumbnail_object_path, revision=revision),
+            height=thumbnail.annotated.height,
+            width=thumbnail.annotated.width,
+        ),
+    )
 
 
 def replace_dataset_git_revision_placeholder(url_or_object_path: str, revision: str) -> str:

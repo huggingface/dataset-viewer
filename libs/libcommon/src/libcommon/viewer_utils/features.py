@@ -2,6 +2,7 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import json
+import logging
 import os
 from io import BytesIO
 from typing import Any, Optional, Union
@@ -9,6 +10,7 @@ from zlib import adler32
 
 import datasets.config
 import numpy as np
+import pdfplumber
 import soundfile  # type: ignore
 from datasets import (
     Array2D,
@@ -20,6 +22,7 @@ from datasets import (
     Features,
     Image,
     LargeList,
+    Pdf,
     Sequence,
     Translation,
     TranslationVariableLanguages,
@@ -35,6 +38,7 @@ from libcommon.viewer_utils.asset import (
     SUPPORTED_AUDIO_EXTENSIONS,
     create_audio_file,
     create_image_file,
+    create_pdf_file,
     create_video_file,
 )
 
@@ -42,6 +46,8 @@ AUDIO_FILE_MAGIC_NUMBERS: dict[str, Any] = {
     ".wav": [(b"\x52\x49\x46\x46", 0), (b"\x57\x41\x56\x45", 8)],  # AND: (magic_number, start)
     ".mp3": (b"\xff\xfb", b"\xff\xf3", b"\xff\xf2", b"\x49\x44\x33"),  # OR
 }
+
+logging.getLogger("pdfminer").setLevel(logging.ERROR)
 
 
 def append_hash_suffix(string: str, json_path: Optional[list[Union[str, int]]] = None) -> str:
@@ -270,6 +276,51 @@ def get_video_file_extension(value: Any) -> str:
     return video_file_extension
 
 
+def pdf(
+    dataset: str,
+    revision: str,
+    config: str,
+    split: str,
+    row_idx: int,
+    value: Any,
+    featureName: str,
+    storage_client: StorageClient,
+    json_path: Optional[list[Union[str, int]]] = None,
+) -> Any:
+    if value is None:
+        return None
+    if isinstance(value, dict) and value.get("bytes"):
+        value = pdfplumber.open(BytesIO(value["bytes"]))
+    elif isinstance(value, bytes):
+        value = pdfplumber.open(BytesIO(value))
+    elif (
+        isinstance(value, dict)
+        and "path" in value
+        and isinstance(value["path"], str)
+        and os.path.exists(value["path"])
+    ):
+        value = pdfplumber.open(value["path"])
+
+    if not isinstance(value, pdfplumber.pdf.PDF):
+        raise TypeError(
+            "PDF cell must be a pdfplumber.pdf.PDF object or an encoded dict of a PDF, "
+            f"but got {str(value)[:300]}{'...' if len(str(value)) > 300 else ''}"
+        )
+
+    # this function can raise, we don't catch it
+    return create_pdf_file(
+        dataset=dataset,
+        revision=revision,
+        config=config,
+        split=split,
+        row_idx=row_idx,
+        column=featureName,
+        pdf=value,
+        storage_client=storage_client,
+        filename=f"{append_hash_suffix('document', json_path)}.pdf",
+    )
+
+
 def get_cell_value(
     dataset: str,
     revision: str,
@@ -311,6 +362,18 @@ def get_cell_value(
         )
     elif isinstance(fieldType, Video):
         return video(
+            dataset=dataset,
+            revision=revision,
+            config=config,
+            split=split,
+            row_idx=row_idx,
+            value=cell,
+            featureName=featureName,
+            storage_client=storage_client,
+            json_path=json_path,
+        )
+    elif isinstance(fieldType, Pdf):
+        return pdf(
             dataset=dataset,
             revision=revision,
             config=config,

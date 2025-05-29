@@ -19,6 +19,7 @@ from datasets import (
     Dataset,
     Features,
     Image,
+    Pdf,
     Sequence,
     Translation,
     TranslationVariableLanguages,
@@ -609,5 +610,30 @@ def datasets_fixtures() -> Mapping[str, DatasetFixture]:
             "a" * 1_234,
             [],
             0,
+        ),
+        "pdf": DatasetFixture(
+            other(
+                str(Path(__file__).resolve().parent / "data" / "test_document.pdf"),
+                Pdf(),
+            ),
+            {"_type": "Pdf"},
+            {
+                "src": f"{ASSETS_BASE_URL}/pdf/--/{DEFAULT_REVISION}/--/{DEFAULT_CONFIG}/{DEFAULT_SPLIT}/{DEFAULT_ROW_IDX}/col/document.pdf",
+                "thumbnail": {
+                    "src": f"{ASSETS_BASE_URL}/pdf/--/{DEFAULT_REVISION}/--/{DEFAULT_CONFIG}/{DEFAULT_SPLIT}/{DEFAULT_ROW_IDX}/col/document.pdf.png",
+                    "height": 842,
+                    "width": 596,
+                },
+                "size_bytes": 8810,
+            },
+            [
+                AssetUrlPath(
+                    feature_type="Pdf",
+                    path=[
+                        DEFAULT_COLUMN_NAME,
+                    ],
+                ),
+            ],
+            2,  # One for the pdf file and one for the thumbnail
         ),
     }

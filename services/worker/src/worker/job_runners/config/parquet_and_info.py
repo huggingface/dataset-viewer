@@ -57,6 +57,7 @@ from libcommon.constants import (
     PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_ROW_GROUP_SIZE_FOR_AUDIO_DATASETS,
     PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_ROW_GROUP_SIZE_FOR_BINARY_DATASETS,
     PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_ROW_GROUP_SIZE_FOR_IMAGE_DATASETS,
+    PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_ROW_GROUP_SIZE_FOR_PDF_DATASETS,
     PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_ROW_GROUP_SIZE_FOR_VIDEO_DATASETS,
 )
 from libcommon.dtos import JobInfo, SplitHubFile
@@ -365,6 +366,8 @@ def get_writer_batch_size_from_info(ds_config_info: datasets.info.DatasetInfo) -
         return PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_ROW_GROUP_SIZE_FOR_AUDIO_DATASETS
     elif ds_config_info.builder_name == "imagefolder" or "Image(" in str(ds_config_info.features):
         return PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_ROW_GROUP_SIZE_FOR_IMAGE_DATASETS
+    elif ds_config_info.builder_name == "pdffolder" or "Pdf(" in str(ds_config_info.features):
+        return PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_ROW_GROUP_SIZE_FOR_PDF_DATASETS
     elif "'binary'" in str(ds_config_info.features):
         return PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_ROW_GROUP_SIZE_FOR_BINARY_DATASETS
     else:
