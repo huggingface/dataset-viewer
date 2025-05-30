@@ -3,6 +3,7 @@
 
 from collections.abc import Callable
 from functools import partial
+from multiprocessing.pool import Pool
 from typing import Any, Optional
 
 import anyio
@@ -73,6 +74,9 @@ async def transform_rows(
         desc = f"_transform_row for {dataset}"
         _thread_map = partial(thread_map, desc=desc, total=len(rows))
         return await anyio.to_thread.run_sync(_thread_map, fn, enumerate(rows))
+    elif "Pdf(" in str(features):
+        # Use multiprocessing to parallelize PDF files uploads.
+        return await anyio.to_thread.run_sync(lambda rows: Pool().map(fn, rows), enumerate(rows))
     else:
 
         def _map(func: Callable[[Any], Any], *iterables: Any) -> list[Row]:
