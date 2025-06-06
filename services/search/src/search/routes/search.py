@@ -134,6 +134,7 @@ def create_search_endpoint(
     clean_cache_proba: float = 0.0,
     expiredTimeIntervalSeconds: int = 60,
     max_split_size_bytes: int = 5_000_000_000,
+    picklable_cached_assets_storage_client: Optional[StorageClient] = None,
 ) -> Endpoint:
     async def search_endpoint(request: Request) -> Response:
         revision: Optional[str] = None
@@ -238,6 +239,7 @@ def create_search_endpoint(
                         unsupported_columns=unsupported_columns,
                         num_rows_total=num_rows_total,
                         partial=partial,
+                        picklable_storage_client=picklable_cached_assets_storage_client,
                     )
                     logging.info(f"transform rows finished for {dataset=} {config=} {split=}")
                 with StepProfiler(method="search_endpoint", step="generate the OK response"):

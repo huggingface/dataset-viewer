@@ -55,6 +55,7 @@ async def transform_rows(
     storage_client: StorageClient,
     offset: int,
     row_idx_column: Optional[str],
+    picklable_storage_client: Optional[StorageClient] = None,
 ) -> list[Row]:
     fn = partial(
         _transform_row,
@@ -75,8 +76,29 @@ async def transform_rows(
         _thread_map = partial(thread_map, desc=desc, total=len(rows))
         return await anyio.to_thread.run_sync(_thread_map, fn, enumerate(rows))
     elif "Pdf(" in str(features):
-        # Use multiprocessing to parallelize PDF files uploads.
-        return await anyio.to_thread.run_sync(lambda rows: Pool().map(fn, rows), enumerate(rows))
+        if picklable_storage_client is None:
+            raise ValueError("Storage client must be picklable for PDF transformations")
+        fn = partial(
+            _transform_row,
+            dataset=dataset,
+            revision=revision,
+            config=config,
+            split=split,
+            features=features,
+            storage_client=picklable_storage_client,
+            offset=offset,
+            row_idx_column=row_idx_column,
+        )
+        results = await anyio.to_thread.run_sync(lambda rows: Pool().map(fn, rows), enumerate(rows))
+
+        def prepare_urls(row: Row) -> Row:
+            row["pdf"]["src"] = storage_client.prepare_url(row["pdf"]["src"], revision=revision)
+            row["pdf"]["thumbnail"]["src"] = storage_client.prepare_url(
+                row["pdf"]["thumbnail"]["src"], revision=revision
+            )
+            return row
+
+        return thread_map(prepare_urls, results)  # type: ignore
     else:
 
         def _map(func: Callable[[Any], Any], *iterables: Any) -> list[Row]:

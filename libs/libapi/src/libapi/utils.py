@@ -210,6 +210,7 @@ async def to_rows_list(
     storage_client: StorageClient,
     row_idx_column: Optional[str] = None,
     truncated_columns: Optional[list[str]] = None,
+    picklable_storage_client: Optional[StorageClient] = None,
 ) -> list[RowItem]:
     num_rows = pa_table.num_rows
     for idx, (column, feature) in enumerate(features.items()):
@@ -227,6 +228,7 @@ async def to_rows_list(
             storage_client=storage_client,
             offset=offset,
             row_idx_column=row_idx_column,
+            picklable_storage_client=picklable_storage_client,
         )
     except Exception as err:
         error_message = str(err)
