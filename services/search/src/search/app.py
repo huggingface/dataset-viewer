@@ -83,6 +83,14 @@ def create_app_with_config(app_config: AppConfig) -> Starlette:
         s3_config=app_config.s3,
         # no need to specify a url_signer
     )
+    picklable_cached_assets_storage_client = StorageClient(
+        protocol=app_config.cached_assets.storage_protocol,
+        storage_root=app_config.cached_assets.storage_root,
+        base_url=app_config.cached_assets.base_url,
+        s3_config=app_config.s3,
+        url_preparator=None,  # to use in multiprocessing contexts
+    )
+
     storage_clients = [cached_assets_storage_client, assets_storage_client]
     resources: list[Resource] = [cache_resource, queue_resource]
     if not cache_resource.is_available():
@@ -113,6 +121,7 @@ def create_app_with_config(app_config: AppConfig) -> Starlette:
                 extensions_directory=app_config.duckdb_index.extensions_directory,
                 clean_cache_proba=app_config.duckdb_index.clean_cache_proba,
                 expiredTimeIntervalSeconds=app_config.duckdb_index.expired_time_interval_seconds,
+                picklable_cached_assets_storage_client=picklable_cached_assets_storage_client,
             ),
         ),
         Route(
@@ -134,6 +143,7 @@ def create_app_with_config(app_config: AppConfig) -> Starlette:
                 extensions_directory=app_config.duckdb_index.extensions_directory,
                 clean_cache_proba=app_config.duckdb_index.clean_cache_proba,
                 expiredTimeIntervalSeconds=app_config.duckdb_index.expired_time_interval_seconds,
+                picklable_cached_assets_storage_client=picklable_cached_assets_storage_client,
             ),
         ),
     ]

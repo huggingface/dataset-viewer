@@ -76,6 +76,7 @@ def create_filter_endpoint(
     clean_cache_proba: float = 0.0,
     expiredTimeIntervalSeconds: int = 60,
     max_split_size_bytes: int = 5_000_000_000,
+    picklable_cached_assets_storage_client: Optional[StorageClient] = None,
 ) -> Endpoint:
     async def filter_endpoint(request: Request) -> Response:
         revision: Optional[str] = None
@@ -184,6 +185,7 @@ def create_filter_endpoint(
                         num_rows_total=num_rows_total,
                         partial=partial,
                         use_row_idx_column=True,
+                        picklable_storage_client=picklable_cached_assets_storage_client,
                     )
                 with StepProfiler(method="filter_endpoint", step="generate the OK response"):
                     return get_json_ok_response(content=response, max_age=max_age_long, revision=revision)

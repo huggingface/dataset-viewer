@@ -25,6 +25,7 @@ async def create_response(
     partial: bool,
     use_row_idx_column: bool = False,
     truncated_columns: Optional[list[str]] = None,
+    picklable_storage_client: Optional[StorageClient] = None,
 ) -> PaginatedResponse:
     if set(pa_table.column_names).intersection(set(unsupported_columns)):
         raise RuntimeError(
@@ -49,6 +50,7 @@ async def create_response(
             unsupported_columns=unsupported_columns,
             row_idx_column=ROW_IDX_COLUMN if use_row_idx_column else None,
             truncated_columns=truncated_columns,
+            picklable_storage_client=picklable_storage_client,
         ),
         "num_rows_total": num_rows_total,
         "num_rows_per_page": MAX_NUM_ROWS_PER_PAGE,

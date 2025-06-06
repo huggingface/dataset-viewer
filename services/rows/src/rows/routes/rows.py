@@ -52,6 +52,7 @@ def create_rows_endpoint(
     max_age_long: int = 0,
     max_age_short: int = 0,
     storage_clients: Optional[list[StorageClient]] = None,
+    picklable_cached_assets_storage_client: Optional[StorageClient] = None,
 ) -> Endpoint:
     indexer = Indexer(
         hf_token=hf_token,
@@ -119,6 +120,7 @@ def create_rows_endpoint(
                             partial=rows_index.parquet_index.partial,
                             num_rows_total=rows_index.parquet_index.num_rows_total,
                             truncated_columns=truncated_columns,
+                            picklable_storage_client=picklable_cached_assets_storage_client,
                         )
                 except CachedArtifactNotFoundError:
                     with StepProfiler(method="rows_endpoint", step="try backfill dataset"):

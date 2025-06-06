@@ -2,6 +2,7 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
+import traceback
 from collections.abc import Callable, Coroutine
 from http import HTTPStatus
 from typing import Any, Optional
@@ -209,6 +210,7 @@ async def to_rows_list(
     storage_client: StorageClient,
     row_idx_column: Optional[str] = None,
     truncated_columns: Optional[list[str]] = None,
+    picklable_storage_client: Optional[StorageClient] = None,
 ) -> list[RowItem]:
     num_rows = pa_table.num_rows
     for idx, (column, feature) in enumerate(features.items()):
@@ -226,11 +228,28 @@ async def to_rows_list(
             storage_client=storage_client,
             offset=offset,
             row_idx_column=row_idx_column,
+            picklable_storage_client=picklable_storage_client,
         )
     except Exception as err:
-        raise TransformRowsProcessingError(
-            "Server error while post-processing the split rows. Please report the issue."
-        ) from err
+        error_message = str(err)
+        error_repr = repr(err)
+        error_trace = traceback.format_exc()
+
+        detailed_error = (
+            "[ERROR MESSAGE]: "
+            + error_message
+            + "\n"
+            + "[ERROR TYPE]: "
+            + type(err).__name__
+            + "\n"
+            + "[ERROR REPR]: "
+            + error_repr
+            + "\n"
+            + "[TRACEBACK]:\n"
+            + error_trace
+        )
+
+        raise TransformRowsProcessingError(f"Server error while post-processing.{detailed_error}") from err
     return [
         {
             "row_idx": idx + offset if row_idx_column is None else row.pop(row_idx_column),

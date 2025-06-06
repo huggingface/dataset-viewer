@@ -79,6 +79,13 @@ def create_app_with_config(app_config: AppConfig) -> Starlette:
         s3_config=app_config.s3,
         # no need to specify a url_signer
     )
+    picklable_cached_assets_storage_client = StorageClient(
+        protocol=app_config.cached_assets.storage_protocol,
+        storage_root=app_config.cached_assets.storage_root,
+        base_url=app_config.cached_assets.base_url,
+        s3_config=app_config.s3,
+        url_preparator=None,  # to use in multiprocessing contexts
+    )
     storage_clients = [cached_assets_storage_client, assets_storage_client]
 
     resources: list[Resource] = [cache_resource, queue_resource]
@@ -107,6 +114,7 @@ def create_app_with_config(app_config: AppConfig) -> Starlette:
                 max_age_long=app_config.api.max_age_long,
                 max_age_short=app_config.api.max_age_short,
                 storage_clients=storage_clients,
+                picklable_cached_assets_storage_client=picklable_cached_assets_storage_client,
             ),
         ),
     ]
