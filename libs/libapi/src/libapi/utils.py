@@ -229,10 +229,25 @@ async def to_rows_list(
             row_idx_column=row_idx_column,
         )
     except Exception as err:
+        error_message = str(err)
+        error_repr = repr(err)
         error_trace = traceback.format_exc()
-        raise TransformRowsProcessingError(
-            f"Server error while post-processing the split rows. Please report the issue.\nTraceback:\n{error_trace}"
-        ) from err
+
+        detailed_error = (
+            "[ERROR MESSAGE]: "
+            + error_message
+            + "\n"
+            + "[ERROR TYPE]: "
+            + type(err).__name__
+            + "\n"
+            + "[ERROR REPR]: "
+            + error_repr
+            + "\n"
+            + "[TRACEBACK]:\n"
+            + error_trace
+        )
+
+        raise TransformRowsProcessingError(f"Server error while post-processing.{detailed_error}") from err
     return [
         {
             "row_idx": idx + offset if row_idx_column is None else row.pop(row_idx_column),
