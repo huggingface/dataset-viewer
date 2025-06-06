@@ -2,6 +2,7 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
+import traceback
 from collections.abc import Callable, Coroutine
 from http import HTTPStatus
 from typing import Any, Optional
@@ -228,8 +229,9 @@ async def to_rows_list(
             row_idx_column=row_idx_column,
         )
     except Exception as err:
+        error_trace = traceback.format_exc()
         raise TransformRowsProcessingError(
-            "Server error while post-processing the split rows. Please report the issue."
+            f"Server error while post-processing the split rows. Please report the issue.\nTraceback:\n{error_trace}"
         ) from err
     return [
         {
