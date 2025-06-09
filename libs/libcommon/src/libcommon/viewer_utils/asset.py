@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+import threading
 from io import BufferedReader, BytesIO
 from tempfile import NamedTemporaryFile
 from typing import TYPE_CHECKING, Any, Optional, TypedDict, Union
@@ -16,6 +17,7 @@ if TYPE_CHECKING:
 SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE = {".wav": "audio/wav", ".mp3": "audio/mpeg", ".opus": "audio/ogg"}
 SUPPORTED_AUDIO_EXTENSIONS = SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE.keys()
 DATASET_GIT_REVISION_PLACEHOLDER = "{dataset_git_revision}"
+LOCK = threading.Lock()
 
 
 class ImageSource(TypedDict):
@@ -152,7 +154,8 @@ def create_pdf_file(
         filename=f"{filename}.png",
     )
     thumbnail_storage_path = replace_dataset_git_revision_placeholder(thumbnail_object_path, revision=revision)
-    thumbnail = pdf.pages[0].to_image()
+    with LOCK:
+        thumbnail = pdf.pages[0].to_image()
 
     if storage_client.overwrite or not storage_client.exists(thumbnail_storage_path):
         thumbnail_buffer = BytesIO()

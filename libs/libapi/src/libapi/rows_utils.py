@@ -66,7 +66,7 @@ async def transform_rows(
         offset=offset,
         row_idx_column=row_idx_column,
     )
-    if "Audio(" in str(features) or "Image(" in str(features):
+    if "Audio(" in str(features) or "Image(" in str(features) or "Pdf(" in str(features):
         # Use multithreading to parallelize image/audio files uploads.
         # Also multithreading is ok to convert audio data
         # (we use pydub which might spawn one ffmpeg process per conversion, which releases the GIL)
