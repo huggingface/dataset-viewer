@@ -49,6 +49,7 @@ e2e:
 
 .PHONY: install
 install:
+	$(MAKE) -C libs/libviewer install
 	$(MAKE) -C libs/libcommon install
 	$(MAKE) -C libs/libapi install
 	$(MAKE) -C jobs/cache_maintenance install
