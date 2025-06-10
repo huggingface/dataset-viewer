@@ -4,11 +4,12 @@
 from pathlib import Path
 
 import pytest
-from datasets import Dataset, Image
+from datasets import Dataset, Image, Pdf
 from datasets.table import embed_table_storage
 from libcommon.constants import ROW_IDX_COLUMN
 from libcommon.storage_client import StorageClient
 from libcommon.url_preparator import URLPreparator
+from pdfplumber import open as open_pdf
 from PIL import Image as PILImage
 
 from libapi.response import create_response
@@ -117,3 +118,34 @@ async def test_create_response_with_image(image_path: str, storage_client: Stora
     assert storage_client.exists(image_key)
     image = PILImage.open(f"{storage_client.storage_root}/{image_key}")
     assert image is not None
+
+
+async def test_create_response_with_document(document_path: str, storage_client: StorageClient) -> None:
+    document_list = [document_path] * 5  # testing with multiple documents to ensure multithreading works
+    ds = Dataset.from_dict({"document": document_list}).cast_column("document", Pdf())
+    ds_document = Dataset(embed_table_storage(ds.data))
+    dataset, config, split = "ds_document", "default", "train"
+    document_key = "ds_document/--/revision/--/default/train/0/document/document.pdf"
+    thumbnail_key = "ds_document/--/revision/--/default/train/0/document/document.pdf.png"
+
+    response = await create_response(
+        dataset=dataset,
+        revision="revision",
+        config=config,
+        split=split,
+        storage_client=storage_client,
+        pa_table=ds_document.data,
+        offset=0,
+        features=ds_document.features,
+        unsupported_columns=[],
+        num_rows_total=10,
+        partial=False,
+    )
+    assert response["features"] == [{"feature_idx": 0, "name": "document", "type": {"_type": "Pdf"}}]
+    assert len(response["rows"]) == len(document_list)
+    assert response["partial"] is False
+    assert storage_client.exists(document_key)
+    pdf = open_pdf(f"{storage_client.storage_root}/{document_key}")
+    assert pdf is not None
+    thumbnail = PILImage.open(f"{storage_client.storage_root}/{thumbnail_key}")
+    assert thumbnail is not None

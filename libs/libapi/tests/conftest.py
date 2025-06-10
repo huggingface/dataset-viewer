@@ -55,6 +55,13 @@ def image_path() -> str:
     return str(image_path)
 
 
+@fixture
+def document_path() -> str:
+    document_path = Path(__file__).resolve().parent / "data" / "test_document.pdf"
+    assert document_path.is_file()
+    return str(document_path)
+
+
 # see https://github.com/pytest-dev/pytest/issues/363#issuecomment-406536200
 @fixture(scope="session")
 def monkeypatch_session(tmp_path_factory: TempPathFactory) -> Iterator[MonkeyPatch]:
