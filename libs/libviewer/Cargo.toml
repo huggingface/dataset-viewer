@@ -1,0 +1,24 @@
+[package]
+name = "libviewer"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "libviewer"
+# "cdylib" is necessary to produce a shared library for Python to import from
+crate-type = ["cdylib"]
+
+[dependencies]
+arrow = { version = "55", features = ["pyarrow"] }
+futures = "0.3"
+object_store = "0.12.0"
+object_store_opendal = "0.52.0"
+opendal = { version = "0.53.2", features = ["services-huggingface"] }
+parquet = { version = "55", features = ["async", "object_store"] }
+pyo3 = { version = "0.24", features = ["extension-module"] }
+pyo3-async-runtimes = { version = "0.24", features = ["tokio-runtime"] }
+tempfile = "3.20.0"
+thiserror = "2.0.12"
+thrift = "0.17"
+tokio = "1.45"
+url = "2.5.4"
