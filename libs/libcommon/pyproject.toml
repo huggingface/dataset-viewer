@@ -72,6 +72,7 @@ untyped_calls_exclude = "huggingface_hub"
 [[tool.mypy.overrides]]
 module = [
     "datasets.*",
+    "fitz.*",
     "networkx.*",
     "prometheus_client.*",
     "pyarrow.*",
