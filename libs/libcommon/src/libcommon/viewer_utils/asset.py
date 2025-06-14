@@ -6,6 +6,7 @@ from io import BufferedReader, BytesIO
 from tempfile import NamedTemporaryFile
 from typing import TYPE_CHECKING, Any, Optional, TypedDict, Union
 
+import fitz
 from pdfplumber.pdf import PDF
 from PIL import Image, ImageOps
 from pydub import AudioSegment  # type:ignore
@@ -154,13 +155,14 @@ def create_pdf_file(
         filename=f"{filename}.png",
     )
     thumbnail_storage_path = replace_dataset_git_revision_placeholder(thumbnail_object_path, revision=revision)
-    with LOCK:
-        thumbnail = pdf.pages[0].to_image()
+    thumbnail_buffer = BytesIO()
+    pdf.stream.seek(0)
+    with fitz.open(stream=pdf.stream.read(), filetype="pdf") as doc:
+        thumbnail = doc.load_page(0).get_pixmap().pil_image()
+        thumbnail.save(thumbnail_buffer, format="PNG")
+    thumbnail_buffer.seek(0)
 
     if storage_client.overwrite or not storage_client.exists(thumbnail_storage_path):
-        thumbnail_buffer = BytesIO()
-        thumbnail.save(thumbnail_buffer)
-        thumbnail_buffer.seek(0)
         with storage_client._fs.open(storage_client.get_full_path(thumbnail_storage_path), "wb") as thumbnail_file:
             thumbnail_file.write(thumbnail_buffer.read())
 
@@ -202,8 +204,8 @@ def create_pdf_file(
         size_bytes=size_bytes,
         thumbnail=ImageSource(
             src=storage_client.get_url(thumbnail_object_path, revision=revision),
-            height=thumbnail.annotated.height,
-            width=thumbnail.annotated.width,
+            height=thumbnail.height,
+            width=thumbnail.width,
         ),
     )
 
