@@ -93,7 +93,7 @@ from worker.utils import (
 
 DATASET_TYPE = "dataset"
 MAX_FILES_PER_DIRECTORY = 10_000  # hf hub limitation
-MAX_FILES_PER_REPOSITORY = 100_000  # hf hub limitation
+MAX_FILES_PER_REPOSITORY = 1_000_000  # hf hub limitation (actually it is 100k but some repos have more)
 MAX_OPERATIONS_PER_COMMIT = 500
 
 T = TypeVar("T")
