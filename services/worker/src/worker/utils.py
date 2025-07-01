@@ -17,6 +17,7 @@ import requests
 from datasets import Dataset, DatasetInfo, DownloadConfig, Features, IterableDataset, load_dataset
 from datasets.utils.file_utils import SINGLE_FILE_COMPRESSION_EXTENSION_TO_PROTOCOL
 from huggingface_hub import HfFileSystem, HfFileSystemFile
+from huggingface_hub import revision_exists
 from huggingface_hub.errors import RepositoryNotFoundError
 from huggingface_hub.hf_api import HfApi
 from libcommon.constants import CONFIG_SPLIT_NAMES_KIND, MAX_COLUMN_NAME_LENGTH
@@ -176,13 +177,21 @@ LOCK_GIT_BRANCH_RETRY_SLEEPS = [1, 1, 1, 1, 1, 10, 10, 10, 10, 100] * 3
 
 def create_branch(dataset: str, target_revision: str, hf_api: HfApi, committer_hf_api: HfApi) -> None:
     try:
-        refs = retry(on=[requests.exceptions.ConnectionError], sleeps=LIST_REPO_REFS_RETRY_SLEEPS)(
-            hf_api.list_repo_refs
-        )(repo_id=dataset, repo_type=DATASET_TYPE)
-        if all(ref.ref != target_revision for ref in refs.converts):
-            initial_commit = hf_api.list_repo_commits(repo_id=dataset, repo_type=DATASET_TYPE)[-1].commit_id
+        # Check if the target revision (branch) already exists
+        if not revision_exists(dataset, target_revision):
+            # If not, get the latest commit from the main branch (or current default)
+            initial_commit = hf_api.list_repo_commits(
+                repo_id=dataset,
+                repo_type=DATASET_TYPE
+            )[-1].commit_id
+
+            # Create a new branch at the latest commit
             committer_hf_api.create_branch(
-                repo_id=dataset, branch=target_revision, repo_type=DATASET_TYPE, revision=initial_commit, exist_ok=True
+                repo_id=dataset,
+                branch=target_revision,
+                repo_type=DATASET_TYPE,
+                revision=initial_commit,
+                exist_ok=True
             )
     except RepositoryNotFoundError as err:
         raise DatasetNotFoundError("The dataset does not exist on the Hub (was deleted during job).") from err
