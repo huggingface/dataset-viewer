@@ -13,7 +13,6 @@ from unittest.mock import patch
 from urllib.parse import quote
 
 import PIL
-import requests
 from datasets import Dataset, DatasetInfo, DownloadConfig, Features, IterableDataset, load_dataset
 from datasets.utils.file_utils import SINGLE_FILE_COMPRESSION_EXTENSION_TO_PROTOCOL
 from huggingface_hub import HfFileSystem, HfFileSystemFile, revision_exists
