@@ -7,7 +7,7 @@ from typing import Any, Optional, TypedDict, Union
 
 import polars as pl
 import pyarrow.parquet as pq
-from datasets import Features, LargeList, Sequence
+from datasets import Features, LargeList, List
 from datasets.features.features import FeatureType, _ArrayXD
 from libcommon.dtos import JobInfo
 from libcommon.exceptions import (
@@ -74,9 +74,7 @@ def is_extension_feature(feature: FeatureType) -> bool:
     """Check if a (possibly nested) feature is an arrow extension feature (Array2D, Array3D, Array4D, or Array5D)."""
     if isinstance(feature, dict):
         return any(is_extension_feature(f) for f in feature.values())
-    elif isinstance(feature, (list, tuple)):
-        return any(is_extension_feature(f) for f in feature)
-    elif isinstance(feature, (LargeList, Sequence)):
+    elif isinstance(feature, (LargeList, List)):
         return is_extension_feature(feature.feature)
     else:
         return isinstance(feature, _ArrayXD)
@@ -214,7 +212,7 @@ def compute_descriptive_statistics_response(
         dataset_feature_name: str, dataset_feature: Union[dict[str, Any], list[Any]]
     ) -> Optional[SupportedColumns]:
         if isinstance(dataset_feature, list) or (
-            isinstance(dataset_feature, dict) and dataset_feature.get("_type") in ("LargeList", "Sequence")
+            isinstance(dataset_feature, dict) and dataset_feature.get("_type") in ("LargeList", "List", "Sequence")
         ):
             # Compute only if it's internally a List! because it can also be Struct, see
             # https://huggingface.co/docs/datasets/v2.18.0/en/package_reference/main_classes#datasets.Features
@@ -263,7 +261,7 @@ def compute_descriptive_statistics_response(
     if not columns:
         raise NoSupportedFeaturesError(
             "No columns for statistics computation found. Currently supported feature types are: "
-            f"{NUMERICAL_DTYPES}, {STRING_DTYPES}, ClassLabel, Image, Audio, list/Sequence, datetime and bool. "
+            f"{NUMERICAL_DTYPES}, {STRING_DTYPES}, ClassLabel, Image, Audio, List, datetime and bool. "
         )
 
     column_names_str = ", ".join([column.name for column in columns])

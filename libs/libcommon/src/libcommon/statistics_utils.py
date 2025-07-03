@@ -7,12 +7,12 @@ import logging
 from pathlib import Path
 from typing import Any, Callable, Optional, TypedDict, Union
 
-import librosa
 import numpy as np
 import polars as pl
 import pyarrow.parquet as pq
 from datasets import Features
 from PIL import Image
+from torchcodec.decoders import AudioDecoder
 from tqdm.contrib.concurrent import thread_map
 
 from libcommon.exceptions import (
@@ -713,8 +713,10 @@ class AudioColumn(MediaColumn):
         if example is None:
             return None
         example_bytes = example["bytes"] if isinstance(example, dict) else example
-        with io.BytesIO(example_bytes) as f:
-            return librosa.get_duration(path=f)  # type: ignore   # expects PathLike but BytesIO also works
+        duration = AudioDecoder(example_bytes).metadata.duration_seconds_from_header
+        if not isinstance(duration, float):
+            raise StatisticsComputationError("Failed to get the audio duration for the header.")
+        return duration
 
     @classmethod
     def transform(cls, example: Optional[Union[bytes, dict[str, Any]]]) -> Optional[float]:

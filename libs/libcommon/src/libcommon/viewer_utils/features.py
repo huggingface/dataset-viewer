@@ -22,8 +22,8 @@ from datasets import (
     Features,
     Image,
     LargeList,
+    List,
     Pdf,
-    Sequence,
     Translation,
     TranslationVariableLanguages,
     Value,
@@ -161,20 +161,33 @@ def audio(
 
 
 def get_audio_file_bytes(value: Any) -> bytes:
-    if "bytes" in value and isinstance(value["bytes"], bytes):
+    from datasets.features._torchcodec import AudioDecoder
+
+    if isinstance(value, dict) and "bytes" in value and isinstance(value["bytes"], bytes):
         audio_file_bytes = value["bytes"]
-    elif "path" in value and isinstance(value["path"], str) and os.path.exists(value["path"]):
+    elif (
+        isinstance(value, dict)
+        and "path" in value
+        and isinstance(value["path"], str)
+        and os.path.exists(value["path"])
+    ):
         with open(value["path"], "rb") as f:
             audio_file_bytes = f.read()
-    elif (
-        "array" in value
-        and isinstance(value["array"], np.ndarray)
-        and "sampling_rate" in value
-        and isinstance(value["sampling_rate"], int)
-    ):
-        buffer = BytesIO()
-        soundfile.write(buffer, value["array"], value["sampling_rate"], format="wav")
-        audio_file_bytes = buffer.getvalue()
+    elif isinstance(value, AudioDecoder):
+        if (
+            hasattr(value, "_hf_encoded")
+            and isinstance(value._hf_encoded, dict)
+            and "bytes" in value._hf_encoded
+            and isinstance(value._hf_encoded["bytes"], bytes)
+        ):
+            audio_file_bytes = value._hf_encoded["bytes"]
+        else:
+            _array = value["array"]
+            _sampling_rate = value["sampling_rate"]
+            if isinstance(_array, np.ndarray) and isinstance(_sampling_rate, int):
+                buffer = BytesIO()
+                soundfile.write(buffer, _array, _sampling_rate, format="wav")
+                audio_file_bytes = buffer.getvalue()
     else:
         raise ValueError(
             "An audio sample should have 'path' and 'bytes' (or 'array' and 'sampling_rate') but got"
@@ -184,16 +197,27 @@ def get_audio_file_bytes(value: Any) -> bytes:
 
 
 def get_audio_file_extension(value: Any) -> Optional[str]:
-    if "path" in value and isinstance(value["path"], str):
+    from datasets.features._torchcodec import AudioDecoder
+
+    if isinstance(value, dict) and "path" in value and isinstance(value["path"], str):
         # .split("::")[0] for chained URLs like zip://audio.wav::https://foo.bar/data.zip
         # It might be "" for audio files downloaded from the Hub: make it None
         audio_file_extension = os.path.splitext(value["path"].split("::")[0])[1] or None
-    elif ("path" in value and value["path"] is None) or "array" in value:
-        audio_file_extension = ".wav"
+    elif isinstance(value, AudioDecoder):
+        if (
+            hasattr(value, "_hf_encoded")
+            and isinstance(value._hf_encoded, dict)
+            and "path" in value._hf_encoded
+            and isinstance(value._hf_encoded["path"], str)
+        ):
+            # .split("::")[0] for chained URLs like zip://audio.wav::https://foo.bar/data.zip
+            # It might be "" for audio files downloaded from the Hub: make it None
+            audio_file_extension = os.path.splitext(value._hf_encoded["path"].split("::")[0])[1] or None
+        else:
+            audio_file_extension = ".wav"
     else:
         raise ValueError(
-            "An audio sample should have 'path' and 'bytes' (or 'array' and 'sampling_rate') but got"
-            f" {', '.join(value)}."
+            "An audio sample should have 'path' and 'bytes' (or be an AudioDecoder) but got" f" {', '.join(value)}."
         )
     return audio_file_extension
 
@@ -424,50 +448,26 @@ def get_cell_value(
             )
             for (idx, subCell) in enumerate(cell)
         ]
-    elif isinstance(fieldType, Sequence):
-        if isinstance(cell, list):
-            if fieldType.length >= 0 and len(cell) != fieldType.length:
-                raise TypeError("the cell length should be the same as the Sequence length.")
-            return [
-                get_cell_value(
-                    dataset=dataset,
-                    revision=revision,
-                    config=config,
-                    split=split,
-                    row_idx=row_idx,
-                    cell=subCell,
-                    featureName=featureName,
-                    fieldType=fieldType.feature,
-                    storage_client=storage_client,
-                    json_path=json_path + [idx] if json_path else [idx],
-                )
-                for (idx, subCell) in enumerate(cell)
-            ]
-        # if the internal feature of the Sequence is a dict, then the value will automatically
-        # be converted into a dictionary of lists. See
-        # https://huggingface.co/docs/datasets/v2.5.1/en/package_reference/main_classes#datasets.Features
-        if isinstance(cell, dict):
-            if any(not isinstance(v, list) or (k not in fieldType.feature) for k, v in cell.items()):
-                raise TypeError("The value of a Sequence of dicts should be a dictionary of lists.")
-            return {
-                key: [
-                    get_cell_value(
-                        dataset=dataset,
-                        revision=revision,
-                        config=config,
-                        split=split,
-                        row_idx=row_idx,
-                        cell=subCellItem,
-                        featureName=featureName,
-                        fieldType=fieldType.feature[key],
-                        storage_client=storage_client,
-                        json_path=json_path + [key, idx] if json_path else [key, idx],
-                    )
-                    for (idx, subCellItem) in enumerate(subCell)
-                ]
-                for (key, subCell) in cell.items()
-            }
-        raise TypeError("Sequence cell must be a list or a dict.")
+    elif isinstance(fieldType, List):
+        if not isinstance(cell, list):
+            raise TypeError("list cell must be a list.")
+        if fieldType.length >= 0 and len(cell) != fieldType.length:
+            raise TypeError("the cell length should be the same as the List length.")
+        return [
+            get_cell_value(
+                dataset=dataset,
+                revision=revision,
+                config=config,
+                split=split,
+                row_idx=row_idx,
+                cell=subCell,
+                featureName=featureName,
+                fieldType=fieldType.feature,
+                storage_client=storage_client,
+                json_path=json_path + [idx] if json_path else [idx],
+            )
+            for (idx, subCell) in enumerate(cell)
+        ]
 
     elif isinstance(fieldType, dict):
         if not isinstance(cell, dict):

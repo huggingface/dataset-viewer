@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from typing import Any, Callable, Literal, Optional, Union
 
 from datasets import Audio, Features, Image, Pdf, Video
-from datasets.features.features import FeatureType, LargeList, Sequence
+from datasets.features.features import FeatureType, LargeList, List
 
 from libcommon.cloudfront import CloudFrontSigner
 from libcommon.dtos import FeatureItem
@@ -48,15 +48,12 @@ def _visit(
     Returns:
         `FeatureType`: the visited feature.
     """
-    if isinstance(feature, Sequence) and isinstance(feature.feature, dict):
-        feature = {k: [f] for k, f in feature.feature.items()}
-        # ^ Sequence of dicts is special, it must be converted to a dict of lists (see https://huggingface.co/docs/datasets/v2.16.1/en/package_reference/main_classes#datasets.Features)
     if isinstance(feature, dict):
         out = func({k: _visit(f, func, visit_path + [k]) for k, f in feature.items()}, visit_path)
     elif isinstance(feature, (list, tuple)):
         out = func([_visit(feature[0], func, visit_path + [0])], visit_path)
-    elif isinstance(feature, Sequence):
-        out = func(Sequence(_visit(feature.feature, func, visit_path + [0]), length=feature.length), visit_path)
+    elif isinstance(feature, List):
+        out = func(List(_visit(feature.feature, func, visit_path + [0]), length=feature.length), visit_path)
     elif isinstance(feature, LargeList):
         out = func(LargeList(_visit(feature.feature, func, visit_path + [0])), visit_path)
     else:

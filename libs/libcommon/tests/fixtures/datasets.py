@@ -19,8 +19,8 @@ from datasets import (
     Dataset,
     Features,
     Image,
+    List,
     Pdf,
-    Sequence,
     Translation,
     TranslationVariableLanguages,
     Value,
@@ -226,14 +226,14 @@ def datasets_fixtures() -> Mapping[str, DatasetFixture]:
             0,
         ),
         "sequence_list": DatasetFixture(
-            other([0], Sequence(feature=Value(dtype="int64"))),
+            other([0], List(feature=Value(dtype="int64"))),
             {"_type": "Sequence", "feature": {"_type": "Value", "dtype": "int64"}},
             [0],
             [],
             0,
         ),
         "sequence_dict": DatasetFixture(
-            other([{"a": 0}], Sequence(feature={"a": Value(dtype="int64")})),
+            other([{"a": 0}], List(feature={"a": Value(dtype="int64")})),
             {"_type": "Sequence", "feature": {"a": {"_type": "Value", "dtype": "int64"}}},
             {"a": [0]},
             # ^ converted to a dict of lists, see https://huggingface.co/docs/datasets/v2.16.1/en/package_reference/main_classes#datasets.Features
@@ -306,7 +306,7 @@ def datasets_fixtures() -> Mapping[str, DatasetFixture]:
         ),
         "audio": DatasetFixture(
             other(
-                {"array": [0.1, 0.2, 0.3], "sampling_rate": DEFAULT_SAMPLING_RATE},
+                str(Path(__file__).resolve().parent.parent / "viewer_utils" / "data" / "test_audio_16000.mp3"),
                 Audio(sampling_rate=DEFAULT_SAMPLING_RATE),
             ),
             {
@@ -315,7 +315,7 @@ def datasets_fixtures() -> Mapping[str, DatasetFixture]:
             },
             [
                 {
-                    "src": f"{ASSETS_BASE_URL}/audio/--/{DEFAULT_REVISION}/--/{DEFAULT_CONFIG}/{DEFAULT_SPLIT}/{DEFAULT_ROW_IDX}/col/audio.wav",
+                    "src": f"{ASSETS_BASE_URL}/audio/--/{DEFAULT_REVISION}/--/{DEFAULT_CONFIG}/{DEFAULT_SPLIT}/{DEFAULT_ROW_IDX}/col/audio.mp3",
                     "type": "audio/wav",
                 }
             ],
@@ -369,7 +369,7 @@ def datasets_fixtures() -> Mapping[str, DatasetFixture]:
                     None,
                     # ^ image lists can include nulls
                 ],
-                [Image()],
+                List(Image()),
             ),
             [
                 {
@@ -396,12 +396,12 @@ def datasets_fixtures() -> Mapping[str, DatasetFixture]:
         "audios_list": DatasetFixture(
             other(
                 [
-                    {"array": [0.1, 0.2, 0.3], "sampling_rate": DEFAULT_SAMPLING_RATE},
-                    {"array": [0.1, 0.2, 0.3], "sampling_rate": DEFAULT_SAMPLING_RATE},
+                    str(Path(__file__).resolve().parent.parent / "viewer_utils" / "data" / "test_audio_16000.mp3"),
+                    str(Path(__file__).resolve().parent.parent / "viewer_utils" / "data" / "test_audio_16000.mp3"),
                     None,
                     # ^ audio lists can include nulls
                 ],
-                [Audio()],
+                List(Audio()),
             ),
             [
                 {
@@ -432,7 +432,7 @@ def datasets_fixtures() -> Mapping[str, DatasetFixture]:
                     str(Path(__file__).resolve().parent / "data" / "test_image_rgb.jpg"),
                     str(Path(__file__).resolve().parent / "data" / "test_image_rgb.jpg"),
                 ],
-                Sequence(feature=Image()),
+                List(feature=Image()),
             ),
             {
                 "_type": "Sequence",
@@ -463,7 +463,7 @@ def datasets_fixtures() -> Mapping[str, DatasetFixture]:
                         str(Path(__file__).resolve().parent / "data" / "test_image_rgb.jpg"),
                     ]
                 },
-                Sequence(feature={"images": Image()}),
+                List(feature={"images": Image()}),
             ),
             {
                 "_type": "Sequence",
@@ -493,10 +493,10 @@ def datasets_fixtures() -> Mapping[str, DatasetFixture]:
         "audios_sequence": DatasetFixture(
             other(
                 [
-                    {"array": [0.1, 0.2, 0.3], "sampling_rate": DEFAULT_SAMPLING_RATE},
-                    {"array": [0.1, 0.2, 0.3], "sampling_rate": DEFAULT_SAMPLING_RATE},
+                    str(Path(__file__).resolve().parent.parent / "viewer_utils" / "data" / "test_audio_16000.mp3"),
+                    str(Path(__file__).resolve().parent.parent / "viewer_utils" / "data" / "test_audio_16000.mp3"),
                 ],
-                Sequence(feature=Audio()),
+                List(feature=Audio()),
             ),
             {
                 "_type": "Sequence",
@@ -531,12 +531,22 @@ def datasets_fixtures() -> Mapping[str, DatasetFixture]:
                     ],
                     "c": {
                         "ca": [
-                            {"array": [0.1, 0.2, 0.3], "sampling_rate": 16_000},
-                            {"array": [0.1, 0.2, 0.3], "sampling_rate": 16_000},
+                            str(
+                                Path(__file__).resolve().parent.parent
+                                / "viewer_utils"
+                                / "data"
+                                / "test_audio_16000.mp3"
+                            ),
+                            str(
+                                Path(__file__).resolve().parent.parent
+                                / "viewer_utils"
+                                / "data"
+                                / "test_audio_16000.mp3"
+                            ),
                         ]
                     },
                 },
-                {"a": Value(dtype="int64"), "b": [Image()], "c": {"ca": [Audio()]}},
+                {"a": Value(dtype="int64"), "b": List(Image()), "c": {"ca": List(Audio())}},
             ),
             {
                 "a": {"_type": "Value", "dtype": "int64"},
@@ -581,7 +591,7 @@ def datasets_fixtures() -> Mapping[str, DatasetFixture]:
             4,
         ),
         "sequence_of_dicts": DatasetFixture(
-            other([{"a": {"b": 0}}, {"a": {"b": 1}}], Sequence(feature={"a": {"b": Value(dtype="int64")}})),
+            other([{"a": {"b": 0}}, {"a": {"b": 1}}], {"a": List({"b": Value(dtype="int64")})}),
             {
                 "_type": "Sequence",
                 "feature": {
