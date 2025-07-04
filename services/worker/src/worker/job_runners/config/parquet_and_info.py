@@ -169,10 +169,12 @@ def parse_repo_filename(filename: str) -> tuple[str, str]:
     config, split, _ = parts
     if split.startswith(PARTIAL_PREFIX):
         split = split[len(PARTIAL_PREFIX) :]  # noqa: E203
-    if split[-1] in "0123456789":
-        part_suffix = PART_SUFFIX.format(split[-1])
-        if split.endswith(part_suffix):
-            split = split[: -len(part_suffix)]  # noqa: E203
+    if PART_SUFFIX.format("") in split:
+        part_number = split.split(PART_SUFFIX.format(""), 1)[1]
+        if part_number.isnumeric():
+            part_suffix = PART_SUFFIX.format(part_number)
+            if split.endswith(part_suffix):
+                split = split[: -len(part_suffix)]  # noqa: E203
     return config, split
 
 

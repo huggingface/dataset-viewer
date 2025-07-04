@@ -130,11 +130,13 @@ def audio(
     storage_client: StorageClient,
     json_path: Optional[list[Union[str, int]]] = None,
 ) -> Any:
+    from datasets.features._torchcodec import AudioDecoder
+
     if value is None:
         return None
-    if not isinstance(value, dict):
+    if not isinstance(value, (dict, AudioDecoder)):
         raise TypeError(
-            "Audio cell must be an encoded dict of an audio sample, "
+            "Audio cell must be an encoded dict of an audio sample or a torchcodec AudioDecoder, "
             f"but got {str(value)[:300]}{'...' if len(str(value)) > 300 else ''}"
         )
     audio_file_extension = get_audio_file_extension(value)

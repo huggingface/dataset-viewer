@@ -233,10 +233,9 @@ def datasets_fixtures() -> Mapping[str, DatasetFixture]:
             0,
         ),
         "sequence_dict": DatasetFixture(
-            other([{"a": 0}], List(feature={"a": Value(dtype="int64")})),
+            other({"a": [0]}, {"a": List(Value(dtype="int64"))}),
             {"_type": "Sequence", "feature": {"a": {"_type": "Value", "dtype": "int64"}}},
             {"a": [0]},
-            # ^ converted to a dict of lists, see https://huggingface.co/docs/datasets/v2.16.1/en/package_reference/main_classes#datasets.Features
             [],
             0,
         ),
@@ -316,7 +315,7 @@ def datasets_fixtures() -> Mapping[str, DatasetFixture]:
             [
                 {
                     "src": f"{ASSETS_BASE_URL}/audio/--/{DEFAULT_REVISION}/--/{DEFAULT_CONFIG}/{DEFAULT_SPLIT}/{DEFAULT_ROW_IDX}/col/audio.mp3",
-                    "type": "audio/wav",
+                    "type": "audio/mpeg",
                 }
             ],
             [AssetUrlPath(feature_type="Audio", path=[DEFAULT_COLUMN_NAME, 0])],
@@ -411,14 +410,14 @@ def datasets_fixtures() -> Mapping[str, DatasetFixture]:
             [
                 [
                     {
-                        "src": f"{ASSETS_BASE_URL}/audios_list/--/{DEFAULT_REVISION}/--/{DEFAULT_CONFIG}/{DEFAULT_SPLIT}/{DEFAULT_ROW_IDX}/col/audio-1d100e9.wav",
-                        "type": "audio/wav",
+                        "src": f"{ASSETS_BASE_URL}/audios_list/--/{DEFAULT_REVISION}/--/{DEFAULT_CONFIG}/{DEFAULT_SPLIT}/{DEFAULT_ROW_IDX}/col/audio-1d100e9.mp3",
+                        "type": "audio/mpeg",
                     }
                 ],
                 [
                     {
-                        "src": f"{ASSETS_BASE_URL}/audios_list/--/{DEFAULT_REVISION}/--/{DEFAULT_CONFIG}/{DEFAULT_SPLIT}/{DEFAULT_ROW_IDX}/col/audio-1d300ea.wav",
-                        "type": "audio/wav",
+                        "src": f"{ASSETS_BASE_URL}/audios_list/--/{DEFAULT_REVISION}/--/{DEFAULT_CONFIG}/{DEFAULT_SPLIT}/{DEFAULT_ROW_IDX}/col/audio-1d300ea.mp3",
+                        "type": "audio/mpeg",
                     },
                 ],
                 None,
@@ -463,7 +462,7 @@ def datasets_fixtures() -> Mapping[str, DatasetFixture]:
                         str(Path(__file__).resolve().parent / "data" / "test_image_rgb.jpg"),
                     ]
                 },
-                List(feature={"images": Image()}),
+                {"images": List(Image())},
             ),
             {
                 "_type": "Sequence",
@@ -507,14 +506,14 @@ def datasets_fixtures() -> Mapping[str, DatasetFixture]:
             [
                 [
                     {
-                        "src": f"{ASSETS_BASE_URL}/audios_sequence/--/{DEFAULT_REVISION}/--/{DEFAULT_CONFIG}/{DEFAULT_SPLIT}/{DEFAULT_ROW_IDX}/col/audio-1d100e9.wav",
-                        "type": "audio/wav",
+                        "src": f"{ASSETS_BASE_URL}/audios_sequence/--/{DEFAULT_REVISION}/--/{DEFAULT_CONFIG}/{DEFAULT_SPLIT}/{DEFAULT_ROW_IDX}/col/audio-1d100e9.mp3",
+                        "type": "audio/mpeg",
                     }
                 ],
                 [
                     {
-                        "src": f"{ASSETS_BASE_URL}/audios_sequence/--/{DEFAULT_REVISION}/--/{DEFAULT_CONFIG}/{DEFAULT_SPLIT}/{DEFAULT_ROW_IDX}/col/audio-1d300ea.wav",
-                        "type": "audio/wav",
+                        "src": f"{ASSETS_BASE_URL}/audios_sequence/--/{DEFAULT_REVISION}/--/{DEFAULT_CONFIG}/{DEFAULT_SPLIT}/{DEFAULT_ROW_IDX}/col/audio-1d300ea.mp3",
+                        "type": "audio/mpeg",
                     }
                 ],
             ],
@@ -571,14 +570,14 @@ def datasets_fixtures() -> Mapping[str, DatasetFixture]:
                     "ca": [
                         [
                             {
-                                "src": f"{ASSETS_BASE_URL}/dict_of_audios_and_images/--/{DEFAULT_REVISION}/--/{DEFAULT_CONFIG}/{DEFAULT_SPLIT}/{DEFAULT_ROW_IDX}/col/audio-18360330.wav",
-                                "type": "audio/wav",
+                                "src": f"{ASSETS_BASE_URL}/dict_of_audios_and_images/--/{DEFAULT_REVISION}/--/{DEFAULT_CONFIG}/{DEFAULT_SPLIT}/{DEFAULT_ROW_IDX}/col/audio-18360330.mp3",
+                                "type": "audio/mpeg",
                             }
                         ],
                         [
                             {
-                                "src": f"{ASSETS_BASE_URL}/dict_of_audios_and_images/--/{DEFAULT_REVISION}/--/{DEFAULT_CONFIG}/{DEFAULT_SPLIT}/{DEFAULT_ROW_IDX}/col/audio-18380331.wav",
-                                "type": "audio/wav",
+                                "src": f"{ASSETS_BASE_URL}/dict_of_audios_and_images/--/{DEFAULT_REVISION}/--/{DEFAULT_CONFIG}/{DEFAULT_SPLIT}/{DEFAULT_ROW_IDX}/col/audio-18380331.mp3",
+                                "type": "audio/mpeg",
                             }
                         ],
                     ]
@@ -591,7 +590,7 @@ def datasets_fixtures() -> Mapping[str, DatasetFixture]:
             4,
         ),
         "sequence_of_dicts": DatasetFixture(
-            other([{"a": {"b": 0}}, {"a": {"b": 1}}], {"a": List({"b": Value(dtype="int64")})}),
+            other({"a": [{"b": 0}, {"b": 1}]}, {"a": List({"b": Value(dtype="int64")})}),
             {
                 "_type": "Sequence",
                 "feature": {
