@@ -37,6 +37,7 @@ ALL_COLUMNS_SUPPORTED_DATASETS_ALLOW_LIST: Union[Literal["all"], list[str]] = [
     "halabi2016/arabic_speech_corpus"
 ]  # for testing
 
+EXCLUDED_COLUMNS = {"vae_latents", "t5_prompt_embeds"}
 
 def create_rows_endpoint(
     cached_assets_storage_client: StorageClient,
@@ -106,6 +107,7 @@ def create_rows_endpoint(
                         except TooBigRows as err:
                             raise TooBigContentError(str(err)) from None
                     with StepProfiler(method="rows_endpoint", step="transform to a list"):
+                        pa_table = pa_table.drop([col for col in pa_table.column_names if col in EXCLUDED_COLUMNS])
                         response = await create_response(
                             dataset=dataset,
                             revision=revision,
