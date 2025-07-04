@@ -213,28 +213,28 @@ def datasets_fixtures() -> Mapping[str, DatasetFixture]:
         ),
         "list": DatasetFixture(
             other([{"a": 0}], None),
-            [{"a": {"_type": "Value", "dtype": "int64"}}],
+            {"_type": "List", "feature": {"a": {"_type": "Value", "dtype": "int64"}}},
             [{"a": 0}],
             [],
             0,
         ),
         "sequence_implicit": DatasetFixture(
             other([0], None),
-            {"_type": "Sequence", "feature": {"_type": "Value", "dtype": "int64"}},
+            {"_type": "List", "feature": {"_type": "Value", "dtype": "int64"}},
             [0],
             [],
             0,
         ),
         "sequence_list": DatasetFixture(
             other([0], List(feature=Value(dtype="int64"))),
-            {"_type": "Sequence", "feature": {"_type": "Value", "dtype": "int64"}},
+            {"_type": "List", "feature": {"_type": "Value", "dtype": "int64"}},
             [0],
             [],
             0,
         ),
         "sequence_dict": DatasetFixture(
             other({"a": [0]}, {"a": List(Value(dtype="int64"))}),
-            {"_type": "Sequence", "feature": {"a": {"_type": "Value", "dtype": "int64"}}},
+            {"a": {"_type": "List", "feature": {"_type": "Value", "dtype": "int64"}}},
             {"a": [0]},
             [],
             0,
@@ -370,11 +370,10 @@ def datasets_fixtures() -> Mapping[str, DatasetFixture]:
                 ],
                 List(Image()),
             ),
-            [
-                {
-                    "_type": "Image",
-                }
-            ],
+            {
+                "_type": "List",
+                "feature": {"_type": "Image"},
+            },
             [
                 {
                     "src": f"{ASSETS_BASE_URL}/images_list/--/{DEFAULT_REVISION}/--/{DEFAULT_CONFIG}/{DEFAULT_SPLIT}/{DEFAULT_ROW_IDX}/col/image-1d100e9.jpg",
@@ -402,11 +401,10 @@ def datasets_fixtures() -> Mapping[str, DatasetFixture]:
                 ],
                 List(Audio()),
             ),
-            [
-                {
-                    "_type": "Audio",  # <- why don't we have a sampling rate here?
-                }
-            ],
+            {
+                "_type": "List",
+                "feature": {"_type": "Audio"},  # <- why don't we have a sampling rate here?
+            },
             [
                 [
                     {
@@ -434,7 +432,7 @@ def datasets_fixtures() -> Mapping[str, DatasetFixture]:
                 List(feature=Image()),
             ),
             {
-                "_type": "Sequence",
+                "_type": "List",
                 "feature": {
                     "_type": "Image",
                 },
@@ -465,12 +463,10 @@ def datasets_fixtures() -> Mapping[str, DatasetFixture]:
                 {"images": List(Image())},
             ),
             {
-                "_type": "Sequence",
-                "feature": {
-                    "images": {
-                        "_type": "Image",
-                    }
-                },
+                "images": {
+                    "_type": "List",
+                    "feature": {"_type": "Image"},
+                }
             },
             {
                 "images": [
@@ -498,7 +494,7 @@ def datasets_fixtures() -> Mapping[str, DatasetFixture]:
                 List(feature=Audio()),
             ),
             {
-                "_type": "Sequence",
+                "_type": "List",
                 "feature": {
                     "_type": "Audio",  # <- why don't we have a sampling rate here?
                 },
@@ -549,8 +545,10 @@ def datasets_fixtures() -> Mapping[str, DatasetFixture]:
             ),
             {
                 "a": {"_type": "Value", "dtype": "int64"},
-                "b": [{"_type": "Image"}],
-                "c": {"ca": [{"_type": "Audio"}]},  # <- why don't we have a sampling rate here?
+                "b": {"_type": "List", "feature": {"_type": "Image"}},
+                "c": {
+                    "ca": {"_type": "List", "feature": {"_type": "Audio"}}
+                },  # <- why don't we have a sampling rate here?
             },
             {
                 "a": 0,
@@ -592,10 +590,7 @@ def datasets_fixtures() -> Mapping[str, DatasetFixture]:
         "sequence_of_dicts": DatasetFixture(
             other({"a": [{"b": 0}, {"b": 1}]}, {"a": List({"b": Value(dtype="int64")})}),
             {
-                "_type": "Sequence",
-                "feature": {
-                    "a": {"b": {"_type": "Value", "dtype": "int64"}},
-                },
+                "a": {"_type": "List", "feature": {"b": {"_type": "Value", "dtype": "int64"}}},
             },
             {"a": [{"b": 0}, {"b": 1}]},
             [],

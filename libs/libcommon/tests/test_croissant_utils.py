@@ -85,7 +85,7 @@ def test_escape_jsonpath_key(feature_name: str, expected_output: str) -> None:
             },
         ),
         (
-            [{"sub-field": {"sub-sub-field": Value(dtype="int32")}}],
+            List({"sub-field": {"sub-sub-field": Value(dtype="int32")}}),
             {
                 "@type": "cr:Field",
                 "@id": "field_name",

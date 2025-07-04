@@ -34,7 +34,7 @@ class AssetUrlPath:
 
 # invert to_features_list
 def to_features_dict(features: list[FeatureItem]) -> Features:
-    return Features({feature_item["name"]: feature_item["type"] for feature_item in features})
+    return {feature_item["name"]: feature_item["type"] for feature_item in features}
 
 
 def _visit(
