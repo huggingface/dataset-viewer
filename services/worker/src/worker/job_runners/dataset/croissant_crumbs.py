@@ -70,6 +70,32 @@ def get_croissant_crumbs_from_dataset_infos(
         )
     ]
     record_set = []
+    
+    # Check if dataset has geospatial modality
+    is_geospatial = False
+    try:
+        dataset_modalities_response = get_previous_step_or_raise(kind="dataset-modalities", dataset=dataset)
+        modalities = dataset_modalities_response["content"].get("modalities", [])
+        is_geospatial = "geospatial" in modalities
+    except Exception:
+        # If modalities step fails, try direct file detection
+        try:
+            dataset_filetypes_response = get_previous_step_or_raise(kind="dataset-filetypes", dataset=dataset)
+            content = dataset_filetypes_response["content"]
+            if "filetypes" in content and isinstance(content["filetypes"], list):
+                geospatial_extensions = {
+                    ".shp", ".shx", ".dbf", ".prj", ".cpg", ".kml", ".kmz", ".gpx", 
+                    ".geojson", ".topojson", ".gml", ".geoparquet", ".fgb",
+                    ".img", ".bil", ".bip", ".bsq", ".gpkg", ".mbtiles", ".pmtiles",
+                    ".tif", ".tiff"  # GeoTIFF files
+                }
+                for filetype in content["filetypes"]:
+                    if filetype["extension"] in geospatial_extensions and filetype["count"] > 0:
+                        is_geospatial = True
+                        break
+        except Exception:
+            pass
+    
     for info in infos:
         description_body = ""
         config = info["config_name"]
@@ -197,16 +223,33 @@ def get_croissant_crumbs_from_dataset_infos(
         "source": "cr:source",
         "subField": "cr:subField",
         "transform": "cr:transform",
+        # GeoCroissant properties
+        "geo": "http://mlcommons.org/croissant/geo/1.0",
+        "geo:BoundingBox": "geocr:BoundingBox",
+        "geo:Geometry": "geocr:Geometry", 
+        "geo:Resolution": "geocr:Resolution",
+        "geo:CRS": "geocr:CRS",
+        "geo:TemporalExtent": "geocr:TemporalExtent",
+        "geo:spatialResolution": "geocr:spatialResolution",
+        "geo:temporalResolution": "geocr:temporalResolution",
+        "geo:Label": "geocr:Label",
+        "geo:Image": "geocr:Image",
     }
-    return _remove_none_values(
-        {
-            "@context": context,
-            "@type": "sc:Dataset",
-            "conformsTo": "http://mlcommons.org/croissant/1.1",
-            "distribution": distribution,
-            "recordSet": record_set,
-        }
-    )
+    # Prepare base output
+    output = {
+        "@context": context,
+        "@type": "sc:Dataset",
+        "conformsTo": "http://mlcommons.org/croissant/1.1",
+        "distribution": distribution,
+        "recordSet": record_set,
+    }
+    
+    # Add GeoCroissant properties if dataset is geospatial
+    if is_geospatial:
+        # TODO: Extract geospatial metadata from user-provided metadata.json or dataset card
+        pass
+    
+    return _remove_none_values(output)
 
 
 def compute_croissant_crumbs_response(dataset: str) -> Mapping[str, Any]:
