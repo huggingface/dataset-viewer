@@ -108,7 +108,7 @@ For example, here are the `features` and the slice of `rows` of the `ibm/duorc`/
       "name": "answers",
       "type": {
         "feature": { "dtype": "string", "_type": "Value" },
-        "_type": "Sequence"
+        "_type": "List"
       }
     },
     {

@@ -5,7 +5,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
-from datasets import Array2D, Audio, ClassLabel, Dataset, Features, Image, Sequence, Value
+from datasets import Array2D, Audio, ClassLabel, Dataset, Features, Image, List, Value
 
 # from GLUE dataset, "ax" subset
 LONG_TEXTS = """The cat sat on the mat.
@@ -1336,28 +1336,6 @@ statistics_dataset = Dataset.from_dict(
             [[]],
         ],
         "list__sequence_of_list_dict_all_null_column": null_column(20),
-        "array__list_column": [
-            [[[1, 2, 3]]],
-            [[[1, 2, 3]]],
-            [[[1, 2, 3]]],
-            [[[4, 5, 6]], [[4, 5, 6]]],
-            [[[4, 5, 6]], [[4, 5, 6]]],
-            [[[4, 5, 6]], [[4, 5, 6]]],
-            [[[7, 8, 9]]],
-            [[[7, 8, 9]]],
-            [[[7, 8, 9]], [[7, 8, 9]], [[7, 8, 9]]],
-            [[[10, 11, 12]]],
-            [[[10, 11, 12]]],
-            [[[10, 11, 12]]],
-            [[[13, 14, 15]]],
-            [[[13, 14, 15]]],
-            [[[13, 14, 15]]],
-            [[[16, 17, 18]]],
-            [[[16, 17, 18]]],
-            [[[16, 17, 18]]],
-            [[[19, 20, 21]]],
-            [[[19, 20, 21]], [[19, 20, 21]], [[19, 20, 21]], [[19, 20, 21]]],
-        ],
         "array__sequence_column": [
             [[[1, 2, 3]]],
             [[[1, 2, 3]]],
@@ -1414,46 +1392,62 @@ statistics_dataset = Dataset.from_dict(
             "bool__column": Value("bool"),
             "bool__null_column": Value("bool"),
             "bool__all_null_column": Value("bool"),
-            "list__int_column": [Value("int32")],
-            "list__int_null_column": [Value("int32")],
-            "list__int_all_null_column": [Value("int32")],
-            "list__string_column": [Value("string")],
-            "list__string_null_column": [Value("string")],
-            "list__string_all_null_column": [Value("string")],
-            "list__dict_column": [{"author": Value("string"), "content": Value("string"), "likes": Value("int32")}],
-            "list__dict_null_column": [
+            "list__int_column": List(Value("int32")),
+            "list__int_null_column": List(Value("int32")),
+            "list__int_all_null_column": List(Value("int32")),
+            "list__string_column": List(Value("string")),
+            "list__string_null_column": List(Value("string")),
+            "list__string_all_null_column": List(Value("string")),
+            "list__dict_column": List(
                 {"author": Value("string"), "content": Value("string"), "likes": Value("int32")}
-            ],
-            "list__dict_all_null_column": [
+            ),
+            "list__dict_null_column": List(
                 {"author": Value("string"), "content": Value("string"), "likes": Value("int32")}
-            ],
-            "list__sequence_int_column": Sequence(Value("int64")),
-            "list__sequence_int_null_column": Sequence(Value("int64")),
-            "list__sequence_int_all_null_column": Sequence(Value("int64")),
-            "list__sequence_class_label_column": Sequence(ClassLabel(names=["cat", "dog"])),
-            "list__sequence_class_label_null_column": Sequence(ClassLabel(names=["cat", "dog"])),
-            "list__sequence_class_label_all_null_column": Sequence(ClassLabel(names=["cat", "dog"])),
-            "list__sequence_of_sequence_bool_column": Sequence(Sequence(Value("bool"))),
-            "list__sequence_of_sequence_bool_null_column": Sequence(Sequence(Value("bool"))),
-            "list__sequence_of_sequence_bool_all_null_column": Sequence(Sequence(Value("bool"))),
-            "list__sequence_of_sequence_dict_column": Sequence(
-                Sequence({"author": Value("string"), "likes": Value("int32")})
             ),
-            "list__sequence_of_sequence_dict_null_column": Sequence(
-                Sequence({"author": Value("string"), "likes": Value("int32")})
+            "list__dict_all_null_column": List(
+                {"author": Value("string"), "content": Value("string"), "likes": Value("int32")}
             ),
-            "list__sequence_of_sequence_dict_all_null_column": Sequence(
-                Sequence({"author": Value("string"), "likes": Value("int32")})
+            "list__sequence_int_column": List(Value("int64")),
+            "list__sequence_int_null_column": List(Value("int64")),
+            "list__sequence_int_all_null_column": List(Value("int64")),
+            "list__sequence_class_label_column": List(ClassLabel(names=["cat", "dog"])),
+            "list__sequence_class_label_null_column": List(ClassLabel(names=["cat", "dog"])),
+            "list__sequence_class_label_all_null_column": List(ClassLabel(names=["cat", "dog"])),
+            "list__sequence_of_sequence_bool_column": List(List(Value("bool"))),
+            "list__sequence_of_sequence_bool_null_column": List(List(Value("bool"))),
+            "list__sequence_of_sequence_bool_all_null_column": List(List(Value("bool"))),
+            "list__sequence_of_sequence_dict_column": List(
+                List(
+                    {
+                        "author": Value("string"),
+                        "likes": Value("int32"),
+                    }
+                )
             ),
-            "list__sequence_of_list_dict_column": Sequence([{"author": Value("string"), "likes": Value("int32")}]),
-            "list__sequence_of_list_dict_null_column": Sequence(
-                [{"author": Value("string"), "likes": Value("int32")}]
+            "list__sequence_of_sequence_dict_null_column": List(
+                List(
+                    {
+                        "author": Value("string"),
+                        "likes": Value("int32"),
+                    }
+                )
             ),
-            "list__sequence_of_list_dict_all_null_column": Sequence(
-                [{"author": Value("string"), "likes": Value("int32")}]
+            "list__sequence_of_sequence_dict_all_null_column": List(
+                List(
+                    {
+                        "author": Value("string"),
+                        "likes": Value("int32"),
+                    }
+                )
             ),
-            "array__list_column": [Array2D(shape=(1, 3), dtype="int32")],
-            "array__sequence_column": Sequence(Array2D(shape=(1, 3), dtype="int32")),
+            "list__sequence_of_list_dict_column": List(List({"author": Value("string"), "likes": Value("int32")})),
+            "list__sequence_of_list_dict_null_column": List(
+                List({"author": Value("string"), "likes": Value("int32")})
+            ),
+            "list__sequence_of_list_dict_all_null_column": List(
+                List({"author": Value("string"), "likes": Value("int32")})
+            ),
+            "array__sequence_column": List(Array2D(shape=(1, 3), dtype="int32")),
         }
     ),
 )
@@ -1479,171 +1473,24 @@ statistics_string_text_dataset = Dataset.from_dict(
 # we don't support dicts of lists
 statistics_not_supported_dataset = Dataset.from_dict(
     {
-        "list__sequence_dict_column": [
-            [{"author": "cat", "content": "mouse", "likes": 5}],
-            [{"author": "cat", "content": "mouse", "likes": 5}, {"author": "cat", "content": "mouse", "likes": 5}],
-            [{"author": "cat", "content": "mouse", "likes": 5}, {"author": "cat", "content": "mouse", "likes": 5}],
-            [{"author": "cat", "content": "mouse", "likes": 5}, {"author": "cat", "content": "mouse", "likes": 5}],
-            [{"author": "cat", "content": "mouse", "likes": 5}, {"author": "cat", "content": "mouse", "likes": 5}],
-            [{"author": "cat", "content": "mouse", "likes": 5}, {"author": "cat", "content": "mouse", "likes": 5}, {}],
-            [{"author": "cat", "content": "mouse", "likes": 5}, {"author": "cat", "content": "mouse", "likes": 5}, {}],
-            [
-                {"author": "cat", "content": "mouse", "likes": 5},
-                {"author": "cat", "content": "mouse", "likes": 5},
-                {"author": "cat", "content": "mouse", "likes": 5},
-            ],
-            [
-                {"author": "cat", "content": "mouse", "likes": 5},
-                {"author": "cat", "content": "mouse", "likes": 5},
-                {"author": "cat", "content": "mouse", "likes": 5},
-            ],
-            [
-                {"author": "cat", "content": "mouse", "likes": 5},
-                {"author": "cat", "content": "mouse", "likes": 5},
-                {"author": "cat", "content": "mouse", "likes": 5},
-            ],
-            [
-                {"author": "cat", "content": "mouse", "likes": 5},
-                {"author": "cat", "content": "mouse", "likes": 5},
-                {"author": "cat", "content": "mouse", "likes": 5},
-                {"author": "cat", "content": "mouse", "likes": 5},
-            ],
-            [
-                {"author": "cat", "content": "mouse", "likes": 5},
-                {"author": "cat", "content": "mouse", "likes": 5},
-                {"author": "cat", "content": "mouse", "likes": 5},
-                {"author": "cat", "content": "mouse", "likes": 5},
-            ],
-            [
-                {"author": "cat", "content": "mouse", "likes": 5},
-                {"author": "cat", "content": "mouse", "likes": 5},
-                {"author": "cat", "content": "mouse", "likes": 5},
-                {"author": "cat", "content": "mouse", "likes": 5},
-            ],
-            [
-                {"author": "cat", "content": "mouse", "likes": 5},
-                {"author": "cat", "content": "mouse", "likes": 5},
-                {"author": "cat", "content": "mouse", "likes": 5},
-                {"author": "cat", "content": "mouse", "likes": 5},
-            ],
-            [
-                {"author": "cat", "content": "mouse", "likes": 5},
-                {"author": "cat", "content": "mouse", "likes": 5},
-                {"author": "cat", "content": "mouse", "likes": 5},
-                {"author": "cat", "content": "mouse", "likes": 5},
-            ],
-            [
-                {"author": "cat", "content": "mouse", "likes": 5},
-                {"author": "cat", "content": "mouse", "likes": 5},
-                {"author": "cat", "content": "mouse", "likes": 5},
-                {"author": "cat", "content": "mouse", "likes": 5},
-            ],
-            [
-                {"author": "cat", "content": "mouse", "likes": 5},
-                {"author": "cat", "content": "mouse", "likes": 5},
-                {"author": "cat", "content": "mouse", "likes": 5},
-                {"author": "cat", "content": "mouse", "likes": 5},
-                {"author": "cat", "content": "mouse", "likes": 5},
-            ],
-            [
-                {"author": "cat", "content": "mouse", "likes": 5},
-                {"author": "cat", "content": "mouse", "likes": 5},
-                {"author": "cat", "content": "mouse", "likes": 5},
-                {"author": "cat", "content": "mouse", "likes": 5},
-                {"author": "cat", "content": "mouse", "likes": 5},
-            ],
-            [],
-            [],
-        ],
-        "list__sequence_dict_null_column": [
-            None,
-            None,
-            None,
-            None,
-            [{"author": "cat", "content": "mouse", "likes": 5}, {"author": "cat", "content": "mouse", "likes": 5}],
-            [{"author": "cat", "content": "mouse", "likes": 5}, {"author": "cat", "content": "mouse", "likes": 5}, {}],
-            [{"author": "cat", "content": "mouse", "likes": 5}, {"author": "cat", "content": "mouse", "likes": 5}, {}],
-            [
-                {"author": "cat", "content": "mouse", "likes": 5},
-                {"author": "cat", "content": "mouse", "likes": 5},
-                {"author": "cat", "content": "mouse", "likes": 5},
-            ],
-            [
-                {"author": "cat", "content": "mouse", "likes": 5},
-                {"author": "cat", "content": "mouse", "likes": 5},
-                {"author": "cat", "content": "mouse", "likes": 5},
-            ],
-            [
-                {"author": "cat", "content": "mouse", "likes": 5},
-                {"author": "cat", "content": "mouse", "likes": 5},
-                {"author": "cat", "content": "mouse", "likes": 5},
-            ],
-            [
-                {"author": "cat", "content": "mouse", "likes": 5},
-                {"author": "cat", "content": "mouse", "likes": 5},
-                {"author": "cat", "content": "mouse", "likes": 5},
-                {"author": "cat", "content": "mouse", "likes": 5},
-            ],
-            [
-                {"author": "cat", "content": "mouse", "likes": 5},
-                {"author": "cat", "content": "mouse", "likes": 5},
-                {"author": "cat", "content": "mouse", "likes": 5},
-                {"author": "cat", "content": "mouse", "likes": 5},
-            ],
-            [
-                {"author": "cat", "content": "mouse", "likes": 5},
-                {"author": "cat", "content": "mouse", "likes": 5},
-                {"author": "cat", "content": "mouse", "likes": 5},
-                {"author": "cat", "content": "mouse", "likes": 5},
-            ],
-            [
-                {"author": "cat", "content": "mouse", "likes": 5},
-                {"author": "cat", "content": "mouse", "likes": 5},
-                {"author": "cat", "content": "mouse", "likes": 5},
-                {"author": "cat", "content": "mouse", "likes": 5},
-            ],
-            [
-                {"author": "cat", "content": "mouse", "likes": 5},
-                {"author": "cat", "content": "mouse", "likes": 5},
-                {"author": "cat", "content": "mouse", "likes": 5},
-                {"author": "cat", "content": "mouse", "likes": 5},
-            ],
-            [
-                {"author": "cat", "content": "mouse", "likes": 5},
-                {"author": "cat", "content": "mouse", "likes": 5},
-                {"author": "cat", "content": "mouse", "likes": 5},
-                {"author": "cat", "content": "mouse", "likes": 5},
-            ],
-            [
-                {"author": "cat", "content": "mouse", "likes": 5},
-                {"author": "cat", "content": "mouse", "likes": 5},
-                {"author": "cat", "content": "mouse", "likes": 5},
-                {"author": "cat", "content": "mouse", "likes": 5},
-                {"author": "cat", "content": "mouse", "likes": 5},
-            ],
-            [
-                {"author": "cat", "content": "mouse", "likes": 5},
-                {"author": "cat", "content": "mouse", "likes": 5},
-                {"author": "cat", "content": "mouse", "likes": 5},
-                {"author": "cat", "content": "mouse", "likes": 5},
-                {"author": "cat", "content": "mouse", "likes": 5},
-            ],
-            [],
-            [],
-        ],
-        "list__sequence_dict_all_null_column": null_column(20),
+        "list__sequence_dict_column": [{"author": ["cat"], "likes": [5]}, {"author": ["cat"], "likes": [5]}],
+        "list__sequence_dict_null_column": [None, {"author": ["cat"], "likes": [5]}],
+        "list__sequence_dict_all_null_column": null_column(2),
     },
     features=Features(
         {
-            "list__sequence_dict_column": Sequence(
-                {"author": Value("string"), "content": Value("string"), "likes": Value("int32")}
-            ),
-            "list__sequence_dict_null_column": Sequence(
-                {"author": Value("string"), "content": Value("string"), "likes": Value("int32")}
-            ),
-            "list__sequence_dict_all_null_column": Sequence(
-                {"author": Value("string"), "content": Value("string"), "likes": Value("int32")}
-            ),
+            "list__sequence_dict_column": {
+                "author": List(Value("string")),
+                "likes": List(Value("int32")),
+            },
+            "list__sequence_dict_null_column": {
+                "author": List(Value("string")),
+                "likes": List(Value("int32")),
+            },
+            "list__sequence_dict_all_null_column": {
+                "author": List(Value("string")),
+                "likes": List(Value("int32")),
+            },
         }
     ),
 )

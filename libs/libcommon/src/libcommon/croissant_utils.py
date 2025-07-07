@@ -5,7 +5,7 @@ import re
 from collections.abc import Mapping
 from typing import Any, Optional, Union
 
-from datasets import ClassLabel, Image, LargeList, Sequence, Value
+from datasets import ClassLabel, Image, LargeList, List, Value
 
 
 def get_record_set(dataset: str, config_name: str) -> str:
@@ -144,20 +144,19 @@ def feature_to_croissant_field(
             "@id": field_name,
             "subField": sub_fields,
         }
-    elif isinstance(feature, (LargeList, list, Sequence)):
+    elif isinstance(feature, (LargeList, List)):
         array_shape = []
-        if isinstance(feature, list):
-            if len(feature) != 1:
-                return None
-            sub_feature = feature[0]
-            array_shape.append(-1)
-        else:
+        if isinstance(feature, List):
             array_shape.append(feature.length)
-            sub_feature = feature.feature
-        while isinstance(sub_feature, Sequence):
+        else:
+            array_shape.append(-1)
+        sub_feature = feature.feature
+        while isinstance(sub_feature, List):
             array_shape.append(sub_feature.length)
             sub_feature = sub_feature.feature
-        field = feature_to_croissant_field(distribution_name, field_name, column, sub_feature)
+        field = feature_to_croissant_field(
+            distribution_name, field_name, column, sub_feature, add_transform=True, json_path=json_path
+        )
         if field:
             field["isArray"] = True
             field["arrayShape"] = ",".join([str(shape) if shape else "-1" for shape in array_shape])
