@@ -623,8 +623,8 @@ vision = ["Pillow (>=9.4.0)"]
 [package.source]
 type = "git"
 url = "https://github.com/huggingface/datasets.git"
-reference = "c2490a4f148f8547d7df55daca48512805fc2a32"
-resolved_reference = "c2490a4f148f8547d7df55daca48512805fc2a32"
+reference = "8a19de052e3d79f79cea26821454bbcf0e9dcd68"
+resolved_reference = "8a19de052e3d79f79cea26821454bbcf0e9dcd68"
 
 [[package]]
 name = "defusedxml"
@@ -1243,7 +1243,7 @@ develop = true
 [package.dependencies]
 appdirs = "^1.4.4"
 cryptography = "^43.0.1"
-datasets = {git = "https://github.com/huggingface/datasets.git", rev = "c2490a4f148f8547d7df55daca48512805fc2a32", extras = ["audio", "vision"]}
+datasets = {git = "https://github.com/huggingface/datasets.git", rev = "8a19de052e3d79f79cea26821454bbcf0e9dcd68", extras = ["audio", "vision"]}
 duckdb = "^1.2.2"
 environs = "^9.5.0"
 filelock = "^3.18.0"
@@ -3315,17 +3315,6 @@ python-versions = "*"
 files = [
     {file = "types-PyYAML-6.0.12.11.tar.gz", hash = "sha256:7d340b19ca28cddfdba438ee638cd4084bde213e501a3978738543e27094775b"},
     {file = "types_PyYAML-6.0.12.11-py3-none-any.whl", hash = "sha256:a461508f3096d1d5810ec5ab95d7eeecb651f3a15b71959999988942063bf01d"},
-]
-
-[[package]]
-name = "typing-extensions"
-version = "4.7.1"
-description = "Backported and Experimental Type Hints for Python 3.7+"
-optional = false
-python-versions = ">=3.7"
-files = [
-    {file = "typing_extensions-4.7.1-py3-none-any.whl", hash = "sha256:440d5dd3af93b060174bf433bccd69b0babc3b15b1a8dca43789fd7f61514b36"},
-    {file = "typing_extensions-4.7.1.tar.gz", hash = "sha256:b75ddc264f0ba5615db7ba217daeb99701ad295353c45f9e95963337ceeeffb2"},
 ]
 
 [[package]]
