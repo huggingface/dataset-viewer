@@ -932,8 +932,9 @@ def test_get_writer_batch_size_from_row_group_size(
         ("config", "split", 9999, 10_001, False, "config/split-part0/9999.parquet"),
         ("config", "split", 10_000, 10_001, False, "config/split-part1/0000.parquet"),
         ("config", "split", 99_999, 100_000, False, "config/split-part9/9999.parquet"),
+        ("config", "split", 999_999, 1000_000, False, "config/split-part99/9999.parquet"),
         ("config", "split_ending_with_part1", 0, 1, False, "config/split_ending_with_part1/0000.parquet"),
-        ("config", "split", 0, 100_001, False, None),
+        ("config", "split", 0, 1000_001, False, None),
     ],
 )
 def test_parquet_file_path_in_repo(
