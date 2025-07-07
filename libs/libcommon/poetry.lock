@@ -626,8 +626,8 @@ vision = ["Pillow (>=9.4.0)"]
 [package.source]
 type = "git"
 url = "https://github.com/huggingface/datasets.git"
-reference = "c2490a4f148f8547d7df55daca48512805fc2a32"
-resolved_reference = "c2490a4f148f8547d7df55daca48512805fc2a32"
+reference = "8a19de052e3d79f79cea26821454bbcf0e9dcd68"
+resolved_reference = "8a19de052e3d79f79cea26821454bbcf0e9dcd68"
 
 [[package]]
 name = "defusedxml"
@@ -4009,4 +4009,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "3.9.18"
-content-hash = "93e4e51f77567deab8d5311623780b0dbb3d8c8b498b09a134b2407273d8e1d2"
+content-hash = "c4314e9c7f16fbefd6fd004b467aa9cba642bc9db026b20d5b4eb43b7912ff7e"

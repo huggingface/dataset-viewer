@@ -616,8 +616,8 @@ vision = ["Pillow (>=9.4.0)"]
 [package.source]
 type = "git"
 url = "https://github.com/huggingface/datasets.git"
-reference = "c2490a4f148f8547d7df55daca48512805fc2a32"
-resolved_reference = "c2490a4f148f8547d7df55daca48512805fc2a32"
+reference = "8a19de052e3d79f79cea26821454bbcf0e9dcd68"
+resolved_reference = "8a19de052e3d79f79cea26821454bbcf0e9dcd68"
 
 [[package]]
 name = "decorator"
@@ -1273,7 +1273,7 @@ develop = true
 [package.dependencies]
 appdirs = "^1.4.4"
 cryptography = "^43.0.1"
-datasets = {git = "https://github.com/huggingface/datasets.git", rev = "c2490a4f148f8547d7df55daca48512805fc2a32", extras = ["audio", "vision"]}
+datasets = {git = "https://github.com/huggingface/datasets.git", rev = "8a19de052e3d79f79cea26821454bbcf0e9dcd68", extras = ["audio", "vision"]}
 duckdb = "^1.2.2"
 environs = "^9.5.0"
 filelock = "^3.18.0"
@@ -3504,17 +3504,6 @@ python-versions = "*"
 files = [
     {file = "types-pytz-2023.3.0.0.tar.gz", hash = "sha256:ecdc70d543aaf3616a7e48631543a884f74205f284cefd6649ddf44c6a820aac"},
     {file = "types_pytz-2023.3.0.0-py3-none-any.whl", hash = "sha256:4fc2a7fbbc315f0b6630e0b899fd6c743705abe1094d007b0e612d10da15e0f3"},
-]
-
-[[package]]
-name = "typing-extensions"
-version = "4.6.3"
-description = "Backported and Experimental Type Hints for Python 3.7+"
-optional = false
-python-versions = ">=3.7"
-files = [
-    {file = "typing_extensions-4.6.3-py3-none-any.whl", hash = "sha256:88a4153d8505aabbb4e13aacb7c486c2b4a33ca3b3f807914a9b4c844c471c26"},
-    {file = "typing_extensions-4.6.3.tar.gz", hash = "sha256:d91d5919357fe7f681a9f2b5b4cb2a5f1ef0a1e9f59c4d8ff0d3491e05c0ffd5"},
 ]
 
 [[package]]
