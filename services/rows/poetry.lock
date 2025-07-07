@@ -647,8 +647,13 @@ vision = ["Pillow (>=9.4.0)"]
 [package.source]
 type = "git"
 url = "https://github.com/huggingface/datasets.git"
+<<<<<<< HEAD
 reference = "8a4384dc9484ae9c3100f0fc594cd7773a5b8b44"
 resolved_reference = "8a4384dc9484ae9c3100f0fc594cd7773a5b8b44"
+=======
+reference = "da1db8a5b89fc0badaa0f571b36e122e52ae8c61"
+resolved_reference = "da1db8a5b89fc0badaa0f571b36e122e52ae8c61"
+>>>>>>> f6e88f06 (add libviewer to rows)
 
 [[package]]
 name = "defusedxml"
@@ -1213,7 +1218,11 @@ version = "3.1.4"
 description = "A very fast and expressive template engine."
 optional = false
 python-versions = ">=3.7"
+<<<<<<< HEAD
 groups = ["main", "dev"]
+=======
+groups = ["dev"]
+>>>>>>> f6e88f06 (add libviewer to rows)
 files = [
     {file = "jinja2-3.1.4-py3-none-any.whl", hash = "sha256:bc5dd2abb727a5319567b7a813e6a2e7318c39f4f487cfe6c89c6f9c7d25197d"},
     {file = "jinja2-3.1.4.tar.gz", hash = "sha256:4a3aee7acbbe7303aede8e9648d13b8bf88a429282aa6122a993f0ac800cb369"},
@@ -1332,6 +1341,28 @@ type = "directory"
 url = "../../libs/libcommon"
 
 [[package]]
+<<<<<<< HEAD
+=======
+name = "libviewer"
+version = "0.6.8"
+description = "Library for utils common to all the services"
+optional = false
+python-versions = "3.9.18"
+groups = ["main"]
+files = []
+develop = true
+
+[package.dependencies]
+click = "*"
+huggingface_hub = "*"
+pyarrow = "*"
+
+[package.source]
+type = "directory"
+url = "../../libs/libviewer"
+
+[[package]]
+>>>>>>> f6e88f06 (add libviewer to rows)
 name = "license-expression"
 version = "30.3.0"
 description = "license-expression is a comprehensive utility library to parse, compare, simplify and normalize license expressions (such as SPDX license expressions) using boolean logic."
@@ -1404,7 +1435,11 @@ version = "2.1.3"
 description = "Safely add untrusted strings to HTML/XML markup."
 optional = false
 python-versions = ">=3.7"
+<<<<<<< HEAD
 groups = ["main", "dev"]
+=======
+groups = ["dev"]
+>>>>>>> f6e88f06 (add libviewer to rows)
 files = [
     {file = "MarkupSafe-2.1.3-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:cd0f502fe016460680cd20aaa5a76d241d6f35a1c3350c474bac1273803893fa"},
     {file = "MarkupSafe-2.1.3-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:e09031c87a1e51556fdcb46e5bd4f59dfb743061cf93c4d6831bf894f125eb57"},
@@ -3279,6 +3314,7 @@ files = [
 ]
 
 [[package]]
+<<<<<<< HEAD
 name = "torch"
 version = "2.7.1"
 description = "Tensors and Dynamic neural networks in Python with strong GPU acceleration"
@@ -3363,6 +3399,8 @@ type = "url"
 url = "https://download.pytorch.org/whl/cpu/torch-2.7.1%2Bcpu-cp39-cp39-manylinux_2_28_x86_64.whl"
 
 [[package]]
+=======
+>>>>>>> f6e88f06 (add libviewer to rows)
 name = "torchcodec"
 version = "0.4.0"
 description = "A video decoder for PyTorch"
@@ -3461,7 +3499,11 @@ name = "typing-extensions"
 version = "4.14.0"
 description = "Backported and Experimental Type Hints for Python 3.9+"
 optional = false
+<<<<<<< HEAD
 python-versions = ">=3.9"
+=======
+python-versions = ">=3.7"
+>>>>>>> f6e88f06 (add libviewer to rows)
 groups = ["main", "dev"]
 files = [
     {file = "typing_extensions-4.14.0-py3-none-any.whl", hash = "sha256:a1514509136dd0b477638fc68d6a91497af5076466ad0fa6c338e44e359944af"},
@@ -3897,4 +3939,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.1"
 python-versions = "3.9.18"
-content-hash = "d9b9109efd3d71dbb4d30acd22dd88798c07c6f799dfa562ed0596224a9c0edc"
+content-hash = "e437c659ded20460426e73e68b6fb894d06876729ed0cb8892c0f0cc418bacc4"
