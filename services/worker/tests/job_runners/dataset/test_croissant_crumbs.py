@@ -94,16 +94,16 @@ v1_context = {
     "subField": "cr:subField",
     "transform": "cr:transform",
     # GeoCroissant properties
-    "geo": "http://mlcommons.org/croissant/geo/1.0",
-    "geo:BoundingBox": "geocr:BoundingBox",
-    "geo:Geometry": "geocr:Geometry", 
-    "geo:Resolution": "geocr:Resolution",
-    "geo:CRS": "geocr:CRS",
-    "geo:TemporalExtent": "geocr:TemporalExtent",
-    "geo:spatialResolution": "geocr:spatialResolution",
-    "geo:temporalResolution": "geocr:temporalResolution",
-    "geo:Label": "geocr:Label",
-    "geo:Image": "geocr:Image",
+    "geocr": "http://mlcommons.org/croissant/geo/1.0",
+    "boundingBox": "geocr:boundingBox",
+    "geometry": "geocr:geometry",
+    "resolution": "geocr:resolution",
+    "crs": "geocr:crs",
+    "temporalExtent": "geocr:temporalExtent",
+    "spatialResolution": "geocr:spatialResolution",
+    "temporalResolution": "geocr:temporalResolution",
+    "label": "geocr:label",
+    "image": "geocr:image",
 }
 
 
@@ -193,9 +193,9 @@ def test_get_croissant_crumbs_from_dataset_infos() -> None:
             assert "@id" in distribution["containedIn"]
 
     # Test that GeoCroissant context is included
-    assert "geo" in croissant_crumbs["@context"]
-    assert croissant_crumbs["@context"]["geo"] == "http://mlcommons.org/croissant/geo/1.0"
-    assert "geo:BoundingBox" in croissant_crumbs["@context"]
-    assert "geo:CRS" in croissant_crumbs["@context"]
-    assert "geo:Resolution" in croissant_crumbs["@context"]
-    assert "geo:Geometry" in croissant_crumbs["@context"]
+    assert "geocr" in croissant_crumbs["@context"]
+    assert croissant_crumbs["@context"]["geocr"] == "http://mlcommons.org/croissant/geo/1.0"
+    assert "boundingBox" in croissant_crumbs["@context"]
+    assert "crs" in croissant_crumbs["@context"]
+    assert "resolution" in croissant_crumbs["@context"]
+    assert "geometry" in croissant_crumbs["@context"]

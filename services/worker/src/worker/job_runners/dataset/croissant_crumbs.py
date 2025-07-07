@@ -224,16 +224,16 @@ def get_croissant_crumbs_from_dataset_infos(
         "subField": "cr:subField",
         "transform": "cr:transform",
         # GeoCroissant properties
-        "geo": "http://mlcommons.org/croissant/geo/1.0",
-        "geo:BoundingBox": "geocr:BoundingBox",
-        "geo:Geometry": "geocr:Geometry", 
-        "geo:Resolution": "geocr:Resolution",
-        "geo:CRS": "geocr:CRS",
-        "geo:TemporalExtent": "geocr:TemporalExtent",
-        "geo:spatialResolution": "geocr:spatialResolution",
-        "geo:temporalResolution": "geocr:temporalResolution",
-        "geo:Label": "geocr:Label",
-        "geo:Image": "geocr:Image",
+        "geocr": "http://mlcommons.org/croissant/geo/1.0",
+        "boundingBox": "geocr:boundingBox",
+        "geometry": "geocr:geometry",
+        "resolution": "geocr:resolution",
+        "crs": "geocr:crs",
+        "temporalExtent": "geocr:temporalExtent",
+        "spatialResolution": "geocr:spatialResolution",
+        "temporalResolution": "geocr:temporalResolution",
+        "label": "geocr:label",
+        "image": "geocr:image",
     }
     # Prepare base output
     output = {
