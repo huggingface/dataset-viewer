@@ -1,10 +1,26 @@
+[tool.poetry]
+authors = ["Krisztián Szűcs <krisztian@huggingface.co>"]
+description = "Library for utils common to all the services"
+name = "libviewer"
+version = "0.6.8"
+license = "Apache-2.0"
+
+[tool.poetry.dependencies]
+python = "3.9.18"
+click = "8.1.8"
+pyarrow = "15.0.2"
+huggingface-hub = {version = "^0.31.0", extras = ["hf-transfer"]}
+
+[tool.poetry.build]
+script = "build-extension.py"
+
 [build-system]
-requires = ["maturin>=1.6,<2.0"]
-build-backend = "maturin"
+requires = ["poetry-core", "maturin>=1.0,<2.0"]
+build-backend = "poetry.core.masonry.api"
 
 [project]
 name = "libviewer"
-requires-python = ">=3.12"
+requires-python = ">=3.9.18"
 classifiers = [
     "Programming Language :: Rust",
     "Programming Language :: Python :: Implementation :: CPython",
