@@ -1438,9 +1438,9 @@ def compute_config_parquet_and_info_response(
                 builder, max_dataset_size_bytes=max_dataset_size_bytes
             )
         else:
-            dataset_info = hf_api.dataset_info(repo_id=dataset, revision=source_revision, files_metadata=True)
+            hf_api_dataset_info = hf_api.dataset_info(repo_id=dataset, revision=source_revision, files_metadata=True)
             if is_dataset_too_big(
-                dataset_info=dataset_info,
+                dataset_info=hf_api_dataset_info,
                 builder=builder,
                 max_dataset_size_bytes=max_dataset_size_bytes,
             ):
