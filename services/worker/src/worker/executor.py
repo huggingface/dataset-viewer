@@ -73,7 +73,7 @@ class WorkerExecutor:
             START_WORKER_LOOP_PATH,
             "--print-worker-state-path",
         ]
-        return OutputExecutor(start_worker_loop_command, banner, timeout=20)
+        return OutputExecutor(start_worker_loop_command, banner, timeout=60)
 
     def _create_web_app_executor(self) -> TCPExecutor:
         logging.info("Starting webapp for /healthcheck and /metrics.")
