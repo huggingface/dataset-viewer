@@ -34,7 +34,7 @@ jobs:
       - name: Install packages
         run: sudo apt update; sudo apt install -y ffmpeg libavcodec-extra libsndfile1
       - name: Verify consistency of poetry.lock with pyproject.toml
-        run: poetry lock --no-update --check
+        run: poetry check
       - name: Install dependencies
         # "poetry env use" is required: https://github.com/actions/setup-python/issues/374#issuecomment-1088938718
         run: |
