@@ -27,7 +27,7 @@ COPY services/admin/pyproject.toml ./services/admin/pyproject.toml
 COPY libs/libcommon ./libs/libcommon
 COPY libs/libapi ./libs/libapi
 WORKDIR /src/services/admin/
-RUN poetry install --no-cache
+RUN poetry install --no-cache --no-root
 COPY services/admin/src ./src
 RUN poetry install --no-cache
 

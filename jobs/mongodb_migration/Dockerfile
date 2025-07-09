@@ -26,7 +26,7 @@ COPY jobs/mongodb_migration/poetry.lock ./jobs/mongodb_migration/poetry.lock
 COPY jobs/mongodb_migration/pyproject.toml ./jobs/mongodb_migration/pyproject.toml
 COPY libs/libcommon ./libs/libcommon
 WORKDIR /src/jobs/mongodb_migration/
-RUN poetry install --no-cache
+RUN poetry install --no-cache --no-root
 COPY jobs/mongodb_migration/src ./src
 RUN poetry install --no-cache
 

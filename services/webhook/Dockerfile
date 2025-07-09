@@ -27,7 +27,7 @@ COPY services/webhook/pyproject.toml ./services/webhook/pyproject.toml
 COPY libs/libcommon ./libs/libcommon
 COPY libs/libapi ./libs/libapi
 WORKDIR /src/services/webhook/
-RUN poetry install --no-cache
+RUN poetry install --no-cache --no-root
 COPY services/webhook/src ./src
 RUN poetry install --no-cache
 

@@ -27,7 +27,7 @@ COPY services/sse-api/pyproject.toml ./services/sse-api/pyproject.toml
 COPY libs/libcommon ./libs/libcommon
 COPY libs/libapi ./libs/libapi
 WORKDIR /src/services/sse-api/
-RUN poetry install --no-cache
+RUN poetry install --no-cache --no-root
 COPY services/sse-api/src ./src
 RUN poetry install --no-cache
 

@@ -27,7 +27,7 @@ COPY services/rows/pyproject.toml ./services/rows/pyproject.toml
 COPY libs/libcommon ./libs/libcommon
 COPY libs/libapi ./libs/libapi
 WORKDIR /src/services/rows/
-RUN poetry install --no-cache
+RUN poetry install --no-cache --no-root
 COPY services/rows/src ./src
 RUN poetry install --no-cache
 

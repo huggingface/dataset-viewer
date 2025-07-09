@@ -28,7 +28,7 @@ COPY services/worker/pyproject.toml ./services/worker/pyproject.toml
 COPY libs/libcommon ./libs/libcommon
 
 WORKDIR /src/services/worker/
-RUN poetry install --no-cache
+RUN poetry install --no-cache --no-root
 COPY services/worker/src ./src
 RUN poetry install --no-cache
 RUN poetry run python -m spacy download en_core_web_lg

@@ -26,7 +26,7 @@ COPY jobs/cache_maintenance/poetry.lock ./jobs/cache_maintenance/poetry.lock
 COPY jobs/cache_maintenance/pyproject.toml ./jobs/cache_maintenance/pyproject.toml
 COPY libs/libcommon ./libs/libcommon
 WORKDIR /src/jobs/cache_maintenance/
-RUN poetry install --no-cache
+RUN poetry install --no-cache --no-root
 COPY jobs/cache_maintenance/src ./src
 RUN poetry install --no-cache
 

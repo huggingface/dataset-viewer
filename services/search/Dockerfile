@@ -27,7 +27,7 @@ COPY services/search/pyproject.toml ./services/search/pyproject.toml
 COPY libs/libcommon ./libs/libcommon
 COPY libs/libapi ./libs/libapi
 WORKDIR /src/services/search/
-RUN poetry install --no-cache
+RUN poetry install --no-cache --no-root
 COPY services/search/src ./src
 RUN poetry install --no-cache
 
