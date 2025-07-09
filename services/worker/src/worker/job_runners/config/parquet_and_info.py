@@ -1257,6 +1257,23 @@ def commit_parquet_conversion(
         raise e
 
 
+def backward_compat_features(
+    features_dict: Union[dict[str, Any], str, list[Any]],
+) -> Union[dict[str, Any], str, list[Any]]:
+    """`datasets<4` use exported dataset_info and doesn't have the List type"""
+    if isinstance(features_dict, dict):
+        if (
+            "_type" in features_dict
+            and "feature" in features_dict
+            and features_dict["_type"] == "List"
+            and isinstance(features_dict["feature"], (dict, list, str))
+        ):
+            return [backward_compat_features(features_dict["feature"])]
+        return {k: backward_compat_features(v) for k, v in features_dict.items()}
+    else:
+        return features_dict
+
+
 def compute_config_parquet_and_info_response(
     job_id: str,
     dataset: str,
@@ -1420,9 +1437,9 @@ def compute_config_parquet_and_info_response(
                 builder, max_dataset_size_bytes=max_dataset_size_bytes
             )
         else:
-            dataset_info = hf_api.dataset_info(repo_id=dataset, revision=source_revision, files_metadata=True)
+            hf_api_dataset_info = hf_api.dataset_info(repo_id=dataset, revision=source_revision, files_metadata=True)
             if is_dataset_too_big(
-                dataset_info=dataset_info,
+                dataset_info=hf_api_dataset_info,
                 builder=builder,
                 max_dataset_size_bytes=max_dataset_size_bytes,
             ):
@@ -1491,6 +1508,8 @@ def compute_config_parquet_and_info_response(
     # we could also check that the list of parquet files is exactly what we expect
     # let's not over engineer this for now. After all, what is on the Hub is the source of truth
     # and the /parquet response is more a helper to get the list of parquet files
+    dataset_info = asdict(builder.info)
+    dataset_info["features"] = backward_compat_features(dataset_info["features"])
     return ConfigParquetAndInfoResponse(
         parquet_files=[
             create_parquet_file_item(
@@ -1503,7 +1522,7 @@ def compute_config_parquet_and_info_response(
             )
             for repo_file in repo_files
         ],
-        dataset_info=asdict(builder.info),
+        dataset_info=dataset_info,
         estimated_dataset_info=estimated_dataset_info,
         partial=partial,
     )
