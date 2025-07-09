@@ -1257,10 +1257,9 @@ def commit_parquet_conversion(
         raise e
 
 
-FD = TypeVar("FD", dict[str, Any], str, list[Any])
-
-
-def backward_compat_features(features_dict: FD) -> FD:
+def backward_compat_features(
+    features_dict: Union[dict[str, Any], str, list[Any]],
+) -> Union[dict[str, Any], str, list[Any]]:
     """`datasets<4` use exported dataset_info and doesn't have the List type"""
     if isinstance(features_dict, dict):
         if (
