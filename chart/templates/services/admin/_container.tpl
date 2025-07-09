@@ -43,7 +43,7 @@
   securityContext:
     allowPrivilegeEscalation: false
   readinessProbe:
-    failureThreshold: 30
+    failureThreshold: 60
     periodSeconds: 5
     httpGet:
       path: /admin/healthcheck

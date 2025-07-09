@@ -41,7 +41,7 @@
     allowPrivilegeEscalation: false
   resources: {{ toYaml .workerValues.resources | nindent 4 }}
   readinessProbe:
-    failureThreshold: 30
+    failureThreshold: 60
     periodSeconds: 5
     httpGet:
       path: /healthcheck
