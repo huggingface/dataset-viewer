@@ -1268,7 +1268,8 @@ def backward_compat_features(
             and features_dict["_type"] == "List"
             and isinstance(features_dict["feature"], (dict, list, str))
         ):
-            return [backward_compat_features(features_dict["feature"])]
+            if "length" not in features_dict or int(features_dict["length"]) == -1:
+                return [backward_compat_features(features_dict["feature"])]
         return {k: backward_compat_features(v) for k, v in features_dict.items()}
     else:
         return features_dict
