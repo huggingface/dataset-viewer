@@ -9,6 +9,8 @@ from time import process_time
 from typing import Any, Optional, TypedDict
 
 import pytest
+from pymongo.errors import DocumentTooLarge
+
 from libcommon.resources import CacheMongoResource
 from libcommon.simple_cache import (
     CachedArtifactError,
@@ -36,7 +38,6 @@ from libcommon.simple_cache import (
     upsert_response,
 )
 from libcommon.utils import get_datetime
-from pymongo.errors import DocumentTooLarge
 
 from .utils import (
     CACHE_KIND,
