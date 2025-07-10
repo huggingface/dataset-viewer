@@ -1011,9 +1011,6 @@ def test_get_datasets_with_last_updated_kind(
     # ^ the order is not meaningful, so we sort to make the test deterministic
 
 
-###########
-
-
 def test_get_previous_step_or_raise_success():
     kind = CACHE_KIND
     dataset = DATASET_NAME
