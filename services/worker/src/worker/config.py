@@ -53,8 +53,8 @@ WORKER_SLEEP_SECONDS = 15
 WORKER_STATE_FILE_PATH = None
 
 
-def get_empty_str_list() -> list[str]:
-    return []
+# def get_empty_str_list() -> list[str]:
+#     return []
 
 
 @dataclass(frozen=True)
@@ -214,6 +214,7 @@ PARQUET_AND_INFO_MAX_ROW_GROUP_BYTE_SIZE_FOR_COPY = 100_000_000
 PARQUET_AND_INFO_SOURCE_REVISION = "main"
 PARQUET_AND_INFO_TARGET_REVISION = "refs/convert/parquet"
 PARQUET_AND_INFO_URL_TEMPLATE = "/datasets/%s/resolve/%s/%s"
+PARQUET_AND_INFO_FULLY_CONVERTED_DATASETS: list[str] = []
 
 
 @dataclass(frozen=True)
@@ -224,6 +225,7 @@ class ParquetAndInfoConfig:
     source_revision: str = PARQUET_AND_INFO_SOURCE_REVISION
     target_revision: str = PARQUET_AND_INFO_TARGET_REVISION
     url_template: str = PARQUET_AND_INFO_URL_TEMPLATE
+    fully_converted_datasets: list[str] = field(default_factory=PARQUET_AND_INFO_FULLY_CONVERTED_DATASETS.copy)
 
     @classmethod
     def from_env(cls) -> "ParquetAndInfoConfig":
