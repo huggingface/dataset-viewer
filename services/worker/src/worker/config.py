@@ -52,11 +52,6 @@ WORKER_MAX_MISSING_HEARTBEATS = 5
 WORKER_SLEEP_SECONDS = 15
 WORKER_STATE_FILE_PATH = None
 
-
-# def get_empty_str_list() -> list[str]:
-#     return []
-
-
 @dataclass(frozen=True)
 class WorkerConfig:
     content_max_bytes: int = WORKER_CONTENT_MAX_BYTES
