@@ -41,7 +41,6 @@ from libcommon.storage_client import StorageClient
 
 # TODO: clean dangling cache entries
 
-
 @dataclass
 class CacheStatus:
     cache_has_different_git_revision: dict[str, ArtifactState] = field(default_factory=dict)
@@ -121,10 +120,10 @@ class Task(ABC):
     def run(self) -> TasksStatistics:
         pass
 
-
+DEFAULT_JOB_INFOS: list[JobInfo] = []
 @dataclass
 class CreateJobsTask(Task):
-    job_infos: list[JobInfo] = field(default_factory=list)
+    job_infos: list[JobInfo] = field(default_factory=DEFAULT_JOB_INFOS.copy)
 
     def __post_init__(self) -> None:
         # for debug and testing
