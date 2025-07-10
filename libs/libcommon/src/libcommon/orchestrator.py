@@ -23,12 +23,7 @@ from libcommon.constants import (
     YAML_FIELDS_TO_CHECK,
 )
 from libcommon.dtos import JobInfo, JobResult, Priority
-from libcommon.processing_graph import (
-    ProcessingGraph,
-    ProcessingStep,
-    ProcessingStepDoesNotExist,
-    processing_graph,
-)
+from libcommon.processing_graph import ProcessingGraph, ProcessingStep, ProcessingStepDoesNotExist, processing_graph
 from libcommon.prometheus import StepProfiler
 from libcommon.queue.jobs import Queue
 from libcommon.simple_cache import (
