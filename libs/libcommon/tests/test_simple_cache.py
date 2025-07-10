@@ -21,6 +21,7 @@ from libcommon.simple_cache import (
     CacheTotalMetricDocument,
     InvalidCursor,
     InvalidLimit,
+    get_previous_step_or_raise,
     delete_dataset_responses,
     delete_response,
     fetch_names,
@@ -36,6 +37,7 @@ from libcommon.simple_cache import (
     is_successful_response,
     upsert_response,
 )
+
 from libcommon.utils import get_datetime
 
 from .utils import (
@@ -931,3 +933,67 @@ def test_get_datasets_with_last_updated_kind(entries: list[Entry], expected_data
     days = DAYS
     assert sorted(get_datasets_with_last_updated_kind(kind=kind, days=days)) == sorted(expected_datasets)
     # ^ the order is not meaningful, so we sort to make the test deterministic
+
+###########
+
+def test_get_previous_step_or_raise_success():
+    kind = CACHE_KIND
+    dataset = DATASET_NAME
+    config = "test_config"
+    split = "test_split"
+    content = {"key": "value"}
+
+    upsert_response(
+        kind=kind,
+        dataset=dataset,
+        dataset_git_revision=REVISION_NAME,
+        config=config,
+        split=split,
+        content=content,
+        http_status=HTTPStatus.OK,
+    )
+
+    try:
+        response = get_previous_step_or_raise(kind=kind, dataset=dataset, config=config, split=split)
+        assert response["http_status"] == HTTPStatus.OK
+        assert response["content"] == content
+    finally:
+        delete_response(kind=kind, dataset=dataset, config=config, split=split)
+
+def test_get_previous_step_or_raise_not_found():
+    kind = "missing_kind"
+    dataset = "missing_dataset"
+    config = "missing_config"
+    split = "missing_split"
+
+    delete_response(kind=kind, dataset=dataset, config=config, split=split)
+    with pytest.raises(CachedArtifactNotFoundError):
+        get_previous_step_or_raise(kind=kind, dataset=dataset, config=config, split=split)
+
+def test_get_previous_step_or_raise_error_status():
+    kind = CACHE_KIND
+    dataset = "error_dataset"
+    config = "error_config"
+    split = "error_split"
+    content = {"error": "failure"}
+
+    upsert_response(
+        kind=kind,
+        dataset=dataset,
+        dataset_git_revision=REVISION_NAME,
+        config=config,
+        split=split,
+        content=content,
+        http_status=HTTPStatus.INTERNAL_SERVER_ERROR,
+        error_code="some_error",
+        details={"error": "failure"}
+    )
+
+    try:
+        with pytest.raises(CachedArtifactError) as exc_info:
+            get_previous_step_or_raise(kind=kind, dataset=dataset, config=config, split=split)
+        assert exc_info.value.cache_entry_with_details["http_status"] == HTTPStatus.INTERNAL_SERVER_ERROR
+        assert exc_info.value.cache_entry_with_details["content"] == content
+    finally:
+        delete_response(kind=kind, dataset=dataset, config=config, split=split)
+
