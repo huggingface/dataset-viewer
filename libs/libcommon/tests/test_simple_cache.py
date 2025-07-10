@@ -11,27 +11,53 @@ from typing import Any, Optional, TypedDict
 import pytest
 from libcommon.resources import CacheMongoResource
 from libcommon.simple_cache import (
-    CachedArtifactError, CachedArtifactNotFoundError, CachedResponseDocument,
-    CacheReportsPage, CacheReportsWithContentPage, CacheTotalMetricDocument,
-    InvalidCursor, InvalidLimit, delete_dataset_responses, delete_response,
-    fetch_names, get_cache_reports, get_cache_reports_with_content,
+    CachedArtifactError,
+    CachedArtifactNotFoundError,
+    CachedResponseDocument,
+    CacheReportsPage,
+    CacheReportsWithContentPage,
+    CacheTotalMetricDocument,
+    InvalidCursor,
+    InvalidLimit,
+    delete_dataset_responses,
+    delete_response,
+    fetch_names,
+    get_cache_reports,
+    get_cache_reports_with_content,
     get_dataset_responses_without_content_for_kind,
     get_datasets_with_last_updated_kind,
-    get_outdated_split_full_names_for_step, get_previous_step_or_raise,
-    get_response, get_response_with_details, get_response_without_content,
-    get_responses_count_by_kind_status_and_error_code, is_successful_response,
-    upsert_response)
+    get_outdated_split_full_names_for_step,
+    get_previous_step_or_raise,
+    get_response,
+    get_response_with_details,
+    get_response_without_content,
+    get_responses_count_by_kind_status_and_error_code,
+    is_successful_response,
+    upsert_response,
+)
 from libcommon.utils import get_datetime
 from pymongo.errors import DocumentTooLarge
 
-from .utils import (CACHE_KIND, CONFIG_NAME_1, CONFIG_NAME_2, CONTENT_ERROR,
-                    DATASET_GIT_REVISION_A, DATASET_GIT_REVISION_B,
-                    DATASET_GIT_REVISION_C, DATASET_NAME, DATASET_NAME_A,
-                    DATASET_NAME_B, DATASET_NAME_C, REVISION_NAME)
+from .utils import (
+    CACHE_KIND,
+    CONFIG_NAME_1,
+    CONFIG_NAME_2,
+    CONTENT_ERROR,
+    DATASET_GIT_REVISION_A,
+    DATASET_GIT_REVISION_B,
+    DATASET_GIT_REVISION_C,
+    DATASET_NAME,
+    DATASET_NAME_A,
+    DATASET_NAME_B,
+    DATASET_NAME_C,
+    REVISION_NAME,
+)
 
 
 @pytest.fixture(autouse=True)
-def cache_mongo_resource_autouse(cache_mongo_resource: CacheMongoResource) -> CacheMongoResource:
+def cache_mongo_resource_autouse(
+    cache_mongo_resource: CacheMongoResource,
+) -> CacheMongoResource:
     return cache_mongo_resource
 
 
@@ -48,7 +74,11 @@ def test_insert_null_values() -> None:
     http_status = HTTPStatus.OK
 
     CachedResponseDocument.objects(
-        kind=kind, dataset=dataset_a, dataset_git_revision=dataset_git_revision_a, config=config, split=split
+        kind=kind,
+        dataset=dataset_a,
+        dataset_git_revision=dataset_git_revision_a,
+        config=config,
+        split=split,
     ).upsert_one(
         content=content,
         http_status=http_status,
@@ -94,8 +124,12 @@ def test_insert_null_values() -> None:
     assert "config" not in cached_response.to_json()
 
 
-def assert_metric_entries_per_kind(http_status: HTTPStatus, error_code: Optional[str], kind: str, total: int) -> None:
-    metric = CacheTotalMetricDocument.objects(http_status=http_status, error_code=error_code, kind=kind).first()
+def assert_metric_entries_per_kind(
+    http_status: HTTPStatus, error_code: Optional[str], kind: str, total: int
+) -> None:
+    metric = CacheTotalMetricDocument.objects(
+        http_status=http_status, error_code=error_code, kind=kind
+    ).first()
     assert metric is not None
     assert metric.total == total
 
@@ -126,7 +160,9 @@ def test_upsert_response(config: Optional[str], split: Optional[str]) -> None:
         content=content,
         http_status=HTTPStatus.OK,
     )
-    cached_response = get_response(kind=kind, dataset=dataset, config=config, split=split)
+    cached_response = get_response(
+        kind=kind, dataset=dataset, config=config, split=split
+    )
     assert cached_response == {
         "http_status": HTTPStatus.OK,
         "content": content,
@@ -146,7 +182,9 @@ def test_upsert_response(config: Optional[str], split: Optional[str]) -> None:
         "progress": None,
     }
 
-    assert_metric_entries_per_kind(http_status=HTTPStatus.OK, error_code=None, kind=kind, total=1)
+    assert_metric_entries_per_kind(
+        http_status=HTTPStatus.OK, error_code=None, kind=kind, total=1
+    )
 
     # ensure it's idempotent
     upsert_response(
@@ -158,10 +196,14 @@ def test_upsert_response(config: Optional[str], split: Optional[str]) -> None:
         content=content,
         http_status=HTTPStatus.OK,
     )
-    cached_response2 = get_response(kind=kind, dataset=dataset, config=config, split=split)
+    cached_response2 = get_response(
+        kind=kind, dataset=dataset, config=config, split=split
+    )
     assert cached_response2 == cached_response
 
-    assert_metric_entries_per_kind(http_status=HTTPStatus.OK, error_code=None, kind=kind, total=1)
+    assert_metric_entries_per_kind(
+        http_status=HTTPStatus.OK, error_code=None, kind=kind, total=1
+    )
 
     another_config = "another_config"
     upsert_response(
@@ -175,11 +217,15 @@ def test_upsert_response(config: Optional[str], split: Optional[str]) -> None:
     )
     get_response(kind=kind, dataset=dataset, config=config, split=split)
 
-    assert_metric_entries_per_kind(http_status=HTTPStatus.OK, error_code=None, kind=kind, total=2)
+    assert_metric_entries_per_kind(
+        http_status=HTTPStatus.OK, error_code=None, kind=kind, total=2
+    )
 
     delete_dataset_responses(dataset=dataset)
 
-    assert_metric_entries_per_kind(http_status=HTTPStatus.OK, error_code=None, kind=kind, total=0)
+    assert_metric_entries_per_kind(
+        http_status=HTTPStatus.OK, error_code=None, kind=kind, total=0
+    )
 
     with pytest.raises(CachedArtifactNotFoundError):
         get_response(kind=kind, dataset=dataset, config=config, split=split)
@@ -198,10 +244,16 @@ def test_upsert_response(config: Optional[str], split: Optional[str]) -> None:
         job_runner_version=job_runner_version,
     )
 
-    assert_metric_entries_per_kind(http_status=HTTPStatus.OK, error_code=None, kind=kind, total=0)
-    assert_metric_entries_per_kind(http_status=HTTPStatus.BAD_REQUEST, error_code=error_code, kind=kind, total=1)
+    assert_metric_entries_per_kind(
+        http_status=HTTPStatus.OK, error_code=None, kind=kind, total=0
+    )
+    assert_metric_entries_per_kind(
+        http_status=HTTPStatus.BAD_REQUEST, error_code=error_code, kind=kind, total=1
+    )
 
-    cached_response3 = get_response(kind=kind, dataset=dataset, config=config, split=split)
+    cached_response3 = get_response(
+        kind=kind, dataset=dataset, config=config, split=split
+    )
     assert cached_response3 == {
         "http_status": HTTPStatus.BAD_REQUEST,
         "content": content,
@@ -234,7 +286,13 @@ def test_upsert_response_types() -> None:
     )
     cached_response = get_response(kind=kind, dataset=dataset)
     assert cached_response["content"]["datetime"] == datetime(
-        now.year, now.month, now.day, now.hour, now.minute, now.second, now.microsecond // 1000 * 1000
+        now.year,
+        now.month,
+        now.day,
+        now.hour,
+        now.minute,
+        now.second,
+        now.microsecond // 1000 * 1000,
     )
     assert cached_response["content"]["time"] == str(now.time())
     assert cached_response["content"]["date"] == str(now.date())
@@ -267,12 +325,16 @@ def test_delete_response() -> None:
         content={},
         http_status=HTTPStatus.OK,
     )
-    assert_metric_entries_per_kind(http_status=HTTPStatus.OK, error_code=None, kind=kind, total=2)
+    assert_metric_entries_per_kind(
+        http_status=HTTPStatus.OK, error_code=None, kind=kind, total=2
+    )
 
     get_response(kind=kind, dataset=dataset_a, config=config, split=split)
     get_response(kind=kind, dataset=dataset_b, config=config, split=split)
     delete_response(kind=kind, dataset=dataset_a, config=config, split=split)
-    assert_metric_entries_per_kind(http_status=HTTPStatus.OK, error_code=None, kind=kind, total=1)
+    assert_metric_entries_per_kind(
+        http_status=HTTPStatus.OK, error_code=None, kind=kind, total=1
+    )
     with pytest.raises(CachedArtifactNotFoundError):
         get_response(kind=kind, dataset=dataset_a, config=config, split=split)
     get_response(kind=kind, dataset=dataset_b, config=config, split=split)
@@ -310,14 +372,22 @@ def test_delete_dataset_responses() -> None:
         content={},
         http_status=HTTPStatus.OK,
     )
-    assert_metric_entries_per_kind(http_status=HTTPStatus.OK, error_code=None, kind=kind_a, total=2)
-    assert_metric_entries_per_kind(http_status=HTTPStatus.OK, error_code=None, kind=kind_b, total=1)
+    assert_metric_entries_per_kind(
+        http_status=HTTPStatus.OK, error_code=None, kind=kind_a, total=2
+    )
+    assert_metric_entries_per_kind(
+        http_status=HTTPStatus.OK, error_code=None, kind=kind_b, total=1
+    )
     get_response(kind=kind_a, dataset=dataset_a)
     get_response(kind=kind_b, dataset=dataset_a, config=config, split=split)
     get_response(kind=kind_a, dataset=dataset_b)
     delete_dataset_responses(dataset=dataset_a)
-    assert_metric_entries_per_kind(http_status=HTTPStatus.OK, error_code=None, kind=kind_a, total=1)
-    assert_metric_entries_per_kind(http_status=HTTPStatus.OK, error_code=None, kind=kind_b, total=0)
+    assert_metric_entries_per_kind(
+        http_status=HTTPStatus.OK, error_code=None, kind=kind_a, total=1
+    )
+    assert_metric_entries_per_kind(
+        http_status=HTTPStatus.OK, error_code=None, kind=kind_b, total=0
+    )
     with pytest.raises(CachedArtifactNotFoundError):
         get_response(kind=kind_a, dataset=dataset_a)
     with pytest.raises(CachedArtifactNotFoundError):
@@ -382,7 +452,9 @@ def test_count_by_status_and_error_code() -> None:
         http_status=HTTPStatus.OK,
     )
 
-    assert get_responses_count_by_kind_status_and_error_code() == {(CACHE_KIND, 200, None): 1}
+    assert get_responses_count_by_kind_status_and_error_code() == {
+        (CACHE_KIND, 200, None): 1
+    }
 
     upsert_response(
         kind="test_kind2",
@@ -412,7 +484,10 @@ def test_get_cache_reports() -> None:
         "cache_reports_with_content": [],
         "next_cursor": "",
     }
-    assert get_cache_reports_with_content(kind=kind, cursor="", limit=2) == expected_cache_reports_with_content
+    assert (
+        get_cache_reports_with_content(kind=kind, cursor="", limit=2)
+        == expected_cache_reports_with_content
+    )
 
     dataset_a = DATASET_NAME_A
     dataset_git_revision_a = DATASET_GIT_REVISION_A
@@ -552,7 +627,9 @@ def test_get_cache_reports() -> None:
         "next_cursor": "",
     }
 
-    response_with_content = get_cache_reports_with_content(kind=kind, cursor="", limit=2)
+    response_with_content = get_cache_reports_with_content(
+        kind=kind, cursor="", limit=2
+    )
     # redact the response to make it simpler to compare with the expected
     assert response_with_content["cache_reports_with_content"] == [
         {
@@ -588,7 +665,9 @@ def test_get_cache_reports() -> None:
     ]
     assert response_with_content["next_cursor"] != ""
     next_cursor = response_with_content["next_cursor"]
-    response_with_content = get_cache_reports_with_content(kind=kind, cursor=next_cursor, limit=2)
+    response_with_content = get_cache_reports_with_content(
+        kind=kind, cursor=next_cursor, limit=2
+    )
     assert response_with_content == {
         "cache_reports_with_content": [
             {
@@ -617,15 +696,21 @@ def test_get_cache_reports() -> None:
     with pytest.raises(InvalidLimit):
         get_cache_reports(kind=kind, cursor=next_cursor, limit=0)
 
-    result_a = get_dataset_responses_without_content_for_kind(kind=kind, dataset=dataset_a)
+    result_a = get_dataset_responses_without_content_for_kind(
+        kind=kind, dataset=dataset_a
+    )
     assert len(result_a) == 1
     assert result_a[0]["http_status"] == HTTPStatus.OK.value
     assert result_a[0]["error_code"] is None
     assert result_a[0]["details"] == {}
 
-    assert not get_dataset_responses_without_content_for_kind(kind=kind_2, dataset=dataset_a)
+    assert not get_dataset_responses_without_content_for_kind(
+        kind=kind_2, dataset=dataset_a
+    )
 
-    result_c = get_dataset_responses_without_content_for_kind(kind=kind_2, dataset=dataset_c)
+    result_c = get_dataset_responses_without_content_for_kind(
+        kind=kind_2, dataset=dataset_c
+    )
     assert len(result_c) == 2
     for result in result_c:
         assert result["http_status"] == http_status_c.value
@@ -666,7 +751,9 @@ def test_get_outdated_split_full_names_for_step() -> None:
     current_version = 2
     minor_version = 1
 
-    result = get_outdated_split_full_names_for_step(kind=kind, current_version=current_version)
+    result = get_outdated_split_full_names_for_step(
+        kind=kind, current_version=current_version
+    )
     upsert_response(
         kind=kind,
         dataset="dataset_with_current_version",
@@ -685,7 +772,9 @@ def test_get_outdated_split_full_names_for_step() -> None:
         http_status=HTTPStatus.OK,
         job_runner_version=minor_version,
     )
-    result = get_outdated_split_full_names_for_step(kind=kind, current_version=current_version)
+    result = get_outdated_split_full_names_for_step(
+        kind=kind, current_version=current_version
+    )
     assert result
     assert len(result) == 1
 
@@ -732,7 +821,9 @@ def test_cached_artifact_error() -> None:
         dataset_git_revision=dataset_git_revision,
         progress=progress,
     )
-    response = get_response_with_details(kind=kind, dataset=dataset, config=config, split=split)
+    response = get_response_with_details(
+        kind=kind, dataset=dataset, config=config, split=split
+    )
     error = CachedArtifactError(
         message="Previous step error",
         kind=kind,
@@ -743,7 +834,10 @@ def test_cached_artifact_error() -> None:
     )
 
     assert error.cache_entry_with_details["content"] == content
-    assert error.cache_entry_with_details["http_status"] == HTTPStatus.INTERNAL_SERVER_ERROR
+    assert (
+        error.cache_entry_with_details["http_status"]
+        == HTTPStatus.INTERNAL_SERVER_ERROR
+    )
     assert error.cache_entry_with_details["error_code"] == error_code
     assert error.enhanced_details == {
         "error": error_message,
@@ -770,9 +864,12 @@ NAMES = ["name_1", "name_2", "name_3"]
 NAME_FIELD = "name"
 NAMES_FIELD = "names"
 NAMES_RESPONSE_OK = ResponseSpec(
-    content={NAMES_FIELD: [{NAME_FIELD: name} for name in NAMES]}, http_status=HTTPStatus.OK
+    content={NAMES_FIELD: [{NAME_FIELD: name} for name in NAMES]},
+    http_status=HTTPStatus.OK,
 )
-RESPONSE_ERROR = ResponseSpec(content=CONTENT_ERROR, http_status=HTTPStatus.INTERNAL_SERVER_ERROR)
+RESPONSE_ERROR = ResponseSpec(
+    content=CONTENT_ERROR, http_status=HTTPStatus.INTERNAL_SERVER_ERROR
+)
 
 
 @pytest.mark.parametrize(
@@ -891,7 +988,9 @@ ENTRY_7: Entry = {
         ([ENTRY_1, ENTRY_7], [DATASET_NAME, DATASET_NAME_A]),
     ],
 )
-def test_get_datasets_with_last_updated_kind(entries: list[Entry], expected_datasets: list[str]) -> None:
+def test_get_datasets_with_last_updated_kind(
+    entries: list[Entry], expected_datasets: list[str]
+) -> None:
     for entry in entries:
         upsert_response(
             kind=entry["kind"],
@@ -905,10 +1004,14 @@ def test_get_datasets_with_last_updated_kind(entries: list[Entry], expected_data
         )
     kind = CACHE_KIND_A
     days = DAYS
-    assert sorted(get_datasets_with_last_updated_kind(kind=kind, days=days)) == sorted(expected_datasets)
+    assert sorted(get_datasets_with_last_updated_kind(kind=kind, days=days)) == sorted(
+        expected_datasets
+    )
     # ^ the order is not meaningful, so we sort to make the test deterministic
 
+
 ###########
+
 
 def test_get_previous_step_or_raise_success():
     kind = CACHE_KIND
@@ -928,11 +1031,14 @@ def test_get_previous_step_or_raise_success():
     )
 
     try:
-        response = get_previous_step_or_raise(kind=kind, dataset=dataset, config=config, split=split)
+        response = get_previous_step_or_raise(
+            kind=kind, dataset=dataset, config=config, split=split
+        )
         assert response["http_status"] == HTTPStatus.OK
         assert response["content"] == content
     finally:
         delete_response(kind=kind, dataset=dataset, config=config, split=split)
+
 
 def test_get_previous_step_or_raise_not_found():
     kind = "missing_kind"
@@ -942,7 +1048,10 @@ def test_get_previous_step_or_raise_not_found():
 
     delete_response(kind=kind, dataset=dataset, config=config, split=split)
     with pytest.raises(CachedArtifactNotFoundError):
-        get_previous_step_or_raise(kind=kind, dataset=dataset, config=config, split=split)
+        get_previous_step_or_raise(
+            kind=kind, dataset=dataset, config=config, split=split
+        )
+
 
 def test_get_previous_step_or_raise_error_status():
     kind = CACHE_KIND
@@ -960,14 +1069,18 @@ def test_get_previous_step_or_raise_error_status():
         content=content,
         http_status=HTTPStatus.INTERNAL_SERVER_ERROR,
         error_code="some_error",
-        details={"error": "failure"}
+        details={"error": "failure"},
     )
 
     try:
         with pytest.raises(CachedArtifactError) as exc_info:
-            get_previous_step_or_raise(kind=kind, dataset=dataset, config=config, split=split)
-        assert exc_info.value.cache_entry_with_details["http_status"] == HTTPStatus.INTERNAL_SERVER_ERROR
+            get_previous_step_or_raise(
+                kind=kind, dataset=dataset, config=config, split=split
+            )
+        assert (
+            exc_info.value.cache_entry_with_details["http_status"]
+            == HTTPStatus.INTERNAL_SERVER_ERROR
+        )
         assert exc_info.value.cache_entry_with_details["content"] == content
     finally:
         delete_response(kind=kind, dataset=dataset, config=config, split=split)
-
