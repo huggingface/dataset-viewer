@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 from environs import Env
+
 from libcommon.config import (
     AssetsConfig,
     CacheConfig,
