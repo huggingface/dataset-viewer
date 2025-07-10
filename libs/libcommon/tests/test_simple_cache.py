@@ -9,50 +9,25 @@ from time import process_time
 from typing import Any, Optional, TypedDict
 
 import pytest
-from pymongo.errors import DocumentTooLarge
-
 from libcommon.resources import CacheMongoResource
 from libcommon.simple_cache import (
-    CacheReportsPage,
-    CacheReportsWithContentPage,
-    CacheTotalMetricDocument,
-    CachedArtifactError,
-    CachedArtifactNotFoundError,
-    CachedResponseDocument,
-    InvalidCursor,
-    InvalidLimit,
-    delete_dataset_responses,
-    delete_response,
-    fetch_names,
-    get_cache_reports,
-    get_cache_reports_with_content,
+    CachedArtifactError, CachedArtifactNotFoundError, CachedResponseDocument,
+    CacheReportsPage, CacheReportsWithContentPage, CacheTotalMetricDocument,
+    InvalidCursor, InvalidLimit, delete_dataset_responses, delete_response,
+    fetch_names, get_cache_reports, get_cache_reports_with_content,
     get_dataset_responses_without_content_for_kind,
     get_datasets_with_last_updated_kind,
-    get_outdated_split_full_names_for_step,
-    get_previous_step_or_raise,
-    get_response,
-    get_response_with_details,
-    get_response_without_content,
-    get_responses_count_by_kind_status_and_error_code,
-    is_successful_response,
-    upsert_response,
-)
+    get_outdated_split_full_names_for_step, get_previous_step_or_raise,
+    get_response, get_response_with_details, get_response_without_content,
+    get_responses_count_by_kind_status_and_error_code, is_successful_response,
+    upsert_response)
 from libcommon.utils import get_datetime
+from pymongo.errors import DocumentTooLarge
 
-from .utils import (
-    CACHE_KIND,
-    CONFIG_NAME_1,
-    CONFIG_NAME_2,
-    CONTENT_ERROR,
-    DATASET_GIT_REVISION_A,
-    DATASET_GIT_REVISION_B,
-    DATASET_GIT_REVISION_C,
-    DATASET_NAME,
-    DATASET_NAME_A,
-    DATASET_NAME_B,
-    DATASET_NAME_C,
-    REVISION_NAME,
-)
+from .utils import (CACHE_KIND, CONFIG_NAME_1, CONFIG_NAME_2, CONTENT_ERROR,
+                    DATASET_GIT_REVISION_A, DATASET_GIT_REVISION_B,
+                    DATASET_GIT_REVISION_C, DATASET_NAME, DATASET_NAME_A,
+                    DATASET_NAME_B, DATASET_NAME_C, REVISION_NAME)
 
 
 @pytest.fixture(autouse=True)
