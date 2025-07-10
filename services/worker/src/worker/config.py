@@ -34,7 +34,9 @@ class UvicornConfig:
         with env.prefixed("WORKER_UVICORN_"):
             return cls(
                 hostname=env.str(name="HOSTNAME", default=WORKER_UVICORN_HOSTNAME),
-                num_workers=env.int(name="NUM_WORKERS", default=WORKER_UVICORN_NUM_WORKERS),
+                num_workers=env.int(
+                    name="NUM_WORKERS", default=WORKER_UVICORN_NUM_WORKERS
+                ),
                 port=env.int(name="PORT", default=WORKER_UVICORN_PORT),
             )
 
@@ -51,6 +53,7 @@ WORKER_MAX_MEMORY_PCT = 80
 WORKER_MAX_MISSING_HEARTBEATS = 5
 WORKER_SLEEP_SECONDS = 15
 WORKER_STATE_FILE_PATH = None
+
 
 @dataclass(frozen=True)
 class WorkerConfig:
@@ -72,25 +75,41 @@ class WorkerConfig:
         env = Env(expand_vars=True)
         with env.prefixed("WORKER_"):
             return cls(
-                content_max_bytes=env.int(name="CONTENT_MAX_BYTES", default=WORKER_CONTENT_MAX_BYTES),
-                difficulty_max=env.int(name="DIFFICULTY_MAX", default=WORKER_DIFFICULTY_MAX),
-                difficulty_min=env.int(name="DIFFICULTY_MIN", default=WORKER_DIFFICULTY_MIN),
+                content_max_bytes=env.int(
+                    name="CONTENT_MAX_BYTES", default=WORKER_CONTENT_MAX_BYTES
+                ),
+                difficulty_max=env.int(
+                    name="DIFFICULTY_MAX", default=WORKER_DIFFICULTY_MAX
+                ),
+                difficulty_min=env.int(
+                    name="DIFFICULTY_MIN", default=WORKER_DIFFICULTY_MIN
+                ),
                 heartbeat_interval_seconds=env.float(
-                    name="HEARTBEAT_INTERVAL_SECONDS", default=WORKER_HEARTBEAT_INTERVAL_SECONDS
+                    name="HEARTBEAT_INTERVAL_SECONDS",
+                    default=WORKER_HEARTBEAT_INTERVAL_SECONDS,
                 ),
                 kill_long_job_interval_seconds=env.float(
-                    name="KILL_LONG_JOB_INTERVAL_SECONDS", default=WORKER_KILL_LONG_JOB_INTERVAL_SECONDS
+                    name="KILL_LONG_JOB_INTERVAL_SECONDS",
+                    default=WORKER_KILL_LONG_JOB_INTERVAL_SECONDS,
                 ),
                 kill_zombies_interval_seconds=env.float(
-                    name="KILL_ZOMBIES_INTERVAL_SECONDS", default=WORKER_KILL_ZOMBIES_INTERVAL_SECONDS
+                    name="KILL_ZOMBIES_INTERVAL_SECONDS",
+                    default=WORKER_KILL_ZOMBIES_INTERVAL_SECONDS,
                 ),
                 max_job_duration_seconds=env.float(
-                    name="MAX_JOB_DURATION_SECONDS", default=WORKER_MAX_JOB_DURATION_SECONDS
+                    name="MAX_JOB_DURATION_SECONDS",
+                    default=WORKER_MAX_JOB_DURATION_SECONDS,
                 ),
                 max_load_pct=env.int(name="MAX_LOAD_PCT", default=WORKER_MAX_LOAD_PCT),
-                max_memory_pct=env.int(name="MAX_MEMORY_PCT", default=WORKER_MAX_MEMORY_PCT),
-                max_missing_heartbeats=env.int(name="MAX_MISSING_HEARTBEATS", default=WORKER_MAX_MISSING_HEARTBEATS),
-                sleep_seconds=env.float(name="SLEEP_SECONDS", default=WORKER_SLEEP_SECONDS),
+                max_memory_pct=env.int(
+                    name="MAX_MEMORY_PCT", default=WORKER_MAX_MEMORY_PCT
+                ),
+                max_missing_heartbeats=env.int(
+                    name="MAX_MISSING_HEARTBEATS", default=WORKER_MAX_MISSING_HEARTBEATS
+                ),
+                sleep_seconds=env.float(
+                    name="SLEEP_SECONDS", default=WORKER_SLEEP_SECONDS
+                ),
                 state_file_path=env.str(
                     name="STATE_FILE_PATH", default=WORKER_STATE_FILE_PATH
                 ),  # this environment variable is not expected to be set explicitly, it's set by the worker executor
@@ -109,7 +128,9 @@ class DatasetsBasedConfig:
         env = Env(expand_vars=True)
         with env.prefixed("DATASETS_BASED_"):
             return cls(
-                hf_datasets_cache=env.str(name="HF_DATASETS_CACHE", default=DATASETS_BASED_HF_DATASETS_CACHE),
+                hf_datasets_cache=env.str(
+                    name="HF_DATASETS_CACHE", default=DATASETS_BASED_HF_DATASETS_CACHE
+                ),
             )
 
 
@@ -131,9 +152,13 @@ class FirstRowsConfig:
         env = Env(expand_vars=True)
         with env.prefixed("FIRST_ROWS_"):
             return cls(
-                columns_max_number=env.int(name="COLUMNS_MAX_NUMBER", default=FIRST_ROWS_COLUMNS_MAX_NUMBER),
+                columns_max_number=env.int(
+                    name="COLUMNS_MAX_NUMBER", default=FIRST_ROWS_COLUMNS_MAX_NUMBER
+                ),
                 max_bytes=env.int(name="MAX_BYTES", default=FIRST_ROWS_MAX_BYTES),
-                min_cell_bytes=env.int(name="MIN_CELL_BYTES", default=FIRST_ROWS_MIN_CELL_BYTES),
+                min_cell_bytes=env.int(
+                    name="MIN_CELL_BYTES", default=FIRST_ROWS_MIN_CELL_BYTES
+                ),
                 min_number=env.int(name="MIN_NUMBER", default=FIRST_ROWS_MIN_NUMBER),
             )
 
@@ -143,14 +168,18 @@ OPT_IN_OUT_URLS_SCAN_MAX_CONCURRENT_REQUESTS_NUMBER = 50
 OPT_IN_OUT_URLS_SCAN_MAX_REQUESTS_PER_SECOND = 25
 OPT_IN_OUT_URLS_SCAN_ROWS_MAX_NUMBER = 100_000
 OPT_IN_OUT_URLS_SCAN_SPAWNING_TOKEN = None
-OPT_IN_OUT_URLS_SCAN_SPAWNING_URL = "https://opts-api.spawningaiapi.com/api/v2/query/urls"
+OPT_IN_OUT_URLS_SCAN_SPAWNING_URL = (
+    "https://opts-api.spawningaiapi.com/api/v2/query/urls"
+)
 OPT_IN_OUT_URLS_SCAN_URLS_NUMBER_PER_BATCH = 1000
 
 
 @dataclass(frozen=True)
 class OptInOutUrlsScanConfig:
     columns_max_number: int = FIRST_ROWS_COLUMNS_MAX_NUMBER
-    max_concurrent_requests_number: int = OPT_IN_OUT_URLS_SCAN_MAX_CONCURRENT_REQUESTS_NUMBER
+    max_concurrent_requests_number: int = (
+        OPT_IN_OUT_URLS_SCAN_MAX_CONCURRENT_REQUESTS_NUMBER
+    )
     max_requests_per_second: int = OPT_IN_OUT_URLS_SCAN_MAX_REQUESTS_PER_SECOND
     rows_max_number: int = OPT_IN_OUT_URLS_SCAN_ROWS_MAX_NUMBER
     spawning_token: Optional[str] = OPT_IN_OUT_URLS_SCAN_SPAWNING_TOKEN
@@ -162,18 +191,30 @@ class OptInOutUrlsScanConfig:
         env = Env(expand_vars=True)
         with env.prefixed("OPT_IN_OUT_URLS_SCAN_"):
             return cls(
-                columns_max_number=env.int(name="COLUMNS_MAX_NUMBER", default=OPT_IN_OUT_URLS_SCAN_COLUMNS_MAX_NUMBER),
+                columns_max_number=env.int(
+                    name="COLUMNS_MAX_NUMBER",
+                    default=OPT_IN_OUT_URLS_SCAN_COLUMNS_MAX_NUMBER,
+                ),
                 max_concurrent_requests_number=env.int(
-                    name="MAX_CONCURRENT_REQUESTS_NUMBER", default=OPT_IN_OUT_URLS_SCAN_MAX_CONCURRENT_REQUESTS_NUMBER
+                    name="MAX_CONCURRENT_REQUESTS_NUMBER",
+                    default=OPT_IN_OUT_URLS_SCAN_MAX_CONCURRENT_REQUESTS_NUMBER,
                 ),
                 max_requests_per_second=env.int(
-                    name="MAX_REQUESTS_PER_SECOND", default=OPT_IN_OUT_URLS_SCAN_MAX_REQUESTS_PER_SECOND
+                    name="MAX_REQUESTS_PER_SECOND",
+                    default=OPT_IN_OUT_URLS_SCAN_MAX_REQUESTS_PER_SECOND,
                 ),
-                rows_max_number=env.int(name="ROWS_MAX_NUMBER", default=OPT_IN_OUT_URLS_SCAN_ROWS_MAX_NUMBER),
-                spawning_token=env.str(name="SPAWNING_TOKEN", default=OPT_IN_OUT_URLS_SCAN_SPAWNING_TOKEN),
-                spawning_url=env.str(name="SPAWNING_URL", default=OPT_IN_OUT_URLS_SCAN_SPAWNING_URL),
+                rows_max_number=env.int(
+                    name="ROWS_MAX_NUMBER", default=OPT_IN_OUT_URLS_SCAN_ROWS_MAX_NUMBER
+                ),
+                spawning_token=env.str(
+                    name="SPAWNING_TOKEN", default=OPT_IN_OUT_URLS_SCAN_SPAWNING_TOKEN
+                ),
+                spawning_url=env.str(
+                    name="SPAWNING_URL", default=OPT_IN_OUT_URLS_SCAN_SPAWNING_URL
+                ),
                 urls_number_per_batch=env.int(
-                    name="URLS_NUMBER_PER_BATCH", default=OPT_IN_OUT_URLS_SCAN_URLS_NUMBER_PER_BATCH
+                    name="URLS_NUMBER_PER_BATCH",
+                    default=OPT_IN_OUT_URLS_SCAN_URLS_NUMBER_PER_BATCH,
                 ),
             )
 
@@ -195,10 +236,17 @@ class PresidioEntitiesScanConfig:
         with env.prefixed("PRESIDIO_ENTITIES_SCAN_"):
             return cls(
                 columns_max_number=env.int(
-                    name="COLUMNS_MAX_NUMBER", default=PRESIDIO_ENTITIES_SCAN_COLUMNS_MAX_NUMBER
+                    name="COLUMNS_MAX_NUMBER",
+                    default=PRESIDIO_ENTITIES_SCAN_COLUMNS_MAX_NUMBER,
                 ),
-                max_text_length=env.int(name="MAX_TEXT_LENGTH", default=PRESIDIO_ENTITIES_SCAN_MAX_TEXT_LENGTH),
-                rows_max_number=env.int(name="ROWS_MAX_NUMBER", default=PRESIDIO_ENTITIES_SCAN_ROWS_MAX_NUMBER),
+                max_text_length=env.int(
+                    name="MAX_TEXT_LENGTH",
+                    default=PRESIDIO_ENTITIES_SCAN_MAX_TEXT_LENGTH,
+                ),
+                rows_max_number=env.int(
+                    name="ROWS_MAX_NUMBER",
+                    default=PRESIDIO_ENTITIES_SCAN_ROWS_MAX_NUMBER,
+                ),
             )
 
 
@@ -216,27 +264,41 @@ PARQUET_AND_INFO_FULLY_CONVERTED_DATASETS: list[str] = []
 class ParquetAndInfoConfig:
     commit_message: str = PARQUET_AND_INFO_COMMIT_MESSAGE
     max_dataset_size_bytes: int = PARQUET_AND_INFO_MAX_DATASET_SIZE_BYTES
-    max_row_group_byte_size_for_copy: int = PARQUET_AND_INFO_MAX_ROW_GROUP_BYTE_SIZE_FOR_COPY
+    max_row_group_byte_size_for_copy: int = (
+        PARQUET_AND_INFO_MAX_ROW_GROUP_BYTE_SIZE_FOR_COPY
+    )
     source_revision: str = PARQUET_AND_INFO_SOURCE_REVISION
     target_revision: str = PARQUET_AND_INFO_TARGET_REVISION
     url_template: str = PARQUET_AND_INFO_URL_TEMPLATE
-    fully_converted_datasets: list[str] = field(default_factory=PARQUET_AND_INFO_FULLY_CONVERTED_DATASETS.copy)
+    fully_converted_datasets: list[str] = field(
+        default_factory=PARQUET_AND_INFO_FULLY_CONVERTED_DATASETS.copy
+    )
 
     @classmethod
     def from_env(cls) -> "ParquetAndInfoConfig":
         env = Env(expand_vars=True)
         with env.prefixed("PARQUET_AND_INFO_"):
             return cls(
-                commit_message=env.str(name="COMMIT_MESSAGE", default=PARQUET_AND_INFO_COMMIT_MESSAGE),
+                commit_message=env.str(
+                    name="COMMIT_MESSAGE", default=PARQUET_AND_INFO_COMMIT_MESSAGE
+                ),
                 max_dataset_size_bytes=env.int(
-                    name="MAX_DATASET_SIZE_BYTES", default=PARQUET_AND_INFO_MAX_DATASET_SIZE_BYTES
+                    name="MAX_DATASET_SIZE_BYTES",
+                    default=PARQUET_AND_INFO_MAX_DATASET_SIZE_BYTES,
                 ),
                 max_row_group_byte_size_for_copy=env.int(
-                    name="MAX_ROW_GROUP_BYTE_SIZE_FOR_COPY", default=PARQUET_AND_INFO_MAX_ROW_GROUP_BYTE_SIZE_FOR_COPY
+                    name="MAX_ROW_GROUP_BYTE_SIZE_FOR_COPY",
+                    default=PARQUET_AND_INFO_MAX_ROW_GROUP_BYTE_SIZE_FOR_COPY,
                 ),
-                source_revision=env.str(name="SOURCE_REVISION", default=PARQUET_AND_INFO_SOURCE_REVISION),
-                target_revision=env.str(name="TARGET_REVISION", default=PARQUET_AND_INFO_TARGET_REVISION),
-                url_template=env.str(name="URL_TEMPLATE", default=PARQUET_AND_INFO_URL_TEMPLATE),
+                source_revision=env.str(
+                    name="SOURCE_REVISION", default=PARQUET_AND_INFO_SOURCE_REVISION
+                ),
+                target_revision=env.str(
+                    name="TARGET_REVISION", default=PARQUET_AND_INFO_TARGET_REVISION
+                ),
+                url_template=env.str(
+                    name="URL_TEMPLATE", default=PARQUET_AND_INFO_URL_TEMPLATE
+                ),
             )
 
 
@@ -299,13 +361,20 @@ class DescriptiveStatisticsConfig:
     @classmethod
     def from_env(cls) -> "DescriptiveStatisticsConfig":
         env = Env(expand_vars=True)
-        parquet_revision = env.str(name="PARQUET_AND_INFO_TARGET_REVISION", default=PARQUET_AND_INFO_TARGET_REVISION)
+        parquet_revision = env.str(
+            name="PARQUET_AND_INFO_TARGET_REVISION",
+            default=PARQUET_AND_INFO_TARGET_REVISION,
+        )
         with env.prefixed("DESCRIPTIVE_STATISTICS_"):
             return cls(
-                cache_directory=env.str(name="CACHE_DIRECTORY", default=DESCRIPTIVE_STATISTICS_CACHE_DIRECTORY),
+                cache_directory=env.str(
+                    name="CACHE_DIRECTORY",
+                    default=DESCRIPTIVE_STATISTICS_CACHE_DIRECTORY,
+                ),
                 parquet_revision=parquet_revision,
                 max_split_size_bytes=env.int(
-                    name="MAX_SPLIT_SIZE_BYTES", default=DESCRIPTIVE_STATISTICS_MAX_SPLIT_SIZE_BYTES
+                    name="MAX_SPLIT_SIZE_BYTES",
+                    default=DESCRIPTIVE_STATISTICS_MAX_SPLIT_SIZE_BYTES,
                 ),
             )
 
@@ -327,9 +396,15 @@ class AppConfig:
     split_names: SplitNamesConfig = field(default_factory=SplitNamesConfig)
     worker: WorkerConfig = field(default_factory=WorkerConfig)
     urls_scan: OptInOutUrlsScanConfig = field(default_factory=OptInOutUrlsScanConfig)
-    presidio_scan: PresidioEntitiesScanConfig = field(default_factory=PresidioEntitiesScanConfig)
-    parquet_metadata: ParquetMetadataConfig = field(default_factory=ParquetMetadataConfig)
-    descriptive_statistics: DescriptiveStatisticsConfig = field(default_factory=DescriptiveStatisticsConfig)
+    presidio_scan: PresidioEntitiesScanConfig = field(
+        default_factory=PresidioEntitiesScanConfig
+    )
+    parquet_metadata: ParquetMetadataConfig = field(
+        default_factory=ParquetMetadataConfig
+    )
+    descriptive_statistics: DescriptiveStatisticsConfig = field(
+        default_factory=DescriptiveStatisticsConfig
+    )
     committer: CommitterConfig = field(default_factory=CommitterConfig)
 
     @classmethod
