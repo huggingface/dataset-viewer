@@ -44,9 +44,7 @@ from libcommon.storage_client import StorageClient
 
 @dataclass
 class CacheStatus:
-    cache_has_different_git_revision: dict[str, ArtifactState] = field(
-        default_factory=dict
-    )
+    cache_has_different_git_revision: dict[str, ArtifactState] = field(default_factory=dict)
     cache_is_outdated_by_parent: dict[str, ArtifactState] = field(default_factory=dict)
     cache_is_empty: dict[str, ArtifactState] = field(default_factory=dict)
     cache_is_error_to_retry: dict[str, ArtifactState] = field(default_factory=dict)
@@ -55,17 +53,11 @@ class CacheStatus:
 
     def as_response(self) -> dict[str, list[str]]:
         return {
-            "cache_has_different_git_revision": sorted(
-                self.cache_has_different_git_revision.keys()
-            ),
-            "cache_is_outdated_by_parent": sorted(
-                self.cache_is_outdated_by_parent.keys()
-            ),
+            "cache_has_different_git_revision": sorted(self.cache_has_different_git_revision.keys()),
+            "cache_is_outdated_by_parent": sorted(self.cache_is_outdated_by_parent.keys()),
             "cache_is_empty": sorted(self.cache_is_empty.keys()),
             "cache_is_error_to_retry": sorted(self.cache_is_error_to_retry.keys()),
-            "cache_is_job_runner_obsolete": sorted(
-                self.cache_is_job_runner_obsolete.keys()
-            ),
+            "cache_is_job_runner_obsolete": sorted(self.cache_is_job_runner_obsolete.keys()),
             "up_to_date": sorted(self.up_to_date.keys()),
         }
 
@@ -184,9 +176,7 @@ class DeleteWaitingJobsTask(Task):
             method="DeleteWaitingJobsTask.run",
             step="all",
         ):
-            num_deleted_waiting_jobs = Queue().delete_waiting_jobs_by_job_id(
-                job_ids=self.jobs_df["job_id"].tolist()
-            )
+            num_deleted_waiting_jobs = Queue().delete_waiting_jobs_by_job_id(job_ids=self.jobs_df["job_id"].tolist())
             logging.debug(f"{num_deleted_waiting_jobs} waiting jobs were deleted.")
             return TasksStatistics(num_deleted_waiting_jobs=num_deleted_waiting_jobs)
 
@@ -211,11 +201,7 @@ class DeleteDatasetWaitingJobsTask(Task):
             method="DeleteDatasetWaitingJobsTask.run",
             step="all",
         ):
-            return TasksStatistics(
-                num_deleted_waiting_jobs=Queue().delete_dataset_waiting_jobs(
-                    dataset=self.dataset
-                )
-            )
+            return TasksStatistics(num_deleted_waiting_jobs=Queue().delete_dataset_waiting_jobs(dataset=self.dataset))
 
 
 @dataclass
@@ -238,9 +224,7 @@ class DeleteDatasetCacheEntriesTask(Task):
             method="DeleteDatasetCacheEntriesTask.run",
             step="all",
         ):
-            return TasksStatistics(
-                num_deleted_cache_entries=delete_dataset_responses(dataset=self.dataset)
-            )
+            return TasksStatistics(num_deleted_cache_entries=delete_dataset_responses(dataset=self.dataset))
 
 
 @dataclass
@@ -360,9 +344,7 @@ class DeleteDatasetStorageTask(Task):
             step="all",
         ):
             return TasksStatistics(
-                num_deleted_storage_directories=self.storage_client.delete_dataset_directory(
-                    self.dataset
-                )
+                num_deleted_storage_directories=self.storage_client.delete_dataset_directory(self.dataset)
             )
 
 
@@ -435,16 +417,12 @@ class Plan:
         return sorted(task.id for task in self.tasks)
 
 
-def get_num_bytes_from_config_infos(
-    dataset: str, config: str, split: Optional[str] = None
-) -> Optional[int]:
+def get_num_bytes_from_config_infos(dataset: str, config: str, split: Optional[str] = None) -> Optional[int]:
     try:
         resp = get_response(kind=CONFIG_INFO_KIND, dataset=dataset, config=config)
     except CachedArtifactNotFoundError:
         return None
-    if "dataset_info" in resp["content"] and isinstance(
-        resp["content"]["dataset_info"], dict
-    ):
+    if "dataset_info" in resp["content"] and isinstance(resp["content"]["dataset_info"], dict):
         dataset_info = resp["content"]["dataset_info"]
         if split is None:
             num_bytes = dataset_info.get("dataset_size")
@@ -490,16 +468,10 @@ class AfterJobPlan(Plan):
         split = self.job_info["params"]["split"]
         job_type = self.job_info["type"]
         try:
-            processing_step = self.processing_graph.get_processing_step_by_job_type(
-                job_type
-            )
-            next_processing_steps = self.processing_graph.get_children(
-                processing_step.name
-            )
+            processing_step = self.processing_graph.get_processing_step_by_job_type(job_type)
+            next_processing_steps = self.processing_graph.get_children(processing_step.name)
         except ProcessingStepDoesNotExist as e:
-            raise ValueError(
-                f"Processing step with job type: {job_type} does not exist"
-            ) from e
+            raise ValueError(f"Processing step with job type: {job_type} does not exist") from e
 
         if len(next_processing_steps) == 0:
             # no next processing step, nothing to do
@@ -507,9 +479,7 @@ class AfterJobPlan(Plan):
 
         # get the dataset infos to estimate difficulty
         if config is not None:
-            self.num_bytes = get_num_bytes_from_config_infos(
-                dataset=self.dataset, config=config, split=split
-            )
+            self.num_bytes = get_num_bytes_from_config_infos(dataset=self.dataset, config=config, split=split)
         else:
             self.num_bytes = None
 
@@ -517,10 +487,7 @@ class AfterJobPlan(Plan):
         # note that it can contain a lot of unrelated jobs, we will clean after
         self.pending_jobs_df = Queue().get_pending_jobs_df(
             dataset=self.dataset,
-            job_types=[
-                next_processing_step.job_type
-                for next_processing_step in next_processing_steps
-            ],
+            job_types=[next_processing_step.job_type for next_processing_step in next_processing_steps],
         )
 
         self.job_infos_to_create: list[JobInfo] = []
@@ -533,24 +500,15 @@ class AfterJobPlan(Plan):
                 # same level, one job is expected
                 # D -> D, C -> C, S -> S
                 self.update(next_processing_step, config, split)
-            elif (
-                processing_step.input_type in ["config", "split"]
-                and next_processing_step.input_type == "dataset"
-            ):
+            elif processing_step.input_type in ["config", "split"] and next_processing_step.input_type == "dataset":
                 # going to upper level (fan-in), one job is expected
                 # S -> D, C -> D
                 self.update(next_processing_step, None, None)
-            elif (
-                processing_step.input_type == "split"
-                and next_processing_step.input_type == "config"
-            ):
+            elif processing_step.input_type == "split" and next_processing_step.input_type == "config":
                 # going to upper level (fan-in), one job is expected
                 # S -> C
                 self.update(next_processing_step, config, None)
-            elif (
-                processing_step.input_type == "dataset"
-                and next_processing_step.input_type == "config"
-            ):
+            elif processing_step.input_type == "dataset" and next_processing_step.input_type == "config":
                 # going to lower level (fan-out), one job is expected per config, we need the list of configs
                 # D -> C
                 if config_names is None:
@@ -563,10 +521,7 @@ class AfterJobPlan(Plan):
                     )  # Note that we use the cached content even the revision is different (ie. maybe obsolete)
                 for config_name in config_names:
                     self.update(next_processing_step, config_name, None)
-            elif (
-                processing_step.input_type == "config"
-                and next_processing_step.input_type == "split"
-            ):
+            elif processing_step.input_type == "config" and next_processing_step.input_type == "split":
                 # going to lower level (fan-out), one job is expected per split, we need the list of splits
                 # C -> S
                 if split_names is None:
@@ -601,22 +556,14 @@ class AfterJobPlan(Plan):
     ) -> None:
         # ignore unrelated jobs
         config_mask = (
-            self.pending_jobs_df["config"].isnull()
-            if config is None
-            else self.pending_jobs_df["config"] == config
+            self.pending_jobs_df["config"].isnull() if config is None else self.pending_jobs_df["config"] == config
         )
         split_mask = (
-            self.pending_jobs_df["split"].isnull()
-            if split is None
-            else self.pending_jobs_df["split"] == split
+            self.pending_jobs_df["split"].isnull() if split is None else self.pending_jobs_df["split"] == split
         )
 
-        unrelated_jobs_mask = (
-            self.pending_jobs_df["type"] == next_processing_step.job_type
-        ) & (
-            (self.pending_jobs_df["dataset"] != self.dataset)
-            | (~config_mask)
-            | (~split_mask)
+        unrelated_jobs_mask = (self.pending_jobs_df["type"] == next_processing_step.job_type) & (
+            (self.pending_jobs_df["dataset"] != self.dataset) | (~config_mask) | (~split_mask)
         )
         self.pending_jobs_df = self.pending_jobs_df[~unrelated_jobs_mask]
 
@@ -633,11 +580,7 @@ class AfterJobPlan(Plan):
         else:
             # no pending job for the current processing step
             difficulty = next_processing_step.difficulty
-            if (
-                self.num_bytes is not None
-                and self.num_bytes
-                >= self.processing_graph.min_bytes_for_bonus_difficulty
-            ):
+            if self.num_bytes is not None and self.num_bytes >= self.processing_graph.min_bytes_for_bonus_difficulty:
                 difficulty += next_processing_step.bonus_difficulty_if_dataset_is_big
             # increase difficulty according to number of failed runs
             difficulty = min(DEFAULT_DIFFICULTY_MAX, difficulty)
@@ -774,9 +717,7 @@ class DatasetBackfillPlan(Plan):
             `list[ArtifactState]`: the artifact states for the step
         """
         if processing_step.input_type == "dataset":
-            artifact_states = [
-                self.dataset_state.artifact_state_by_step[processing_step.name]
-            ]
+            artifact_states = [self.dataset_state.artifact_state_by_step[processing_step.name]]
         elif processing_step.input_type == "config":
             if config is None:
                 artifact_states = [
@@ -815,9 +756,7 @@ class DatasetBackfillPlan(Plan):
             raise ValueError(f"Invalid input type: {processing_step.input_type}")
         artifact_states_ids = {artifact_state.id for artifact_state in artifact_states}
         if len(artifact_states_ids) != len(artifact_states):
-            raise ValueError(
-                f"Duplicate artifact states for processing_step {processing_step}"
-            )
+            raise ValueError(f"Duplicate artifact states for processing_step {processing_step}")
         return artifact_states
 
     def _get_cache_status(self) -> CacheStatus:
@@ -835,21 +774,15 @@ class DatasetBackfillPlan(Plan):
             for artifact_state in artifact_states:
                 # any of the parents is more recent?
                 if any(
-                    artifact_state.cache_state.is_older_than(
-                        parent_artifact_state.cache_state
-                    )
-                    for parent_step in self.processing_graph.get_parents(
-                        processing_step.name
-                    )
+                    artifact_state.cache_state.is_older_than(parent_artifact_state.cache_state)
+                    for parent_step in self.processing_graph.get_parents(processing_step.name)
                     for parent_artifact_state in self._get_artifact_states_for_step(
                         processing_step=parent_step,
                         config=artifact_state.config,
                         split=artifact_state.split,
                     )
                 ):
-                    cache_status.cache_is_outdated_by_parent[artifact_state.id] = (
-                        artifact_state
-                    )
+                    cache_status.cache_is_outdated_by_parent[artifact_state.id] = artifact_state
                     continue
 
                 # is empty?
@@ -859,25 +792,17 @@ class DatasetBackfillPlan(Plan):
 
                 # is an error that can be retried?
                 if artifact_state.cache_state.is_error_to_retry():
-                    cache_status.cache_is_error_to_retry[artifact_state.id] = (
-                        artifact_state
-                    )
+                    cache_status.cache_is_error_to_retry[artifact_state.id] = artifact_state
                     continue
 
                 # was created with an obsolete version of the job runner?
                 if artifact_state.cache_state.is_job_runner_obsolete():
-                    cache_status.cache_is_job_runner_obsolete[artifact_state.id] = (
-                        artifact_state
-                    )
+                    cache_status.cache_is_job_runner_obsolete[artifact_state.id] = artifact_state
                     continue
 
                 # has a different git revision from the dataset current revision?
-                if artifact_state.cache_state.is_git_revision_different_from(
-                    self.revision
-                ):
-                    cache_status.cache_has_different_git_revision[artifact_state.id] = (
-                        artifact_state
-                    )
+                if artifact_state.cache_state.is_git_revision_different_from(self.revision):
+                    cache_status.cache_has_different_git_revision[artifact_state.id] = artifact_state
                     continue
 
                 # ok
@@ -895,9 +820,7 @@ class DatasetBackfillPlan(Plan):
             in_process={
                 artifact_state.id
                 for processing_step in processing_steps
-                for artifact_state in self._get_artifact_states_for_step(
-                    processing_step
-                )
+                for artifact_state in self._get_artifact_states_for_step(processing_step)
                 if artifact_state.job_state.is_in_process
             }
         )
@@ -915,9 +838,7 @@ class DatasetBackfillPlan(Plan):
 
         @lru_cache
         def is_big(config: str) -> bool:
-            num_bytes = get_num_bytes_from_config_infos(
-                dataset=self.dataset, config=config
-            )
+            num_bytes = get_num_bytes_from_config_infos(dataset=self.dataset, config=config)
             if num_bytes is None:
                 return False
             else:
@@ -927,14 +848,10 @@ class DatasetBackfillPlan(Plan):
             valid_pending_jobs_df = artifact_state.job_state.valid_pending_jobs_df
             if valid_pending_jobs_df.empty:
                 difficulty = artifact_state.processing_step.difficulty
-                if isinstance(artifact_state.config, str) and is_big(
-                    config=artifact_state.config
-                ):
+                if isinstance(artifact_state.config, str) and is_big(config=artifact_state.config):
                     difficulty += artifact_state.processing_step.bonus_difficulty_if_dataset_is_big
                 if artifact_state.cache_state.cache_entry_metadata is not None:
-                    failed_runs = artifact_state.cache_state.cache_entry_metadata[
-                        "failed_runs"
-                    ]
+                    failed_runs = artifact_state.cache_state.cache_entry_metadata["failed_runs"]
                 else:
                     failed_runs = 0
                 # increase difficulty according to number of failed runs
@@ -958,9 +875,7 @@ class DatasetBackfillPlan(Plan):
                     }
                 )
             else:
-                pending_jobs_to_delete_df.drop(
-                    valid_pending_jobs_df.index, inplace=True
-                )
+                pending_jobs_to_delete_df.drop(valid_pending_jobs_df.index, inplace=True)
         # Better keep this order: delete, then create
         # Note that all the waiting jobs for other revisions will be deleted
         # The started jobs are ignored, for now.
@@ -1008,8 +923,7 @@ class SmartDatasetUpdatePlan(Plan):
     def __post_init__(self) -> None:
         super().__post_init__()
         cache_kinds = [
-            processing_step.cache_kind
-            for processing_step in self.processing_graph.get_first_processing_steps()
+            processing_step.cache_kind for processing_step in self.processing_graph.get_first_processing_steps()
         ]
         # Try to be robust to a burst of webhooks or out-of-order webhooks
         # by waiting up to 2 seconds for a coherent state
@@ -1019,18 +933,14 @@ class SmartDatasetUpdatePlan(Plan):
                 cache_kinds=cache_kinds,
             )
             if len(cache_entries_df) == 0:
-                raise SmartUpdateImpossibleBecauseCacheIsEmpty(
-                    f"Failed to smart update to {self.revision[:7]}"
-                )
+                raise SmartUpdateImpossibleBecauseCacheIsEmpty(f"Failed to smart update to {self.revision[:7]}")
             cached_git_revisions = cache_entries_df["dataset_git_revision"].unique()
             if len(cached_git_revisions) > 1:
                 raise SmartUpdateImpossibleBecauseCacheHasMultipleRevisions(
                     f"Expected only 1 revision in the cache but got {len(cached_git_revisions)}: "
                     + ", ".join(cached_git_revisions)
                 )
-            self.cached_revision = cache_entries_df.sort_values("updated_at").iloc[-1][
-                "dataset_git_revision"
-            ]
+            self.cached_revision = cache_entries_df.sort_values("updated_at").iloc[-1]["dataset_git_revision"]
             if self.cached_revision == self.revision:
                 return
             elif self.cached_revision == self.old_revision:
@@ -1053,12 +963,8 @@ class SmartDatasetUpdatePlan(Plan):
             ".gitattributes",
             ".gitignore",
         }:  # TODO: maybe support .huggingface.yaml later
-            raise SmartUpdateImpossibleBecauseOfUpdatedFiles(
-                ", ".join(self.files_impacted_by_commit)[:1000]
-            )
-        self.updated_yaml_fields_in_dataset_card = (
-            self.get_updated_yaml_fields_in_dataset_card()
-        )
+            raise SmartUpdateImpossibleBecauseOfUpdatedFiles(", ".join(self.files_impacted_by_commit)[:1000])
+        self.updated_yaml_fields_in_dataset_card = self.get_updated_yaml_fields_in_dataset_card()
 
         for yaml_field in YAML_FIELDS_TO_CHECK:
             if yaml_field in self.updated_yaml_fields_in_dataset_card:
@@ -1088,8 +994,7 @@ class SmartDatasetUpdatePlan(Plan):
     def get_diff(self) -> str:
         headers = build_hf_headers(token=self.hf_token, library_name="dataset-viewer")
         resp = get_session().get(
-            self.hf_endpoint
-            + f"/api/datasets/{self.dataset}/compare/{self.revision}^..{self.revision}",
+            self.hf_endpoint + f"/api/datasets/{self.dataset}/compare/{self.revision}^..{self.revision}",
             timeout=10,
             headers=headers,
         )
@@ -1102,9 +1007,7 @@ class SmartDatasetUpdatePlan(Plan):
 
     def get_impacted_files(self) -> set[str]:
         return set(
-            line.split(" ", 2)[2]
-            if line.startswith("rename ")
-            else line.split("/", 1)[1]
+            line.split(" ", 2)[2] if line.startswith("rename ") else line.split("/", 1)[1]
             for line in self.diff.split("\n")
             if line.startswith("--- a/")
             or line.startswith("+++ b/")
@@ -1140,10 +1043,8 @@ class SmartDatasetUpdatePlan(Plan):
             old_dataset_card_data_dict = {}
         return [
             yaml_field
-            for yaml_field in set(dataset_card_data_dict)
-            | set(old_dataset_card_data_dict)
-            if dataset_card_data_dict.get(yaml_field)
-            != old_dataset_card_data_dict.get(yaml_field)
+            for yaml_field in set(dataset_card_data_dict) | set(old_dataset_card_data_dict)
+            if dataset_card_data_dict.get(yaml_field) != old_dataset_card_data_dict.get(yaml_field)
         ]
 
 
@@ -1169,21 +1070,13 @@ class DatasetRemovalPlan(Plan):
         self.add_task(DeleteDatasetCacheEntriesTask(dataset=self.dataset))
         if self.storage_clients:
             for storage_client in self.storage_clients:
-                self.add_task(
-                    DeleteDatasetStorageTask(
-                        dataset=self.dataset, storage_client=storage_client
-                    )
-                )
+                self.add_task(DeleteDatasetStorageTask(dataset=self.dataset, storage_client=storage_client))
         if self.committer_hf_token:
             self.add_task(
-                DeleteDatasetParquetRefBranchTask(
-                    dataset=self.dataset, committer_hf_token=self.committer_hf_token
-                )
+                DeleteDatasetParquetRefBranchTask(dataset=self.dataset, committer_hf_token=self.committer_hf_token)
             )
             self.add_task(
-                DeleteDatasetDuckdbRefBranchTask(
-                    dataset=self.dataset, committer_hf_token=self.committer_hf_token
-                )
+                DeleteDatasetDuckdbRefBranchTask(dataset=self.dataset, committer_hf_token=self.committer_hf_token)
             )
 
 
@@ -1294,9 +1187,7 @@ def smart_set_revision(
         hf_endpoint=hf_endpoint,
         hf_token=hf_token,
     )
-    logging.info(
-        f"Applying smart_set_revision plan on {dataset}: plan={plan.as_response()}"
-    )
+    logging.info(f"Applying smart_set_revision plan on {dataset}: plan={plan.as_response()}")
     return plan.run()
 
 
@@ -1363,13 +1254,9 @@ def finish_job(
     output = job_result["output"]
     params = job_info["params"]
     try:
-        processing_step = processing_graph.get_processing_step_by_job_type(
-            job_info["type"]
-        )
+        processing_step = processing_graph.get_processing_step_by_job_type(job_info["type"])
     except ProcessingStepDoesNotExist as e:
-        raise ValueError(
-            f"Processing step for job type {job_info['type']} does not exist"
-        ) from e
+        raise ValueError(f"Processing step for job type {job_info['type']} does not exist") from e
 
     try:
         previous_response = get_response_metadata(
@@ -1409,9 +1296,7 @@ def finish_job(
         # ^ change the priority of children jobs if the priority was updated during the job
     logging.debug("the job has been finished.")
     # trigger the next steps
-    plan = AfterJobPlan(
-        job_info=job_info, processing_graph=processing_graph, failed_runs=failed_runs
-    )
+    plan = AfterJobPlan(job_info=job_info, processing_graph=processing_graph, failed_runs=failed_runs)
     statistics = plan.run()
     logging.debug("jobs have been created for the next steps.")
     return statistics
@@ -1447,9 +1332,7 @@ def has_pending_ancestor_jobs(
     """
     processing_step = processing_graph.get_processing_step(processing_step_name)
     ancestors = processing_graph.get_ancestors(processing_step_name)
-    job_types = [ancestor.job_type for ancestor in ancestors] + [
-        processing_step.job_type
-    ]
+    job_types = [ancestor.job_type for ancestor in ancestors] + [processing_step.job_type]
     logging.debug(f"looking at ancestor jobs of {processing_step_name}: {job_types}")
     # check if a pending job exists for the artifact or one of its ancestors
     # note that we cannot know if the ancestor is really for the artifact (ie: ancestor is for config1,
@@ -1459,10 +1342,7 @@ def has_pending_ancestor_jobs(
 
 
 def get_revision(dataset: str) -> Optional[str]:
-    cache_kinds = [
-        processing_step.cache_kind
-        for processing_step in processing_graph.get_first_processing_steps()
-    ]
+    cache_kinds = [processing_step.cache_kind for processing_step in processing_graph.get_first_processing_steps()]
     cache_entries = get_cache_entries_df(
         dataset=dataset,
         cache_kinds=cache_kinds,
@@ -1471,10 +1351,7 @@ def get_revision(dataset: str) -> Optional[str]:
         revision := cache_entries["dataset_git_revision"][0], str
     ):
         return revision
-    job_types = [
-        processing_step.job_type
-        for processing_step in processing_graph.get_first_processing_steps()
-    ]
+    job_types = [processing_step.job_type for processing_step in processing_graph.get_first_processing_steps()]
     pending_jobs = (
         Queue()
         .get_pending_jobs_df(
@@ -1483,8 +1360,6 @@ def get_revision(dataset: str) -> Optional[str]:
         )
         .to_dict(orient="list")
     )
-    if pending_jobs.get("revision") and isinstance(
-        revision := pending_jobs["revision"][0], str
-    ):
+    if pending_jobs.get("revision") and isinstance(revision := pending_jobs["revision"][0], str):
         return revision
     return None
