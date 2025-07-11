@@ -33,7 +33,7 @@ def get_croissant_crumbs_from_dataset_infos(
     to get the complete Croissant JSON-LD metadata.
     """
     repo_name = "repo"
-    names: set[str] = set(repo_name)
+    ids: set[str] = set(repo_name)
     distribution = [
         _remove_none_values(
             {
@@ -110,7 +110,7 @@ def get_croissant_crumbs_from_dataset_infos(
         for column, feature in features.items():
             fields_names: set[str] = set()
             field_name = f"{record_set_name}/{escape_ids(column, fields_names)}"
-            field = feature_to_croissant_field(distribution_name, field_name, column, feature)
+            field = feature_to_croissant_field(distribution_name, field_name, column, feature, ids)
             if field:
                 fields.append(field)
             else:
