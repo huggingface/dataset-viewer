@@ -947,7 +947,7 @@ def test_get_datasets_with_last_updated_kind(entries: list[Entry], expected_data
     # ^ the order is not meaningful, so we sort to make the test deterministic
 
 
-def test_get_previous_step_or_raise_success():
+def test_get_previous_step_or_raise_success() -> None:
     kind = CACHE_KIND
     dataset = DATASET_NAME
     config = "test_config"
@@ -972,7 +972,7 @@ def test_get_previous_step_or_raise_success():
         delete_response(kind=kind, dataset=dataset, config=config, split=split)
 
 
-def test_get_previous_step_or_raise_not_found():
+def test_get_previous_step_or_raise_not_found() -> None:
     kind = "missing_kind"
     dataset = "missing_dataset"
     config = "missing_config"
@@ -983,7 +983,7 @@ def test_get_previous_step_or_raise_not_found():
         get_previous_step_or_raise(kind=kind, dataset=dataset, config=config, split=split)
 
 
-def test_get_previous_step_or_raise_error_status():
+def test_get_previous_step_or_raise_error_status() -> None:
     kind = CACHE_KIND
     dataset = "error_dataset"
     config = "error_config"
