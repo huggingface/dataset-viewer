@@ -2,13 +2,14 @@
 # Copyright 2024 The HuggingFace Authors.
 
 
-from typing import Any
+from typing import Any, Set
 from unittest.mock import patch
 
 import pytest
 from datasets import List, Value
 
 from libcommon.croissant_utils import (
+    escape_ids,
     escape_jsonpath_key,
     feature_to_croissant_field,
     truncate_features_from_croissant_crumbs_response,
@@ -32,6 +33,24 @@ def test_truncate_features_from_croissant_crumbs_response(num_columns: int) -> N
     else:
         assert len(content["recordSet"][0]["field"]) == 2
         assert "max number of columns reached" in content["recordSet"][0]["description"]
+
+
+@pytest.mark.parametrize(
+    "id_to_escape, ids, expected_id",
+    [
+        ("valid_id", {"other", "other2"}, "valid_id"),
+        ("id with spaces", set(), "id_with_spaces"),
+        ("a/b/c", set(), "a_b_c"),
+        ("a/b/c", {"a_b_c"}, "a_b_c_0"),
+        ("a/b/c", {"a_b_c", "a_b_c_0"}, "a_b_c_0_0"),
+        ("a@#$b", set(), "a___b"),
+        ("", set(), ""),
+        ("", {""}, "_0"),
+    ],
+)
+def test_escape_ids(id_to_escape: str, ids: Set[str], expected_id: str) -> None:
+    """Tests the expected_id function with various inputs."""
+    assert escape_ids(id_to_escape, ids=ids.copy()) == expected_id
 
 
 @pytest.mark.parametrize(
