@@ -7,7 +7,6 @@ from typing import Any, Optional, Union
 
 from datasets import ClassLabel, Image, LargeList, List, Value
 
-
 NAME_PATTERN_REGEX = "[^a-zA-Z0-9\\-_\\.]"
 
 
