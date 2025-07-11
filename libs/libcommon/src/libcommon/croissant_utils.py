@@ -88,12 +88,12 @@ HF_TO_CROISSANT_VALUE_TYPE = {
 
 def escape_jsonpath_key(feature_name: str) -> str:
     """Escape single quotes and brackets in the feature name so that it constitutes a valid JSONPath."""
-    if "/" in feature_name or "'" in feature_name or "]" in feature_name or "[" in feature_name:
-        escaped_name = re.sub(r"(?<!\\)'", r"\'", feature_name)
-        escaped_name = re.sub(r"(?<!\\)\[", r"\[", escaped_name)
-        escaped_name = re.sub(r"(?<!\\)\]", r"\]", escaped_name)
-        return f"['{escaped_name}']"
-    return feature_name
+    if re.match(r'^[a-zA-Z0-9_]+$', feature_name):
+        return feature_name
+    escaped_name = re.sub(r"(?<!\\)'", r"\'", feature_name)
+    escaped_name = re.sub(r"(?<!\\)\[", r"\[", escaped_name)
+    escaped_name = re.sub(r"(?<!\\)\]", r"\]", escaped_name)
+    return f"['{escaped_name}']"
 
 
 def get_source(
