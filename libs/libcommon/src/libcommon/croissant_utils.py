@@ -115,9 +115,9 @@ def feature_to_croissant_field(
     field_name: str,
     column: str,
     feature: Any,
+    existing_ids: list[str],
     add_transform: bool = False,
     json_path: Optional[list[str]] = None,
-    existing_ids: Optional[list[str]] = None,
 ) -> Union[dict[str, Any], None]:
     """Converts a Hugging Face Datasets feature to a Croissant field or None if impossible."""
     if isinstance(feature, Value) and feature.dtype in HF_TO_CROISSANT_VALUE_TYPE:
