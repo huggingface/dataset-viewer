@@ -8,6 +8,29 @@ from typing import Any, Optional, Union
 from datasets import ClassLabel, Image, LargeList, List, Value
 
 
+NAME_PATTERN_REGEX = "[^a-zA-Z0-9\\-_\\.]"
+
+
+def escape_ids(id_to_escape: str, ids: set[str]) -> str:
+    """Escapes IDs and names in Croissant.
+
+    Reasons:
+    - `/` are used in the syntax as delimiters. So we replace them.
+    - Two FileObject/FileSet/RecordSet/Fields cannot have the same ID. So we append a postfix in case it happens.
+
+    Args:
+        id_to_escape: The initial non-escaped ID.
+        ids: The set of already existing IDs.
+    Returns:
+        `str`: The escaped name.
+    """
+    escaped_id = re.sub(NAME_PATTERN_REGEX, "_", id_to_escape)
+    while escaped_id in ids:
+        escaped_id = f"{escaped_id}_0"
+    ids.add(escaped_id)
+    return escaped_id
+
+
 def get_record_set(dataset: str, config_name: str) -> str:
     # Identical keys are not supported in Croissant
     # The current workaround that is used in /croissant endpoint
@@ -94,6 +117,7 @@ def feature_to_croissant_field(
     feature: Any,
     add_transform: bool = False,
     json_path: Optional[list[str]] = None,
+    existing_ids: Optional[list[str]] = None,
 ) -> Union[dict[str, Any], None]:
     """Converts a Hugging Face Datasets feature to a Croissant field or None if impossible."""
     if isinstance(feature, Value) and feature.dtype in HF_TO_CROISSANT_VALUE_TYPE:
@@ -132,7 +156,7 @@ def feature_to_croissant_field(
             sub_json_path = json_path + [subfeature_jsonpath]
             f = feature_to_croissant_field(
                 distribution_name,
-                f"{field_name}/{subfeature_name}",
+                f"{field_name}/{escape_ids(subfeature_name, existing_ids)}",
                 column,
                 sub_feature,
                 add_transform=True,
