@@ -9,7 +9,7 @@ from typing import Any
 
 from datasets import Features
 from libcommon.constants import CROISSANT_MAX_CONFIGS
-from libcommon.croissant_utils import feature_to_croissant_field, get_record_set
+from libcommon.croissant_utils import escape_ids, feature_to_croissant_field, get_record_set
 from libcommon.exceptions import PreviousStepFormatError
 from libcommon.simple_cache import (
     get_previous_step_or_raise,
@@ -17,28 +17,6 @@ from libcommon.simple_cache import (
 
 from worker.dtos import CompleteJobResult
 from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
-
-NAME_PATTERN_REGEX = "[^a-zA-Z0-9\\-_\\.]"
-
-
-def _escape_name(name: str, names: set[str]) -> str:
-    """Escapes names and IDs in Croissant.
-
-    Reasons:
-    - `/` are used in the syntax as delimiters. So we replace them.
-    - Two FileObject/FileSet/RecordSet/Fields cannot have the same ID. So we append a postfix in case it happens.
-
-    Args:
-        name: The initial non-escaped name.
-        names: The set of already existing names.
-    Returns:
-        `str`: The escaped name.
-    """
-    escaped_name = re.sub(NAME_PATTERN_REGEX, "_", name)
-    while escaped_name in names:
-        escaped_name = f"{escaped_name}_0"
-    names.add(escaped_name)
-    return escaped_name
 
 
 def _remove_none_values(json: Mapping[str, Any]) -> Mapping[str, Any]:
@@ -76,7 +54,7 @@ def get_croissant_crumbs_from_dataset_infos(
         features = Features.from_dict(info["features"])
         fields: list[dict[str, Any]] = []
         splits = list(info["splits"])
-        distribution_name = _escape_name(f"parquet-files-for-config-{config}", names)
+        distribution_name = escape_ids(f"parquet-files-for-config-{config}", ids)
         distribution.append(
             _remove_none_values(
                 {
@@ -90,7 +68,7 @@ def get_croissant_crumbs_from_dataset_infos(
         )
         skipped_columns = []
         record_set_name = get_record_set(dataset=dataset, config_name=config)
-        record_set_name = _escape_name(record_set_name, names)
+        record_set_name = escape_ids(record_set_name, ids)
         # Add splits record set.
         split_record_set_name = f"{record_set_name}_splits"
         split_field = _remove_none_values(
@@ -131,7 +109,7 @@ def get_croissant_crumbs_from_dataset_infos(
         )
         for column, feature in features.items():
             fields_names: set[str] = set()
-            field_name = f"{record_set_name}/{_escape_name(column, fields_names)}"
+            field_name = f"{record_set_name}/{escape_ids(column, fields_names)}"
             field = feature_to_croissant_field(distribution_name, field_name, column, feature)
             if field:
                 fields.append(field)
