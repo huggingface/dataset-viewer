@@ -6,12 +6,11 @@
 import time
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager, suppress
-from typing import Any, Literal, Optional, TypedDict, Union
+from typing import Literal, Optional, TypedDict
 
 import pytest
 import requests
 from huggingface_hub import HfApi
-from huggingface_hub.hf_api import HfApi
 
 # see https://github.com/huggingface/moon-landing/blob/main/server/scripts/staging-seed-db.ts
 CI_HUB_USER = "DVUser"
@@ -59,6 +58,7 @@ def create_unique_repo_name(prefix: str, user: str) -> str:
     repo_name = f"{prefix}-{int(time.time() * 10e3)}"
     return f"{user}/{repo_name}"
 
+
 def create_hf_dataset_repo(
     hf_api: HfApi,
     hf_token: str,
@@ -78,6 +78,7 @@ def create_hf_dataset_repo(
             repo_type="dataset",
         )
     return repo_id
+
 
 # https://docs.pytest.org/en/6.2.x/fixture.html#yield-fixtures-recommended
 @pytest.fixture(scope="session", autouse=True)
