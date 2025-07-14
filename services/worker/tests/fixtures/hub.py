@@ -8,13 +8,12 @@ import time
 from collections.abc import Callable, Iterator, Mapping
 from contextlib import suppress
 from pathlib import Path
-from typing import Any, Literal, Optional, TypedDict, Union
+from typing import Any, Literal, Optional, TypedDict
 
 import pytest
 import requests
 from datasets import Dataset, Features, Value
 from huggingface_hub import HfApi
-from huggingface_hub.hf_api import HfApi
 from libcommon.viewer_utils.asset import DATASET_GIT_REVISION_PLACEHOLDER
 
 from ..constants import ASSETS_BASE_URL, CI_HUB_ENDPOINT, CI_URL_TEMPLATE, CI_USER, CI_USER_TOKEN
@@ -55,7 +54,7 @@ def create_hub_dataset_repo(
             )
     else:
         hf_api.create_repo(repo_id=repo_id, token=CI_USER_TOKEN, repo_type=DATASET, private=private)
-    
+
     if gated:
         HfApi(endpoint=CI_HUB_ENDPOINT).update_repo_settings(
             repo_id=repo_id,
@@ -63,7 +62,7 @@ def create_hub_dataset_repo(
             gated=gated,
             repo_type=DATASET,
         )
-        
+
     if file_paths is not None:
         for file_path in file_paths:
             hf_api.upload_file(
