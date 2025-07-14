@@ -5,17 +5,14 @@ import time
 from contextlib import suppress
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Optional, Union
+from typing import Optional
 
 import requests
 from huggingface_hub import HfApi
 from huggingface_hub.community import DiscussionComment, DiscussionWithDetails
 from huggingface_hub.constants import (
     REPO_TYPE_DATASET,
-    REPO_TYPES,
-    REPO_TYPES_URL_PREFIXES,
 )
-from huggingface_hub.hf_api import HfApi
 from libcommon.resources import Resource
 
 from .constants import (
@@ -36,6 +33,7 @@ def get_default_config_split() -> tuple[str, str]:
     config = "default"
     split = "train"
     return config, split
+
 
 def create_empty_hub_dataset_repo(
     *,
