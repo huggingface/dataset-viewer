@@ -178,18 +178,11 @@ def create_branch(dataset: str, target_revision: str, hf_api: HfApi, committer_h
         # Check if the target revision (branch) already exists
         if not revision_exists(dataset, target_revision):
             # If not, get the latest commit from the main branch (or current default)
-            initial_commit = hf_api.list_repo_commits(
-                repo_id=dataset,
-                repo_type=DATASET_TYPE
-            )[-1].commit_id
+            initial_commit = hf_api.list_repo_commits(repo_id=dataset, repo_type=DATASET_TYPE)[-1].commit_id
 
             # Create a new branch at the latest commit
             committer_hf_api.create_branch(
-                repo_id=dataset,
-                branch=target_revision,
-                repo_type=DATASET_TYPE,
-                revision=initial_commit,
-                exist_ok=True
+                repo_id=dataset, branch=target_revision, repo_type=DATASET_TYPE, revision=initial_commit, exist_ok=True
             )
     except RepositoryNotFoundError as err:
         raise DatasetNotFoundError("The dataset does not exist on the Hub (was deleted during job).") from err
