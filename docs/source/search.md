@@ -113,7 +113,7 @@ For example, here are the `features` and the slice 150-151 of matching `rows` of
       "name": "answers",
       "type": {
         "feature": { "dtype": "string", "_type": "Value" },
-        "_type": "Sequence"
+        "_type": "List"
       }
     },
     {

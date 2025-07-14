@@ -168,7 +168,7 @@ def compute_transformed_data(parquet_paths: list[Path], features: dict[str, Any]
     transformed_df = None
     for feature_name, feature in features.items():
         if isinstance(feature, list) or (
-            isinstance(feature, dict) and feature.get("_type") in ("LargeList", "Sequence")
+            isinstance(feature, dict) and feature.get("_type") in ("LargeList", "List", "Sequence")
         ):
             first_parquet_file = parquet_paths[0]
             if is_list_pa_type(first_parquet_file, feature_name):

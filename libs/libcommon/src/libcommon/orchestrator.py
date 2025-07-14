@@ -122,9 +122,12 @@ class Task(ABC):
         pass
 
 
+DEFAULT_JOB_INFOS: list[JobInfo] = []
+
+
 @dataclass
 class CreateJobsTask(Task):
-    job_infos: list[JobInfo] = field(default_factory=list)
+    job_infos: list[JobInfo] = field(default_factory=DEFAULT_JOB_INFOS.copy)
 
     def __post_init__(self) -> None:
         # for debug and testing
@@ -247,7 +250,9 @@ class DeleteDatasetParquetRefBranchTask(Task):
         ):
             try:
                 HfApi(token=self.committer_hf_token).delete_branch(
-                    repo_id=self.dataset, branch="refs/convert/parquet", repo_type="dataset"
+                    repo_id=self.dataset,
+                    branch="refs/convert/parquet",
+                    repo_type="dataset",
                 )
             except (RevisionNotFoundError, RepositoryNotFoundError):
                 return TasksStatistics(num_deleted_ref_branches=0)
@@ -277,7 +282,9 @@ class DeleteDatasetDuckdbRefBranchTask(Task):
         ):
             try:
                 HfApi(token=self.committer_hf_token).delete_branch(
-                    repo_id=self.dataset, branch="refs/convert/duckdb", repo_type="dataset"
+                    repo_id=self.dataset,
+                    branch="refs/convert/duckdb",
+                    repo_type="dataset",
                 )
             except (RevisionNotFoundError, RepositoryNotFoundError):
                 return TasksStatistics(num_deleted_ref_branches=0)
@@ -308,7 +315,9 @@ class UpdateRevisionOfDatasetCacheEntriesTask(Task):
         ):
             return TasksStatistics(
                 num_updated_cache_entries=update_revision_of_dataset_responses(
-                    dataset=self.dataset, old_revision=self.old_revision, new_revision=self.new_revision
+                    dataset=self.dataset,
+                    old_revision=self.old_revision,
+                    new_revision=self.new_revision,
                 )
             )
 
@@ -690,7 +699,10 @@ class DatasetBackfillPlan(Plan):
                 self._create_plan()
 
     def _get_artifact_states_for_step(
-        self, processing_step: ProcessingStep, config: Optional[str] = None, split: Optional[str] = None
+        self,
+        processing_step: ProcessingStep,
+        config: Optional[str] = None,
+        split: Optional[str] = None,
     ) -> list[ArtifactState]:
         """Get the artifact states for a step.
 
@@ -843,7 +855,10 @@ class DatasetBackfillPlan(Plan):
                 else:
                     failed_runs = 0
                 # increase difficulty according to number of failed runs
-                difficulty = min(DEFAULT_DIFFICULTY_MAX, difficulty + failed_runs * DIFFICULTY_BONUS_BY_FAILED_RUNS)
+                difficulty = min(
+                    DEFAULT_DIFFICULTY_MAX,
+                    difficulty + failed_runs * DIFFICULTY_BONUS_BY_FAILED_RUNS,
+                )
                 job_infos_to_create.append(
                     {
                         "job_id": "not used",
@@ -960,7 +975,9 @@ class SmartDatasetUpdatePlan(Plan):
         # so we let them finish and restart later.
         self.add_task(
             UpdateRevisionOfDatasetCacheEntriesTask(
-                dataset=self.dataset, old_revision=self.old_revision, new_revision=self.revision
+                dataset=self.dataset,
+                old_revision=self.old_revision,
+                new_revision=self.revision,
             )
         )
         if self.storage_clients:
@@ -1004,7 +1021,11 @@ class SmartDatasetUpdatePlan(Plan):
         fs = HfFileSystem(endpoint=self.hf_endpoint, token=self.hf_token)
         try:
             with fs.open(
-                f"datasets/{self.dataset}/README.md", revision=self.revision, mode="r", newline="", encoding="utf-8"
+                f"datasets/{self.dataset}/README.md",
+                revision=self.revision,
+                mode="r",
+                newline="",
+                encoding="utf-8",
             ) as f:
                 dataset_card_data_dict = DatasetCard(f.read()).data.to_dict()
         except FileNotFoundError:  # catch file not found but raise on parsing error
@@ -1060,7 +1081,9 @@ class DatasetRemovalPlan(Plan):
 
 
 def remove_dataset(
-    dataset: str, storage_clients: Optional[list[StorageClient]] = None, committer_hf_token: Optional[str] = None
+    dataset: str,
+    storage_clients: Optional[list[StorageClient]] = None,
+    committer_hf_token: Optional[str] = None,
 ) -> TasksStatistics:
     """
     Remove the dataset from the dataset viewer
@@ -1073,7 +1096,11 @@ def remove_dataset(
     Returns:
         `TasksStatistics`: The statistics of the deletion.
     """
-    plan = DatasetRemovalPlan(dataset=dataset, storage_clients=storage_clients, committer_hf_token=committer_hf_token)
+    plan = DatasetRemovalPlan(
+        dataset=dataset,
+        storage_clients=storage_clients,
+        committer_hf_token=committer_hf_token,
+    )
     return plan.run()
     # assets and cached_assets are deleted by the storage clients
     # parquet and duckdb indexes are deleted using committer_hf_token if present
@@ -1233,7 +1260,10 @@ def finish_job(
 
     try:
         previous_response = get_response_metadata(
-            kind=processing_step.cache_kind, dataset=params["dataset"], config=params["config"], split=params["split"]
+            kind=processing_step.cache_kind,
+            dataset=params["dataset"],
+            config=params["config"],
+            split=params["split"],
         )
         failed_runs = (
             previous_response["failed_runs"] + 1
@@ -1273,7 +1303,9 @@ def finish_job(
 
 
 def has_pending_ancestor_jobs(
-    dataset: str, processing_step_name: str, processing_graph: ProcessingGraph = processing_graph
+    dataset: str,
+    processing_step_name: str,
+    processing_graph: ProcessingGraph = processing_graph,
 ) -> bool:
     """
     Check if the processing steps, or one of their ancestors, have a pending job, ie. if artifacts could exist

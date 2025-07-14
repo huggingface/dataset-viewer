@@ -10,7 +10,7 @@ ENV PYTHONFAULTHANDLER=1 \
     PIP_DEFAULT_TIMEOUT=100 \
     POETRY_NO_INTERACTION=1 \
     # Versions:
-    POETRY_VERSION=1.8.2 \
+    POETRY_VERSION=2.1.3 \
     POETRY_VIRTUALENVS_IN_PROJECT=true \
     PATH="$PATH:/root/.local/bin"
 
@@ -26,7 +26,7 @@ COPY jobs/cache_maintenance/poetry.lock ./jobs/cache_maintenance/poetry.lock
 COPY jobs/cache_maintenance/pyproject.toml ./jobs/cache_maintenance/pyproject.toml
 COPY libs/libcommon ./libs/libcommon
 WORKDIR /src/jobs/cache_maintenance/
-RUN poetry install --no-cache
+RUN poetry install --no-cache --no-root
 COPY jobs/cache_maintenance/src ./src
 RUN poetry install --no-cache
 

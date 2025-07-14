@@ -18,11 +18,14 @@ squad_info = {
         "context": {"dtype": "string", "_type": "Value"},
         "question": {"dtype": "string", "_type": "Value"},
         "answers": {
-            "feature": {
-                "text": {"dtype": "string", "_type": "Value"},
-                "answer_start": {"dtype": "int32", "_type": "Value"},
+            "text": {
+                "feature": {"dtype": "string", "_type": "Value"},
+                "_type": "List",
             },
-            "_type": "Sequence",
+            "answer_start": {
+                "feature": {"dtype": "int32", "_type": "Value"},
+                "_type": "List",
+            },
         },
     },
     "task_templates": [{"task": "question-answering-extractive"}],
@@ -148,6 +151,9 @@ def test_get_croissant_crumbs_from_dataset_infos() -> None:
                     assert sub_field["source"]["fileSet"]["@id"]
                     assert "extract" in sub_field["source"]
                     assert "transform" in sub_field["source"]
+                    if "answer_start" in sub_field["@id"]:
+                        assert sub_field["isArray"] is True
+                        assert sub_field["arrayShape"] == "-1"
             if field["@id"].endswith("split"):
                 assert "regex" in field["source"]["transform"]
                 assert field["source"]["extract"]["fileProperty"] == "fullpath"

@@ -19,7 +19,7 @@ from datasets import (
     Dataset,
     Features,
     Image,
-    Sequence,
+    List,
     Translation,
     TranslationVariableLanguages,
     Value,
@@ -86,12 +86,23 @@ def datasets() -> Mapping[str, Dataset]:
         "dict": other({"a": 0}, None),
         "list": other([{"a": 0}], None),
         "sequence_simple": other([0], None),
-        "sequence": other([{"a": 0}], Sequence(feature={"a": Value(dtype="int64")})),
+        "sequence": other([{"a": 0}], List({"a": Value(dtype="int64")})),
         "array2d": other(np.zeros((2, 2), dtype="float32"), Array2D(shape=(2, 2), dtype="float32")),
         "array3d": other(np.zeros((2, 2, 2), dtype="float32"), Array3D(shape=(2, 2, 2), dtype="float32")),
         "array4d": other(np.zeros((2, 2, 2, 2), dtype="float32"), Array4D(shape=(2, 2, 2, 2), dtype="float32")),
         "array5d": other(np.zeros((2, 2, 2, 2, 2), dtype="float32"), Array5D(shape=(2, 2, 2, 2, 2), dtype="float32")),
-        "audio": other({"array": [0.1, 0.2, 0.3], "sampling_rate": sampling_rate}, Audio(sampling_rate=sampling_rate)),
+        "audio": other(
+            str(
+                Path(__file__).resolve().parent.parent.parent.parent.parent
+                / "libs"
+                / "libcommon"
+                / "tests"
+                / "viewer_utils"
+                / "data"
+                / "test_audio_16000.mp3"
+            ),
+            Audio(sampling_rate=sampling_rate),
+        ),
         "image": other(str(Path(__file__).resolve().parent / "data" / "test_image_rgb.jpg"), Image()),
         "translation": other({"en": "the cat", "fr": "le chat"}, Translation(languages=["en", "fr"])),
         "translation_variable_languages": other(
@@ -103,28 +114,28 @@ def datasets() -> Mapping[str, Dataset]:
                 str(Path(__file__).resolve().parent / "data" / "test_image_rgb.jpg"),
                 str(Path(__file__).resolve().parent / "data" / "test_image_rgb.jpg"),
             ],
-            [Image()],
+            List(Image()),
         ),
         "audios_list": other(
             [
-                {"array": [0.1, 0.2, 0.3], "sampling_rate": 16_000},
-                {"array": [0.1, 0.2, 0.3], "sampling_rate": 16_000},
+                str(Path(__file__).resolve().parent.parent / "viewer_utils" / "data" / "test_audio_16000.mp3"),
+                str(Path(__file__).resolve().parent.parent / "viewer_utils" / "data" / "test_audio_16000.mp3"),
             ],
-            [Audio()],
+            List(Audio()),
         ),
         "images_sequence": other(
             [
                 str(Path(__file__).resolve().parent / "data" / "test_image_rgb.jpg"),
                 str(Path(__file__).resolve().parent / "data" / "test_image_rgb.jpg"),
             ],
-            Sequence(feature=Image()),
+            List(feature=Image()),
         ),
         "audios_sequence": other(
             [
-                {"array": [0.1, 0.2, 0.3], "sampling_rate": 16_000},
-                {"array": [0.1, 0.2, 0.3], "sampling_rate": 16_000},
+                str(Path(__file__).resolve().parent.parent / "viewer_utils" / "data" / "test_audio_16000.mp3"),
+                str(Path(__file__).resolve().parent.parent / "viewer_utils" / "data" / "test_audio_16000.mp3"),
             ],
-            Sequence(feature=Audio()),
+            List(feature=Audio()),
         ),
         "dict_of_audios_and_images": other(
             {
@@ -135,15 +146,15 @@ def datasets() -> Mapping[str, Dataset]:
                 ],
                 "c": {
                     "ca": [
-                        {"array": [0.1, 0.2, 0.3], "sampling_rate": 16_000},
-                        {"array": [0.1, 0.2, 0.3], "sampling_rate": 16_000},
+                        str(Path(__file__).resolve().parent.parent / "viewer_utils" / "data" / "test_audio_16000.mp3"),
+                        str(Path(__file__).resolve().parent.parent / "viewer_utils" / "data" / "test_audio_16000.mp3"),
                     ]
                 },
             },
-            {"a": Value(dtype="int64"), "b": [Image()], "c": {"ca": [Audio()]}},
+            {"a": Value(dtype="int64"), "b": List(Image()), "c": {"ca": List(Audio())}},
         ),
         "sequence_of_dicts": other(
-            [{"a": {"b": 0}}, {"a": {"b": 1}}], Sequence(feature={"a": {"b": Value(dtype="int64")}})
+            [{"a": {"b": 0}}, {"a": {"b": 1}}], List(feature={"a": {"b": Value(dtype="int64")}})
         ),
         "none_value": other({"a": None}, {"a": Value(dtype="int64")}),
         "big": Dataset.from_pandas(
@@ -197,24 +208,16 @@ def datasets() -> Mapping[str, Dataset]:
                     [1, 2, 3, 4, 5],
                 ],
                 "list_all_null": null_column(5),
-                "sequence_list": [
-                    [1],
-                    [1, 2],
-                    None,
-                    [1, 2, 3, 4],
-                    [1, 2, 3, 4, 5],
-                ],
-                "sequence_list_all_null": null_column(5),
-                "sequence_struct": [
+                "list_struct": [
                     [],
                     [{"author": "cat", "likes": 5}],
                     [{"author": "cat", "likes": 5}, {"author": "cat", "likes": 5}],
                     [{"author": "cat", "likes": 5}, {"author": "cat", "likes": 5}, {"author": "cat", "likes": 5}],
                     None,
                 ],
-                "audio": audio_dataset["audio"] + [None],
+                "audio": list(audio_dataset["audio"]) + [None],
                 "audio_all_null": null_column(5),
-                "image": image_dataset["image"] + [None],
+                "image": list(image_dataset["image"]) + [None],
                 "image_all_null": null_column(5),
             },
             features=Features(
@@ -222,11 +225,9 @@ def datasets() -> Mapping[str, Dataset]:
                     "text": Value(dtype="string"),
                     "text_all_null": Value(dtype="string"),
                     "column with spaces": Value(dtype="string"),
-                    "list": [Value(dtype="int32")],
-                    "list_all_null": [Value(dtype="int32")],
-                    "sequence_list": Sequence(Value(dtype="int32")),
-                    "sequence_list_all_null": Sequence(Value(dtype="int32")),
-                    "sequence_struct": Sequence({"author": Value("string"), "likes": Value("int32")}),
+                    "list": List(Value(dtype="int32")),
+                    "list_all_null": List(Value(dtype="int32")),
+                    "list_struct": List({"author": Value("string"), "likes": Value("int32")}),
                     "audio": Audio(sampling_rate=1600, decode=False),
                     "audio_all_null": Audio(sampling_rate=1600, decode=False),
                     "image": Image(decode=False),
