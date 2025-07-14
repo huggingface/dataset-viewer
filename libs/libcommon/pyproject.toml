@@ -9,7 +9,7 @@ license = "Apache-2.0"
 python = "3.9.18"
 appdirs = "^1.4.4"
 cryptography = "^43.0.1"
-datasets = {git = "https://github.com/huggingface/datasets.git", rev = "da1db8a5b89fc0badaa0f571b36e122e52ae8c61", extras = ["audio", "vision"]}
+datasets = {git = "https://github.com/huggingface/datasets.git", rev = "c4bdfe84586d3789a9db9cde06e1f054043d5569", extras = ["audio", "vision"]}
 duckdb = "^1.2.2"
 environs = "^9.5.0"
 filelock = "^3.18.0"
@@ -23,7 +23,7 @@ orjson = "^3.9.15"
 pandas = "^2.2.0"
 pdfplumber = ">=0.11.4"
 pillow = "^10.3.0"
-polars = "^1.27.0"
+polars = "^1.27.1"
 psutil = "^5.9.4"
 pyarrow = "15.0.2"
 pymongoarrow = "^1.3.0"
@@ -34,6 +34,13 @@ pytz = "^2020.1"
 s3fs = "2024.3.1"  # Aligned with fsspec[s3] version
 soundfile = ">=0.12.1"
 starlette-prometheus = "^0.9.0"
+torch = [
+    { url = "https://download.pytorch.org/whl/cpu/torch-2.7.1%2Bcpu-cp39-cp39-manylinux_2_28_x86_64.whl", markers = "sys_platform == 'linux' and platform_machine != 'aarch64'"},
+    { url = "https://download.pytorch.org/whl/cpu/torch-2.7.1%2Bcpu-cp39-cp39-manylinux_2_28_x86_64.whl", markers = "sys_platform == 'darwin' and platform_machine != 'arm64'"},
+    { url = "https://download.pytorch.org/whl/cpu/torch-2.7.1-cp39-none-macosx_11_0_arm64.whl", markers = "sys_platform == 'darwin' and platform_machine == 'arm64'"},
+    { url = "https://download.pytorch.org/whl/cpu/torch-2.7.1%2Bcpu-cp39-cp39-manylinux_2_28_aarch64.whl", markers = "sys_platform == 'linux' and platform_machine == 'aarch64'"},
+]
+torchcodec = "0.4.0"
 tqdm = "^4.66.3"
 
 [tool.poetry.group.dev.dependencies]
@@ -83,7 +90,8 @@ module = [
     "moto.*",
     "aiobotocore.*",
     "requests.*",
-    "dateutil.*"
+    "dateutil.*",
+    "torchcodec.*"
 ]
 ignore_missing_imports = true
 

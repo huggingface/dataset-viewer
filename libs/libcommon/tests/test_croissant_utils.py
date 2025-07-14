@@ -6,7 +6,7 @@ from typing import Any
 from unittest.mock import patch
 
 import pytest
-from datasets import Sequence, Value
+from datasets import List, Value
 
 from libcommon.croissant_utils import (
     escape_jsonpath_key,
@@ -63,7 +63,7 @@ def test_escape_jsonpath_key(feature_name: str, expected_output: str) -> None:
             },
         ),
         (
-            Sequence(Value(dtype="int32")),
+            List(Value(dtype="int32")),
             {
                 "@type": "cr:Field",
                 "@id": "field_name",
@@ -74,7 +74,7 @@ def test_escape_jsonpath_key(feature_name: str, expected_output: str) -> None:
             },
         ),
         (
-            Sequence(Sequence(Value(dtype="int32"), length=3)),
+            List(List(Value(dtype="int32"), length=3)),
             {
                 "@type": "cr:Field",
                 "@id": "field_name",
@@ -85,18 +85,7 @@ def test_escape_jsonpath_key(feature_name: str, expected_output: str) -> None:
             },
         ),
         (
-            [Value(dtype="int32")],
-            {
-                "@type": "cr:Field",
-                "@id": "field_name",
-                "dataType": "cr:Int32",
-                "source": {"fileSet": {"@id": "distribution_name"}, "extract": {"column": "column_name"}},
-                "isArray": True,
-                "arrayShape": "-1",
-            },
-        ),
-        (
-            [{"sub-field": {"sub-sub-field": Value(dtype="int32")}}],
+            List({"sub-field": {"sub-sub-field": Value(dtype="int32")}}),
             {
                 "@type": "cr:Field",
                 "@id": "field_name",

@@ -10,7 +10,7 @@ ENV PYTHONFAULTHANDLER=1 \
     PIP_DEFAULT_TIMEOUT=100 \
     POETRY_NO_INTERACTION=1 \
     # Versions:
-    POETRY_VERSION=1.8.2 \
+    POETRY_VERSION=2.1.3 \
     POETRY_VIRTUALENVS_IN_PROJECT=true \
     PATH="$PATH:/root/.local/bin"
 
@@ -27,7 +27,7 @@ COPY services/api/pyproject.toml ./services/api/pyproject.toml
 COPY libs/libcommon ./libs/libcommon
 COPY libs/libapi ./libs/libapi
 WORKDIR /src/services/api/
-RUN poetry install --no-cache
+RUN poetry install --no-cache --no-root
 COPY services/api/src ./src
 RUN poetry install --no-cache
 

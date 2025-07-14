@@ -385,6 +385,9 @@
             "$ref": "#/components/schemas/ListFeature"
           },
           {
+            "$ref": "#/components/schemas/LegacyListFeature"
+          },
+          {
             "$ref": "#/components/schemas/AudioFeature"
           },
           {
@@ -523,6 +526,19 @@
           }
         }
       },
+      "ListFeature": {
+        "type": "object",
+        "required": ["_type", "feature"],
+        "properties": {
+          "_type": {
+            "type": "string",
+            "enum": ["List"]
+          },
+          "feature": {
+            "$ref": "#/components/schemas/Feature"
+          }
+        }
+      },
       "LargeListFeature": {
         "type": "object",
         "required": ["_type", "feature"],
@@ -542,7 +558,7 @@
           "$ref": "#/components/schemas/Feature"
         }
       },
-      "ListFeature": {
+      "LegacyListFeature": {
         "type": "array",
         "items": {
           "$ref": "#/components/schemas/Feature"
@@ -2204,7 +2220,7 @@
                               "dtype": "float32",
                               "_type": "Value"
                             },
-                            "_type": "Sequence"
+                            "_type": "List"
                           }
                         },
                         {
@@ -2215,7 +2231,7 @@
                               "dtype": "uint64",
                               "_type": "Value"
                             },
-                            "_type": "Sequence"
+                            "_type": "List"
                           }
                         },
                         {
@@ -2227,9 +2243,9 @@
                                 "dtype": "float32",
                                 "_type": "Value"
                               },
-                              "_type": "Sequence"
+                              "_type": "List"
                             },
-                            "_type": "Sequence"
+                            "_type": "List"
                           }
                         },
                         {
@@ -4258,7 +4274,7 @@
                         "question": { "dtype": "string", "_type": "Value" },
                         "answers": {
                           "feature": { "dtype": "string", "_type": "Value" },
-                          "_type": "Sequence"
+                          "_type": "List"
                         },
                         "no_answer": { "dtype": "bool", "_type": "Value" }
                       },

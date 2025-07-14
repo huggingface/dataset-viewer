@@ -64,7 +64,7 @@ The endpoint response is a JSON with the `dataset_info` key. Its structure and c
       "question": { "dtype": "string", "_type": "Value" },
       "answers": {
         "feature": { "dtype": "string", "_type": "Value" },
-        "_type": "Sequence"
+        "_type": "List"
       },
       "no_answer": { "dtype": "bool", "_type": "Value" }
     },

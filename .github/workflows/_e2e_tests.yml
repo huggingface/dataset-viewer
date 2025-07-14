@@ -6,7 +6,7 @@ on:
   workflow_call:
 env:
   python-version: 3.9.18
-  poetry-version: "1.8.2"
+  poetry-version: "2.1.3"
   # required to get access to use a cached poetry venv in "/home/runner/.cache/pypoetry/virtualenvs"
   POETRY_VIRTUALENVS_IN_PROJECT: false
   working-directory: e2e

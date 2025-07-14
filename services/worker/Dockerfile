@@ -10,7 +10,7 @@ ENV PYTHONFAULTHANDLER=1 \
     PIP_DEFAULT_TIMEOUT=100 \
     POETRY_NO_INTERACTION=1 \
     # Versions:
-    POETRY_VERSION=1.8.2 \
+    POETRY_VERSION=2.1.3 \
     POETRY_VIRTUALENVS_IN_PROJECT=true \
     PATH="$PATH:/root/.local/bin"
 
@@ -28,7 +28,7 @@ COPY services/worker/pyproject.toml ./services/worker/pyproject.toml
 COPY libs/libcommon ./libs/libcommon
 
 WORKDIR /src/services/worker/
-RUN poetry install --no-cache
+RUN poetry install --no-cache --no-root
 COPY services/worker/src ./src
 RUN poetry install --no-cache
 RUN poetry run python -m spacy download en_core_web_lg

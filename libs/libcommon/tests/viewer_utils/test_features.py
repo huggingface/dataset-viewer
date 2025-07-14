@@ -10,7 +10,7 @@ from unittest.mock import patch
 import boto3
 import pytest
 from aiobotocore.response import StreamingBody
-from datasets import Audio, Features, Image, Pdf, Value
+from datasets import Audio, Features, Image, List, Pdf, Value
 from moto import mock_s3
 from urllib3._collections import HTTPHeaderDict  # type: ignore
 
@@ -107,10 +107,10 @@ def test_get_supported_unsupported_columns() -> None:
         {
             "audio1": Audio(),
             "audio2": Audio(sampling_rate=16_000),
-            "audio3": [Audio()],
+            "audio3": List(Audio()),
             "image1": Image(),
             "image2": Image(decode=False),
-            "image3": [Image()],
+            "image3": List(Image()),
             "string": Value("string"),
             "binary": Value("binary"),
             "pdf": Pdf(),

@@ -6,7 +6,7 @@ from http import HTTPStatus
 from typing import Any
 
 import pytest
-from datasets import Features, Image, Sequence, Value
+from datasets import Features, Image, List, Value
 from libcommon.dtos import Priority
 from libcommon.exceptions import PreviousStepFormatError
 from libcommon.resources import CacheMongoResource, QueueMongoResource
@@ -42,7 +42,7 @@ image_text_features = Features({"image": Image(), "caption": Value("string")})
 tabular_features = Features({"col1": Value("int8"), "col2": Value("float32")})
 not_tabular_features_1 = Features({"col1": Value("int8"), "col2": Value("float32"), "image": Image()})
 not_tabular_features_2 = Features({"col1": Value("int8"), "col2": Value("string")})
-time_series_features = Features({"window": Sequence(Value("float32")), "target": Value("float32")})
+time_series_features = Features({"window": List(Value("float32")), "target": Value("float32")})
 
 UPSTREAM_RESPONSE_INFO_TEXT: UpstreamResponse = UpstreamResponse(
     kind="dataset-info",
