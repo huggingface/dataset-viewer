@@ -5,7 +5,7 @@ import re
 from collections.abc import Mapping
 from typing import Any, Optional, Union
 
-from datasets import ClassLabel, Image, LargeList, List, Value, Date
+from datasets import ClassLabel, Date, Image, LargeList, List, Value
 
 
 def get_record_set(dataset: str, config_name: str) -> str:
