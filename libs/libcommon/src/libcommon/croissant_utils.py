@@ -8,6 +8,7 @@ from typing import Any, Optional, Union
 from datasets import ClassLabel, Image, LargeList, List, Value
 
 NAME_PATTERN_REGEX = "[^a-zA-Z0-9\\-_\\.]"
+JSONPATH_PATTERN_REGEX = re.compile(r'^[a-zA-Z0-9_]+$')
 
 
 def escape_ids(id_to_escape: str, ids: set[str]) -> str:
@@ -21,7 +22,7 @@ def escape_ids(id_to_escape: str, ids: set[str]) -> str:
         id_to_escape: The initial non-escaped ID.
         ids: The set of already existing IDs.
     Returns:
-        `str`: The escaped name.
+        `str`: The escaped, unique ID or name.
     """
     escaped_id = re.sub(NAME_PATTERN_REGEX, "_", id_to_escape)
     while escaped_id in ids:
@@ -88,7 +89,7 @@ HF_TO_CROISSANT_VALUE_TYPE = {
 
 def escape_jsonpath_key(feature_name: str) -> str:
     """Escape single quotes and brackets in the feature name so that it constitutes a valid JSONPath."""
-    if re.match(r'^[a-zA-Z0-9_]+$', feature_name):
+    if JSONPATH_PATTERN_REGEX.match(feature_name):
         return feature_name
     escaped_name = re.sub(r"(?<!\\)'", r"\'", feature_name)
     escaped_name = re.sub(r"(?<!\\)\[", r"\[", escaped_name)
