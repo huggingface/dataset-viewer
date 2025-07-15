@@ -8,7 +8,7 @@ from typing import Any, Optional, Union
 from datasets import ClassLabel, Image, LargeList, List, Value
 
 NAME_PATTERN_REGEX = "[^a-zA-Z0-9\\-_\\.]"
-JSONPATH_PATTERN_REGEX = re.compile(r'^[a-zA-Z0-9_]+$')
+JSONPATH_PATTERN_REGEX = re.compile(r"^[a-zA-Z0-9_]+$")
 
 
 def escape_ids(id_to_escape: str, ids: set[str]) -> str:
@@ -115,7 +115,7 @@ def feature_to_croissant_field(
     field_name: str,
     column: str,
     feature: Any,
-    existing_ids: list[str],
+    existing_ids: set[str],
     add_transform: bool = False,
     json_path: Optional[list[str]] = None,
 ) -> Union[dict[str, Any], None]:
