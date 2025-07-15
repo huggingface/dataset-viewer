@@ -947,8 +947,8 @@ vision = ["Pillow (>=9.4.0)"]
 [package.source]
 type = "git"
 url = "https://github.com/huggingface/datasets.git"
-reference = "c4bdfe84586d3789a9db9cde06e1f054043d5569"
-resolved_reference = "c4bdfe84586d3789a9db9cde06e1f054043d5569"
+reference = "8a4384dc9484ae9c3100f0fc594cd7773a5b8b44"
+resolved_reference = "8a4384dc9484ae9c3100f0fc594cd7773a5b8b44"
 
 [[package]]
 name = "defusedxml"
@@ -1676,7 +1676,7 @@ develop = true
 [package.dependencies]
 appdirs = "^1.4.4"
 cryptography = "^43.0.1"
-datasets = {git = "https://github.com/huggingface/datasets.git", rev = "c4bdfe84586d3789a9db9cde06e1f054043d5569", extras = ["audio", "vision"]}
+datasets = {git = "https://github.com/huggingface/datasets.git", rev = "8a4384dc9484ae9c3100f0fc594cd7773a5b8b44", extras = ["audio", "vision"]}
 duckdb = "^1.2.2"
 environs = "^9.5.0"
 filelock = "^3.18.0"
