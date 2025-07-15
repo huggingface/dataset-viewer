@@ -10,7 +10,6 @@
   {{ include "envS3" . | nindent 2 }}
   {{ include "envCache" . | nindent 2 }}
   {{ include "envCommon" . | nindent 2 }}
-  {{ include "envDatasetsBased" . | nindent 2 }}
   {{ include "envLog" . | nindent 2 }}
   {{ include "envNumba" . | nindent 2 }}
   {{ include "envParquetMetadata" . | nindent 2 }}

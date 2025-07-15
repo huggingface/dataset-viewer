@@ -16,6 +16,9 @@
   {{ include "envCommon" . | nindent 2 }}
   {{ include "envHf" . | nindent 2 }}
   {{ include "envLog" . | nindent 2 }}
+  - name: HF_HOME
+    value: "/tmp/hf"
+    # ^ensure the temporary files are created in /tmp, which is writable
   # service
   - name: API_MAX_AGE_LONG
     value: {{ .Values.search.maxAgeLong | quote }}
