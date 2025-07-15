@@ -5,7 +5,8 @@ import re
 from collections.abc import Mapping
 from typing import Any, Optional, Union
 
-from datasets import ClassLabel, Date, Image, LargeList, List, Value
+from datasets import ClassLabel, Image, LargeList, List, Value
+from datasets.features import Date
 
 
 def get_record_set(dataset: str, config_name: str) -> str:
