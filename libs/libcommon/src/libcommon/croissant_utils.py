@@ -5,7 +5,7 @@ import re
 from collections.abc import Mapping
 from typing import Any, Optional, Union
 
-from datasets import ClassLabel, Image, LargeList, List, Value
+from datasets import ClassLabel, Image, LargeList, List, Value, Date
 
 
 def get_record_set(dataset: str, config_name: str) -> str:
@@ -161,4 +161,20 @@ def feature_to_croissant_field(
             field["isArray"] = True
             field["arrayShape"] = ",".join([str(shape) if shape else "-1" for shape in array_shape])
             return field
+
+    elif isinstance(feature, Date):
+        # Infer dataType based on known format
+        if feature.format in ("%Y-%m-%d", "%Y.%m.%d"):
+            data_type = "sc:Date"
+        elif feature.format in ("%H:%M:%S",):
+            data_type = "sc:Time"
+        else:
+            data_type = "sc:DateTime"
+        return {
+            "@type": "cr:Field",
+            "@id": field_name,
+            "dataType": data_type,
+            "source": get_source(distribution_name, column, add_transform, json_path),
+        }
+
     return None
