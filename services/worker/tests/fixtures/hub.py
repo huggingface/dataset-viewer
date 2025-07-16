@@ -8,7 +8,7 @@ import time
 from collections.abc import Callable, Iterator, Mapping
 from contextlib import suppress
 from pathlib import Path
-from typing import Any, Literal, Optional, TypedDict
+from typing import Any, Literal, Optional, TypedDict, cast
 
 import pytest
 import requests
@@ -59,7 +59,7 @@ def create_hub_dataset_repo(
         HfApi(endpoint=CI_HUB_ENDPOINT).update_repo_settings(
             repo_id=repo_id,
             token=CI_USER_TOKEN,
-            gated=gated,
+            gated=cast(Literal["auto", "manual", False], gated),
             repo_type=DATASET,
         )
 
