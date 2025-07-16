@@ -5,7 +5,7 @@ import time
 from contextlib import suppress
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional
+from typing import Literal, Optional, cast
 
 import requests
 from huggingface_hub import HfApi
@@ -49,7 +49,7 @@ def create_empty_hub_dataset_repo(
         HfApi(endpoint=CI_HUB_ENDPOINT).update_repo_settings(
             repo_id=repo_id,
             token=CI_USER_TOKEN,
-            gated=gated,
+            gated=cast(Literal["auto", "manual", False], gated),
             repo_type=DATASET,
         )
     if file_paths is not None:
