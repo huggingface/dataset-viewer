@@ -159,6 +159,7 @@ def feature_to_croissant_field(
                 f"{field_name}/{escape_ids(subfeature_name, existing_ids)}",
                 column,
                 sub_feature,
+                existing_ids=existing_ids,
                 add_transform=True,
                 json_path=sub_json_path,
             )
@@ -179,7 +180,13 @@ def feature_to_croissant_field(
             array_shape.append(sub_feature.length)
             sub_feature = sub_feature.feature
         field = feature_to_croissant_field(
-            distribution_name, field_name, column, sub_feature, add_transform=True, json_path=json_path
+            distribution_name,
+            field_name,
+            column,
+            sub_feature,
+            existing_ids=existing_ids,
+            add_transform=True,
+            json_path=json_path,
         )
         if field:
             field["isArray"] = True

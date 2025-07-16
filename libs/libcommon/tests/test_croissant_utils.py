@@ -135,6 +135,8 @@ def test_escape_jsonpath_key(feature_name: str, expected_output: str) -> None:
 )
 def test_feature_to_croissant_field(hf_datasets_feature: Any, croissant_field: Any) -> None:
     assert (
-        feature_to_croissant_field("distribution_name", "field_name", "column_name", hf_datasets_feature, existing_ids=set())
+        feature_to_croissant_field(
+            "distribution_name", "field_name", "column_name", hf_datasets_feature, existing_ids=set()
+        )
         == croissant_field
     )
