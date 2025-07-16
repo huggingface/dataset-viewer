@@ -6,7 +6,7 @@
 import time
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager, suppress
-from typing import Literal, Optional, TypedDict
+from typing import Literal, Optional, TypedDict, cast
 
 import pytest
 import requests
@@ -74,7 +74,7 @@ def create_hf_dataset_repo(
         hf_api.update_repo_settings(
             repo_id=repo_id,
             token=hf_token,
-            gated=gated,
+            gated=cast(Literal["auto", "manual", False], gated),
             repo_type="dataset",
         )
     return repo_id
