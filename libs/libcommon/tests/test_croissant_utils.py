@@ -121,7 +121,7 @@ def test_escape_jsonpath_key(feature_name: str, expected_output: str) -> None:
                                 "source": {
                                     "fileSet": {"@id": "distribution_name"},
                                     "extract": {"column": "column_name"},
-                                    "transform": [{"jsonPath": "sub-field"}, {"jsonPath": "sub-sub-field"}],
+                                    "transform": [{"jsonPath": "['sub-field']"}, {"jsonPath": "['sub-sub-field']"}],
                                 },
                             }
                         ],
