@@ -5,7 +5,7 @@ import re
 from collections.abc import Mapping
 from typing import Any, Optional, Union
 
-from datasets import ClassLabel, Image, LargeList, List, Value
+from datasets import Audio, ClassLabel, Image, LargeList, List, Value
 
 NAME_PATTERN_REGEX = "[^a-zA-Z0-9\\-_\\.]"
 JSONPATH_PATTERN_REGEX = re.compile(r"^[a-zA-Z0-9_]+$")
