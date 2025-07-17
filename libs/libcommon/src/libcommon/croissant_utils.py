@@ -5,7 +5,7 @@ import re
 from collections.abc import Mapping
 from typing import Any, Optional, Union
 
-from datasets import ClassLabel, Image, LargeList, List, Value
+from datasets import Audio, ClassLabel, Image, LargeList, List, Value
 
 NAME_PATTERN_REGEX = "[^a-zA-Z0-9\\-_\\.]"
 JSONPATH_PATTERN_REGEX = re.compile(r"^[a-zA-Z0-9_]+$")
@@ -137,6 +137,16 @@ def feature_to_croissant_field(
             "@type": "cr:Field",
             "@id": field_name,
             "dataType": "sc:ImageObject",
+            "source": source,
+        }
+    elif isinstance(feature, Audio):
+        source = get_source(distribution_name, column, add_transform, json_path)
+        if sample_rate := feature.get("sampling_rate"):
+            source["sampling_rate"] = sample_rate
+        return {
+            "@type": "cr:Field",
+            "@id": field_name,
+            "dataType": "sc:AudioObject",
             "source": source,
         }
     elif isinstance(feature, ClassLabel):
