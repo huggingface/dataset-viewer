@@ -118,7 +118,7 @@ def feature_to_croissant_field(
     elif isinstance(feature, Audio):
         source = get_source(distribution_name, column, add_transform, json_path)
         if sample_rate := feature.get("sampling_rate"):
-            source["sample_rate"] = sample_rate
+            source["sampling_rate"] = sample_rate
         return {
             "@type": "cr:Field",
             "@id": field_name,
