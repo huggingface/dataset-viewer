@@ -115,6 +115,16 @@ def feature_to_croissant_field(
             "dataType": "sc:ImageObject",
             "source": source,
         }
+    elif isinstance(feature, Audio):
+        source = get_source(distribution_name, column, add_transform, json_path)
+        if sample_rate := feature.get("sampling_rate"):
+            source["sample_rate"] = sample_rate
+        return {
+            "@type": "cr:Field",
+            "@id": field_name,
+            "dataType": "sc:ImageObject",
+            "source": source,
+        }
     elif isinstance(feature, ClassLabel):
         return {
             "@type": "cr:Field",
