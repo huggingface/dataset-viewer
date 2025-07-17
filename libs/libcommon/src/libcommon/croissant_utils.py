@@ -146,7 +146,7 @@ def feature_to_croissant_field(
         return {
             "@type": "cr:Field",
             "@id": field_name,
-            "dataType": "sc:ImageObject",
+            "dataType": "sc:AudioObject",
             "source": source,
         }
     elif isinstance(feature, ClassLabel):
