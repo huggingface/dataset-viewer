@@ -5,17 +5,14 @@ import time
 from contextlib import suppress
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Optional, Union
+from typing import Literal, Optional, cast
 
 import requests
+from huggingface_hub import HfApi
 from huggingface_hub.community import DiscussionComment, DiscussionWithDetails
 from huggingface_hub.constants import (
     REPO_TYPE_DATASET,
-    REPO_TYPES,
-    REPO_TYPES_URL_PREFIXES,
 )
-from huggingface_hub.hf_api import HfApi
-from huggingface_hub.utils import hf_raise_for_status
 from libcommon.resources import Resource
 
 from .constants import (
@@ -38,74 +35,6 @@ def get_default_config_split() -> tuple[str, str]:
     return config, split
 
 
-def update_repo_settings(
-    *,
-    repo_id: str,
-    private: Optional[bool] = None,
-    gated: Optional[str] = None,
-    token: Optional[str] = None,
-    organization: Optional[str] = None,
-    repo_type: Optional[str] = None,
-    name: Optional[str] = None,
-) -> Any:
-    """Update the settings of a repository.
-    Args:
-        repo_id (`str`, *optional*):
-            A namespace (user or an organization) and a repo name separated
-            by a `/`.
-            <Tip>
-            Version added: 0.5
-            </Tip>
-        private (`bool`, *optional*):
-            Whether the repo should be private.
-        gated (`str`, *optional*):
-            Whether the repo should request user access.
-            Possible values are 'auto' and 'manual'
-        token (`str`, *optional*):
-            An authentication token (See https://huggingface.co/settings/token)
-        repo_type (`str`, *optional*):
-            Set to `"dataset"` or `"space"` if uploading to a dataset or
-            space, `None` or `"model"` if uploading to a model.
-
-    Raises:
-        [~`huggingface_hub.utils.RepositoryNotFoundError`]:
-            If the repository to download from cannot be found. This may be because it doesn't exist,
-            or because it is set to `private` and you do not have access.
-
-    Returns:
-        `Any`: The HTTP response in json.
-    """
-    if repo_type not in REPO_TYPES:
-        raise ValueError("Invalid repo type")
-
-    organization, name = repo_id.split("/") if "/" in repo_id else (None, repo_id)
-
-    if organization is None:
-        namespace = hf_api.whoami(token)["name"]
-    else:
-        namespace = organization
-
-    path_prefix = f"{hf_api.endpoint}/api/"
-    if repo_type in REPO_TYPES_URL_PREFIXES:
-        path_prefix += REPO_TYPES_URL_PREFIXES[repo_type]
-
-    path = f"{path_prefix}{namespace}/{name}/settings"
-
-    json: dict[str, Union[bool, str]] = {}
-    if private is not None:
-        json["private"] = private
-    if gated is not None:
-        json["gated"] = gated
-
-    r = requests.put(
-        path,
-        headers={"authorization": f"Bearer {token}"},
-        json=json,
-    )
-    hf_raise_for_status(r)
-    return r.json()
-
-
 def create_empty_hub_dataset_repo(
     *,
     prefix: str,
@@ -117,7 +46,12 @@ def create_empty_hub_dataset_repo(
     repo_id = f"{CI_USER}/{dataset_name}"
     hf_api.create_repo(repo_id=repo_id, token=CI_USER_TOKEN, repo_type=DATASET, private=private)
     if gated:
-        update_repo_settings(repo_id=repo_id, token=CI_USER_TOKEN, gated=gated, repo_type=DATASET)
+        HfApi(endpoint=CI_HUB_ENDPOINT).update_repo_settings(
+            repo_id=repo_id,
+            token=CI_USER_TOKEN,
+            gated=cast(Literal["auto", "manual", False], gated),
+            repo_type=DATASET,
+        )
     if file_paths is not None:
         for file_path in file_paths:
             hf_api.upload_file(
