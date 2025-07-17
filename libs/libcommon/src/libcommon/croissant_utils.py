@@ -7,6 +7,29 @@ from typing import Any, Optional, Union
 
 from datasets import ClassLabel, Image, LargeList, List, Value
 
+NAME_PATTERN_REGEX = "[^a-zA-Z0-9\\-_\\.]"
+JSONPATH_PATTERN_REGEX = re.compile(r"^[a-zA-Z0-9_]+$")
+
+
+def escape_ids(id_to_escape: str, ids: set[str]) -> str:
+    """Escapes IDs and names in Croissant.
+
+    Reasons:
+    - `/` are used in the syntax as delimiters. So we replace them.
+    - Two FileObject/FileSet/RecordSet/Fields cannot have the same ID. So we append a postfix in case it happens.
+
+    Args:
+        id_to_escape: The initial non-escaped ID.
+        ids: The set of already existing IDs.
+    Returns:
+        `str`: The escaped, unique ID or name.
+    """
+    escaped_id = re.sub(NAME_PATTERN_REGEX, "_", id_to_escape)
+    while escaped_id in ids:
+        escaped_id = f"{escaped_id}_0"
+    ids.add(escaped_id)
+    return escaped_id
+
 
 def get_record_set(dataset: str, config_name: str) -> str:
     # Identical keys are not supported in Croissant
@@ -66,12 +89,12 @@ HF_TO_CROISSANT_VALUE_TYPE = {
 
 def escape_jsonpath_key(feature_name: str) -> str:
     """Escape single quotes and brackets in the feature name so that it constitutes a valid JSONPath."""
-    if "/" in feature_name or "'" in feature_name or "]" in feature_name or "[" in feature_name:
-        escaped_name = re.sub(r"(?<!\\)'", r"\'", feature_name)
-        escaped_name = re.sub(r"(?<!\\)\[", r"\[", escaped_name)
-        escaped_name = re.sub(r"(?<!\\)\]", r"\]", escaped_name)
-        return f"['{escaped_name}']"
-    return feature_name
+    if JSONPATH_PATTERN_REGEX.match(feature_name):
+        return feature_name
+    escaped_name = re.sub(r"(?<!\\)'", r"\'", feature_name)
+    escaped_name = re.sub(r"(?<!\\)\[", r"\[", escaped_name)
+    escaped_name = re.sub(r"(?<!\\)\]", r"\]", escaped_name)
+    return f"['{escaped_name}']"
 
 
 def get_source(
@@ -92,6 +115,7 @@ def feature_to_croissant_field(
     field_name: str,
     column: str,
     feature: Any,
+    existing_ids: set[str],
     add_transform: bool = False,
     json_path: Optional[list[str]] = None,
 ) -> Union[dict[str, Any], None]:
@@ -142,9 +166,10 @@ def feature_to_croissant_field(
             sub_json_path = json_path + [subfeature_jsonpath]
             f = feature_to_croissant_field(
                 distribution_name,
-                f"{field_name}/{subfeature_name}",
+                f"{field_name}/{escape_ids(subfeature_name, existing_ids)}",
                 column,
                 sub_feature,
+                existing_ids=existing_ids,
                 add_transform=True,
                 json_path=sub_json_path,
             )
@@ -165,7 +190,13 @@ def feature_to_croissant_field(
             array_shape.append(sub_feature.length)
             sub_feature = sub_feature.feature
         field = feature_to_croissant_field(
-            distribution_name, field_name, column, sub_feature, add_transform=True, json_path=json_path
+            distribution_name,
+            field_name,
+            column,
+            sub_feature,
+            existing_ids=existing_ids,
+            add_transform=True,
+            json_path=json_path,
         )
         if field:
             field["isArray"] = True
