@@ -344,11 +344,11 @@ api:
       alb.ingress.kubernetes.io/group.name: "datasets-server-internal"
   resources:
     requests:
-      cpu: 4
-      memory: "14Gi"
+      cpu: "900m"
+      memory: "4Gi"
     limits:
-      cpu: 4
-      memory: "14Gi"
+      cpu: "1500m"
+      memory: "6Gi"
 
 rows:
   # Number of uvicorn workers for running the application
@@ -513,8 +513,8 @@ workers:
           targetWorkerSize: "medium"
     resources:
       requests:
-        cpu: 2
-        memory: "14Gi"
+        cpu: "1200m"
+        memory: "10Gi"
       limits:
         cpu: 2
         memory: "14Gi"
