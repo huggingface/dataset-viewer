@@ -82,9 +82,14 @@ HF_TO_CROISSANT_VALUE_TYPE = {
     "int64": "cr:Int64",
     "large_string": "sc:Text",
     "string": "sc:Text",
-    "time32": "sc:Date",
-    "time64": "sc:Date",
-    "timestamp[ns]": "sc:Date",
+    "time32[s]": "sc:Time",
+    "time32[ms]": "sc:Time",
+    "time64[us]": "sc:Time",
+    "time64[ns]": "sc:Time",
+    "timestamp[s]": "sc:DateTime",
+    "timestamp[ms]": "sc:DateTime",
+    "timestamp[us]": "sc:DateTime",
+    "timestamp[ns]": "sc:DateTime",
     "uint8": "cr:UInt8",
     "uint16": "cr:UInt16",
     "uint32": "cr:UInt32",
@@ -207,18 +212,5 @@ def feature_to_croissant_field(
             field["isArray"] = True
             field["arrayShape"] = ",".join([str(shape) if shape else "-1" for shape in array_shape])
             return field
-
-    elif Date is not None and isinstance(feature, Date):
-        if feature.format in ("%Y-%m-%d", "%Y.%m.%d"):
-            data_type = "sc:Date"
-        else:
-            data_type = "sc:DateTime"
-
-        return {
-            "@type": "cr:Field",
-            "@id": field_name,
-            "dataType": data_type,
-            "source": get_source(distribution_name, column, add_transform, json_path),
-        }
 
     return None
