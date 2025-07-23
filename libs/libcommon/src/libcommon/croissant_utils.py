@@ -7,11 +7,6 @@ from typing import Any, Optional, Union
 
 from datasets import Audio, ClassLabel, Image, LargeList, List, Value
 
-try:
-    from datasets.features import Date
-except ImportError:
-    Date = None
-
 NAME_PATTERN_REGEX = "[^a-zA-Z0-9\\-_\\.]"
 JSONPATH_PATTERN_REGEX = re.compile(r"^[a-zA-Z0-9_]+$")
 
@@ -82,6 +77,14 @@ HF_TO_CROISSANT_VALUE_TYPE = {
     "int64": "cr:Int64",
     "large_string": "sc:Text",
     "string": "sc:Text",
+    "time32[s]": "sc:Time",
+    "time32[ms]": "sc:Time",
+    "time64[us]": "sc:Time",
+    "time64[ns]": "sc:Time",
+    "timestamp[s]": "sc:DateTime",
+    "timestamp[ms]": "sc:DateTime",
+    "timestamp[us]": "sc:DateTime",
+    "timestamp[ns]": "sc:DateTime",
     "time32[s]": "sc:Time",
     "time32[ms]": "sc:Time",
     "time64[us]": "sc:Time",
