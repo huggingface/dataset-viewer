@@ -38,6 +38,10 @@ jobs:
         run: sudo apt update; sudo apt install -y ffmpeg libavcodec-extra libsndfile1
       - name: Env info
         run: poetry env info
+      - name: Env use and env info
+        run: |
+          poetry env use "${{ env.python-version }}"
+          poetry env info
       - name: Install dependencies
         # "poetry env use" is required: https://github.com/actions/setup-python/issues/374#issuecomment-1088938718
         run: |
