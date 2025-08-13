@@ -24,6 +24,13 @@ jobs:
         working-directory: ${{ inputs.working-directory }}
     runs-on: "ubuntu-latest"
     steps:
+      - name: Install virtualenv with specific version
+        # This is only a temporary fix to ensure compatibility with Poetry & virtualenv
+        # Relevant issues:
+        # - https://github.com/pypa/virtualenv/issues/2931
+        # - https://github.com/python-poetry/poetry/issues/10490
+        # - https://github.com/actions/setup-python/issues/1167
+        run: pip install virtualenv==20.32
       - uses: actions/checkout@v4
       - name: Install poetry
         run: pipx install poetry==${{ env.poetry-version }}
@@ -36,12 +43,6 @@ jobs:
             ${{ inputs.working-directory }}/poetry.lock
       - name: Install packages
         run: sudo apt update; sudo apt install -y ffmpeg libavcodec-extra libsndfile1
-      - name: Env info
-        run: poetry env info
-      - name: Env use and env info
-        run: |
-          poetry env use "${{ env.python-version }}"
-          poetry env info
       - name: Install dependencies
         # "poetry env use" is required: https://github.com/actions/setup-python/issues/374#issuecomment-1088938718
         run: |
