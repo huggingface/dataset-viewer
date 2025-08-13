@@ -25,6 +25,8 @@ jobs:
     runs-on: "ubuntu-latest"
     steps:
       - uses: actions/checkout@v4
+      - name: Install poetry
+        run: pipx install poetry==${{ env.poetry-version }}
       - name: Use Python
         uses: actions/setup-python@v5
         with:
@@ -32,10 +34,10 @@ jobs:
           cache: "poetry"
           cache-dependency-path: |
             ${{ inputs.working-directory }}/poetry.lock
-      - name: Install poetry
-        run: pip install poetry==${{ env.poetry-version }}
       - name: Install packages
         run: sudo apt update; sudo apt install -y ffmpeg libavcodec-extra libsndfile1
+      - name: Env info
+        run: poetry env info
       - name: Install dependencies
         # "poetry env use" is required: https://github.com/actions/setup-python/issues/374#issuecomment-1088938718
         run: |
