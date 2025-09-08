@@ -1,6 +1,9 @@
 import os
-from ._internal import PyDataset
+
 from huggingface_hub import hf_hub_download, list_repo_files
+
+from ._internal import PyDataset
+
 
 __all__ = ["Dataset"]
 
@@ -12,9 +15,9 @@ class Dataset(PyDataset):
     #     ...
     # ]
 
-    def from_hub(repo, metadata_store):
+    def from_hub(repo, metadata_store, revision=None):
         """Create a Dataset from Hugging Face Hub."""
-        repo_files = list_repo_files(repo, repo_type="dataset")
+        repo_files = list_repo_files(repo, repo_type="dataset", revision=revision)
 
         parquet_files = []
         for filename in repo_files:
@@ -31,12 +34,16 @@ class Dataset(PyDataset):
             raise ValueError(f"No parquet files found in the dataset '{repo}'.")
 
         return Dataset(
-            repo, parquet_files, data_store="hf://", metadata_store=metadata_store
+            repo,
+            parquet_files,
+            revision=revision,
+            data_store=f"hf://datasets/{repo}",
+            metadata_store=metadata_store,
         )
 
-    def from_cache(repo, metadata_store, download=False):
+    def from_cache(repo, metadata_store, revision=None, download=False):
         """Create a Dataset from HF local cache."""
-        repo_files = list_repo_files(repo, repo_type="dataset")
+        repo_files = list_repo_files(repo, repo_type="dataset", revision=revision)
 
         parquet_files = []
         for filename in repo_files:
@@ -57,5 +64,9 @@ class Dataset(PyDataset):
             raise ValueError(f"No parquet files found in the dataset '{repo}'.")
 
         return Dataset(
-            repo, parquet_files, data_store="file://", metadata_store=metadata_store
+            repo,
+            parquet_files,
+            revision=revision,
+            data_store="file://",
+            metadata_store=metadata_store,
         )

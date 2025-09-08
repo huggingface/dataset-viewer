@@ -58,15 +58,6 @@ impl ParquetScan {
         self.metadata.offset_index().is_some()
     }
 
-    fn max_row_group_size(&self) -> u64 {
-        self.metadata
-            .row_groups()
-            .iter()
-            .map(|rg| rg.compressed_size() as u64)
-            .max()
-            .unwrap_or(0)
-    }
-
     fn estimate_scan_size(&self) -> i64 {
         let mut scan_size = 0;
         let mut rows_to_skip = self.offset;
@@ -128,12 +119,21 @@ impl ParquetScan {
     }
 }
 
-fn store_from_uri(uri: &str, repo: &str) -> Result<Arc<dyn ObjectStore>, DatasetError> {
+fn store_from_uri(
+    uri: &str,
+    repo: &str,
+    revision: Option<&str>,
+) -> Result<Arc<dyn ObjectStore>, DatasetError> {
     let url = Url::parse(uri)?;
 
     if uri.starts_with("hf://") {
         // You can parse additional parameters from the URI if needed
         let builder = Huggingface::default().repo_type("dataset").repo_id(repo);
+        let builder = if let Some(rev) = revision {
+            builder.revision(rev)
+        } else {
+            builder
+        };
         let operator = Operator::new(builder)?.finish();
         return Ok(Arc::new(OpendalStore::new(operator)));
     } else {
@@ -146,13 +146,17 @@ fn store_from_uri(uri: &str, repo: &str) -> Result<Arc<dyn ObjectStore>, Dataset
 #[derive(Clone, Debug)]
 pub struct Dataset {
     /// The name of the dataset
-    name: String,
+    pub name: String,
     /// The parquet files in the dataset
-    files: Vec<IndexedFile>,
+    pub files: Vec<IndexedFile>,
+    /// Optional revision (branch, tag, commit) for the dataset
+    pub revision: Option<String>,
     /// The underlying object store for the dataset
     data_store: Arc<dyn ObjectStore>,
+    pub data_store_uri: String,
     /// The local metadata store for the dataset
     metadata_store: Arc<dyn ObjectStore>,
+    pub metadata_store_uri: String,
     /// Scan size limit for triggering indexing
     indexing_size_threshold: i64,
 }
@@ -161,6 +165,7 @@ impl Dataset {
     pub fn try_new(
         name: &str,
         files: Vec<IndexedFile>,
+        revision: Option<&str>,
         data_uri: &str,
         metadata_uri: &str,
         indexing_size_threshold: i64,
@@ -168,8 +173,11 @@ impl Dataset {
         Ok(Self {
             name: name.to_string(),
             files,
-            data_store: store_from_uri(data_uri, name)?,
-            metadata_store: store_from_uri(metadata_uri, name)?,
+            revision: revision.map(|s| s.to_string()),
+            data_store: store_from_uri(data_uri, name, revision)?,
+            data_store_uri: data_uri.to_string(),
+            metadata_store: store_from_uri(metadata_uri, name, revision)?,
+            metadata_store_uri: metadata_uri.to_string(),
             indexing_size_threshold,
         })
     }
@@ -266,7 +274,7 @@ impl Dataset {
         // 4. collect the record batches into a single vector
 
         let timer = std::time::Instant::now();
-        
+
         let plan = self.plan(limit, offset).await?;
         let files_to_index: Vec<IndexedFile> = plan
             .iter()
