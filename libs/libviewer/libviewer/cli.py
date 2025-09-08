@@ -7,6 +7,9 @@ from libviewer import Dataset
 @click.group()
 @click.argument("dataset", type=str, required=True)
 @click.option(
+    "--revision", "-r", type=str, default=None, help="The dataset revision to use"
+)
+@click.option(
     "--metadata-dir",
     "-m",
     default="data",
@@ -29,7 +32,7 @@ from libviewer import Dataset
     help="Whether to download the dataset files if loading from cache",
 )
 @click.pass_context
-def cli(ctx, dataset, metadata_dir, use_cache, download):
+def cli(ctx, dataset, revision, metadata_dir, use_cache, download):
     """Dataset Viewer with parquet page pruning"""
     ctx.ensure_object(dict)
     ctx.obj["dataset_name"] = dataset
@@ -39,28 +42,13 @@ def cli(ctx, dataset, metadata_dir, use_cache, download):
     if use_cache:
         print("Loading dataset from local cache...")
         ctx.obj["dataset"] = Dataset.from_cache(
-            dataset, metadata_store, download=download
+            dataset, metadata_store, revision=revision, download=download
         )
     else:
         print("Loading dataset from Hugging Face Hub...")
-        ctx.obj["dataset"] = Dataset.from_hub(dataset, metadata_store)
-
-
-@cli.command()
-@click.pass_context
-def index(ctx):
-    """Download and index parquet files from a dataset."""
-
-    dataset = ctx.obj["dataset"]
-    metadata_dir = ctx.obj["metadata_dir"]
-
-    print(f"Indexing dataset '{dataset}' in '{metadata_dir}'")
-
-    # Ensure the metadata directory exists
-    metadata_dir.mkdir(parents=True, exist_ok=True)
-
-    print("Indexing dataset with offset index enabled...")
-    dataset.sync_index()
+        ctx.obj["dataset"] = Dataset.from_hub(
+            dataset, metadata_store, revision=revision
+        )
 
 
 @cli.command()
@@ -87,17 +75,34 @@ def query(ctx, offset, limit):
         f"Querying dataset '{ctx.obj['dataset_name']}' with offset {offset} and limit {limit}"
     )
 
-    dataset = ctx.obj["dataset"]    
+    dataset = ctx.obj["dataset"]
     batches, files_to_index = dataset.sync_scan(limit, offset)
 
     # Print the result
     for batch in batches:
         print(f"Batch length: {len(batch)}")
 
-    # Print the files that need to be indexed
+    # Print the files that should be indexed
     if files_to_index:
-        print("Files that need to be indexed:")
+        print("Files that should be indexed:")
         for file in files_to_index:
             print(f" - {file}")
     else:
-        print("No files need to be indexed.")
+        print("No files should be indexed.")
+
+
+@cli.command()
+@click.pass_context
+def index(ctx):
+    """Download and index parquet files from a dataset."""
+
+    dataset = ctx.obj["dataset"]
+    metadata_dir = ctx.obj["metadata_dir"]
+
+    print(f"Indexing dataset '{dataset}' in '{metadata_dir}'")
+
+    # Ensure the metadata directory exists
+    metadata_dir.mkdir(parents=True, exist_ok=True)
+
+    print("Indexing dataset with offset index enabled...")
+    dataset.sync_index()

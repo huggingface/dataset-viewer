@@ -39,17 +39,19 @@ struct PyDataset {
 #[pymethods]
 impl PyDataset {
     #[new]
-    #[pyo3(signature = (name, files, metadata_store, data_store = "hf://", indexing_size_threshold = INDEXING_SIZE_THRESHOLD))]
+    #[pyo3(signature = (name, files, metadata_store, data_store = "hf://", revision = None, indexing_size_threshold = INDEXING_SIZE_THRESHOLD))]
     fn new(
         name: &str,
         files: Vec<IndexedFile>,
         metadata_store: &str,
         data_store: &str,
+        revision: Option<&str>,
         indexing_size_threshold: i64,
     ) -> PyResult<Self> {
         let dataset = Dataset::try_new(
             name,
             files,
+            revision,
             data_store,
             metadata_store,
             indexing_size_threshold,
@@ -61,23 +63,29 @@ impl PyDataset {
         Ok(format!("{:?}", self.dataset))
     }
 
-    #[pyo3(signature = (files=None))]
-    fn sync_index(&self, files: Option<Vec<IndexedFile>>) -> PyResult<()> {
-        let rt = tokio::runtime::Runtime::new()?;
-        rt.block_on(self.dataset.index(files.as_deref()))?;
-        Ok(())
+    #[getter]
+    fn name(&self) -> PyResult<&str> {
+        Ok(&self.dataset.name)
     }
 
-    #[pyo3(signature = (files=None))]
-    fn index<'py>(
-        &self,
-        py: Python<'py>,
-        files: Option<Vec<IndexedFile>>,
-    ) -> PyResult<Bound<'py, PyAny>> {
-        let this = self.clone();
-        pyo3_async_runtimes::tokio::future_into_py(py, async move {
-            Ok(this.dataset.index(files.as_deref()).await?)
-        })
+    #[getter]
+    fn revision(&self) -> PyResult<Option<&str>> {
+        Ok(self.dataset.revision.as_deref())
+    }
+
+    #[getter]
+    fn files(&self) -> PyResult<Vec<IndexedFile>> {
+        Ok(self.dataset.files.clone())
+    }
+
+    #[getter]
+    fn data_store_uri(&self) -> PyResult<&str> {
+        Ok(&self.dataset.data_store_uri)
+    }
+
+    #[getter]
+    fn metadata_store_uri(&self) -> PyResult<&str> {
+        Ok(&self.dataset.metadata_store_uri)
     }
 
     #[pyo3(signature = (limit=None, offset=None))]
@@ -113,6 +121,25 @@ impl PyDataset {
                     .collect::<PyResult<Vec<_>>>()
             })?;
             Ok((pyarrow_batches, files_to_index))
+        })
+    }
+
+    #[pyo3(signature = (files=None))]
+    fn sync_index(&self, files: Option<Vec<IndexedFile>>) -> PyResult<()> {
+        let rt = tokio::runtime::Runtime::new()?;
+        rt.block_on(self.dataset.index(files.as_deref()))?;
+        Ok(())
+    }
+
+    #[pyo3(signature = (files=None))]
+    fn index<'py>(
+        &self,
+        py: Python<'py>,
+        files: Option<Vec<IndexedFile>>,
+    ) -> PyResult<Bound<'py, PyAny>> {
+        let this = self.clone();
+        pyo3_async_runtimes::tokio::future_into_py(py, async move {
+            Ok(this.dataset.index(files.as_deref()).await?)
         })
     }
 }
