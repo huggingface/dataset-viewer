@@ -14,3 +14,7 @@ assets
 **/.pytest_cache
 **/.coverage
 **/coverage.xml
+**/target
+**/*.rs.bk
+**/.cargo/registry
+**/.cargo/git
