@@ -39,9 +39,8 @@ jobs:
       - name: Activate Poetry Environment
         # "poetry env use" is required: https://github.com/actions/setup-python/issues/374#issuecomment-1088938718
         run: |
-          poetry env use "${{ env.python-version }}"
-      - name: Install dependencies
-        run: poetry install 
+          poetry env use $(which python)
+          poetry install
       - name: Launch mongo
         env:
           MONGO_PORT: ${{ env.mongo-port }}
