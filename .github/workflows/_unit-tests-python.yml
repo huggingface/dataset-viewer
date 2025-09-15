@@ -14,7 +14,7 @@ env:
   mongo-port: "27017"
   mongo-version: "6.0.9"
   python-version: "3.9.18"
-  poetry-version: "2.1.3"
+  poetry-version: "2.1.4"
   replicaset: "rs0"
 jobs:
   unit-tests:
@@ -36,10 +36,10 @@ jobs:
             ${{ inputs.working-directory }}/poetry.lock
       - name: Install packages
         run: sudo apt update; sudo apt install -y ffmpeg libavcodec-extra libsndfile1
-      - name: Activate Poetry Environment
+      - name: Install dependencies
         # "poetry env use" is required: https://github.com/actions/setup-python/issues/374#issuecomment-1088938718
         run: |
-          poetry env use $(which python)
+          poetry env use "${{ env.python-version }}"
           poetry install
       - name: Launch mongo
         env:
