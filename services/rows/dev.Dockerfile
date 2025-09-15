@@ -38,6 +38,8 @@ COPY libs/libapi/poetry.lock ./libs/libapi/poetry.lock
 COPY libs/libapi/pyproject.toml ./libs/libapi/pyproject.toml
 COPY libs/libviewer/poetry.lock ./libs/libviewer/poetry.lock
 COPY libs/libviewer/pyproject.toml ./libs/libviewer/pyproject.toml
+COPY libs/libviewer/Cargo.toml ./libs/libviewer/Cargo.toml
+COPY libs/libviewer/Cargo.lock ./libs/libviewer/Cargo.lock
 COPY services/rows/poetry.lock ./services/rows/poetry.lock
 COPY services/rows/pyproject.toml ./services/rows/pyproject.toml
 
