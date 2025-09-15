@@ -178,6 +178,9 @@ class RowGroupReader:
                 if column_metadata["path_in_schema"] in columns
             )
 
+    def read_num_rows(self) -> int:
+        return self.parquet_file.metadata.row_group(self.group_id).num_rows  # type: ignore
+
 
 @dataclass
 class ParquetIndexWithMetadata:
@@ -311,12 +314,30 @@ class ParquetIndexWithMetadata:
                     for i in range(first_row_group_id, last_row_group_id + 1)
                 ]
             )
-            in_memory_max_size = in_memory_max_non_binary_size + in_memory_max_binary_size
-            if in_memory_max_size > self.max_arrow_data_in_memory:
+            num_rows_in_row_groups = sum(
+                [
+                    row_group_readers[i].read_num_rows()
+                    for i in range(first_row_group_id, last_row_group_id + 1)
+                ]
+            )
+            in_memory_max_size_in_row_groups = in_memory_max_non_binary_size + in_memory_max_binary_size
+            in_memory_max_size_per_row = in_memory_max_size_in_row_groups / num_rows_in_row_groups
+            num_rows_to_load = (1 + last_row - first_row)
+            in_memory_max_size_rows_to_load = in_memory_max_size_per_row * num_rows_to_load
+            if in_memory_max_size_per_row > self.max_arrow_data_in_memory:
                 raise TooBigRows(
-                    "Rows from parquet row groups are too big to be read:"
-                    f" {size_str(in_memory_max_size)} (max={size_str(self.max_arrow_data_in_memory)})"
+                    "Rows from parquet are too big to be read:"
+                    f" {size_str(in_memory_max_size_per_row)} per row (max={size_str(self.max_arrow_data_in_memory)})"
                 )
+            if in_memory_max_size_rows_to_load > self.max_arrow_data_in_memory:
+                raise TooBigRows(
+                    "Rows from parquet are too big to be read:"
+                    f" {size_str(in_memory_max_size_rows_to_load)} for {num_rows_to_load} rows (max={size_str(self.max_arrow_data_in_memory)})"
+                )
+            if in_memory_max_size_in_row_groups > self.max_arrow_data_in_memory:
+                for parquet_file, metadata_path in zip(parquet_files, metadata_paths):
+                    # TODO: read the parquet files here with libviewer
+                    raise NotImplementedError()
 
         with StepProfiler(method="parquet_index_with_metadata.query_truncated_binary", step="read the row groups"):
             # This is a simple heuristic of how much we need to truncate binary data
