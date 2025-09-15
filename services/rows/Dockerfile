@@ -21,11 +21,22 @@ RUN apt-get update \
 RUN pip install -U pip
 RUN pip install "poetry==$POETRY_VERSION"
 
+# Install Rust toolchain and maturin 
+RUN curl https://sh.rustup.rs -sSf | sh -s -- -y \
+    && . $HOME/.cargo/env \
+    && pip install maturin \
+    && rustc --version \
+    && cargo --version
+
+# Add cargo bin dir to PATH (so maturin + cargo available globally)
+ENV PATH="/root/.cargo/bin:${PATH}"
+
 WORKDIR /src
 COPY services/rows/poetry.lock ./services/rows/poetry.lock
 COPY services/rows/pyproject.toml ./services/rows/pyproject.toml
 COPY libs/libcommon ./libs/libcommon
 COPY libs/libapi ./libs/libapi
+COPY libs/libviewer ./libs/libviewer
 WORKDIR /src/services/rows/
 RUN poetry install --no-cache --no-root
 COPY services/rows/src ./src
