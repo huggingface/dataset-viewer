@@ -44,9 +44,9 @@ torchcodec = "0.7.0"
 tqdm = "^4.66.3"
 
 [tool.poetry.group.dev.dependencies]
-aiobotocore = "^2.13.0"
+aiobotocore = "2.13.0"
 bandit = "^1.7.4"
-boto3 = "^1.34.0"
+boto3 = "1.34.106"
 httpx = "^0.26.0"
 moto = "^4.2.8"
 mypy = "^1.10.0"
@@ -56,7 +56,7 @@ pytest = "^8.2.2"
 pytest-datadir = "^1.5.0"
 pytest-memray = "^1.6.0"
 ruff = "^0"
-types-aiobotocore = {extras = ["signer"], version = "^2.13.0"}
+types-aiobotocore = {extras = ["signer"], version = "2.13.0"}
 types-psutil = "^5.9.5"
 types-pytz = "^2022.1.1"
 validators = "^0.22.0"

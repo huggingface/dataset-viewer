@@ -513,10 +513,10 @@ def test_extract_split_directory_from_parquet_url(parquet_url: str, expected: st
 @pytest.mark.parametrize(
     "max_size_bytes,expected",
     [
-        (1, (1, 106, 2)),
-        (100, (1, 106, 2)),
-        (200, (2, 212, 4)),
-        (1000, (4, 424, 8)),
+        (1, (1, 73, 2)),
+        (50, (1, 73, 2)),
+        (100, (2, 146, 4)),
+        (1000, (4, 292, 8)),
     ],
 )
 def test_get_num_parquet_files_to_index(
@@ -525,7 +525,7 @@ def test_get_num_parquet_files_to_index(
     max_size_bytes: int,
     expected: tuple[int, int, int],
 ) -> None:
-    # 4 parquet files, 1 row group of 106 bytes and 2 rows in each
+    # 4 parquet files, 1 row group of 73 bytes and 2 rows in each
     parquet_files = dataset_sharded_with_config_parquet_metadata["parquet_files_metadata"]
     num_files, num_bytes, num_rows = get_num_parquet_files_to_process(
         parquet_files=parquet_files,

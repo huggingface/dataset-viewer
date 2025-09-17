@@ -697,7 +697,7 @@ class limit_parquet_writes:
 
             return wrapped
 
-        self.exit_stack.enter_context(patch.object(ParquetWriter, "_WRITER_CLASS", _TrackedParquetWriter))
+        self.exit_stack.enter_context(patch("pyarrow.parquet.ParquetWriter", _TrackedParquetWriter))
         if isinstance(self.builder, datasets.builder.GeneratorBasedBuilder):
             self.exit_stack.enter_context(
                 patch.object(self.builder, "_generate_examples", limited_generator(self.builder._generate_examples))

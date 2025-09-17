@@ -219,7 +219,7 @@ def get_audio_file_extension(value: Any) -> Optional[str]:
             audio_file_extension = ".wav"
     else:
         raise ValueError(
-            "An audio sample should have 'path' and 'bytes' (or be an AudioDecoder) but got" f" {', '.join(value)}."
+            f"An audio sample should have 'path' and 'bytes' (or be an AudioDecoder) but got {', '.join(value)}."
         )
     return audio_file_extension
 
@@ -298,7 +298,7 @@ def get_video_file_extension(value: Any) -> str:
                 f" {', '.join(value['path'])}."
             )
     else:
-        raise ValueError("A video sample should have 'path' and 'bytes' but got" f" {', '.join(value)}.")
+        raise ValueError(f"A video sample should have 'path' and 'bytes' but got {', '.join(value)}.")
     return video_file_extension
 
 

@@ -44,7 +44,8 @@ module = [
     "ecdsa.*",
     "prometheus_client.*",
     "pyarrow.*",
-    "tqdm.*"
+    "tqdm.*",
+    "duckdb.*"
 ]
 ignore_missing_imports = true
 
