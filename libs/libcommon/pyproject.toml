@@ -23,7 +23,7 @@ orjson = "^3.9.15"
 pandas = "^2.2.0"
 pdfplumber = ">=0.11.4"
 pillow = "^10.3.0"
-polars = "^1.27.1"
+polars = "1.31.0"  # 1.33.1 has issues with datetimes
 psutil = "^5.9.4"
 pyarrow = "^21.0.0"
 pymongoarrow = "^1.10.0"
