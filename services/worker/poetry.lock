@@ -1634,9 +1634,9 @@ s3fs = "2024.3.1"
 soundfile = ">=0.12.1"
 starlette-prometheus = "^0.9.0"
 torch = [
-    {url = "https://download.pytorch.org/whl/cpu/torch-2.7.1%2Bcpu-cp39-cp39-manylinux_2_28_x86_64.whl", markers = "sys_platform == \"linux\" and platform_machine != \"aarch64\" or sys_platform == \"darwin\" and platform_machine != \"arm64\""},
-    {url = "https://download.pytorch.org/whl/cpu/torch-2.7.1-cp39-none-macosx_11_0_arm64.whl", markers = "sys_platform == \"darwin\" and platform_machine == \"arm64\""},
-    {url = "https://download.pytorch.org/whl/cpu/torch-2.7.1%2Bcpu-cp39-cp39-manylinux_2_28_aarch64.whl", markers = "sys_platform == \"linux\" and platform_machine == \"aarch64\""},
+    {url = "https://download.pytorch.org/whl/cpu/torch-2.7.1%2Bcpu-cp312-cp312-manylinux_2_28_x86_64.whl", markers = "sys_platform == \"linux\" and platform_machine != \"aarch64\" or sys_platform == \"darwin\" and platform_machine != \"arm64\""},
+    {url = "https://download.pytorch.org/whl/cpu/torch-2.7.1-cp312-none-macosx_11_0_arm64.whl", markers = "sys_platform == \"darwin\" and platform_machine == \"arm64\""},
+    {url = "https://download.pytorch.org/whl/cpu/torch-2.7.1%2Bcpu-cp312-cp312-manylinux_2_28_aarch64.whl", markers = "sys_platform == \"linux\" and platform_machine == \"aarch64\""},
 ]
 torchcodec = "0.4.0"
 tqdm = "^4.66.3"
@@ -4920,7 +4920,7 @@ python-versions = ">=3.9.0"
 groups = ["main"]
 markers = "sys_platform == \"darwin\" and platform_machine == \"arm64\""
 files = [
-    {file = "torch-2.7.1-cp39-none-macosx_11_0_arm64.whl", hash = "sha256:351be905d1ba693f317be603441e4ed9580ed9a8d7ee17b3dae60fa2ff49bff7"},
+    {file = "torch-2.7.1-cp312-none-macosx_11_0_arm64.whl", hash = "sha256:7b4f8b2b83bd08f7d399025a9a7b323bdbb53d20566f1e0d584689bb92d82f9a"},
 ]
 
 [package.dependencies]
@@ -4938,7 +4938,7 @@ optree = ["optree (>=0.13.0)"]
 
 [package.source]
 type = "url"
-url = "https://download.pytorch.org/whl/cpu/torch-2.7.1-cp39-none-macosx_11_0_arm64.whl"
+url = "https://download.pytorch.org/whl/cpu/torch-2.7.1-cp312-none-macosx_11_0_arm64.whl"
 
 [[package]]
 name = "torch"
@@ -4949,7 +4949,7 @@ python-versions = ">=3.9.0"
 groups = ["main"]
 markers = "sys_platform == \"linux\" and platform_machine == \"aarch64\""
 files = [
-    {file = "torch-2.7.1+cpu-cp39-cp39-manylinux_2_28_aarch64.whl", hash = "sha256:a4551cb97b83df5f93fc0d7538332535828581e1db2f179afc287027afbdd6e8"},
+    {file = "torch-2.7.1+cpu-cp312-cp312-manylinux_2_28_aarch64.whl", hash = "sha256:3bf2db5adf77b433844f080887ade049c4705ddf9fe1a32023ff84ff735aa5ad"},
 ]
 
 [package.dependencies]
@@ -4967,7 +4967,7 @@ optree = ["optree (>=0.13.0)"]
 
 [package.source]
 type = "url"
-url = "https://download.pytorch.org/whl/cpu/torch-2.7.1%2Bcpu-cp39-cp39-manylinux_2_28_aarch64.whl"
+url = "https://download.pytorch.org/whl/cpu/torch-2.7.1%2Bcpu-cp312-cp312-manylinux_2_28_aarch64.whl"
 
 [[package]]
 name = "torch"
@@ -4978,7 +4978,7 @@ python-versions = ">=3.9.0"
 groups = ["main"]
 markers = "(sys_platform != \"darwin\" or platform_machine != \"arm64\") and (platform_machine != \"aarch64\" or sys_platform != \"linux\")"
 files = [
-    {file = "torch-2.7.1+cpu-cp39-cp39-manylinux_2_28_x86_64.whl", hash = "sha256:d205cac087d60bc176bdc0b63a1d00dc7a4ee5ac76fd20a2ca318ac65674167e"},
+    {file = "torch-2.7.1+cpu-cp312-cp312-manylinux_2_28_x86_64.whl", hash = "sha256:8f8b3cfc53010a4b4a3c7ecb88c212e9decc4f5eeb6af75c3c803937d2d60947"},
 ]
 
 [package.dependencies]
@@ -4996,7 +4996,7 @@ optree = ["optree (>=0.13.0)"]
 
 [package.source]
 type = "url"
-url = "https://download.pytorch.org/whl/cpu/torch-2.7.1%2Bcpu-cp39-cp39-manylinux_2_28_x86_64.whl"
+url = "https://download.pytorch.org/whl/cpu/torch-2.7.1%2Bcpu-cp312-cp312-manylinux_2_28_x86_64.whl"
 
 [[package]]
 name = "torchcodec"
