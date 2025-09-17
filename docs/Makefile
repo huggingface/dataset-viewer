@@ -1,5 +1,5 @@
 BUILD_DIR?=~/tmp/doc-dataset-viewer
-POETRY := $(shell command -v poetry@2.1.3 2> /dev/null)
+POETRY := $(shell command -v poetry@2.1.4 2> /dev/null)
 POETRY_DEFAULT := $(shell command -v poetry 2> /dev/null)
 POETRY := $(if $(POETRY),$(POETRY),$(POETRY_DEFAULT))
 
