@@ -9,7 +9,7 @@ license = "Apache-2.0"
 python = "3.9.18"
 aiohttp = "^3.10.2"
 aiolimiter = "^1.0.0"
-environs = "^9.5.0"
+environs = "^14.3.0"
 h5py = "^3.10.0"
 libcommon = {path = "../../libs/libcommon", develop = true}
 mirakuru = "^2.4.2"

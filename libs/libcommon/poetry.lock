@@ -857,25 +857,25 @@ all = ["adbc_driver_manager", "fsspec", "ipython", "numpy", "pandas", "pyarrow"]
 
 [[package]]
 name = "environs"
-version = "9.5.0"
+version = "14.3.0"
 description = "simplified environment variable parsing"
 optional = false
-python-versions = ">=3.6"
+python-versions = ">=3.9"
 groups = ["main"]
 files = [
-    {file = "environs-9.5.0-py2.py3-none-any.whl", hash = "sha256:1e549569a3de49c05f856f40bce86979e7d5ffbbc4398e7f338574c220189124"},
-    {file = "environs-9.5.0.tar.gz", hash = "sha256:a76307b36fbe856bdca7ee9161e6c466fd7fcffc297109a118c59b54e27e30c9"},
+    {file = "environs-14.3.0-py3-none-any.whl", hash = "sha256:91e4c4ea964be277855cdd83a588f6375f10fad9fa452660ecb9f503c230f26a"},
+    {file = "environs-14.3.0.tar.gz", hash = "sha256:20672d92db325ce8114872b1989104eb84f083486325b5a44bcddff56472a384"},
 ]
 
 [package.dependencies]
-marshmallow = ">=3.0.0"
+marshmallow = ">=3.18.0"
 python-dotenv = "*"
+typing-extensions = {version = "*", markers = "python_version < \"3.11\""}
 
 [package.extras]
-dev = ["dj-database-url", "dj-email-url", "django-cache-url", "flake8 (==4.0.1)", "flake8-bugbear (==21.9.2)", "mypy (==0.910)", "pre-commit (>=2.4,<3.0)", "pytest", "tox"]
+dev = ["environs[tests]", "pre-commit (>=4.0,<5.0)", "tox"]
 django = ["dj-database-url", "dj-email-url", "django-cache-url"]
-lint = ["flake8 (==4.0.1)", "flake8-bugbear (==21.9.2)", "mypy (==0.910)", "pre-commit (>=2.4,<3.0)"]
-tests = ["dj-database-url", "dj-email-url", "django-cache-url", "pytest"]
+tests = ["backports.strenum ; python_version < \"3.11\"", "environs[django]", "packaging", "pytest"]
 
 [[package]]
 name = "exceptiongroup"
@@ -1524,18 +1524,21 @@ files = [
 
 [[package]]
 name = "mongoengine"
-version = "0.27.0"
+version = "0.29.1"
 description = "MongoEngine is a Python Object-Document Mapper for working with MongoDB."
 optional = false
 python-versions = ">=3.7"
 groups = ["main"]
 files = [
-    {file = "mongoengine-0.27.0-py3-none-any.whl", hash = "sha256:c3523b8f886052f3deb200b3218bcc13e4b781661e3bea38587cc936c80ea358"},
-    {file = "mongoengine-0.27.0.tar.gz", hash = "sha256:8f38df7834dc4b192d89f2668dcf3091748d12f74d55648ce77b919167a4a49b"},
+    {file = "mongoengine-0.29.1-py3-none-any.whl", hash = "sha256:9302ec407dd60f47f62cc07684d9f6cac87f1e93283c54203851788104d33df4"},
+    {file = "mongoengine-0.29.1.tar.gz", hash = "sha256:3b43abaf2d5f0b7d39efc2b7d9e78f4d4a5dc7ce92b9889ba81a5a9b8dee3cf3"},
 ]
 
 [package.dependencies]
 pymongo = ">=3.4,<5.0"
+
+[package.extras]
+test = ["Pillow (>=7.0.0)", "blinker", "coverage", "pytest", "pytest-cov"]
 
 [[package]]
 name = "moto"
@@ -2646,52 +2649,55 @@ defusedxml = ">=0.7.1,<0.8.0"
 
 [[package]]
 name = "pyarrow"
-version = "15.0.2"
+version = "17.0.0"
 description = "Python library for Apache Arrow"
 optional = false
 python-versions = ">=3.8"
 groups = ["main"]
 files = [
-    {file = "pyarrow-15.0.2-cp310-cp310-macosx_10_15_x86_64.whl", hash = "sha256:88b340f0a1d05b5ccc3d2d986279045655b1fe8e41aba6ca44ea28da0d1455d8"},
-    {file = "pyarrow-15.0.2-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:eaa8f96cecf32da508e6c7f69bb8401f03745c050c1dd42ec2596f2e98deecac"},
-    {file = "pyarrow-15.0.2-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:23c6753ed4f6adb8461e7c383e418391b8d8453c5d67e17f416c3a5d5709afbd"},
-    {file = "pyarrow-15.0.2-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:f639c059035011db8c0497e541a8a45d98a58dbe34dc8fadd0ef128f2cee46e5"},
-    {file = "pyarrow-15.0.2-cp310-cp310-manylinux_2_28_aarch64.whl", hash = "sha256:290e36a59a0993e9a5224ed2fb3e53375770f07379a0ea03ee2fce2e6d30b423"},
-    {file = "pyarrow-15.0.2-cp310-cp310-manylinux_2_28_x86_64.whl", hash = "sha256:06c2bb2a98bc792f040bef31ad3e9be6a63d0cb39189227c08a7d955db96816e"},
-    {file = "pyarrow-15.0.2-cp310-cp310-win_amd64.whl", hash = "sha256:f7a197f3670606a960ddc12adbe8075cea5f707ad7bf0dffa09637fdbb89f76c"},
-    {file = "pyarrow-15.0.2-cp311-cp311-macosx_10_15_x86_64.whl", hash = "sha256:5f8bc839ea36b1f99984c78e06e7a06054693dc2af8920f6fb416b5bca9944e4"},
-    {file = "pyarrow-15.0.2-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:f5e81dfb4e519baa6b4c80410421528c214427e77ca0ea9461eb4097c328fa33"},
-    {file = "pyarrow-15.0.2-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:3a4f240852b302a7af4646c8bfe9950c4691a419847001178662a98915fd7ee7"},
-    {file = "pyarrow-15.0.2-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:4e7d9cfb5a1e648e172428c7a42b744610956f3b70f524aa3a6c02a448ba853e"},
-    {file = "pyarrow-15.0.2-cp311-cp311-manylinux_2_28_aarch64.whl", hash = "sha256:2d4f905209de70c0eb5b2de6763104d5a9a37430f137678edfb9a675bac9cd98"},
-    {file = "pyarrow-15.0.2-cp311-cp311-manylinux_2_28_x86_64.whl", hash = "sha256:90adb99e8ce5f36fbecbbc422e7dcbcbed07d985eed6062e459e23f9e71fd197"},
-    {file = "pyarrow-15.0.2-cp311-cp311-win_amd64.whl", hash = "sha256:b116e7fd7889294cbd24eb90cd9bdd3850be3738d61297855a71ac3b8124ee38"},
-    {file = "pyarrow-15.0.2-cp312-cp312-macosx_10_15_x86_64.whl", hash = "sha256:25335e6f1f07fdaa026a61c758ee7d19ce824a866b27bba744348fa73bb5a440"},
-    {file = "pyarrow-15.0.2-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:90f19e976d9c3d8e73c80be84ddbe2f830b6304e4c576349d9360e335cd627fc"},
-    {file = "pyarrow-15.0.2-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:a22366249bf5fd40ddacc4f03cd3160f2d7c247692945afb1899bab8a140ddfb"},
-    {file = "pyarrow-15.0.2-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:c2a335198f886b07e4b5ea16d08ee06557e07db54a8400cc0d03c7f6a22f785f"},
-    {file = "pyarrow-15.0.2-cp312-cp312-manylinux_2_28_aarch64.whl", hash = "sha256:3e6d459c0c22f0b9c810a3917a1de3ee704b021a5fb8b3bacf968eece6df098f"},
-    {file = "pyarrow-15.0.2-cp312-cp312-manylinux_2_28_x86_64.whl", hash = "sha256:033b7cad32198754d93465dcfb71d0ba7cb7cd5c9afd7052cab7214676eec38b"},
-    {file = "pyarrow-15.0.2-cp312-cp312-win_amd64.whl", hash = "sha256:29850d050379d6e8b5a693098f4de7fd6a2bea4365bfd073d7c57c57b95041ee"},
-    {file = "pyarrow-15.0.2-cp38-cp38-macosx_10_15_x86_64.whl", hash = "sha256:7167107d7fb6dcadb375b4b691b7e316f4368f39f6f45405a05535d7ad5e5058"},
-    {file = "pyarrow-15.0.2-cp38-cp38-macosx_11_0_arm64.whl", hash = "sha256:e85241b44cc3d365ef950432a1b3bd44ac54626f37b2e3a0cc89c20e45dfd8bf"},
-    {file = "pyarrow-15.0.2-cp38-cp38-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:248723e4ed3255fcd73edcecc209744d58a9ca852e4cf3d2577811b6d4b59818"},
-    {file = "pyarrow-15.0.2-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:3ff3bdfe6f1b81ca5b73b70a8d482d37a766433823e0c21e22d1d7dde76ca33f"},
-    {file = "pyarrow-15.0.2-cp38-cp38-manylinux_2_28_aarch64.whl", hash = "sha256:f3d77463dee7e9f284ef42d341689b459a63ff2e75cee2b9302058d0d98fe142"},
-    {file = "pyarrow-15.0.2-cp38-cp38-manylinux_2_28_x86_64.whl", hash = "sha256:8c1faf2482fb89766e79745670cbca04e7018497d85be9242d5350cba21357e1"},
-    {file = "pyarrow-15.0.2-cp38-cp38-win_amd64.whl", hash = "sha256:28f3016958a8e45a1069303a4a4f6a7d4910643fc08adb1e2e4a7ff056272ad3"},
-    {file = "pyarrow-15.0.2-cp39-cp39-macosx_10_15_x86_64.whl", hash = "sha256:89722cb64286ab3d4daf168386f6968c126057b8c7ec3ef96302e81d8cdb8ae4"},
-    {file = "pyarrow-15.0.2-cp39-cp39-macosx_11_0_arm64.whl", hash = "sha256:cd0ba387705044b3ac77b1b317165c0498299b08261d8122c96051024f953cd5"},
-    {file = "pyarrow-15.0.2-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:ad2459bf1f22b6a5cdcc27ebfd99307d5526b62d217b984b9f5c974651398832"},
-    {file = "pyarrow-15.0.2-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:58922e4bfece8b02abf7159f1f53a8f4d9f8e08f2d988109126c17c3bb261f22"},
-    {file = "pyarrow-15.0.2-cp39-cp39-manylinux_2_28_aarch64.whl", hash = "sha256:adccc81d3dc0478ea0b498807b39a8d41628fa9210729b2f718b78cb997c7c91"},
-    {file = "pyarrow-15.0.2-cp39-cp39-manylinux_2_28_x86_64.whl", hash = "sha256:8bd2baa5fe531571847983f36a30ddbf65261ef23e496862ece83bdceb70420d"},
-    {file = "pyarrow-15.0.2-cp39-cp39-win_amd64.whl", hash = "sha256:6669799a1d4ca9da9c7e06ef48368320f5856f36f9a4dd31a11839dda3f6cc8c"},
-    {file = "pyarrow-15.0.2.tar.gz", hash = "sha256:9c9bc803cb3b7bfacc1e96ffbfd923601065d9d3f911179d81e72d99fd74a3d9"},
+    {file = "pyarrow-17.0.0-cp310-cp310-macosx_10_15_x86_64.whl", hash = "sha256:a5c8b238d47e48812ee577ee20c9a2779e6a5904f1708ae240f53ecbee7c9f07"},
+    {file = "pyarrow-17.0.0-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:db023dc4c6cae1015de9e198d41250688383c3f9af8f565370ab2b4cb5f62655"},
+    {file = "pyarrow-17.0.0-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:da1e060b3876faa11cee287839f9cc7cdc00649f475714b8680a05fd9071d545"},
+    {file = "pyarrow-17.0.0-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:75c06d4624c0ad6674364bb46ef38c3132768139ddec1c56582dbac54f2663e2"},
+    {file = "pyarrow-17.0.0-cp310-cp310-manylinux_2_28_aarch64.whl", hash = "sha256:fa3c246cc58cb5a4a5cb407a18f193354ea47dd0648194e6265bd24177982fe8"},
+    {file = "pyarrow-17.0.0-cp310-cp310-manylinux_2_28_x86_64.whl", hash = "sha256:f7ae2de664e0b158d1607699a16a488de3d008ba99b3a7aa5de1cbc13574d047"},
+    {file = "pyarrow-17.0.0-cp310-cp310-win_amd64.whl", hash = "sha256:5984f416552eea15fd9cee03da53542bf4cddaef5afecefb9aa8d1010c335087"},
+    {file = "pyarrow-17.0.0-cp311-cp311-macosx_10_15_x86_64.whl", hash = "sha256:1c8856e2ef09eb87ecf937104aacfa0708f22dfeb039c363ec99735190ffb977"},
+    {file = "pyarrow-17.0.0-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:2e19f569567efcbbd42084e87f948778eb371d308e137a0f97afe19bb860ccb3"},
+    {file = "pyarrow-17.0.0-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:6b244dc8e08a23b3e352899a006a26ae7b4d0da7bb636872fa8f5884e70acf15"},
+    {file = "pyarrow-17.0.0-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:0b72e87fe3e1db343995562f7fff8aee354b55ee83d13afba65400c178ab2597"},
+    {file = "pyarrow-17.0.0-cp311-cp311-manylinux_2_28_aarch64.whl", hash = "sha256:dc5c31c37409dfbc5d014047817cb4ccd8c1ea25d19576acf1a001fe07f5b420"},
+    {file = "pyarrow-17.0.0-cp311-cp311-manylinux_2_28_x86_64.whl", hash = "sha256:e3343cb1e88bc2ea605986d4b94948716edc7a8d14afd4e2c097232f729758b4"},
+    {file = "pyarrow-17.0.0-cp311-cp311-win_amd64.whl", hash = "sha256:a27532c38f3de9eb3e90ecab63dfda948a8ca859a66e3a47f5f42d1e403c4d03"},
+    {file = "pyarrow-17.0.0-cp312-cp312-macosx_10_15_x86_64.whl", hash = "sha256:9b8a823cea605221e61f34859dcc03207e52e409ccf6354634143e23af7c8d22"},
+    {file = "pyarrow-17.0.0-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:f1e70de6cb5790a50b01d2b686d54aaf73da01266850b05e3af2a1bc89e16053"},
+    {file = "pyarrow-17.0.0-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:0071ce35788c6f9077ff9ecba4858108eebe2ea5a3f7cf2cf55ebc1dbc6ee24a"},
+    {file = "pyarrow-17.0.0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:757074882f844411fcca735e39aae74248a1531367a7c80799b4266390ae51cc"},
+    {file = "pyarrow-17.0.0-cp312-cp312-manylinux_2_28_aarch64.whl", hash = "sha256:9ba11c4f16976e89146781a83833df7f82077cdab7dc6232c897789343f7891a"},
+    {file = "pyarrow-17.0.0-cp312-cp312-manylinux_2_28_x86_64.whl", hash = "sha256:b0c6ac301093b42d34410b187bba560b17c0330f64907bfa4f7f7f2444b0cf9b"},
+    {file = "pyarrow-17.0.0-cp312-cp312-win_amd64.whl", hash = "sha256:392bc9feabc647338e6c89267635e111d71edad5fcffba204425a7c8d13610d7"},
+    {file = "pyarrow-17.0.0-cp38-cp38-macosx_10_15_x86_64.whl", hash = "sha256:af5ff82a04b2171415f1410cff7ebb79861afc5dae50be73ce06d6e870615204"},
+    {file = "pyarrow-17.0.0-cp38-cp38-macosx_11_0_arm64.whl", hash = "sha256:edca18eaca89cd6382dfbcff3dd2d87633433043650c07375d095cd3517561d8"},
+    {file = "pyarrow-17.0.0-cp38-cp38-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:7c7916bff914ac5d4a8fe25b7a25e432ff921e72f6f2b7547d1e325c1ad9d155"},
+    {file = "pyarrow-17.0.0-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:f553ca691b9e94b202ff741bdd40f6ccb70cdd5fbf65c187af132f1317de6145"},
+    {file = "pyarrow-17.0.0-cp38-cp38-manylinux_2_28_aarch64.whl", hash = "sha256:0cdb0e627c86c373205a2f94a510ac4376fdc523f8bb36beab2e7f204416163c"},
+    {file = "pyarrow-17.0.0-cp38-cp38-manylinux_2_28_x86_64.whl", hash = "sha256:d7d192305d9d8bc9082d10f361fc70a73590a4c65cf31c3e6926cd72b76bc35c"},
+    {file = "pyarrow-17.0.0-cp38-cp38-win_amd64.whl", hash = "sha256:02dae06ce212d8b3244dd3e7d12d9c4d3046945a5933d28026598e9dbbda1fca"},
+    {file = "pyarrow-17.0.0-cp39-cp39-macosx_10_15_x86_64.whl", hash = "sha256:13d7a460b412f31e4c0efa1148e1d29bdf18ad1411eb6757d38f8fbdcc8645fb"},
+    {file = "pyarrow-17.0.0-cp39-cp39-macosx_11_0_arm64.whl", hash = "sha256:9b564a51fbccfab5a04a80453e5ac6c9954a9c5ef2890d1bcf63741909c3f8df"},
+    {file = "pyarrow-17.0.0-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:32503827abbc5aadedfa235f5ece8c4f8f8b0a3cf01066bc8d29de7539532687"},
+    {file = "pyarrow-17.0.0-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:a155acc7f154b9ffcc85497509bcd0d43efb80d6f733b0dc3bb14e281f131c8b"},
+    {file = "pyarrow-17.0.0-cp39-cp39-manylinux_2_28_aarch64.whl", hash = "sha256:dec8d129254d0188a49f8a1fc99e0560dc1b85f60af729f47de4046015f9b0a5"},
+    {file = "pyarrow-17.0.0-cp39-cp39-manylinux_2_28_x86_64.whl", hash = "sha256:a48ddf5c3c6a6c505904545c25a4ae13646ae1f8ba703c4df4a1bfe4f4006bda"},
+    {file = "pyarrow-17.0.0-cp39-cp39-win_amd64.whl", hash = "sha256:42bf93249a083aca230ba7e2786c5f673507fa97bbd9725a1e2754715151a204"},
+    {file = "pyarrow-17.0.0.tar.gz", hash = "sha256:4beca9521ed2c0921c1023e68d097d0299b62c362639ea315572a58f3f50fd28"},
 ]
 
 [package.dependencies]
-numpy = ">=1.16.6,<2"
+numpy = ">=1.16.6"
+
+[package.extras]
+test = ["cffi", "hypothesis", "pandas", "pytest", "pytz"]
 
 [[package]]
 name = "pycparser"
@@ -2821,43 +2827,44 @@ zstd = ["zstandard"]
 
 [[package]]
 name = "pymongoarrow"
-version = "1.3.0"
-description = "\"Tools for using NumPy, Pandas, Polars, and PyArrow with MongoDB\""
+version = "1.5.2"
+description = "Tools for using NumPy, Pandas, Polars, and PyArrow with MongoDB"
 optional = false
 python-versions = ">=3.8"
 groups = ["main"]
 files = [
-    {file = "pymongoarrow-1.3.0-cp310-cp310-macosx_10_15_x86_64.whl", hash = "sha256:7a85de60b790500a2ba0499151f63b008ef00258e18fb240edc257afa22db98f"},
-    {file = "pymongoarrow-1.3.0-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:16425cdd8cb37bade3be03a5ea7c96f3290508a23b57e05c9a1b92934ad85d35"},
-    {file = "pymongoarrow-1.3.0-cp310-cp310-manylinux_2_28_aarch64.whl", hash = "sha256:b02dd1b238ca7acb74ec7178795b619522c3b8134a1cb4cdbd2dc09ba78aca65"},
-    {file = "pymongoarrow-1.3.0-cp310-cp310-manylinux_2_28_x86_64.whl", hash = "sha256:ed5fc670222bcaf0aef634ee3e67ae86e97b7c882ec26787be5a22180efdb0a8"},
-    {file = "pymongoarrow-1.3.0-cp310-cp310-win_amd64.whl", hash = "sha256:1e2ea5f9cdd1f7a4347a409299c740ab43430208d840f3c75181ea03454a5553"},
-    {file = "pymongoarrow-1.3.0-cp311-cp311-macosx_10_15_x86_64.whl", hash = "sha256:4c53d77120ab425660d57d0bf958859a0822acd9a65c64a81d7ff14fc18aae13"},
-    {file = "pymongoarrow-1.3.0-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:4c20584792f46ccc2adcb70231bcc3497436042b0b38c8c5a278f15d294a892b"},
-    {file = "pymongoarrow-1.3.0-cp311-cp311-manylinux_2_28_aarch64.whl", hash = "sha256:e0aae95ffa37e4e86b54417b3a92fcb8b07f65c99acae791227dd6e72385e0b6"},
-    {file = "pymongoarrow-1.3.0-cp311-cp311-manylinux_2_28_x86_64.whl", hash = "sha256:284416a33a6d88f0705c10c5baf567261335c56846a2a7ec5ff640c6029c965f"},
-    {file = "pymongoarrow-1.3.0-cp311-cp311-win_amd64.whl", hash = "sha256:8fd1128fe5681f3533e380f36dfbd904ae321f12b43dfaac8f5e6fa3b6048c5f"},
-    {file = "pymongoarrow-1.3.0-cp312-cp312-macosx_10_15_x86_64.whl", hash = "sha256:dffd0e8d5a3865f4c05d82ebaab4c4582dc895904cf8659e4e6b9277a79994a7"},
-    {file = "pymongoarrow-1.3.0-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:74826cdfed80dcdd597bb92301e0d06fcda8519e86372c9ff82ca713435e45e3"},
-    {file = "pymongoarrow-1.3.0-cp312-cp312-manylinux_2_28_aarch64.whl", hash = "sha256:64b3d6f0821bd2283e7c1744a4831d09f066bb94526ed854a96a24fd5c6b05c3"},
-    {file = "pymongoarrow-1.3.0-cp312-cp312-manylinux_2_28_x86_64.whl", hash = "sha256:1587c20375e817304234cf8c88dada1debf3e5483fd3cbdb8dfc3a74fe92a384"},
-    {file = "pymongoarrow-1.3.0-cp312-cp312-win_amd64.whl", hash = "sha256:8937e9baec8a350ee702781972e5a543573dc103e946f18a9d74c035787ca1fd"},
-    {file = "pymongoarrow-1.3.0-cp38-cp38-macosx_10_15_x86_64.whl", hash = "sha256:c8ab2d085bbbe6d83e4b6979dada3490b6eb8a1026e8a0e082ab3c0a084a4186"},
-    {file = "pymongoarrow-1.3.0-cp38-cp38-manylinux_2_28_aarch64.whl", hash = "sha256:4d2afc913e6e9f99f784889a575d1379ff03c4672de264dde11c56152e4b103a"},
-    {file = "pymongoarrow-1.3.0-cp38-cp38-manylinux_2_28_x86_64.whl", hash = "sha256:e5b5b5346bc62f58008a98e23e9f5f531e3327ef7f87d101bac778213751358e"},
-    {file = "pymongoarrow-1.3.0-cp38-cp38-win_amd64.whl", hash = "sha256:ac14e83dd77cf606a8a9203465c0c48eaa49a5c7fee99bea516fe6de899ee8dc"},
-    {file = "pymongoarrow-1.3.0-cp39-cp39-macosx_10_15_x86_64.whl", hash = "sha256:2acd8bb37a6caeb7d883426d4fd4d58ee84c31dffdc7f16aeb52bad3d6827197"},
-    {file = "pymongoarrow-1.3.0-cp39-cp39-macosx_11_0_arm64.whl", hash = "sha256:cc042a18f992879b55f6da3b2c7c9d43b779d9255e22f309e4e6627a8ac9beed"},
-    {file = "pymongoarrow-1.3.0-cp39-cp39-manylinux_2_28_aarch64.whl", hash = "sha256:345100d1729bdd0454f84e6339943cb23a4504c6c288193f4b4e6610c4e505aa"},
-    {file = "pymongoarrow-1.3.0-cp39-cp39-manylinux_2_28_x86_64.whl", hash = "sha256:0876e62dc32a773edf623d5700fdf0eb89b9224c28dcf6081bca0acac137c9fb"},
-    {file = "pymongoarrow-1.3.0-cp39-cp39-win_amd64.whl", hash = "sha256:9c1e611ecf64db861d199ea439304e932abf4982cc873b82788f7f0344bd9ab7"},
-    {file = "pymongoarrow-1.3.0.tar.gz", hash = "sha256:e409b7a2f388f6c3a8b82e164bcfa82d1a330ab0f891fa0945d1ba4c6f29f6f1"},
+    {file = "pymongoarrow-1.5.2-cp310-cp310-macosx_10_15_x86_64.whl", hash = "sha256:56906eb9f89b66aa787f6cfc127a873cf7aa26192e439956a15ecc4cd96ca675"},
+    {file = "pymongoarrow-1.5.2-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:67c6ea3c409da035fbf740644985631bd162c05cb9f43b463ad274a13f5c8151"},
+    {file = "pymongoarrow-1.5.2-cp310-cp310-manylinux_2_28_aarch64.whl", hash = "sha256:91b48a254cf3121424c5740f0d3c8e5757fd26f32a7e45822d83bd16819b5100"},
+    {file = "pymongoarrow-1.5.2-cp310-cp310-manylinux_2_28_x86_64.whl", hash = "sha256:b1976967b08018a3959550df775470cb5e798e0aff68eaa4882cee00cbbcbe4c"},
+    {file = "pymongoarrow-1.5.2-cp310-cp310-win_amd64.whl", hash = "sha256:e5c3a570c13320513a7d202ebe29b98481d9df598f56f69c08e037edbbafa19a"},
+    {file = "pymongoarrow-1.5.2-cp311-cp311-macosx_10_15_x86_64.whl", hash = "sha256:e9f7b54333fde0f02b0f0044b55974e75970ef29aa22fd4b08ca31b0085d5ade"},
+    {file = "pymongoarrow-1.5.2-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:20345681ec2a35cfc2e1870d382df6e1aa222b4bdd0b814bb34d80cb2fe075d8"},
+    {file = "pymongoarrow-1.5.2-cp311-cp311-manylinux_2_28_aarch64.whl", hash = "sha256:df6b57fa6b158d709d842a7e00d819ea0f4a8fe1d29530968d6d013e9380c60d"},
+    {file = "pymongoarrow-1.5.2-cp311-cp311-manylinux_2_28_x86_64.whl", hash = "sha256:94f27df45b77f5216de66e0ab774f323e80fb1a4372971e893f505c6e254cb93"},
+    {file = "pymongoarrow-1.5.2-cp311-cp311-win_amd64.whl", hash = "sha256:48a04120e7bab55dea913e230da9e4176c821da5bf129786dfda3c6f251835b4"},
+    {file = "pymongoarrow-1.5.2-cp312-cp312-macosx_10_15_x86_64.whl", hash = "sha256:7f32228ab37496270e8928a0633288c4ac4bbefaa6614e2b2d5e74b1f90c898d"},
+    {file = "pymongoarrow-1.5.2-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:51aabad66a6583b66154ff9db3366aa108cbd38525ad6065d81ffe87d4f538e7"},
+    {file = "pymongoarrow-1.5.2-cp312-cp312-manylinux_2_28_aarch64.whl", hash = "sha256:3ed206633da9b34fa090c931d554727e4d192744f6f26cbbddc7776d66ed8629"},
+    {file = "pymongoarrow-1.5.2-cp312-cp312-manylinux_2_28_x86_64.whl", hash = "sha256:56507f9b2a5f8b9baad9abec805c06eaad7659d08def6c83fc90f8153b7251e4"},
+    {file = "pymongoarrow-1.5.2-cp312-cp312-win_amd64.whl", hash = "sha256:0e12cccd751187cac8fdf00bd399fb0fceb883573e6086ee7a7f32158bcdeb6b"},
+    {file = "pymongoarrow-1.5.2-cp38-cp38-macosx_10_15_x86_64.whl", hash = "sha256:17594e6abe572ce972a6c06592aa6ff4b3bef2dacba2e4420ae0b7ca300c985e"},
+    {file = "pymongoarrow-1.5.2-cp38-cp38-macosx_11_0_arm64.whl", hash = "sha256:62d19f3d95480963a420aa030e34f95adfbfe4a63fb6fd526079c3218b4c22d0"},
+    {file = "pymongoarrow-1.5.2-cp38-cp38-manylinux_2_28_aarch64.whl", hash = "sha256:e20ed6cd391c30cd85851e8355f72672181a91ab7cc817c37c992322a4bfd3aa"},
+    {file = "pymongoarrow-1.5.2-cp38-cp38-manylinux_2_28_x86_64.whl", hash = "sha256:3f9537a3cd938505afbf506f17c95eb2d0ce88dedca09f7d063f70d149330af5"},
+    {file = "pymongoarrow-1.5.2-cp38-cp38-win_amd64.whl", hash = "sha256:74f9cc3373d33427cb6944c64b8db1c9f101641ecd7875d690d50d5c461d5a16"},
+    {file = "pymongoarrow-1.5.2-cp39-cp39-macosx_10_15_x86_64.whl", hash = "sha256:5e192a8e90b1f13127bdf864f9cfce7ff7aac40a916227e518c5ef9e470857e3"},
+    {file = "pymongoarrow-1.5.2-cp39-cp39-macosx_11_0_arm64.whl", hash = "sha256:7593411e65489169671156618a0aca79040df5d9bcfcbf90e4c9d6088fad341e"},
+    {file = "pymongoarrow-1.5.2-cp39-cp39-manylinux_2_28_aarch64.whl", hash = "sha256:4bc471ef6da3211d7c1733acea976c4f5874622ddaad83d1f6ef8094738ecab1"},
+    {file = "pymongoarrow-1.5.2-cp39-cp39-manylinux_2_28_x86_64.whl", hash = "sha256:404fd897b3e8551aabed95baba164383b30691f0817b32d40ea07ee00cfcb20e"},
+    {file = "pymongoarrow-1.5.2-cp39-cp39-win_amd64.whl", hash = "sha256:e743554e6c6eb56bc651d1e291e7984d7837fb4c52a32d28ab73e70962143c68"},
+    {file = "pymongoarrow-1.5.2.tar.gz", hash = "sha256:8b7ba7a31d7f8b5a692bc0e52b5c62ab2d98fc7c6d085b1fb7d66c60b67f21da"},
 ]
 
 [package.dependencies]
-packaging = ">=23.2,<24"
+packaging = ">=23.2"
 pandas = ">=1.3.5,<3"
-pyarrow = ">=15.0,<15.1"
+pyarrow = ">=17.0,<17.1"
 pymongo = ">=4.4,<5"
 
 [package.extras]
@@ -3451,7 +3458,7 @@ description = "Tensors and Dynamic neural networks in Python with strong GPU acc
 optional = false
 python-versions = ">=3.9.0"
 groups = ["main"]
-markers = "sys_platform == \"linux\" and platform_machine == \"aarch64\""
+markers = "sys_platform != \"darwin\" and platform_machine == \"aarch64\" or sys_platform != \"linux\" and sys_platform != \"darwin\""
 files = [
     {file = "torch-2.7.1+cpu-cp39-cp39-manylinux_2_28_aarch64.whl", hash = "sha256:a4551cb97b83df5f93fc0d7538332535828581e1db2f179afc287027afbdd6e8"},
 ]
@@ -3479,7 +3486,7 @@ description = "Tensors and Dynamic neural networks in Python with strong GPU acc
 optional = false
 python-versions = ">=3.9.0"
 groups = ["main"]
-markers = "(sys_platform != \"darwin\" or platform_machine != \"arm64\") and (platform_machine != \"aarch64\" or sys_platform != \"linux\")"
+markers = "sys_platform == \"linux\" and platform_machine != \"aarch64\" or sys_platform == \"darwin\" and platform_machine != \"arm64\""
 files = [
     {file = "torch-2.7.1+cpu-cp39-cp39-manylinux_2_28_x86_64.whl", hash = "sha256:d205cac087d60bc176bdc0b63a1d00dc7a4ee5ac76fd20a2ca318ac65674167e"},
 ]
@@ -4494,4 +4501,4 @@ propcache = ">=0.2.1"
 [metadata]
 lock-version = "2.1"
 python-versions = "3.9.18"
-content-hash = "60fe3d4c81ea146fca20eed29f519967db250f7e252aa1da37ed2e3cc3db6a24"
+content-hash = "b9ef295cc680b88847dd444b4292e1e9284669c3dac92ab19c80d6bf1d11c313"

@@ -7,7 +7,7 @@ license = "Apache-2.0"
 
 [tool.poetry.dependencies]
 python = "3.9.18"
-environs = "^9.5.0"
+environs = "^14.3.0"
 jsonschema = "^4.17.0"
 libapi = {path = "../../libs/libapi", develop = true}
 soundfile = ">=0.12.1"
