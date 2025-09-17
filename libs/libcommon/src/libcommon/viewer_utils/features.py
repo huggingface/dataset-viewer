@@ -539,10 +539,10 @@ def get_supported_unsupported_columns(
         def classify(feature: FeatureType) -> None:
             nonlocal supported
             for unsupported_feature in unsupported_features:
-                if type(unsupported_feature) == type(feature) == Value:
+                if type(unsupported_feature) is type(feature) is Value:
                     if unsupported_feature.dtype == feature.dtype:
                         supported = False
-                elif type(unsupported_feature) == type(feature):
+                elif type(unsupported_feature) is type(feature):
                     supported = False
 
         _visit(feature, classify)
