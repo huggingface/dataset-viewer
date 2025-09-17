@@ -7,7 +7,7 @@ version = "0.1.0"
 
 [tool.poetry.dependencies]
 hf-doc-builder = { git = "https://github.com/huggingface/doc-builder" }
-python = "3.9.18"
+python = "3.12.11"
 watchdog = "^2.1.9"
 
 [build-system]

@@ -6,7 +6,7 @@ version = "0.1.0"
 license = "Apache-2.0"
 
 [tool.poetry.dependencies]
-python = "3.9.18"
+python = "3.12.11"
 environs = "^14.3.0"
 libapi = {path = "../../libs/libapi", develop = true}
 motor = "^3.3.1"
@@ -20,7 +20,6 @@ httpx = "^0.25.0"
 httpx-sse = "^0.1.0"
 motor-types = "^1.0.0b0"
 mypy = "^1.10.0"
-pandas-stubs = "^1.5.3"
 pip-audit = "^2.7.3"
 pytest = "^8.2.2"
 pytest-asyncio = "^0.23.7"

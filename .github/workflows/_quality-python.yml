@@ -11,7 +11,7 @@ on:
 env:
   # required to get access to use a cached poetry venv in "/home/runner/.cache/pypoetry/virtualenvs"
   POETRY_VIRTUALENVS_IN_PROJECT: false
-  python-version: "3.9.18"
+  python-version: "3.12.11"
   poetry-version: "2.1.4"
 jobs:
   code-quality:
