@@ -3414,15 +3414,25 @@ optional = false
 python-versions = ">=3.8"
 groups = ["main"]
 files = [
+    {file = "torchcodec-0.7.0-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:6ae0b7acbc0c1a755ae817a8843715131f24be7807ddc46092d8b49a0fc970eb"},
+    {file = "torchcodec-0.7.0-cp310-cp310-manylinux_2_28_x86_64.whl", hash = "sha256:a0071096724e8ded6a171457ce4680f646499b4a4d285cdb46e130983f965ce4"},
+    {file = "torchcodec-0.7.0-cp310-cp310-win_amd64.whl", hash = "sha256:737da9212594bf2f205582512a7a4f56d39591b357bf5a30e72e858cfcedc2ac"},
+    {file = "torchcodec-0.7.0-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:967a14b31e04721901ddbf965f9e9f733f328c5e98a51e22f414e25ac32e20ba"},
+    {file = "torchcodec-0.7.0-cp311-cp311-manylinux_2_28_x86_64.whl", hash = "sha256:afb1c48b52bd4ee8f485f5a427bb4e82380590255a26b8e9e3fe099e0779287f"},
+    {file = "torchcodec-0.7.0-cp311-cp311-win_amd64.whl", hash = "sha256:a68765cd29159da3cf36eb5716481c617ad9d168fe06418bcde2a9360cc7eb5e"},
     {file = "torchcodec-0.7.0-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:d9d082bbb599f4f7715bfc3b1afa5bc16d8fb9d852e68084c63f1973cc78a1cb"},
+    {file = "torchcodec-0.7.0-cp312-cp312-manylinux_2_28_x86_64.whl", hash = "sha256:3cd23c3296c9b071d56bb2c534a6a98275d65c1a6a7213cdb72a26ec9f9d2fd8"},
+    {file = "torchcodec-0.7.0-cp312-cp312-win_amd64.whl", hash = "sha256:ac942831bff02e6041d8718b71c6f63e4e37c05dd95e72863725c9dbef0d4a7b"},
+    {file = "torchcodec-0.7.0-cp313-cp313-macosx_11_0_arm64.whl", hash = "sha256:32a0115035a7f0a77fa451f67c101e0273a3a37d33b69e1bcd777f00aceb7340"},
+    {file = "torchcodec-0.7.0-cp313-cp313-manylinux_2_28_x86_64.whl", hash = "sha256:9c70f910f9f48e6625aacaed534f766e13d447b895dc7299e96d4db9a93f1514"},
+    {file = "torchcodec-0.7.0-cp313-cp313-win_amd64.whl", hash = "sha256:31b402c9ae3c6e9f33c41fddf7058f9492c443ad55d02f022395f8fa196b58f6"},
+    {file = "torchcodec-0.7.0-cp39-cp39-macosx_11_0_arm64.whl", hash = "sha256:37e5bdc6f0a0e71f8ea742acb874445adbd2457d92363989ada1e454f13b5b2c"},
+    {file = "torchcodec-0.7.0-cp39-cp39-manylinux_2_28_x86_64.whl", hash = "sha256:d2b10c1ad9bfdc21c75b1794566a0d68131f087dd609c27ee707efb035a45198"},
+    {file = "torchcodec-0.7.0-cp39-cp39-win_amd64.whl", hash = "sha256:58be79fec0d6b2a4fa73440b9a84a0be4ba813ed71aa529a2ec72bbb6a57a7f8"},
 ]
 
 [package.extras]
 dev = ["numpy", "pillow", "pytest"]
-
-[package.source]
-type = "url"
-url = "https://download.pytorch.org/whl/cpu/torchcodec-0.7.0-cp312-cp312-macosx_11_0_arm64.whl"
 
 [[package]]
 name = "tqdm"
