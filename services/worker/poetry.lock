@@ -971,14 +971,14 @@ files = [
 
 [[package]]
 name = "datasets"
-version = "4.1.0"
+version = "4.1.1"
 description = "HuggingFace community-driven open-source library of datasets"
 optional = false
 python-versions = ">=3.9.0"
 groups = ["main"]
 files = [
-    {file = "datasets-4.1.0-py3-none-any.whl", hash = "sha256:abc5e61fa605ad09b4d790579c96a4e100329f3a3b57cc6c53ab040a927d48cd"},
-    {file = "datasets-4.1.0.tar.gz", hash = "sha256:42e0330780d5d4d5d664bb22a3eafe02adf073c1f4612c79582403bd8f703ae0"},
+    {file = "datasets-4.1.1-py3-none-any.whl", hash = "sha256:62e4f6899a36be9ec74a7e759a6951253cc85b3fcfa0a759b0efa8353b149dac"},
+    {file = "datasets-4.1.1.tar.gz", hash = "sha256:7d8d5ba8b12861d2c44bfff9c83484ebfafff1ff553371e5901a8d3aab5450e2"},
 ]
 
 [package.dependencies]
@@ -1603,7 +1603,7 @@ develop = true
 [package.dependencies]
 appdirs = "^1.4.4"
 cryptography = "^43.0.1"
-datasets = {version = "4.1.0", extras = ["audio", "vision"]}
+datasets = {version = "4.1.1", extras = ["audio", "vision"]}
 duckdb = "^1.2.2"
 environs = "^14.3.0"
 filelock = "^3.18.0"

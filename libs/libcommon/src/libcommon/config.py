@@ -4,13 +4,18 @@
 
 import logging
 from dataclasses import dataclass, field
-from typing import Literal, Optional
+from typing import Literal, Optional, TypeGuard
 
 from environs import Env
 from marshmallow.validate import OneOf
 
 STORAGE_PROTOCOL_VALUES: list[str] = ["file", "s3"]
 StorageProtocol = Literal["file", "s3"]
+
+
+def is_storage_protocol(storage_protocol: str) -> TypeGuard[StorageProtocol]:
+    return storage_protocol in STORAGE_PROTOCOL_VALUES
+
 
 ASSETS_BASE_URL = "http://localhost/assets"
 ASSETS_STORAGE_PROTOCOL: StorageProtocol = "file"
@@ -27,13 +32,18 @@ class AssetsConfig:
     def from_env(cls) -> "AssetsConfig":
         env = Env(expand_vars=True)
         with env.prefixed("ASSETS_"):
+            storage_protocol_str = env.str(
+                name="STORAGE_PROTOCOL",
+                default=ASSETS_STORAGE_PROTOCOL,
+                validate=OneOf(STORAGE_PROTOCOL_VALUES, error="ASSETS_STORAGE_PROTOCOL must be one of: {choices}"),
+            )
+            if is_storage_protocol(storage_protocol_str):
+                storage_protocol = storage_protocol_str
+            else:
+                raise ValueError(f"Invalid storage_procotol: {storage_protocol_str}")
             return cls(
                 base_url=env.str(name="BASE_URL", default=ASSETS_BASE_URL),
-                storage_protocol=env.str(
-                    name="STORAGE_PROTOCOL",
-                    default=ASSETS_STORAGE_PROTOCOL,
-                    validate=OneOf(STORAGE_PROTOCOL_VALUES, error="ASSETS_STORAGE_PROTOCOL must be one of: {choices}"),
-                ),
+                storage_protocol=storage_protocol,
                 storage_root=env.str(name="STORAGE_ROOT", default=ASSETS_STORAGE_ROOT),
             )
 
@@ -75,15 +85,20 @@ class CachedAssetsConfig:
     def from_env(cls) -> "CachedAssetsConfig":
         env = Env(expand_vars=True)
         with env.prefixed("CACHED_ASSETS_"):
+            storage_protocol_str = env.str(
+                name="STORAGE_PROTOCOL",
+                default=CACHED_ASSETS_STORAGE_PROTOCOL,
+                validate=OneOf(
+                    STORAGE_PROTOCOL_VALUES, error="CACHED_ASSETS_STORAGE_PROTOCOL must be one of: {choices}"
+                ),
+            )
+            if is_storage_protocol(storage_protocol_str):
+                storage_protocol = storage_protocol_str
+            else:
+                raise ValueError(f"Invalid storage_procotol: {storage_protocol_str}")
             return cls(
                 base_url=env.str(name="BASE_URL", default=CACHED_ASSETS_BASE_URL),
-                storage_protocol=env.str(
-                    name="STORAGE_PROTOCOL",
-                    default=CACHED_ASSETS_STORAGE_PROTOCOL,
-                    validate=OneOf(
-                        STORAGE_PROTOCOL_VALUES, error="CACHED_ASSETS_STORAGE_PROTOCOL must be one of: {choices}"
-                    ),
-                ),
+                storage_protocol=storage_protocol,
                 storage_root=env.str(name="STORAGE_ROOT", default=CACHED_ASSETS_STORAGE_ROOT),
             )
 
