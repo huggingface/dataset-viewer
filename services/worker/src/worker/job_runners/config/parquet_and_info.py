@@ -23,7 +23,6 @@ import numpy as np
 import pyarrow as pa
 import pyarrow.parquet as pq
 from datasets import DownloadConfig, Features, load_dataset_builder
-from datasets.arrow_writer import ParquetWriter
 from datasets.builder import DatasetBuilder
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
 from datasets.download import StreamingDownloadManager

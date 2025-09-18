@@ -12,7 +12,6 @@ import polars as pl
 import pyarrow.parquet as pq
 from datasets import Features
 from PIL import Image
-from torchcodec.decoders import AudioDecoder
 from tqdm.contrib.concurrent import thread_map
 
 from libcommon.exceptions import (
@@ -712,6 +711,9 @@ class AudioColumn(MediaColumn):
         """Get audio durations"""
         if example is None:
             return None
+
+        from torchcodec.decoders import AudioDecoder
+
         example_bytes = example["bytes"] if isinstance(example, dict) else example
         duration = AudioDecoder(example_bytes).metadata.duration_seconds_from_header
         if not isinstance(duration, float):

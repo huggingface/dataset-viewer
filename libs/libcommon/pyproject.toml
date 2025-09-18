@@ -9,7 +9,7 @@ license = "Apache-2.0"
 python = "3.12.11"
 appdirs = "^1.4.4"
 cryptography = "^43.0.1"
-datasets = {version = "4.1.1", extras = ["audio", "vision"]}
+datasets = {version = "4.1.1", extras = ["vision"]}
 duckdb = "^1.2.2"
 environs = "^14.3.0"
 filelock = "^3.18.0"
