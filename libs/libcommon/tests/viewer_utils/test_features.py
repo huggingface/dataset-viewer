@@ -12,7 +12,7 @@ import pytest
 from aiobotocore.response import StreamingBody
 from datasets import Audio, Features, Image, List, Pdf, Value
 from moto import mock_s3
-from urllib3._collections import HTTPHeaderDict  # type: ignore
+from urllib3._collections import HTTPHeaderDict
 
 from libcommon.config import S3Config
 from libcommon.storage_client import StorageClient

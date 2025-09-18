@@ -43,7 +43,8 @@ module = [
     "prometheus_client.*",
     "pyarrow.*",
     "tqdm.*",
-    "duckdb.*"
+    "duckdb.*",
+    "pandas.*",
 ]
 # ^ prometheus_client is now typed, but starlette-prometheus requires an old version
 ignore_missing_imports = true

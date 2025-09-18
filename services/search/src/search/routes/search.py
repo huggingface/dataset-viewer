@@ -73,7 +73,7 @@ def full_text_search(
         con.execute("USE memory;")
         con.from_arrow(fts_stage_table).create_view("fts_stage_table")
         con.execute("USE db;")
-        pa_table = con.execute(query=join_stage_and_data_query).arrow()
+        pa_table = con.execute(query=join_stage_and_data_query).arrow().read_all()
     return num_rows_total, pa_table
 
 
