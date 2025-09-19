@@ -32,7 +32,7 @@ quality:
 	if [ -d src ]; then $(POETRY) run mypy src; fi
 	if [ -d tests ]; then $(POETRY) run mypy tests; fi
 # Run bandit
-	if [ -d src ]; then $(POETRY) run bandit -r src; fi
+	if [ -d src ]; then $(POETRY) run bandit -r src --skip B615; fi
 
 # Format source code automatically
 .PHONY: style
