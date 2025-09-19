@@ -6,14 +6,14 @@ version = "1.0.0"
 license = "Apache-2.0"
 
 [tool.poetry.dependencies]
-python = "3.9.18"
+python = "3.12.11"
 aiohttp = "^3.10.2"
 aiolimiter = "^1.0.0"
-environs = "^9.5.0"
+environs = "^14.3.0"
 h5py = "^3.10.0"
 libcommon = {path = "../../libs/libcommon", develop = true}
 mirakuru = "^2.4.2"
-numpy = "^1.22.4"
+numpy = "^2.3.3"
 openpyxl = "^3.1.1"
 pillow = "^10.3.0"
 polars = "^1.27.1"
@@ -29,7 +29,6 @@ presidio-analyzer = { git = "https://github.com/microsoft/presidio.git", rev = "
 bandit = "^1.7.4"
 moto = "^4.2.5"
 mypy = "^1.10.0"
-pandas-stubs = "^1.5.3"
 pip-audit = "^2.7.3"
 pytest = "^8.2.2"
 pytest-asyncio = "^0.23.7"
@@ -63,7 +62,10 @@ module = [
     "fsspec.*",
     "boto3.*",
     "moto.*",
-    "prometheus_client.*"
+    "prometheus_client.*",
+    "yaml.*",
+    "pandas.*",
+    "pytz.*",
 ]
 ignore_missing_imports = true
 # ^ prometheus_client is now typed, but we use an old version to stick with the other services

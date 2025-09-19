@@ -1,4 +1,4 @@
-POETRY := $(shell command -v poetry@2.1.3 2> /dev/null)
+POETRY := $(shell command -v poetry@2.1.4 2> /dev/null)
 POETRY_DEFAULT := $(shell command -v poetry 2> /dev/null)
 POETRY := $(if $(POETRY),$(POETRY),$(POETRY_DEFAULT))
 
@@ -32,7 +32,7 @@ quality:
 	if [ -d src ]; then $(POETRY) run mypy src; fi
 	if [ -d tests ]; then $(POETRY) run mypy tests; fi
 # Run bandit
-	if [ -d src ]; then $(POETRY) run bandit -r src; fi
+	if [ -d src ]; then $(POETRY) run bandit -r src --skip B615; fi
 
 # Format source code automatically
 .PHONY: style

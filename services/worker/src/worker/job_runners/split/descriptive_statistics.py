@@ -267,8 +267,7 @@ def compute_descriptive_statistics_response(
     column_names_str = ", ".join([column.name for column in columns])
     column_counts = Counter([column.__class__.__name__ for column in columns])
     logging.info(
-        f"Computing statistics for {len(columns)} columns: {column_names_str},"
-        f"\nColumn types counts: {column_counts}. "
+        f"Computing statistics for {len(columns)} columns: {column_names_str},\nColumn types counts: {column_counts}. "
     )
 
     local_parquet_paths = list(local_parquet_split_directory.glob("*.parquet"))

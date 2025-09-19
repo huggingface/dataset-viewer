@@ -266,7 +266,7 @@ def create_index(
             # define tokenize macro
             _sql(
                 con,
-                "CREATE MACRO %fts_schema%.tokenize(s) AS string_split_regex(regexp_replace(lower(strip_accents(s::VARCHAR)), '[^a-z]', ' ', 'g'), '\s+');",
+                r"CREATE MACRO %fts_schema%.tokenize(s) AS string_split_regex(regexp_replace(lower(strip_accents(s::VARCHAR)), '[^a-z]', ' ', 'g'), '\s+');",
             )
 
             # create fields table

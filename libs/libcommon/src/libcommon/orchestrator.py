@@ -620,7 +620,7 @@ class DatasetBackfillPlan(Plan):
     revision: str
     priority: Priority = Priority.LOW
     only_first_processing_steps: bool = False
-    processing_graph: ProcessingGraph = field(default=processing_graph)
+    processing_graph: ProcessingGraph = field(default_factory=lambda: processing_graph)
 
     pending_jobs_df: pd.DataFrame = field(init=False)
     cache_entries_df: pd.DataFrame = field(init=False)
@@ -911,7 +911,7 @@ class SmartDatasetUpdatePlan(Plan):
     revision: str
     hf_endpoint: str
     old_revision: str
-    processing_graph: ProcessingGraph = field(default=processing_graph)
+    processing_graph: ProcessingGraph = field(default_factory=lambda: processing_graph)
     storage_clients: Optional[list[StorageClient]] = None
     hf_token: Optional[str] = None
 

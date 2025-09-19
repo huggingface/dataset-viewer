@@ -19,10 +19,10 @@ Install [pyenv](https://github.com/pyenv/pyenv):
 $ curl https://pyenv.run | bash
 ```
 
-Install Python 3.9.18:
+Install Python 3.12.11:
 
 ```bash
-$ pyenv install 3.9.18
+$ pyenv install 3.12.11
 ```
 
 Check that the expected local version of Python is used:
@@ -30,30 +30,30 @@ Check that the expected local version of Python is used:
 ```bash
 $ cd services/worker
 $ python --version
-Python 3.9.18
+Python 3.12.11
 ```
 
 Install Poetry with [pipx](https://pipx.pypa.io/stable/installation/):
 
 - Either a single version:
 ```bash
-pipx install poetry==2.1.3
+pipx install poetry==2.1.4
 poetry --version
 ```
 - Or a parallel version (with a unique suffix):
 ```bash
-pipx install poetry==2.1.3 --suffix=@2.1.3
-poetry@2.1.3 --version
+pipx install poetry==2.1.4 --suffix=@2.1.4
+poetry@2.1.4 --version
 ```
 
 Set the Python version to use with Poetry:
 
 ```bash
-poetry env use 3.9.18
+poetry env use 3.12.11
 ```
 or
 ```bash
-poetry@2.1.3 env use 3.9.18
+poetry@2.1.4 env use 3.12.11
 ```
 
 Install the dependencies:
@@ -92,10 +92,10 @@ eval "$(pyenv init -)"
 
 Logout and login again.
 
-Install Python 3.9.18:
+Install Python 3.12.11:
 
 ```bash
-$ pyenv install 3.9.18
+$ pyenv install 3.12.11
 ```
 
 Check that the expected local version of Python is used:
@@ -103,20 +103,20 @@ Check that the expected local version of Python is used:
 ```bash
 $ cd services/worker
 $ python --version
-Python 3.9.18
+Python 3.12.11
 ```
 
 Install Poetry with [pipx](https://pipx.pypa.io/stable/installation/):
 
 - Either a single version:
 ```bash
-pipx install poetry==2.1.3
+pipx install poetry==2.1.4
 poetry --version
 ```
 - Or a parallel version (with a unique suffix):
 ```bash
-pipx install poetry==2.1.3 --suffix=@2.1.3
-poetry@2.1.3 --version
+pipx install poetry==2.1.4 --suffix=@2.1.4
+poetry@2.1.4 --version
 ```
 
 append the following lines to ~/.zshrc:
@@ -135,11 +135,11 @@ $ source $HOME/.cargo/env
 Set the python version to use with poetry:
 
 ```bash
-poetry env use 3.9.18
+poetry env use 3.12.11
 ```
 or
 ```bash
-poetry@2.1.3 env use 3.9.18
+poetry@2.1.4 env use 3.12.11
 ```
 
 Install the dependencies:
@@ -188,8 +188,8 @@ If you use pyenv:
 
 ```bash
 cd libs/libcommon/
-pyenv install 3.9.18
-pyenv local 3.9.18
+pyenv install 3.12.11
+pyenv local 3.12.11
 poetry env use python3.9
 ```
 

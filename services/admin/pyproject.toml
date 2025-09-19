@@ -6,8 +6,8 @@ version = "0.1.2"
 license = "Apache-2.0"
 
 [tool.poetry.dependencies]
-python = "3.9.18"
-environs = "^9.5.0"
+python = "3.12.11"
+environs = "^14.3.0"
 httpx = "^0.25.0"
 libapi = {path = "../../libs/libapi", develop = true}
 requests = "^2.32.2"

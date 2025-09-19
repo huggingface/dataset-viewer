@@ -23,7 +23,6 @@ import numpy as np
 import pyarrow as pa
 import pyarrow.parquet as pq
 from datasets import DownloadConfig, Features, load_dataset_builder
-from datasets.arrow_writer import ParquetWriter
 from datasets.builder import DatasetBuilder
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
 from datasets.download import StreamingDownloadManager
@@ -697,7 +696,7 @@ class limit_parquet_writes:
 
             return wrapped
 
-        self.exit_stack.enter_context(patch.object(ParquetWriter, "_WRITER_CLASS", _TrackedParquetWriter))
+        self.exit_stack.enter_context(patch("pyarrow.parquet.ParquetWriter", _TrackedParquetWriter))
         if isinstance(self.builder, datasets.builder.GeneratorBasedBuilder):
             self.exit_stack.enter_context(
                 patch.object(self.builder, "_generate_examples", limited_generator(self.builder._generate_examples))
@@ -952,7 +951,7 @@ def get_total_files_size(urlpaths: list[str], storage_options: dict[str, Any]) -
         )
         if size
     )
-    return total_size
+    return int(total_size)
 
 
 def stream_convert_to_parquet(

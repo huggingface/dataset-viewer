@@ -59,7 +59,7 @@ def compute_image_url_columns(
             rows=first_rows_response["content"]["rows"],
             truncated=first_rows_response["content"]["truncated"]
             if "truncated" in first_rows_response["content"]
-            else None,
+            else False,
         )
 
         features = upstream_response_content["features"]

@@ -6,57 +6,57 @@ version = "0.6.8"
 license = "Apache-2.0"
 
 [tool.poetry.dependencies]
-python = "3.9.18"
+python = "3.12.11"
 appdirs = "^1.4.4"
 cryptography = "^43.0.1"
-datasets = {git = "https://github.com/huggingface/datasets.git", rev = "8a4384dc9484ae9c3100f0fc594cd7773a5b8b44", extras = ["audio", "vision"]}
+datasets = {version = "4.1.1", extras = ["vision"]}
 duckdb = "^1.2.2"
-environs = "^9.5.0"
+environs = "^14.3.0"
 filelock = "^3.18.0"
 fsspec = {version = "2024.3.1", extras = ["s3"]}
 huggingface-hub = {version = "^0.31.0", extras = ["hf-transfer"]}
 mongo-types = "0.15.1"
-mongoengine = "^0.27.0"
+mongoengine = "^0.29.1"
 networkx = "^3.0"
-numpy = "^1.22.4"
+numpy = "^2.3.3"
 orjson = "^3.9.15"
 pandas = "^2.2.0"
 pdfplumber = ">=0.11.4"
 pillow = "^10.3.0"
-polars = "^1.27.1"
+polars = "1.31.0"  # 1.33.1 has issues with datetimes
 psutil = "^5.9.4"
-pyarrow = "15.0.2"
-pymongoarrow = "^1.3.0"
+pyarrow = "^21.0.0"
+pymongoarrow = "^1.10.0"
 pymupdf = "^1.26.1"
 pydub = "^0.25.1"
-pymongo = { extras = ["srv"], version = "^4.6.3" }
+pymongo = { extras = ["srv"], version = "^4.15.1" }
 pytz = "^2020.1"
 s3fs = "2024.3.1"  # Aligned with fsspec[s3] version
 soundfile = ">=0.12.1"
 starlette-prometheus = "^0.9.0"
 torch = [
-    { url = "https://download.pytorch.org/whl/cpu/torch-2.7.1%2Bcpu-cp39-cp39-manylinux_2_28_x86_64.whl", markers = "sys_platform == 'linux' and platform_machine != 'aarch64'"},
-    { url = "https://download.pytorch.org/whl/cpu/torch-2.7.1%2Bcpu-cp39-cp39-manylinux_2_28_x86_64.whl", markers = "sys_platform == 'darwin' and platform_machine != 'arm64'"},
-    { url = "https://download.pytorch.org/whl/cpu/torch-2.7.1-cp39-none-macosx_11_0_arm64.whl", markers = "sys_platform == 'darwin' and platform_machine == 'arm64'"},
-    { url = "https://download.pytorch.org/whl/cpu/torch-2.7.1%2Bcpu-cp39-cp39-manylinux_2_28_aarch64.whl", markers = "sys_platform == 'linux' and platform_machine == 'aarch64'"},
+    { url = "https://download.pytorch.org/whl/cpu/torch-2.8.0%2Bcpu-cp312-cp312-manylinux_2_28_x86_64.whl", markers = "sys_platform == 'linux' and platform_machine != 'aarch64'"},
+    { url = "https://download.pytorch.org/whl/cpu/torch-2.8.0%2Bcpu-cp312-cp312-manylinux_2_28_x86_64.whl", markers = "sys_platform == 'darwin' and platform_machine != 'arm64'"},
+    { url = "https://download.pytorch.org/whl/cpu/torch-2.8.0-cp312-none-macosx_11_0_arm64.whl", markers = "sys_platform == 'darwin' and platform_machine == 'arm64'"},
+    { url = "https://download.pytorch.org/whl/cpu/torch-2.8.0%2Bcpu-cp312-cp312-manylinux_2_28_aarch64.whl", markers = "sys_platform == 'linux' and platform_machine == 'aarch64'"},
 ]
-torchcodec = "0.4.0"
+torchcodec = "0.7.0"
 tqdm = "^4.66.3"
 
 [tool.poetry.group.dev.dependencies]
-aiobotocore = "^2.13.0"
+aiobotocore = "2.13.0"
 bandit = "^1.7.4"
-boto3 = "^1.34.0"
+boto3 = "1.34.106"
 httpx = "^0.26.0"
 moto = "^4.2.8"
 mypy = "^1.10.0"
-pandas-stubs = "^1.5.3"
+pandas-stubs = "^2.2.0"
 pip-audit = "^2.7.3"
 pytest = "^8.2.2"
 pytest-datadir = "^1.5.0"
 pytest-memray = "^1.6.0"
 ruff = "^0"
-types-aiobotocore = {extras = ["signer"], version = "^2.13.0"}
+types-aiobotocore = {extras = ["signer"], version = "2.13.0"}
 types-psutil = "^5.9.5"
 types-pytz = "^2022.1.1"
 validators = "^0.22.0"
@@ -91,7 +91,8 @@ module = [
     "aiobotocore.*",
     "requests.*",
     "dateutil.*",
-    "torchcodec.*"
+    "torchcodec.*",
+    "duckdb.*"
 ]
 ignore_missing_imports = true
 

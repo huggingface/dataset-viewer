@@ -70,8 +70,7 @@ class CloudFrontSigner:
         Returns:
             `str`: The signed url
         """
-        return self._signer.generate_presigned_url(url, date_less_than=date_less_than)  # type: ignore
-        # ^ ignoring mypy type error, it should return a string
+        return self._signer.generate_presigned_url(url, date_less_than=date_less_than)
 
     def sign_url(self, url: str) -> str:
         """

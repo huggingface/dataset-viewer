@@ -5,8 +5,8 @@ name: Launch end-to-end tests
 on:
   workflow_call:
 env:
-  python-version: 3.9.18
-  poetry-version: "2.1.3"
+  python-version: 3.12.11
+  poetry-version: "2.1.4"
   # required to get access to use a cached poetry venv in "/home/runner/.cache/pypoetry/virtualenvs"
   POETRY_VIRTUALENVS_IN_PROJECT: false
   working-directory: e2e

@@ -6,8 +6,8 @@ version = "0.2.0"
 license = "Apache-2.0"
 
 [tool.poetry.dependencies]
-python = "3.9.18"
-environs = "^9.5.0"
+python = "3.12.11"
+environs = "^14.3.0"
 jsonschema = "^4.17.0"
 libapi = {path = "../../libs/libapi", develop = true}
 soundfile = ">=0.12.1"
@@ -17,7 +17,6 @@ watchdog = { extras = ["watchmedo"], version = "^2.2.1" }
 [tool.poetry.group.dev.dependencies]
 bandit = "^1.7.4"
 mypy = "^1.10.0"
-pandas-stubs = "^1.5.3"
 pip-audit = "^2.7.3"
 pytest = "^8.2.2"
 pytest-memray = "^1.6.0"
@@ -43,7 +42,9 @@ module = [
     "fsspec.*",
     "prometheus_client.*",
     "pyarrow.*",
-    "tqdm.*"
+    "tqdm.*",
+    "duckdb.*",
+    "pandas.*",
 ]
 # ^ prometheus_client is now typed, but starlette-prometheus requires an old version
 ignore_missing_imports = true

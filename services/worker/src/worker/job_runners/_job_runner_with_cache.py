@@ -35,7 +35,7 @@ class JobRunnerWithCache(JobRunner):
         self.base_cache_directory = cache_directory
 
     def get_cache_subdirectory(self, digits: int = 14) -> str:
-        random_str = f"{random.randrange(10**(digits - 1), 10**digits)}"  # nosec B311
+        random_str = f"{random.randrange(10 ** (digits - 1), 10**digits)}"  # nosec B311
         # TODO: Refactor, need a way to generate payload based only on provided params
         payload = (
             random_str,

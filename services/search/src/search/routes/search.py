@@ -61,7 +61,7 @@ def full_text_search(
     extensions_directory: Optional[str] = None,
 ) -> tuple[int, pa.Table]:
     with duckdb_connect_readonly(extensions_directory=extensions_directory, database=index_file_location) as con:
-        fts_stage_table = con.execute(query=FTS_STAGE_TABLE_COMMAND, parameters=[query]).arrow()
+        fts_stage_table = con.execute(query=FTS_STAGE_TABLE_COMMAND, parameters=[query]).arrow().read_all()
         num_rows_total = fts_stage_table.num_rows
         logging.info(f"got {num_rows_total=} results for {query=} using {offset=} {length=}")
         fts_stage_table = fts_stage_table.sort_by([(HF_FTS_SCORE, "descending")]).slice(offset, length)
@@ -73,7 +73,7 @@ def full_text_search(
         con.execute("USE memory;")
         con.from_arrow(fts_stage_table).create_view("fts_stage_table")
         con.execute("USE db;")
-        pa_table = con.execute(query=join_stage_and_data_query).arrow()
+        pa_table = con.execute(query=join_stage_and_data_query).arrow().read_all()
     return num_rows_total, pa_table
 
 

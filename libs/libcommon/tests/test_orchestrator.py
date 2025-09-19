@@ -194,7 +194,7 @@ def test_finish_job(
     assert CachedResponseDocument.objects(dataset=DATASET_NAME).count() == 1
     cached_response = CachedResponseDocument.objects(dataset=DATASET_NAME).first()
     assert cached_response
-    assert cached_response.content == CONFIG_NAMES_CONTENT
+    assert cached_response.content == CONFIG_NAMES_CONTENT  # type: ignore
     assert cached_response.http_status == HTTPStatus.OK
     assert cached_response.error_code is None
     assert cached_response.details == {}

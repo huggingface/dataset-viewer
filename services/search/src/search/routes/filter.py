@@ -214,7 +214,7 @@ def execute_filter_query(
         )
         filter_count_query = FILTER_COUNT_QUERY.format(where=f"WHERE {where}" if where else "")
         try:
-            pa_table = con.sql(filter_query).arrow()
+            pa_table = con.sql(filter_query).arrow().read_all()
             num_rows_total = con.sql(filter_count_query).fetchall()[0][0]
         except duckdb.Error as err:
             raise InvalidParameterError(message="A query parameter is invalid") from err
