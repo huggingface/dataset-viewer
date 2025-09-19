@@ -657,10 +657,10 @@ def create_parquet_and_info_response(
     }
 
 
-CSV_PARQUET_SIZE = 1_866
-PARTIAL_CSV_PARQUET_SIZE = 8_188
-AUDIO_PARQUET_SIZE = 16_542
-BIG_PARQUET_FILE = 38_896
+CSV_PARQUET_SIZE = 1730
+PARTIAL_CSV_PARQUET_SIZE = 5806
+AUDIO_PARQUET_SIZE = 16546
+BIG_PARQUET_FILE = 18418
 
 DATA_cols = {
     "col_1": {"_type": "Value", "dtype": "int64"},
