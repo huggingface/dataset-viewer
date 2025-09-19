@@ -62,7 +62,10 @@ module = [
     "fsspec.*",
     "boto3.*",
     "moto.*",
-    "prometheus_client.*"
+    "prometheus_client.*",
+    "yaml.*",
+    "pandas.*",
+    "pytz.*",
 ]
 ignore_missing_imports = true
 # ^ prometheus_client is now typed, but we use an old version to stick with the other services

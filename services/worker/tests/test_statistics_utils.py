@@ -65,7 +65,7 @@ def test_generate_bins(
 
 
 def count_expected_statistics_for_numerical_column(
-    column: pd.Series,  # type: ignore
+    column: pd.Series,
     dtype: ColumnType,
 ) -> dict[str, Any]:
     minimum, maximum, mean, median, std = (
@@ -104,9 +104,9 @@ def count_expected_statistics_for_numerical_column(
     if dtype is ColumnType.FLOAT:
         minimum = minimum.astype(float).round(DECIMALS).item()
         maximum = maximum.astype(float).round(DECIMALS).item()
-        mean = mean.astype(float).round(DECIMALS).item()  # type: ignore
-        median = median.astype(float).round(DECIMALS).item()  # type: ignore
-        std = std.astype(float).round(DECIMALS).item()  # type: ignore
+        mean = mean.astype(float).round(DECIMALS).item()
+        median = median.astype(float).round(DECIMALS).item()
+        std = std.astype(float).round(DECIMALS).item()
     else:
         mean, median, std = list(np.round([mean, median, std], DECIMALS))
     return {
@@ -124,7 +124,7 @@ def count_expected_statistics_for_numerical_column(
     }
 
 
-def count_expected_statistics_for_list_column(column: pd.Series) -> dict[str, Any]:  # type: ignore
+def count_expected_statistics_for_list_column(column: pd.Series) -> dict[str, Any]:
     if column.isnull().all():
         lengths_column = pd.Series([None] * column.shape[0])
         return count_expected_statistics_for_numerical_column(lengths_column, dtype=ColumnType.INT)
@@ -138,7 +138,7 @@ def count_expected_statistics_for_list_column(column: pd.Series) -> dict[str, An
 
 
 def count_expected_statistics_for_categorical_column(
-    column: pd.Series,  # type: ignore
+    column: pd.Series,
     class_label_feature: ClassLabel,
 ) -> dict[str, Any]:
     n_samples = column.shape[0]
@@ -159,7 +159,7 @@ def count_expected_statistics_for_categorical_column(
     }
 
 
-def count_expected_statistics_for_string_column(column: pd.Series) -> dict[str, Any]:  # type: ignore
+def count_expected_statistics_for_string_column(column: pd.Series) -> dict[str, Any]:
     n_samples = column.shape[0]
     nan_count = column.isna().sum()
     value_counts = column.value_counts(dropna=True).to_dict()
@@ -182,7 +182,7 @@ def count_expected_statistics_for_string_column(column: pd.Series) -> dict[str, 
     return count_expected_statistics_for_numerical_column(lengths_column, dtype=ColumnType.INT)
 
 
-def count_expected_statistics_for_bool_column(column: pd.Series) -> dict[str, Any]:  # type: ignore
+def count_expected_statistics_for_bool_column(column: pd.Series) -> dict[str, Any]:
     n_samples = column.shape[0]
     nan_count = column.isna().sum()
     value_counts = column.value_counts(dropna=True).to_dict()
@@ -473,7 +473,7 @@ def test_image_statistics(
     assert computed == expected
 
 
-def count_expected_statistics_for_datetime_column(column: pd.Series, column_name: str) -> dict[str, Any]:  # type: ignore
+def count_expected_statistics_for_datetime_column(column: pd.Series, column_name: str) -> dict[str, Any]:
     n_samples = column.shape[0]
     nan_count = column.isna().sum()
     if nan_count == n_samples:

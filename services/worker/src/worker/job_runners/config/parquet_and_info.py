@@ -951,7 +951,7 @@ def get_total_files_size(urlpaths: list[str], storage_options: dict[str, Any]) -
         )
         if size
     )
-    return total_size
+    return int(total_size)
 
 
 def stream_convert_to_parquet(

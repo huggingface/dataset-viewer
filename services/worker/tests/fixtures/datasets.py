@@ -37,7 +37,7 @@ from .statistics_dataset import (
 )
 
 SEARCH_TEXT_CONTENT = [
-    ("Grand Moff Tarkin and Lord Vader are interrupted in their discussion by the buzz of the" " comlink"),
+    ("Grand Moff Tarkin and Lord Vader are interrupted in their discussion by the buzz of the comlink"),
     "There goes another one.",
     "Vader turns round and round in circles as his ship spins into space.",
     "We count thirty Rebel ships, Lord Vader.",

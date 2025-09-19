@@ -49,7 +49,7 @@ BASE_PATTERNS_WITH_SEPARATOR = [
     if "{sep}" in pattern
 ]
 NON_WORD_GLOB_SEPARATOR = f"[{NON_WORDS_CHARS}]"
-NON_WORD_REGEX_SEPARATOR = NON_WORD_GLOB_SEPARATOR.replace(".", "\.")
+NON_WORD_REGEX_SEPARATOR = NON_WORD_GLOB_SEPARATOR.replace(".", r"\.")
 
 if (
     any(
