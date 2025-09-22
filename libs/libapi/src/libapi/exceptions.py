@@ -198,4 +198,4 @@ class UnexpectedApiError(ApiError):
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         logging.error(message, exc_info=cause)
-        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "UnexpectedApiError", cause)
+        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "UnexpectedApiError", cause, True)
