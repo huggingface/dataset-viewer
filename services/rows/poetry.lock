@@ -1258,6 +1258,25 @@ type = "directory"
 url = "../../libs/libcommon"
 
 [[package]]
+name = "libviewer"
+version = "0.6.8"
+description = "Library for utils common to all the services"
+optional = false
+python-versions = "3.12.11"
+groups = ["main"]
+files = []
+develop = true
+
+[package.dependencies]
+click = "*"
+huggingface_hub = "*"
+pyarrow = "*"
+
+[package.source]
+type = "directory"
+url = "../../libs/libviewer"
+
+[[package]]
 name = "license-expression"
 version = "30.4.4"
 description = "license-expression is a comprehensive utility library to parse, compare, simplify and normalize license expressions (such as SPDX license expressions) using boolean logic."
@@ -4287,4 +4306,4 @@ propcache = ">=0.2.1"
 [metadata]
 lock-version = "2.1"
 python-versions = "3.12.11"
-content-hash = "aefaed745ad637ff04036d3ea43286018d01663c43babad3d1ef6ac589e5de14"
+content-hash = "cc7a991e8ed8b4348b007631d8b54f45a20a182179c0ad3dd5f0a0c7a5438697"

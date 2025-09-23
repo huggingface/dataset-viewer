@@ -6,7 +6,7 @@ version = "0.6.8"
 license = "Apache-2.0"
 
 [tool.poetry.dependencies]
-python = "3.9.18"
+python = "3.12.11"
 click = "8.1.8"
 pyarrow = "15.0.2"
 huggingface-hub = {version = "^0.31.0", extras = ["hf-transfer"]}
