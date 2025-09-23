@@ -300,7 +300,7 @@ def create_index(
                 )
                 + INSTALL_AND_LOAD_EXTENSION_COMMAND
                 + (
-                    "ATTACH '%database%' as db (READ_ONLY);"  # nosec - tmp_dir, batch_size, rank and i are safe
+                    "ATTACH IF NOT EXISTS '%database%' as db (READ_ONLY);"  # nosec - tmp_dir, batch_size, rank and i are safe
                     "USE db;"
                     f"ATTACH '{tmp_dir}/tmp_{rank}_{i}.duckdb' as tmp_{rank}_{i};"
                     f"""
