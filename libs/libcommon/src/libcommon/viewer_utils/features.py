@@ -201,10 +201,15 @@ def get_audio_file_bytes(value: Any) -> bytes:
 def get_audio_file_extension(value: Any) -> Optional[str]:
     from datasets.features._torchcodec import AudioDecoder
 
-    if isinstance(value, dict) and "path" in value and isinstance(value["path"], str):
-        # .split("::")[0] for chained URLs like zip://audio.wav::https://foo.bar/data.zip
-        # It might be "" for audio files downloaded from the Hub: make it None
-        audio_file_extension = os.path.splitext(value["path"].split("::")[0])[1] or None
+    if isinstance(value, dict) and "path" in value:
+        if isinstance(value["path"], str):
+            # .split("::")[0] for chained URLs like zip://audio.wav::https://foo.bar/data.zip
+            # It might be "" for audio files downloaded from the Hub: make it None
+            audio_file_extension = os.path.splitext(value["path"].split("::")[0])[1] or None
+        else:
+            audio_file_extension = None
+    elif isinstance(value, dict) and "bytes" in value and isinstance(value["bytes"], bytes):
+        audio_file_extension = None
     elif isinstance(value, AudioDecoder):
         if (
             hasattr(value, "_hf_encoded")
@@ -216,7 +221,7 @@ def get_audio_file_extension(value: Any) -> Optional[str]:
             # It might be "" for audio files downloaded from the Hub: make it None
             audio_file_extension = os.path.splitext(value._hf_encoded["path"].split("::")[0])[1] or None
         else:
-            audio_file_extension = ".wav"
+            audio_file_extension = None
     else:
         raise ValueError(
             f"An audio sample should have 'path' and 'bytes' (or be an AudioDecoder) but got {', '.join(value)}."
