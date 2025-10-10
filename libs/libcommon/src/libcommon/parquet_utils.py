@@ -454,42 +454,39 @@ class ParquetIndexWithMetadata:
 
     @staticmethod
     def from_parquet_metadata_items(
-        parquet_file_metadata_items: list[ParquetFileMetadataItem],
-        features: Optional[Features],
+        parquet_files: list[ParquetFileMetadataItem],
+        features: Features,
         parquet_metadata_directory: StrPath,
         httpfs: HTTPFileSystem,
         hf_token: Optional[str],
         max_arrow_data_in_memory: int,
         unsupported_features: list[FeatureType] = [],
     ) -> "ParquetIndexWithMetadata":
-        if not parquet_file_metadata_items:
+        if not parquet_files:
             raise EmptyParquetMetadataError("No parquet files found.")
+        if not features:
+            raise ValueError("Features must be provided.")
 
-        partial = parquet_export_is_partial(parquet_file_metadata_items[0]["url"])
+        partial = parquet_export_is_partial(parquet_files[0]["url"])
 
         with StepProfiler(
             method="parquet_index_with_metadata.from_parquet_metadata_items",
             step="get the index from parquet metadata",
         ):
             try:
-                parquet_files_metadata = sorted(
-                    parquet_file_metadata_items, key=lambda parquet_file_metadata: parquet_file_metadata["filename"]
-                )
-                parquet_files_urls = [parquet_file_metadata["url"] for parquet_file_metadata in parquet_files_metadata]
+                parquet_files_urls = [f["url"] for f in parquet_files]
                 metadata_paths = [
-                    os.path.join(parquet_metadata_directory, parquet_file_metadata["parquet_metadata_subpath"])
-                    for parquet_file_metadata in parquet_files_metadata
+                    os.path.join(parquet_metadata_directory, f["parquet_metadata_subpath"])
+                    for f in parquet_files
                 ]
-                num_bytes = [parquet_file_metadata["size"] for parquet_file_metadata in parquet_files_metadata]
-                num_rows = [parquet_file_metadata["num_rows"] for parquet_file_metadata in parquet_files_metadata]
+                num_bytes = [f["size"] for f in parquet_files]
+                num_rows = [f["num_rows"] for f in parquet_files]
             except Exception as e:
                 raise ParquetResponseFormatError(f"Could not parse the list of parquet files: {e}") from e
 
         with StepProfiler(
             method="parquet_index_with_metadata.from_parquet_metadata_items", step="get the dataset's features"
         ):
-            if features is None:  # config-parquet version<6 didn't have features
-                features = Features.from_arrow_schema(pq.read_schema(metadata_paths[0]))
             supported_columns, unsupported_columns = get_supported_unsupported_columns(
                 features,
                 unsupported_features=unsupported_features,
@@ -520,56 +517,109 @@ class RowsIndex:
         parquet_metadata_directory: StrPath,
         max_arrow_data_in_memory: int,
         unsupported_features: list[FeatureType] = [],
+        data_store="hf://"
     ):
         self.dataset = dataset
         self.config = config
         self.split = split
-        self.httpfs = httpfs
-        self.parquet_index = self._init_parquet_index(
+
+        self._init_dataset_info(parquet_metadata_directory)
+        self._init_parquet_index(
             hf_token=hf_token,
+            httpfs=httpfs,
             parquet_metadata_directory=parquet_metadata_directory,
             max_arrow_data_in_memory=max_arrow_data_in_memory,
             unsupported_features=unsupported_features,
         )
+        self._init_viewer_index(
+            data_store=data_store,
+            metadata_store=f"file://{parquet_metadata_directory}"
+        )
+
+    def _init_dataset_info(self, parquet_metadata_directory: StrPath):
+        # get the list of parquet files and features
+        with StepProfiler(method="rows_index._get_dataset_metadata", step="all"):
+            response = get_previous_step_or_raise(
+                kind=CONFIG_PARQUET_METADATA_KIND,
+                dataset=self.dataset,
+                config=self.config,
+                split=None
+            )
+
+        # set the revision of the dataset
+        self.revision = response["dataset_git_revision"]
+
+        # get the list of parquet files
+        parquet_files = response["content"]["parquet_files_metadata"]
+        # filter only files for the current split and config
+        parquet_files = [f for f in parquet_files if f["split"] == self.split and f["config"] == self.config]
+        # sort by filename to have a deterministic order
+        parquet_files = sorted(parquet_files, key=lambda x: x["filename"])
+        if not parquet_files:
+            raise EmptyParquetMetadataError("No parquet files found.")
+        self.parquet_files = parquet_files
+
+        # retrieve the features from the mongo response
+        features = response["content"].get("features")
+        if features:
+            self.features = Features.from_dict(features)
+        else:
+            # config-parquet version<6 didn't have features
+            first_metadata_file = os.path.join(
+                parquet_metadata_directory, parquet_files[0]["parquet_metadata_subpath"]
+            )
+            arrow_schema = pq.read_schema(first_metadata_file)
+            self.features = Features.from_arrow_schema(arrow_schema)
 
     def _init_parquet_index(
         self,
+        httpfs: HfFileSystem,
         hf_token: Optional[str],
         parquet_metadata_directory: StrPath,
         max_arrow_data_in_memory: int,
-        unsupported_features: list[FeatureType] = [],
-    ) -> ParquetIndexWithMetadata:
-        with StepProfiler(method="rows_index._init_parquet_index", step="all"):
-            # get the list of parquet files
-            with StepProfiler(method="rows_index._init_parquet_index", step="get list of parquet files for split"):
-                response = get_previous_step_or_raise(
-                    kind=CONFIG_PARQUET_METADATA_KIND,
-                    dataset=self.dataset,
-                    config=self.config,
-                    split=None,
-                )
-                self.revision = response["dataset_git_revision"]
-                content = response["content"]
-                if content.get("features"):  # config-parquet-metadata version<2 didn't have features
-                    features = Features.from_dict(content["features"])
-                else:
-                    features = None
-            logging.info(
-                f"Create ParquetIndexWithMetadata for dataset={self.dataset}, config={self.config}, split={self.split}"
-            )
-            return ParquetIndexWithMetadata.from_parquet_metadata_items(
-                [
-                    parquet_item
-                    for parquet_item in content["parquet_files_metadata"]
-                    if parquet_item["split"] == self.split and parquet_item["config"] == self.config
-                ],
-                features=features,
-                parquet_metadata_directory=parquet_metadata_directory,
-                httpfs=self.httpfs,
-                hf_token=hf_token,
-                max_arrow_data_in_memory=max_arrow_data_in_memory,
-                unsupported_features=unsupported_features,
-            )
+        unsupported_features: list[FeatureType] = []
+    ) -> None:
+        logging.info(
+            f"Create ParquetIndexWithMetadata for dataset={self.dataset}, config={self.config}, split={self.split}"
+        )
+        self.parquet_index = ParquetIndexWithMetadata.from_parquet_metadata_items(
+            parquet_files=self.parquet_files,
+            features=self.features,
+            parquet_metadata_directory=parquet_metadata_directory,
+            httpfs=httpfs,
+            hf_token=hf_token,
+            max_arrow_data_in_memory=max_arrow_data_in_memory,
+            unsupported_features=unsupported_features,
+        )
+
+    def _init_viewer_index(self, data_store: str, metadata_store: str) -> None:
+        logging.info(
+            f"Create libviewer.Dataset for dataset={self.dataset}, config={self.config}, split={self.split}"
+        )
+        try:
+            from libviewer import Dataset
+        except ImportError as err:
+            raise ImportError(
+                "libviewer is not installed. Please install it with `pip install libviewer` to use page pruning."
+            ) from err
+
+        # construct the required parquet_files list for libviewer.Dataset
+        files = []
+        for f in self.parquet_files:
+            files.append({
+                "path": f"{f['config']}/{f['split']}/{f['filename']}",
+                "size": f["size"],
+                "num_rows": f["num_rows"],
+                "metadata_path": f["parquet_metadata_subpath"]
+            })
+
+        self.viewer_index = Dataset(
+            name=self.dataset,
+            files=files,
+            revision=self.revision,
+            data_store=data_store,
+            metadata_store=metadata_store,
+        )
 
     # note that this cache size is global for the class, not per instance
     @lru_cache(maxsize=1)
@@ -591,6 +641,19 @@ class RowsIndex:
             f" split={self.split}, offset={offset}, length={length}"
         )
         return self.parquet_index.query(offset=offset, length=length)
+
+    def query_with_page_pruning(self, offset: int, length: int) -> pa.Table:
+        logging.info(
+            f"Query libviewer.Dataset for dataset={self.dataset}, config={self.config},"
+            f" split={self.split}, offset={offset}, length={length}, with page pruning"
+        )
+        # IndexError is not ideal but .query() raises it for invalid offsets
+        if offset < 0:
+            raise IndexError("Offset must be non-negative")
+        if length < 0:
+            raise IndexError("Length must be non-negative")
+        batches, _files_to_index = self.viewer_index.sync_scan(offset=offset, limit=length)
+        return pa.Table.from_batches(batches, schema=self.features.arrow_schema)
 
     # note that this cache size is global for the class, not per instance
     @lru_cache(maxsize=1)
@@ -638,6 +701,7 @@ class Indexer:
         dataset: str,
         config: str,
         split: str,
+        data_store="hf://"
     ) -> RowsIndex:
         filter_features = (
             self.all_columns_supported_datasets_allow_list != "all"
@@ -653,4 +717,5 @@ class Indexer:
             parquet_metadata_directory=self.parquet_metadata_directory,
             max_arrow_data_in_memory=self.max_arrow_data_in_memory,
             unsupported_features=unsupported_features,
+            data_store=data_store
         )

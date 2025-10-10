@@ -355,7 +355,8 @@ def rows_index_with_parquet_metadata(
 ) -> Generator[RowsIndex, None, None]:
     with ds_sharded_fs.open("default/train/0003.parquet") as f:
         with patch("libcommon.parquet_utils.HTTPFile", return_value=f):
-            yield indexer.get_rows_index("ds_sharded", "default", "train")
+            data_store = f"file://{ds_sharded_fs.local_root_dir}"
+            yield indexer.get_rows_index("ds_sharded", "default", "train", data_store=data_store)
 
 
 @pytest.fixture
@@ -463,6 +464,34 @@ def test_rows_index_query_with_parquet_metadata(
     assert rows_index_with_parquet_metadata.query(offset=1, length=99999999).to_pydict() == ds_sharded[1:]
     with pytest.raises(IndexError):
         rows_index_with_parquet_metadata.query(offset=-1, length=2)
+
+
+def test_rows_index_query_with_page_pruning(
+    rows_index_with_parquet_metadata: RowsIndex, ds_sharded: Dataset
+) -> None:
+    try:
+        import libviewer
+    except ImportError:
+        pytest.skip("libviewer is not installed")
+
+    assert isinstance(rows_index_with_parquet_metadata.viewer_index, libviewer.Dataset)
+
+    result = rows_index_with_parquet_metadata.query_with_page_pruning(offset=1, length=3)
+    assert result.to_pydict() == ds_sharded[1:4]
+
+    result = rows_index_with_parquet_metadata.query_with_page_pruning(offset=1, length=0)
+    assert result.to_pydict() == ds_sharded[:0]
+
+    result = rows_index_with_parquet_metadata.query_with_page_pruning(offset=999999, length=1)
+    assert result.to_pydict() == ds_sharded[:0]
+
+    result = rows_index_with_parquet_metadata.query_with_page_pruning(offset=1, length=99999999)
+    assert result.to_pydict() == ds_sharded[1:]
+
+    with pytest.raises(IndexError):
+        rows_index_with_parquet_metadata.query_with_page_pruning(offset=0, length=-1)
+    with pytest.raises(IndexError):
+        rows_index_with_parquet_metadata.query_with_page_pruning(offset=-1, length=2)
 
 
 def test_rows_index_query_with_too_big_rows(rows_index_with_too_big_rows: RowsIndex, ds_sharded: Dataset) -> None:
