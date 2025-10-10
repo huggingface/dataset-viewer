@@ -9,12 +9,12 @@ name = "libviewer"
 crate-type = ["cdylib"]
 
 [dependencies]
-arrow = { version = "56", features = ["pyarrow"] }
+arrow = { version = "56.2", features = ["pyarrow"] }
 futures = "0.3"
 object_store = "0.12.0"
 object_store_opendal = "0.52.0"
 opendal = { version = "0.53.2", features = ["services-huggingface"] }
-parquet = { version = "56", features = ["async", "object_store"] }
+parquet = { version = "56.2", features = ["async", "object_store"] }
 pyo3 = { version = "^0.25", features = ["extension-module"] }
 pyo3-async-runtimes = { version = "^0.25", features = ["tokio-runtime"] }
 tempfile = "3.20.0"

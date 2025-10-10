@@ -4,41 +4,40 @@ use std::sync::Arc;
 use arrow::record_batch::RecordBatch;
 use object_store::path::Path;
 use object_store::ObjectStore;
-use parquet::arrow::arrow_reader::ArrowReaderMetadata;
+use parquet::arrow::arrow_reader::{ArrowReaderMetadata, ArrowReaderOptions};
+use parquet::arrow::async_reader::ParquetObjectReader;
 use parquet::arrow::ParquetRecordBatchStreamBuilder;
 use parquet::arrow::ProjectionMask;
-use parquet::arrow::{
-    arrow_reader::ArrowReaderOptions,
-    async_reader::{AsyncFileReader, ParquetObjectReader},
-};
 use parquet::errors::ParquetError;
-use parquet::file::metadata::ParquetMetaData;
-use parquet::file::metadata::ParquetMetaDataWriter;
+use parquet::file::metadata::{
+    PageIndexPolicy, ParquetMetaData, ParquetMetaDataReader, ParquetMetaDataWriter,
+};
 
 type Result<T, E = ParquetError> = std::result::Result<T, E>;
-
-pub async fn read_metadata_with_index(
-    store: Arc<dyn ObjectStore>,
-    path: impl Into<Path>,
-) -> Result<Arc<ParquetMetaData>> {
-    let path = path.into();
-    let metadata = read_metadata(store.clone(), path.clone()).await?;
-
-    // short circuit if offset index is already present
-    if metadata.offset_index().is_none() {
-        println!("Offset index is not present");
-    }
-
-    Ok(metadata)
-}
 
 pub async fn read_metadata(
     store: Arc<dyn ObjectStore>,
     path: impl Into<Path>,
 ) -> Result<Arc<ParquetMetaData>> {
     let path = path.into();
-    let mut reader = ParquetObjectReader::new(store, path.clone()).with_preload_offset_index(true);
-    reader.get_metadata(None).await
+
+    let mut object_reader = ParquetObjectReader::new(store, path.clone());
+    let metadata_reader = ParquetMetaDataReader::new()
+        .with_column_index_policy(PageIndexPolicy::Skip)
+        .with_offset_index_policy(PageIndexPolicy::Optional);
+    // .with_prefetch_hint(16 * 1024);
+
+    // TODO(kszucs): if file_size is known then use load_and_finish
+    // let metadata = if let Some(file_size) = self.file_size {
+    //     metadata.load_and_finish(self, file_size).await?
+    // } else {
+    //     metadata.load_via_suffix_and_finish(self).await?
+    // };
+    let metadata = metadata_reader
+        .load_via_suffix_and_finish(&mut object_reader)
+        .await?;
+
+    Ok(Arc::new(metadata))
 }
 
 // TODO(kszucs): consider to return with the PutResult's ETag
@@ -73,6 +72,7 @@ pub fn read_batch_stream(
     let reader_options = ArrowReaderOptions::default().with_page_index(true);
     let reader_metadata = ArrowReaderMetadata::try_new(metadata, reader_options)?;
 
+    // TODO(kszucs): projection pushdown can be handled here if needed
     // let parquet_schema = reader_metadata.metadata().file_metadata().schema_descr();
     // let parquet_fields = ProjectionMask::leaves(parquet_schema, [0]);
     let parquet_fields = ProjectionMask::all();
