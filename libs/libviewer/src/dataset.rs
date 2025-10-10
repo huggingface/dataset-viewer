@@ -13,7 +13,7 @@ use thiserror::Error;
 use tokio::task;
 use url::Url;
 
-use crate::parquet::{read_batch_stream, read_metadata, read_metadata_with_index, write_metadata};
+use crate::parquet::{read_batch_stream, read_metadata, write_metadata};
 use crate::IndexedFile;
 
 #[derive(Error, Debug)]
@@ -135,7 +135,8 @@ fn store_from_uri(
             builder
         };
         let operator = Operator::new(builder)?.finish();
-        return Ok(Arc::new(OpendalStore::new(operator)));
+        let store = OpendalStore::new(operator);
+        Ok(Arc::new(store))
     } else {
         let (store, prefix) = object_store::parse_url(&url)?;
         let store = PrefixStore::new(store, prefix);
@@ -223,7 +224,6 @@ impl Dataset {
                             .await?
                     }
                 };
-
                 scans.push(ParquetScan {
                     file: file.clone(),
                     limit: file_limit,
@@ -246,9 +246,7 @@ impl Dataset {
             .unwrap_or(&self.files)
             .iter()
             .map(async move |file| {
-                println!("Indexing file: {}", file.path);
-                let metadata =
-                    read_metadata_with_index(self.data_store.clone(), file.path.as_ref()).await?;
+                let metadata = read_metadata(self.data_store.clone(), file.path.as_ref()).await?;
                 write_metadata(
                     metadata,
                     self.metadata_store.clone(),
@@ -273,8 +271,6 @@ impl Dataset {
         // 3. flatten the streams into a single stream
         // 4. collect the record batches into a single vector
 
-        let timer = std::time::Instant::now();
-
         let plan = self.plan(limit, offset).await?;
         let files_to_index: Vec<IndexedFile> = plan
             .iter()
@@ -293,9 +289,6 @@ impl Dataset {
             .into_iter()
             .flatten()
             .collect::<Vec<_>>();
-
-        println!("Number of batches collected: {}", batches.len());
-        println!("Batch collection took: {:?}", timer.elapsed());
 
         Ok((batches, files_to_index))
     }
