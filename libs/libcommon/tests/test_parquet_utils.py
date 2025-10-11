@@ -29,6 +29,7 @@ from libcommon.parquet_utils import (
 from libcommon.resources import CacheMongoResource
 from libcommon.simple_cache import upsert_response
 from libcommon.storage import StrPath
+from libviewer import Dataset as LibviewerDataset  # type: ignore [import-untyped]
 
 REVISION_NAME = "revision"
 CACHED_ASSETS_FOLDER = "cached-assets"
@@ -467,12 +468,7 @@ def test_rows_index_query_with_parquet_metadata(
 
 
 def test_rows_index_query_with_page_pruning(rows_index_with_parquet_metadata: RowsIndex, ds_sharded: Dataset) -> None:
-    try:
-        import libviewer
-    except ImportError:
-        pytest.skip("libviewer is not installed")
-
-    assert isinstance(rows_index_with_parquet_metadata.viewer_index, libviewer.Dataset)
+    assert isinstance(rows_index_with_parquet_metadata.viewer_index, LibviewerDataset)
 
     result = rows_index_with_parquet_metadata.query_with_page_pruning(offset=1, length=3)
     assert result.to_pydict() == ds_sharded[1:4]
