@@ -1,11 +1,12 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+from collections.abc import Sequence
 import json
 import logging
 import os
 from io import BytesIO
-from typing import Any, Optional, Union, Sequence
+from typing import Any, Optional, Union
 from zlib import adler32
 
 import datasets.config

@@ -1,11 +1,11 @@
 import asyncio
 import logging
 import os
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass, field
 from functools import lru_cache
 from pathlib import Path
-from typing import Literal, Optional, TypedDict, Union, Sequence
+from typing import Literal, Optional, TypedDict, Union
 
 import numpy as np
 import pyarrow as pa
