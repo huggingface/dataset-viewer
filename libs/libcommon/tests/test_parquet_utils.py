@@ -466,9 +466,7 @@ def test_rows_index_query_with_parquet_metadata(
         rows_index_with_parquet_metadata.query(offset=-1, length=2)
 
 
-def test_rows_index_query_with_page_pruning(
-    rows_index_with_parquet_metadata: RowsIndex, ds_sharded: Dataset
-) -> None:
+def test_rows_index_query_with_page_pruning(rows_index_with_parquet_metadata: RowsIndex, ds_sharded: Dataset) -> None:
     try:
         import libviewer
     except ImportError:
