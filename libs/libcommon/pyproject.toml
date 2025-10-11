@@ -15,6 +15,7 @@ environs = "^14.3.0"
 filelock = "^3.18.0"
 fsspec = {version = "2024.3.1", extras = ["s3"]}
 huggingface-hub = {version = "^0.31.0", extras = ["hf-transfer"]}
+libviewer = {path = "../libviewer", develop = true}
 mongo-types = "0.15.1"
 mongoengine = "^0.29.1"
 networkx = "^3.0"
