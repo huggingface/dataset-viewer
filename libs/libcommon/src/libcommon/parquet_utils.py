@@ -476,8 +476,7 @@ class ParquetIndexWithMetadata:
             try:
                 parquet_files_urls = [f["url"] for f in parquet_files]
                 metadata_paths = [
-                    os.path.join(parquet_metadata_directory, f["parquet_metadata_subpath"])
-                    for f in parquet_files
+                    os.path.join(parquet_metadata_directory, f["parquet_metadata_subpath"]) for f in parquet_files
                 ]
                 num_bytes = [f["size"] for f in parquet_files]
                 num_rows = [f["num_rows"] for f in parquet_files]
@@ -517,7 +516,7 @@ class RowsIndex:
         parquet_metadata_directory: StrPath,
         max_arrow_data_in_memory: int,
         unsupported_features: list[FeatureType] = [],
-        data_store="hf://"
+        data_store="hf://",
     ):
         self.dataset = dataset
         self.config = config
@@ -531,19 +530,13 @@ class RowsIndex:
             max_arrow_data_in_memory=max_arrow_data_in_memory,
             unsupported_features=unsupported_features,
         )
-        self._init_viewer_index(
-            data_store=data_store,
-            metadata_store=f"file://{parquet_metadata_directory}"
-        )
+        self._init_viewer_index(data_store=data_store, metadata_store=f"file://{parquet_metadata_directory}")
 
     def _init_dataset_info(self, parquet_metadata_directory: StrPath):
         # get the list of parquet files and features
         with StepProfiler(method="rows_index._get_dataset_metadata", step="all"):
             response = get_previous_step_or_raise(
-                kind=CONFIG_PARQUET_METADATA_KIND,
-                dataset=self.dataset,
-                config=self.config,
-                split=None
+                kind=CONFIG_PARQUET_METADATA_KIND, dataset=self.dataset, config=self.config, split=None
             )
 
         # set the revision of the dataset
@@ -577,7 +570,7 @@ class RowsIndex:
         hf_token: Optional[str],
         parquet_metadata_directory: StrPath,
         max_arrow_data_in_memory: int,
-        unsupported_features: list[FeatureType] = []
+        unsupported_features: list[FeatureType] = [],
     ) -> None:
         logging.info(
             f"Create ParquetIndexWithMetadata for dataset={self.dataset}, config={self.config}, split={self.split}"
@@ -593,9 +586,7 @@ class RowsIndex:
         )
 
     def _init_viewer_index(self, data_store: str, metadata_store: str) -> None:
-        logging.info(
-            f"Create libviewer.Dataset for dataset={self.dataset}, config={self.config}, split={self.split}"
-        )
+        logging.info(f"Create libviewer.Dataset for dataset={self.dataset}, config={self.config}, split={self.split}")
         try:
             from libviewer import Dataset
         except ImportError as err:
@@ -606,12 +597,14 @@ class RowsIndex:
         # construct the required parquet_files list for libviewer.Dataset
         files = []
         for f in self.parquet_files:
-            files.append({
-                "path": f"{f['config']}/{f['split']}/{f['filename']}",
-                "size": f["size"],
-                "num_rows": f["num_rows"],
-                "metadata_path": f["parquet_metadata_subpath"]
-            })
+            files.append(
+                {
+                    "path": f"{f['config']}/{f['split']}/{f['filename']}",
+                    "size": f["size"],
+                    "num_rows": f["num_rows"],
+                    "metadata_path": f["parquet_metadata_subpath"],
+                }
+            )
 
         self.viewer_index = Dataset(
             name=self.dataset,
@@ -696,13 +689,7 @@ class Indexer:
         self.all_columns_supported_datasets_allow_list = all_columns_supported_datasets_allow_list
 
     @lru_cache(maxsize=1)
-    def get_rows_index(
-        self,
-        dataset: str,
-        config: str,
-        split: str,
-        data_store="hf://"
-    ) -> RowsIndex:
+    def get_rows_index(self, dataset: str, config: str, split: str, data_store="hf://") -> RowsIndex:
         filter_features = (
             self.all_columns_supported_datasets_allow_list != "all"
             and dataset not in self.all_columns_supported_datasets_allow_list
@@ -717,5 +704,5 @@ class Indexer:
             parquet_metadata_directory=self.parquet_metadata_directory,
             max_arrow_data_in_memory=self.max_arrow_data_in_memory,
             unsupported_features=unsupported_features,
-            data_store=data_store
+            data_store=data_store,
         )
