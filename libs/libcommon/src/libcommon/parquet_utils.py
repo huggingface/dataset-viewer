@@ -5,7 +5,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass, field
 from functools import lru_cache
 from pathlib import Path
-from typing import Literal, Optional, TypedDict, Union
+from typing import Literal, Optional, TypedDict, Union, Sequence
 
 import numpy as np
 import pyarrow as pa
@@ -24,6 +24,7 @@ from libcommon.prometheus import StepProfiler
 from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.storage import StrPath
 from libcommon.viewer_utils.features import get_supported_unsupported_columns
+from libviewer import Dataset as LibviewerDataset  # type: ignore [import-untyped]
 
 # For partial Parquet export we have paths like "en/partial-train/0000.parquet".
 # "-" is not allowed is split names so we use it in the prefix to avoid collisions.
@@ -460,7 +461,7 @@ class ParquetIndexWithMetadata:
         httpfs: HTTPFileSystem,
         hf_token: Optional[str],
         max_arrow_data_in_memory: int,
-        unsupported_features: list[FeatureType] = [],
+        unsupported_features: Sequence[FeatureType] = (),
     ) -> "ParquetIndexWithMetadata":
         if not parquet_files:
             raise EmptyParquetMetadataError("No parquet files found.")
@@ -515,8 +516,8 @@ class RowsIndex:
         hf_token: Optional[str],
         parquet_metadata_directory: StrPath,
         max_arrow_data_in_memory: int,
-        unsupported_features: list[FeatureType] = [],
-        data_store="hf://",
+        unsupported_features: Sequence[FeatureType] = (),
+        data_store: str = "hf://",
     ):
         self.dataset = dataset
         self.config = config
@@ -532,7 +533,7 @@ class RowsIndex:
         )
         self._init_viewer_index(data_store=data_store, metadata_store=f"file://{parquet_metadata_directory}")
 
-    def _init_dataset_info(self, parquet_metadata_directory: StrPath):
+    def _init_dataset_info(self, parquet_metadata_directory: StrPath) -> None:
         # get the list of parquet files and features
         with StepProfiler(method="rows_index._get_dataset_metadata", step="all"):
             response = get_previous_step_or_raise(
@@ -570,7 +571,7 @@ class RowsIndex:
         hf_token: Optional[str],
         parquet_metadata_directory: StrPath,
         max_arrow_data_in_memory: int,
-        unsupported_features: list[FeatureType] = [],
+        unsupported_features: Sequence[FeatureType],
     ) -> None:
         logging.info(
             f"Create ParquetIndexWithMetadata for dataset={self.dataset}, config={self.config}, split={self.split}"
@@ -587,12 +588,6 @@ class RowsIndex:
 
     def _init_viewer_index(self, data_store: str, metadata_store: str) -> None:
         logging.info(f"Create libviewer.Dataset for dataset={self.dataset}, config={self.config}, split={self.split}")
-        try:
-            from libviewer import Dataset
-        except ImportError as err:
-            raise ImportError(
-                "libviewer is not installed. Please install it with `pip install libviewer` to use page pruning."
-            ) from err
 
         # construct the required parquet_files list for libviewer.Dataset
         files = []
@@ -606,7 +601,7 @@ class RowsIndex:
                 }
             )
 
-        self.viewer_index = Dataset(
+        self.viewer_index = LibviewerDataset(
             name=self.dataset,
             files=files,
             revision=self.revision,
@@ -689,7 +684,7 @@ class Indexer:
         self.all_columns_supported_datasets_allow_list = all_columns_supported_datasets_allow_list
 
     @lru_cache(maxsize=1)
-    def get_rows_index(self, dataset: str, config: str, split: str, data_store="hf://") -> RowsIndex:
+    def get_rows_index(self, dataset: str, config: str, split: str, data_store: str = "hf://") -> RowsIndex:
         filter_features = (
             self.all_columns_supported_datasets_allow_list != "all"
             and dataset not in self.all_columns_supported_datasets_allow_list
