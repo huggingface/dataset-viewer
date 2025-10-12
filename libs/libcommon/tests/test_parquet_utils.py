@@ -15,6 +15,7 @@ from datasets import Dataset, Image, concatenate_datasets
 from datasets.table import embed_table_storage
 from fsspec import AbstractFileSystem
 from fsspec.implementations.http import HTTPFileSystem
+from libviewer import Dataset as LibviewerDataset  # type: ignore [import-untyped]
 
 from libcommon.parquet_utils import (
     Indexer,
@@ -29,7 +30,6 @@ from libcommon.parquet_utils import (
 from libcommon.resources import CacheMongoResource
 from libcommon.simple_cache import upsert_response
 from libcommon.storage import StrPath
-from libviewer import Dataset as LibviewerDataset  # type: ignore [import-untyped]
 
 REVISION_NAME = "revision"
 CACHED_ASSETS_FOLDER = "cached-assets"
