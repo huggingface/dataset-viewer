@@ -28,6 +28,9 @@ RUN curl https://sh.rustup.rs -sSf | sh -s -- -y \
     && rustc --version \
     && cargo --version
 
+# Add cargo bin dir to PATH (so maturin + cargo available globally)
+ENV PATH="/root/.cargo/bin:${PATH}"
+
 WORKDIR /src
 COPY libs/libviewer ./libs/libviewer
 COPY libs/libcommon ./libs/libcommon
