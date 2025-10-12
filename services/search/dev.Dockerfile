@@ -16,12 +16,26 @@ ENV PYTHONFAULTHANDLER=1 \
 
 # System deps:
 RUN apt-get update \
-    && apt-get install -y gcc g++ unzip wget procps htop ffmpeg libavcodec-extra libsndfile1 \
+    && apt-get install -y gcc g++ unzip curl build-essential wget procps htop ffmpeg libavcodec-extra libsndfile1 \
     && rm -rf /var/lib/apt/lists/*
 RUN pip install -U pip
 RUN pip install "poetry==$POETRY_VERSION"
 
+# Install Rust toolchain and maturin
+RUN curl https://sh.rustup.rs -sSf | sh -s -- -y \
+    && . $HOME/.cargo/env \
+    && pip install maturin \
+    && rustc --version \
+    && cargo --version
+
+# Add cargo bin dir to PATH (so maturin + cargo available globally)
+ENV PATH="/root/.cargo/bin:${PATH}"
+
 WORKDIR /src
+COPY libs/libviewer/poetry.lock ./libs/libviewer/poetry.lock
+COPY libs/libviewer/pyproject.toml ./libs/libviewer/pyproject.toml
+COPY libs/libviewer/Cargo.toml ./libs/libviewer/Cargo.toml
+COPY libs/libviewer/Cargo.lock ./libs/libviewer/Cargo.lock
 COPY libs/libcommon/poetry.lock ./libs/libcommon/poetry.lock
 COPY libs/libcommon/pyproject.toml ./libs/libcommon/pyproject.toml
 COPY libs/libapi/poetry.lock ./libs/libapi/poetry.lock
