@@ -32,6 +32,10 @@ RUN curl https://sh.rustup.rs -sSf | sh -s -- -y \
 ENV PATH="/root/.cargo/bin:${PATH}"
 
 WORKDIR /src
+COPY libs/libviewer/poetry.lock ./libs/libviewer/poetry.lock
+COPY libs/libviewer/pyproject.toml ./libs/libviewer/pyproject.toml
+COPY libs/libviewer/Cargo.toml ./libs/libviewer/Cargo.toml
+COPY libs/libviewer/Cargo.lock ./libs/libviewer/Cargo.lock
 COPY services/rows/poetry.lock ./services/rows/poetry.lock
 COPY services/rows/pyproject.toml ./services/rows/pyproject.toml
 COPY libs/libviewer ./libs/libviewer
