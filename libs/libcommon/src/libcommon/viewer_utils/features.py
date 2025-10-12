@@ -1,10 +1,10 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-from collections.abc import Sequence
 import json
 import logging
 import os
+from collections.abc import Sequence
 from io import BytesIO
 from typing import Any, Optional, Union
 from zlib import adler32
@@ -529,7 +529,7 @@ def to_features_list(features: Features) -> list[FeatureItem]:
 
 def get_supported_unsupported_columns(
     features: Features,
-    unsupported_features: Sequence[FeatureType],
+    unsupported_features: Sequence[FeatureType] = (),
 ) -> tuple[list[str], list[str]]:
     supported_columns, unsupported_columns = [], []
 

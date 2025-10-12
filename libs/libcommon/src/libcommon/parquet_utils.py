@@ -17,6 +17,7 @@ from datasets.table import cast_table_to_schema
 from datasets.utils.py_utils import size_str
 from fsspec.implementations.http import HTTPFile, HTTPFileSystem
 from huggingface_hub import HfFileSystem
+from libviewer import Dataset as LibviewerDataset  # type: ignore [import-untyped]
 from pyarrow.lib import ArrowInvalid
 
 from libcommon.constants import CONFIG_PARQUET_METADATA_KIND
@@ -24,7 +25,6 @@ from libcommon.prometheus import StepProfiler
 from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.storage import StrPath
 from libcommon.viewer_utils.features import get_supported_unsupported_columns
-from libviewer import Dataset as LibviewerDataset  # type: ignore [import-untyped]
 
 # For partial Parquet export we have paths like "en/partial-train/0000.parquet".
 # "-" is not allowed is split names so we use it in the prefix to avoid collisions.
