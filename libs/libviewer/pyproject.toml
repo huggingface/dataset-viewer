@@ -12,7 +12,7 @@ pyarrow = "15.0.2"
 huggingface-hub = {version = "^0.31.0", extras = ["hf-transfer"]}
 
 [tool.poetry.build]
-script = "build-extension.py"
+script = "build.py"
 
 [build-system]
 requires = ["poetry-core", "maturin>=1.0,<2.0"]

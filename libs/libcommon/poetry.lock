@@ -1169,7 +1169,7 @@ optional = false
 python-versions = "3.12.11"
 groups = ["main"]
 files = []
-develop = false
+develop = true
 
 [package.dependencies]
 click = "*"
@@ -4428,4 +4428,4 @@ propcache = ">=0.2.1"
 [metadata]
 lock-version = "2.1"
 python-versions = "3.12.11"
-content-hash = "40984d4a12d670fe2d653314ea1505b70183794aaa8a653d975bb4360d4a631c"
+content-hash = "aeef170e3d403b3ad292571d083a7f6618cff475ceebce54dde493903ec23b32"
