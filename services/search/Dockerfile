@@ -29,14 +29,11 @@ RUN curl https://sh.rustup.rs -sSf | sh -s -- -y \
     && cargo --version
 
 WORKDIR /src
-COPY libs/libviewer/poetry.lock ./libs/libviewer/poetry.lock
-COPY libs/libviewer/pyproject.toml ./libs/libviewer/pyproject.toml
-COPY libs/libviewer/Cargo.toml ./libs/libviewer/Cargo.toml
-COPY libs/libviewer/Cargo.lock ./libs/libviewer/Cargo.lock
-COPY services/search/poetry.lock ./services/search/poetry.lock
-COPY services/search/pyproject.toml ./services/search/pyproject.toml
+COPY libs/libviewer ./libs/libviewer
 COPY libs/libcommon ./libs/libcommon
 COPY libs/libapi ./libs/libapi
+COPY services/search/poetry.lock ./services/search/poetry.lock
+COPY services/search/pyproject.toml ./services/search/pyproject.toml
 WORKDIR /src/services/search/
 RUN poetry install --no-cache --no-root
 COPY services/search/src ./src

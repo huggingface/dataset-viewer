@@ -30,12 +30,8 @@ RUN curl https://sh.rustup.rs -sSf | sh -s -- -y \
     && cargo --version
 
 WORKDIR /src
-COPY libs/libviewer/poetry.lock ./libs/libviewer/poetry.lock
-COPY libs/libviewer/pyproject.toml ./libs/libviewer/pyproject.toml
-COPY libs/libviewer/Cargo.toml ./libs/libviewer/Cargo.toml
-COPY libs/libviewer/Cargo.lock ./libs/libviewer/Cargo.lock
-COPY libs/libcommon/poetry.lock ./libs/libcommon/poetry.lock
-COPY libs/libcommon/pyproject.toml ./libs/libcommon/pyproject.toml
+COPY libs/libviewer ./libs/libviewer
+COPY libs/libcommon ./libs/libcommon
 COPY services/worker/poetry.lock ./services/worker/poetry.lock
 COPY services/worker/pyproject.toml ./services/worker/pyproject.toml
 

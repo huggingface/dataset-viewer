@@ -21,7 +21,7 @@ RUN apt-get update \
 RUN pip install -U pip
 RUN pip install "poetry==$POETRY_VERSION"
 
-# Install Rust toolchain and maturin 
+# Install Rust toolchain and maturin
 RUN curl https://sh.rustup.rs -sSf | sh -s -- -y \
     && . $HOME/.cargo/env \
     && pip install maturin \
@@ -32,14 +32,9 @@ RUN curl https://sh.rustup.rs -sSf | sh -s -- -y \
 ENV PATH="/root/.cargo/bin:${PATH}"
 
 WORKDIR /src
-COPY libs/libcommon/poetry.lock ./libs/libcommon/poetry.lock
-COPY libs/libcommon/pyproject.toml ./libs/libcommon/pyproject.toml
-COPY libs/libapi/poetry.lock ./libs/libapi/poetry.lock
-COPY libs/libapi/pyproject.toml ./libs/libapi/pyproject.toml
-COPY libs/libviewer/poetry.lock ./libs/libviewer/poetry.lock
-COPY libs/libviewer/pyproject.toml ./libs/libviewer/pyproject.toml
-COPY libs/libviewer/Cargo.toml ./libs/libviewer/Cargo.toml
-COPY libs/libviewer/Cargo.lock ./libs/libviewer/Cargo.lock
+COPY libs/libviewer ./libs/libviewer
+COPY libs/libcommon ./libs/libcommon
+COPY libs/libapi ./libs/libapi
 COPY services/rows/poetry.lock ./services/rows/poetry.lock
 COPY services/rows/pyproject.toml ./services/rows/pyproject.toml
 
