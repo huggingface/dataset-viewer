@@ -14,3 +14,6 @@ assets
 **/.pytest_cache
 **/.coverage
 **/coverage.xml
+
+# rust build artifacts
+libs/libviewer/target
