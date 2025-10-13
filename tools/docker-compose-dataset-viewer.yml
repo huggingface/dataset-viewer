@@ -260,3 +260,4 @@ volumes:
   parquet-metadata:
   duckdb-index:
   descriptive-statistics:
+
