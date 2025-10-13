@@ -76,7 +76,8 @@ services:
   admin:
     build:
       context: ..
-      dockerfile: services/admin/dev.Dockerfile
+      dockerfile: ../Dockerfile
+      target: admin
     volumes:
       - storage:${STORAGE_DIRECTORY-/storage}:rw
       - parquet-metadata:${PARQUET_METADATA_STORAGE_DIRECTORY-/parquet_metadata}:ro
@@ -105,7 +106,8 @@ services:
   api:
     build:
       context: ..
-      dockerfile: services/api/dev.Dockerfile
+      dockerfile: ../Dockerfile
+      target: api
     volumes:
       - storage:${STORAGE_DIRECTORY-/storage}:rw
       # volumes to local source directory for development
@@ -125,7 +127,8 @@ services:
   rows:
     build:
       context: ..
-      dockerfile: services/rows/dev.Dockerfile
+      dockerfile: ../Dockerfile
+      target: rows
     volumes:
       - storage:${STORAGE_DIRECTORY-/storage}
       - parquet-metadata:${PARQUET_METADATA_STORAGE_DIRECTORY-/parquet_metadata}
@@ -149,7 +152,8 @@ services:
   search:
     build:
       context: ..
-      dockerfile: services/search/dev.Dockerfile
+      dockerfile: ../Dockerfile
+      target: search
     volumes:
       - storage:${STORAGE_DIRECTORY-/storage}
       - parquet-metadata:${PARQUET_METADATA_STORAGE_DIRECTORY-/parquet_metadata}:rw
@@ -176,7 +180,8 @@ services:
   sse-api:
     build:
       context: ..
-      dockerfile: services/sse-api/dev.Dockerfile
+      dockerfile: ../Dockerfile
+      target: sse-api
     volumes:
       # volumes to local source directory for development
       - ..:/src
@@ -196,7 +201,8 @@ services:
   worker:
     build:
       context: ..
-      dockerfile: services/worker/dev.Dockerfile
+      dockerfile: ../Dockerfile
+      target: worker
     deploy:
       replicas: ${DEV_WORKER_REPLICAS-4}
     volumes:
@@ -261,7 +267,8 @@ services:
   webhook:
     build:
       context: ..
-      dockerfile: services/webhook/dev.Dockerfile
+      dockerfile: ../Dockerfile
+      target: webhook
     volumes:
       - storage:${STORAGE_DIRECTORY-/storage}:rw
       # volumes to local source directory for development
