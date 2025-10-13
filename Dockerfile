@@ -81,12 +81,17 @@ RUN poetry install --no-cache -P /src/services/webhook
 WORKDIR /src/services/webhook/
 ENTRYPOINT ["poetry", "run", "python", "src/webhook/main.py"]
 
-# Worker
+# Worker service
 FROM common AS worker
-RUN poetry run python -m spacy download en_core_web_lg
 COPY libs /src/libs
 COPY services/worker /src/services/worker
+# presidio-analyzer > spacy > thinc doesn't ship aarch64 wheels so need to compile
+RUN if [ "$(uname -m)" = "aarch64" ]; then \
+      apt-get update && apt-get install -y build-essential && \
+      rm -rf /var/lib/apt/lists/*; \
+    fi
 RUN poetry install --no-cache -P /src/services/worker
+RUN python -m spacy download en_core_web_lg
 WORKDIR /src/services/worker/
 ENTRYPOINT ["poetry", "run", "python", "src/worker/main.py"]
 
