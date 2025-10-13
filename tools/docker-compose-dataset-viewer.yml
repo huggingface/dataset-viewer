@@ -77,7 +77,6 @@ services:
   admin:
     build:
       context: ..
-      dockerfile: ../Dockerfile
       target: admin
     volumes:
       - storage:${STORAGE_DIRECTORY-/storage}:rw
@@ -105,7 +104,6 @@ services:
   api:
     build:
       context: ..
-      dockerfile: ../Dockerfile
       target: api
     volumes:
       - storage:${STORAGE_DIRECTORY-/storage}:rw
@@ -123,7 +121,6 @@ services:
   rows:
     build:
       context: ..
-      dockerfile: ../Dockerfile
       target: rows
     volumes:
       - storage:${STORAGE_DIRECTORY-/storage}
@@ -146,7 +143,6 @@ services:
   search:
     build:
       context: ..
-      dockerfile: ../Dockerfile
       target: search
     volumes:
       - storage:${STORAGE_DIRECTORY-/storage}
@@ -172,7 +168,6 @@ services:
   sse-api:
     build:
       context: ..
-      dockerfile: ../Dockerfile
       target: sse-api
     environment:
       <<: *service-env
@@ -190,7 +185,6 @@ services:
   worker:
     build:
       context: ..
-      dockerfile: ../Dockerfile
       target: worker
     volumes:
       - storage:${STORAGE_DIRECTORY-/storage}:rw
@@ -247,7 +241,6 @@ services:
   webhook:
     build:
       context: ..
-      dockerfile: ../Dockerfile
       target: webhook
     volumes:
       - storage:${STORAGE_DIRECTORY-/storage}:rw
