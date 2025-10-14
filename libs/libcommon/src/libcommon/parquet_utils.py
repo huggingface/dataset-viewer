@@ -11,13 +11,13 @@ import numpy as np
 import pyarrow as pa
 import pyarrow.compute as pc
 import pyarrow.parquet as pq
-from pyarrow.lib import ArrowInvalid
 from datasets import Features, Value
 from datasets.features.features import FeatureType
 from datasets.table import cast_table_to_schema
 from datasets.utils.py_utils import size_str
 from fsspec.implementations.http import HTTPFile, HTTPFileSystem
 from huggingface_hub import HfFileSystem
+from pyarrow.lib import ArrowInvalid
 
 from libcommon.constants import CONFIG_PARQUET_METADATA_KIND
 from libcommon.prometheus import StepProfiler
