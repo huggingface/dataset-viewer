@@ -1,0 +1,201 @@
+--- docker-compose-dataset-viewer.yml	2025-10-13 22:02:42
++++ docker-compose-dev-dataset-viewer.yml	2025-10-13 22:02:42
+@@ -1,17 +1,17 @@
+ x-common-env: &common-env
+   # common
+   COMMON_BLOCKED_DATASETS: ${COMMON_BLOCKED_DATASETS-}
+-  COMMON_HF_ENDPOINT: ${COMMON_HF_ENDPOINT-https://huggingface.co}
+-  COMMON_HF_TOKEN: ${COMMON_HF_TOKEN-}
++  COMMON_HF_ENDPOINT: ${COMMON_HF_ENDPOINT-https://hub-ci.huggingface.co}
++  COMMON_HF_TOKEN: ${COMMON_HF_TOKEN-hf_app_datasets-server_token}
+   # log
+   LOG_LEVEL: ${LOG_LEVEL-INFO}
+   # huggingface_hub
+-  HF_ENDPOINT: ${COMMON_HF_ENDPOINT-https://huggingface.co} # see https://github.com/huggingface/datasets/pull/5196#issuecomment-1322191411
++  HF_ENDPOINT: ${COMMON_HF_ENDPOINT-https://hub-ci.huggingface.co} # see https://github.com/huggingface/datasets/pull/5196#issuecomment-1322191411
+   # cache
+-  CACHE_MONGO_URL: ${CACHE_MONGO_URL-mongodb://mongodb:${MONGO_PORT:-27017}} # use mongo container by default (with custom port)
++  CACHE_MONGO_URL: ${CACHE_MONGO_URL-mongodb://${DEV_MONGO_HOST-host.docker.internal}:${MONGO_PORT-27017}}
+   CACHE_MONGO_DATABASE: ${CACHE_MONGO_DATABASE-dataset_viewer_cache}
+   # queue
+-  QUEUE_MONGO_URL: ${QUEUE_MONGO_URL-mongodb://mongodb:${MONGO_PORT:-27017}} # use mongo container by default (with custom port)
++  QUEUE_MONGO_URL: ${QUEUE_MONGO_URL-mongodb://${DEV_MONGO_HOST-host.docker.internal}:${MONGO_PORT-27017}}
+   QUEUE_MONGO_DATABASE: ${QUEUE_MONGO_DATABASE-dataset_viewer_queue}
+   # assets
+   ASSETS_BASE_URL: ${ASSETS_BASE_URL} # <- must be set, no default value. If local, set to work with the reverse-proxy, like http://localhost:${PORT_REVERSE_PROXY-8000}/assets
+@@ -31,17 +31,16 @@
+   CLOUDFRONT_PRIVATE_KEY: ${CLOUDFRONT_PRIVATE_KEY-}
+   # prometheus
+   PROMETHEUS_MULTIPROC_DIR: ${PROMETHEUS_MULTIPROC_DIR-}
+-  # datasets
+-  NUMBA_CACHE_DIR: ${NUMBA_CACHE_DIR-/numba-cache}
+ 
+ x-service-env: &service-env
+   <<: *common-env
+-  # common for uvicorn services
++  NUMBA_CACHE_DIR: ${NUMBA_CACHE_DIR-/numba-cache}
++  # service
+   API_HF_AUTH_PATH: ${API_HF_AUTH_PATH-/api/datasets/%s/auth-check}
+   API_HF_JWT_PUBLIC_KEY_URL: ${API_HF_JWT_PUBLIC_KEY_URL}
+   API_HF_JWT_ADDITIONAL_PUBLIC_KEYS: ${API_HF_JWT_ADDITIONAL_PUBLIC_KEYS}
+   API_HF_JWT_ALGORITHM: ${API_HF_JWT_ALGORITHM-EdDSA}
+-  API_HF_TIMEOUT_SECONDS: ${API_HF_TIMEOUT_SECONDS-0.2}
++  API_HF_TIMEOUT_SECONDS: ${API_HF_TIMEOUT_SECONDS-10.0}
+   API_MAX_AGE_LONG: ${API_MAX_AGE_LONG-120}
+   API_MAX_AGE_SHORT: ${API_MAX_AGE_SHORT-10}
+ 
+@@ -49,7 +48,7 @@
+   reverse-proxy:
+     image: docker.io/nginx:1.25.3
+     volumes:
+-      - ../services/reverse-proxy/nginx-templates/:/etc/nginx/templates:ro
++      - ../tools/nginx-templates/:/etc/nginx/templates:ro
+       - storage:${STORAGE_DIRECTORY-/storage}:ro
+     ports:
+       - "${PORT_REVERSE_PROXY-8000}:80"
+@@ -59,12 +58,12 @@
+       OPENAPI_FILE: ${OPENAPI_FILE-docs/source/openapi.json}
+       HOST: localhost
+       PORT: 80
+-      URL_ADMIN: http://admin:${ADMIN_UVICORN_PORT-8081}
+-      URL_API: http://api:${API_UVICORN_PORT-8080}
+-      URL_ROWS: http://rows:${ROWS_UVICORN_PORT-8082}
+-      URL_SEARCH: http://search:${SEARCH_UVICORN_PORT-8083}
+-      URL_SSE_API: http://sse-api:${SSE_API_UVICORN_PORT-8085}
+-      URL_WEBHOOK: http://webhook:${WEBHOOK_UVICORN_PORT-8087}
++      URL_ADMIN: http://host.docker.internal:${ADMIN_UVICORN_PORT-8081}
++      URL_API: http://host.docker.internal:${API_UVICORN_PORT-8080}
++      URL_ROWS: http://host.docker.internal:${ROWS_UVICORN_PORT-8082}
++      URL_SEARCH: http://host.docker.internal:${SEARCH_UVICORN_PORT-8083}
++      URL_SSE_API: http://host.docker.internal:${SSE_API_UVICORN_PORT-8085}
++      URL_WEBHOOK: http://host.docker.internal:${WEBHOOK_UVICORN_PORT-8087}
+     depends_on:
+       admin:
+         condition: service_started
+@@ -81,13 +80,15 @@
+     volumes:
+       - storage:${STORAGE_DIRECTORY-/storage}:rw
+       - parquet-metadata:${PARQUET_METADATA_STORAGE_DIRECTORY-/parquet_metadata}:ro
++      # volumes to local source directory for development
++      - ..:/src
+     environment:
+       <<: *service-env
+       # service
+-      ADMIN_HF_ORGANIZATION: ${ADMIN_HF_ORGANIZATION-huggingface}
++      ADMIN_HF_ORGANIZATION: ${ADMIN_HF_ORGANIZATION-DVAdminsOrg}
+       ADMIN_CACHE_REPORTS_NUM_RESULTS: ${ADMIN_CACHE_REPORTS_NUM_RESULTS-100}
+       ADMIN_CACHE_REPORTS_WITH_CONTENT_NUM_RESULTS: ${ADMIN_CACHE_REPORTS_WITH_CONTENT_NUM_RESULTS-100}
+-      ADMIN_HF_TIMEOUT_SECONDS: ${ADMIN_HF_TIMEOUT_SECONDS-0.2}
++      ADMIN_HF_TIMEOUT_SECONDS: ${ADMIN_HF_TIMEOUT_SECONDS-10.0}
+       ADMIN_HF_WHOAMI_PATH: ${ADMIN_HF_WHOAMI_PATH-/api/whoami-v2}
+       ADMIN_MAX_AGE: ${ADMIN_MAX_AGE-10}
+       # uvicorn
+@@ -107,8 +108,11 @@
+       target: api
+     volumes:
+       - storage:${STORAGE_DIRECTORY-/storage}:rw
++      # volumes to local source directory for development
++      - ..:/src
+     environment:
+       <<: *service-env
++      # uvicorn
+       API_UVICORN_HOSTNAME: 0.0.0.0 # required for docker compose
+       API_UVICORN_NUM_WORKERS: ${API_UVICORN_NUM_WORKERS-2}
+       API_UVICORN_PORT: ${API_UVICORN_PORT-8080}
+@@ -125,6 +129,8 @@
+     volumes:
+       - storage:${STORAGE_DIRECTORY-/storage}
+       - parquet-metadata:${PARQUET_METADATA_STORAGE_DIRECTORY-/parquet_metadata}
++      # volumes to local source directory for development
++      - ..:/src
+     environment:
+       <<: *service-env
+       PARQUET_METADATA_STORAGE_DIRECTORY: ${PARQUET_METADATA_STORAGE_DIRECTORY-/parquet_metadata}
+@@ -148,6 +154,8 @@
+       - storage:${STORAGE_DIRECTORY-/storage}
+       - parquet-metadata:${PARQUET_METADATA_STORAGE_DIRECTORY-/parquet_metadata}:rw
+       - duckdb-index:${DUCKDB_INDEX_CACHE_DIRECTORY-/duckdb-index}:rw
++      # volumes to local source directory for development
++      - ..:/src
+     environment:
+       <<: *service-env
+       DUCKDB_INDEX_CACHE_DIRECTORY: ${DUCKDB_INDEX_CACHE_DIRECTORY-/duckdb-index}
+@@ -169,6 +177,9 @@
+     build:
+       context: ..
+       target: sse-api
++    volumes:
++      # volumes to local source directory for development
++      - ..:/src
+     environment:
+       <<: *service-env
+       # uvicorn
+@@ -186,13 +197,17 @@
+     build:
+       context: ..
+       target: worker
++    deploy:
++      replicas: ${DEV_WORKER_REPLICAS-4}
+     volumes:
+       - storage:${STORAGE_DIRECTORY-/storage}:rw
+       - parquet-metadata:${PARQUET_METADATA_STORAGE_DIRECTORY-/parquet_metadata}:rw
+       - descriptive-statistics:${DESCRIPTIVE_STATISTICS_CACHE_DIRECTORY-/stats-cache}:rw
++      # volumes to local source directory for development
++      - ..:/src
+     environment:
+       <<: *common-env
+-      COMMITTER_HF_TOKEN: ${COMMITTER_HF_TOKEN-}
++      COMMITTER_HF_TOKEN: ${COMMITTER_HF_TOKEN-hf_app_datasets-server-parquet-converter_token}
+       CONFIG_NAMES_MAX_NUMBER: ${CONFIG_NAMES_MAX_NUMBER-3_000}
+       DESCRIPTIVE_STATISTICS_CACHE_DIRECTORY: ${DESCRIPTIVE_STATISTICS_CACHE_DIRECTORY-/stats-cache}
+       DESCRIPTIVE_STATISTICS_MAX_SPLIT_SIZE_BYTES: ${DESCRIPTIVE_STATISTICS_MAX_SPLIT_SIZE_BYTES-100_000_000}
+@@ -209,7 +224,7 @@
+       OPT_IN_OUT_URLS_SCAN_URLS_NUMBER_PER_BATCH: ${OPT_IN_OUT_URLS_SCAN_URLS_NUMBER_PER_BATCH-1000}
+       OPT_IN_OUT_URLS_SCAN_SPAWNING_URL: ${OPT_IN_OUT_URLS_SCAN_SPAWNING_URL-https://opts-api.spawningaiapi.com/api/v2/query/urls}
+       PARQUET_AND_INFO_COMMIT_MESSAGE: ${PARQUET_AND_INFO_COMMIT_MESSAGE-Update parquet files}
+-      PARQUET_AND_INFO_MAX_DATASET_SIZE_BYTES: ${PARQUET_AND_INFO_MAX_DATASET_SIZE_BYTES-100_000_000}
++      PARQUET_AND_INFO_MAX_DATASET_SIZE_BYTES: ${PARQUET_AND_INFO_MAX_DATASET_SIZE_BYTES-200_000_000}
+       PARQUET_AND_INFO_MAX_ROW_GROUP_BYTE_SIZE_FOR_COPY: ${PARQUET_AND_INFO_MAX_ROW_GROUP_BYTE_SIZE_FOR_COPY-100_000_000}
+       PARQUET_AND_INFO_SOURCE_REVISION: ${PARQUET_AND_INFO_SOURCE_REVISION-main}
+       PARQUET_AND_INFO_TARGET_REVISION: ${PARQUET_AND_INFO_TARGET_REVISION-refs/convert/parquet}
+@@ -223,6 +238,7 @@
+       # datasets
+       DATASETS_BASED_HF_DATASETS_CACHE: ${HF_DATASETS_CACHE-/datasets-cache}
+       HF_MODULES_CACHE: ${HF_DATASETS_CACHE-/modules-cache}
++      NUMBA_CACHE_DIR: ${NUMBA_CACHE_DIR-/numba-cache}
+       # worker
+       WORKER_CONTENT_MAX_BYTES: ${WORKER_CONTENT_MAX_BYTES-10_000_000}
+       WORKER_KILL_LONG_JOB_INTERVAL_SECONDS: ${WORKER_KILL_LONG_JOB_INTERVAL_SECONDS-60}
+@@ -232,8 +248,12 @@
+       WORKER_MAX_LOAD_PCT: ${WORKER_MAX_LOAD_PCT-70}
+       WORKER_MAX_MEMORY_PCT: ${WORKER_MAX_MEMORY_PCT-80}
+       WORKER_SLEEP_SECONDS: ${WORKER_SLEEP_SECONDS-15}
+-    ports:
+-      - ${WORKER_UVICORN_PORT-8086}:${WORKER_UVICORN_PORT-8086}
++    # ports:
++    #   - ${WORKER_UVICORN_PORT-8086}:${WORKER_UVICORN_PORT-8086}
++    # ^ disabling, since having 4 replicas of the worker service with the same port causes issue:
++    # Error response from daemon: driver failed programming external connectivity on endpoint
++    # dev-dataset-viewer-worker-2 (3619ef10b728504a43005f0381d4bc98da5f3a398475f8e3b305b1f504f40012):
++    # Bind for 0.0.0.0:8186 failed: port is already allocated
+     depends_on:
+       mongodb:
+         condition: service_healthy
+@@ -244,14 +264,16 @@
+       target: webhook
+     volumes:
+       - storage:${STORAGE_DIRECTORY-/storage}:rw
++      # volumes to local source directory for development
++      - ..:/src
+     environment:
+       <<: *service-env
++      COMMITTER_HF_TOKEN: ${COMMITTER_HF_TOKEN-hf_app_datasets-server-parquet-converter_token}
+       # uvicorn
+       API_UVICORN_HOSTNAME: 0.0.0.0 # required for docker compose
+       API_UVICORN_NUM_WORKERS: ${WEBHOOK_UVICORN_NUM_WORKERS-2}
+       API_UVICORN_PORT: ${WEBHOOK_UVICORN_PORT-8087}
+     ports:
+-      # for debug
+       - ${WEBHOOK_UVICORN_PORT-8087}:${WEBHOOK_UVICORN_PORT-8087}
+     depends_on:
+       mongodb:
