@@ -27,6 +27,7 @@ from libcommon.viewer_utils.features import get_supported_unsupported_columns
 
 try:
     from libviewer import Dataset as LibviewerDataset  # type: ignore [import-untyped]
+
     _has_libviewer = True
 except ImportError:
     _has_libviewer = False
