@@ -57,6 +57,14 @@ RUN poetry install --no-cache --no-root
 # Since the majority of the dependencies are already installed in the
 # `common` stage we let poetry to handle the rest.
 
+# API service
+FROM common AS api
+COPY libs /src/libs
+COPY services/api /src/services/api
+WORKDIR /src/services/api
+RUN poetry install --no-cache
+ENTRYPOINT ["poetry", "run", "python", "src/api/main.py"]
+
 # Admin service
 FROM common AS admin
 COPY libs /src/libs
