@@ -76,7 +76,6 @@ services:
         condition: service_started
   admin:
     build:
-      context: ..
       target: admin
     volumes:
       - storage:${STORAGE_DIRECTORY}:rw
@@ -103,7 +102,6 @@ services:
       - ${ADMIN_UVICORN_PORT}:${ADMIN_UVICORN_PORT}
   api:
     build:
-      context: ..
       target: api
     volumes:
       - storage:${STORAGE_DIRECTORY}:rw
@@ -120,7 +118,6 @@ services:
     restart: unless-stopped
   rows:
     build:
-      context: ..
       target: rows
     volumes:
       - storage:${STORAGE_DIRECTORY}
@@ -142,7 +139,6 @@ services:
     restart: unless-stopped
   search:
     build:
-      context: ..
       target: search
     volumes:
       - storage:${STORAGE_DIRECTORY}
@@ -167,7 +163,6 @@ services:
     restart: unless-stopped
   sse-api:
     build:
-      context: ..
       target: sse-api
     environment:
       <<: *service-env
@@ -184,7 +179,6 @@ services:
     restart: unless-stopped
   worker:
     build:
-      context: ..
       target: worker
     volumes:
       - storage:${STORAGE_DIRECTORY}:rw
@@ -240,7 +234,6 @@ services:
     restart: always
   webhook:
     build:
-      context: ..
       target: webhook
     volumes:
       - storage:${STORAGE_DIRECTORY}:rw
