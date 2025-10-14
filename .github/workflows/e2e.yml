@@ -16,7 +16,9 @@ on:
       - ".github/workflows/_quality-python.yml"
       - ".github/workflows/e2e.yml"
       - "tools/Python.mk"
-      - "tools/docker-compose-dataset-viewer.yml"
+      - ".env"
+      - "Dockerfile"
+      - "docker-compose.yml"
   pull_request:
     paths:
       - "e2e/**"
@@ -27,7 +29,9 @@ on:
       - ".github/workflows/_quality-python.yml"
       - ".github/workflows/e2e.yml"
       - "tools/Python.mk"
-      - "tools/docker-compose-dataset-viewer.yml"
+      - ".env"
+      - "Dockerfile"
+      - "docker-compose.yml"
 jobs:
   quality:
     uses: ./.github/workflows/_quality-python.yml

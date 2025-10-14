@@ -47,7 +47,7 @@ export S3_REGION_NAME := us-east-1
 # S3_SECRET_ACCESS_KEY   <- secret
 
 # makefile variables
-DOCKER_COMPOSE := ../tools/docker-compose-dataset-viewer.yml
+DOCKER_COMPOSE := ../docker-compose.yml
 
 include ../tools/Python.mk
 include ../tools/PythonTest.mk

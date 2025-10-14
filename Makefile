@@ -8,6 +8,15 @@ export PORT_SSE_API := 8185
 export PORT_WORKER := 8186
 export PORT_WEBHOOK := 8187
 export PORT_REVERSE_PROXY := 8100
+
+export ADMIN_UVICORN_PORT := ${PORT_ADMIN}
+export API_UVICORN_PORT := ${PORT_API}
+export ROWS_UVICORN_PORT := ${PORT_ROWS}
+export SEARCH_UVICORN_PORT := ${PORT_SEARCH}
+export SSE_API_UVICORN_PORT := ${PORT_SSE_API}
+export WORKER_UVICORN_PORT := ${PORT_WORKER}
+export WEBHOOK_UVICORN_PORT := ${PORT_WEBHOOK}
+
 export API_HF_JWT_PUBLIC_KEY_URL := https://hub-ci.huggingface.co/api/keys/jwt
 export API_HF_JWT_ADDITIONAL_PUBLIC_KEYS :=
 
@@ -17,29 +26,20 @@ stop: export COMPOSE_PROJECT_NAME := datasets-server
 dev-start: export COMPOSE_PROJECT_NAME := dev-datasets-server
 dev-stop: export COMPOSE_PROJECT_NAME := dev-datasets-server
 
-# makefile variables per target
-start: DOCKER_COMPOSE := ./tools/docker-compose-dataset-viewer.yml
-stop: DOCKER_COMPOSE := ./tools/docker-compose-dataset-viewer.yml
-dev-start: DOCKER_COMPOSE := ./tools/docker-compose-dev-dataset-viewer.yml
-dev-stop: DOCKER_COMPOSE := ./tools/docker-compose-dev-dataset-viewer.yml
-
-include tools/Docker.mk
-
 .PHONY: start
 start:
-	MONGO_PORT=${MONGO_PORT} ADMIN_UVICORN_PORT=${PORT_ADMIN} API_UVICORN_PORT=${PORT_API} ROWS_UVICORN_PORT=${PORT_ROWS} SEARCH_UVICORN_PORT=${PORT_SEARCH} SSE_API_UVICORN_PORT=${PORT_SSE_API} WORKER_UVICORN_PORT=${PORT_WORKER} WEBHOOK_UVICORN_PORT=${PORT_WEBHOOK} PORT_REVERSE_PROXY=${PORT_REVERSE_PROXY} DOCKER_COMPOSE=${DOCKER_COMPOSE} $(MAKE) up
+	docker compose --env-file .env up -d --build --force-recreate --remove-orphans --renew-anon-volumes --wait --wait-timeout 20
 
 .PHONY: stop
 stop:
-	MONGO_PORT=${MONGO_PORT} ADMIN_UVICORN_PORT=${PORT_ADMIN} API_UVICORN_PORT=${PORT_API} ROWS_UVICORN_PORT=${PORT_ROWS} SEARCH_UVICORN_PORT=${PORT_SEARCH} SSE_API_UVICORN_PORT=${PORT_SSE_API} WORKER_UVICORN_PORT=${PORT_WORKER} WEBHOOK_UVICORN_PORT=${PORT_WEBHOOK} PORT_REVERSE_PROXY=${PORT_REVERSE_PROXY} DOCKER_COMPOSE=${DOCKER_COMPOSE} $(MAKE) down
+	docker compose down --remove-orphans --volumes
 
 .PHONY: dev-start
 dev-start:
-	MONGO_PORT=${MONGO_PORT} ADMIN_UVICORN_PORT=${PORT_ADMIN} API_UVICORN_PORT=${PORT_API} ROWS_UVICORN_PORT=${PORT_ROWS} SEARCH_UVICORN_PORT=${PORT_SEARCH} SSE_API_UVICORN_PORT=${PORT_SSE_API} WORKER_UVICORN_PORT=${PORT_WORKER} WEBHOOK_UVICORN_PORT=${PORT_WEBHOOK} PORT_REVERSE_PROXY=${PORT_REVERSE_PROXY} DOCKER_COMPOSE=${DOCKER_COMPOSE} $(MAKE) up
+	docker compose --env-file .env --env-file .env.debug up -d --build --force-recreate --remove-orphans --renew-anon-volumes --wait --wait-timeout 20
 
 .PHONY: dev-stop
-dev-stop:
-	MONGO_PORT=${MONGO_PORT} ADMIN_UVICORN_PORT=${PORT_ADMIN} API_UVICORN_PORT=${PORT_API} ROWS_UVICORN_PORT=${PORT_ROWS} SEARCH_UVICORN_PORT=${PORT_SEARCH} SSE_API_UVICORN_PORT=${PORT_SSE_API} WORKER_UVICORN_PORT=${PORT_WORKER} WEBHOOK_UVICORN_PORT=${PORT_WEBHOOK} PORT_REVERSE_PROXY=${PORT_REVERSE_PROXY} DOCKER_COMPOSE=${DOCKER_COMPOSE} $(MAKE) down
+dev-stop: stop
 
 .PHONY: e2e
 e2e:

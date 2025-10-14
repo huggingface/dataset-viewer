@@ -10,7 +10,6 @@
 .ruff_cache
 
 # local configurations
-.env
 .idea
 .vscode/*.log
 
