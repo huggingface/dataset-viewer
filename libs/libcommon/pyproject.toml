@@ -24,7 +24,7 @@ pandas = "^2.2.0"
 pdfplumber = ">=0.11.4"
 pillow = "^10.3.0"
 polars = "1.31.0"  # 1.33.1 has issues with datetimes
-psutil = "^6.1.1"
+psutil = "^7.1.0"
 pyarrow = "^21.0.0"
 pymongoarrow = "^1.10.0"
 pymupdf = "^1.26.1"
@@ -61,7 +61,7 @@ pytest-datadir = "^1.5.0"
 pytest-memray = "^1.6.0"
 ruff = "^0"
 types-aiobotocore = {extras = ["signer"], version = "2.13.0"}
-types-psutil = "^6.1.0"
+types-psutil = "^7.0.0"
 types-pytz = "^2022.1.1"
 validators = "^0.22.0"
 
