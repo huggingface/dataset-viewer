@@ -20,34 +20,26 @@ export WEBHOOK_UVICORN_PORT := ${PORT_WEBHOOK}
 export API_HF_JWT_PUBLIC_KEY_URL := https://hub-ci.huggingface.co/api/keys/jwt
 export API_HF_JWT_ADDITIONAL_PUBLIC_KEYS :=
 
-DOCKER_COMPOSE := ./docker-compose.yml
-
 # environment variables per target
 start: export COMPOSE_PROJECT_NAME := datasets-server
 stop: export COMPOSE_PROJECT_NAME := datasets-server
-
-# TODO(kszucs): pass .env.debug file to docker compose
 dev-start: export COMPOSE_PROJECT_NAME := dev-datasets-server
 dev-stop: export COMPOSE_PROJECT_NAME := dev-datasets-server
 
-include tools/Docker.mk
-
-
 .PHONY: start
 start:
-	DOCKER_COMPOSE=${DOCKER_COMPOSE} $(MAKE) up
+	docker compose --env-file .env up -d --build --force-recreate --remove-orphans --renew-anon-volumes --wait --wait-timeout 20
 
 .PHONY: stop
 stop:
-	DOCKER_COMPOSE=${DOCKER_COMPOSE} $(MAKE) down
+	docker compose down --remove-orphans --volumes
 
 .PHONY: dev-start
 dev-start:
-	DOCKER_COMPOSE=${DOCKER_COMPOSE} $(MAKE) up
+	docker compose --env-file .env --env-file .env.debug up -d --build --force-recreate --remove-orphans --renew-anon-volumes --wait --wait-timeout 20
 
 .PHONY: dev-stop
-dev-stop:
-	DOCKER_COMPOSE=${DOCKER_COMPOSE} $(MAKE) down
+dev-stop: stop
 
 .PHONY: e2e
 e2e:
