@@ -15,7 +15,6 @@ from datasets import Dataset, Image, concatenate_datasets
 from datasets.table import embed_table_storage
 from fsspec import AbstractFileSystem
 from fsspec.implementations.http import HTTPFileSystem
-from libviewer import Dataset as LibviewerDataset  # type: ignore [import-untyped]
 
 from libcommon.parquet_utils import (
     Indexer,
@@ -468,6 +467,8 @@ def test_rows_index_query_with_parquet_metadata(
 
 
 def test_rows_index_query_with_page_pruning(rows_index_with_parquet_metadata: RowsIndex, ds_sharded: Dataset) -> None:
+    from libviewer import Dataset as LibviewerDataset  # type: ignore [import-untyped]
+
     assert isinstance(rows_index_with_parquet_metadata.viewer_index, LibviewerDataset)
 
     result = rows_index_with_parquet_metadata.query_with_page_pruning(offset=1, length=3)

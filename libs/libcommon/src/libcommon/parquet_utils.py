@@ -11,20 +11,25 @@ import numpy as np
 import pyarrow as pa
 import pyarrow.compute as pc
 import pyarrow.parquet as pq
+from pyarrow.lib import ArrowInvalid
 from datasets import Features, Value
 from datasets.features.features import FeatureType
 from datasets.table import cast_table_to_schema
 from datasets.utils.py_utils import size_str
 from fsspec.implementations.http import HTTPFile, HTTPFileSystem
 from huggingface_hub import HfFileSystem
-from libviewer import Dataset as LibviewerDataset  # type: ignore [import-untyped]
-from pyarrow.lib import ArrowInvalid
 
 from libcommon.constants import CONFIG_PARQUET_METADATA_KIND
 from libcommon.prometheus import StepProfiler
 from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.storage import StrPath
 from libcommon.viewer_utils.features import get_supported_unsupported_columns
+
+try:
+    from libviewer import Dataset as LibviewerDataset  # type: ignore [import-untyped]
+    _has_libviewer = True
+except ImportError:
+    _has_libviewer = False
 
 # For partial Parquet export we have paths like "en/partial-train/0000.parquet".
 # "-" is not allowed is split names so we use it in the prefix to avoid collisions.
@@ -531,7 +536,8 @@ class RowsIndex:
             max_arrow_data_in_memory=max_arrow_data_in_memory,
             unsupported_features=unsupported_features,
         )
-        self._init_viewer_index(data_store=data_store, metadata_store=f"file://{parquet_metadata_directory}")
+        if _has_libviewer:
+            self._init_viewer_index(data_store=data_store, metadata_store=f"file://{parquet_metadata_directory}")
 
     def _init_dataset_info(self, parquet_metadata_directory: StrPath) -> None:
         # get the list of parquet files and features
@@ -631,6 +637,8 @@ class RowsIndex:
         return self.parquet_index.query(offset=offset, length=length)
 
     def query_with_page_pruning(self, offset: int, length: int) -> pa.Table:
+        if not _has_libviewer:
+            raise ImportError("libviewer is not installed but is required for page pruning")
         logging.info(
             f"Query libviewer.Dataset for dataset={self.dataset}, config={self.config},"
             f" split={self.split}, offset={offset}, length={length}, with page pruning"
