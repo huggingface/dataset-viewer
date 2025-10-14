@@ -77,7 +77,7 @@ services:
   admin:
     build:
       context: ..
-      dockerfile: services/admin/Dockerfile
+      target: admin
     volumes:
       - storage:${STORAGE_DIRECTORY-/storage}:rw
       - parquet-metadata:${PARQUET_METADATA_STORAGE_DIRECTORY-/parquet_metadata}:ro
@@ -104,7 +104,7 @@ services:
   api:
     build:
       context: ..
-      dockerfile: services/api/Dockerfile
+      target: api
     volumes:
       - storage:${STORAGE_DIRECTORY-/storage}:rw
     environment:
@@ -121,7 +121,7 @@ services:
   rows:
     build:
       context: ..
-      dockerfile: services/rows/Dockerfile
+      target: rows
     volumes:
       - storage:${STORAGE_DIRECTORY-/storage}
       - parquet-metadata:${PARQUET_METADATA_STORAGE_DIRECTORY-/parquet_metadata}
@@ -143,7 +143,7 @@ services:
   search:
     build:
       context: ..
-      dockerfile: services/search/Dockerfile
+      target: search
     volumes:
       - storage:${STORAGE_DIRECTORY-/storage}
       - parquet-metadata:${PARQUET_METADATA_STORAGE_DIRECTORY-/parquet_metadata}:rw
@@ -168,7 +168,7 @@ services:
   sse-api:
     build:
       context: ..
-      dockerfile: services/sse-api/Dockerfile
+      target: sse-api
     environment:
       <<: *service-env
       # uvicorn
@@ -185,7 +185,7 @@ services:
   worker:
     build:
       context: ..
-      dockerfile: services/worker/Dockerfile
+      target: worker
     volumes:
       - storage:${STORAGE_DIRECTORY-/storage}:rw
       - parquet-metadata:${PARQUET_METADATA_STORAGE_DIRECTORY-/parquet_metadata}:rw
@@ -241,7 +241,7 @@ services:
   webhook:
     build:
       context: ..
-      dockerfile: services/webhook/Dockerfile
+      target: webhook
     volumes:
       - storage:${STORAGE_DIRECTORY-/storage}:rw
     environment:
