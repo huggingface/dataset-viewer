@@ -100,9 +100,10 @@ def create_rows_endpoint(
                     with StepProfiler(method="rows_endpoint", step="query the rows"):
                         try:
                             # Some datasets have very long binary data that we truncate
-                            pa_table, truncated_columns = rows_index.query_truncated_binary(
-                                offset=offset, length=length
-                            )
+                            # pa_table, truncated_columns = rows_index.query_truncated_binary(
+                            #     offset=offset, length=length
+                            # )
+                            pa_table = rows_index.query_with_page_pruning(offset=offset, length=length)
                         except TooBigRows as err:
                             raise TooBigContentError(str(err)) from None
                     with StepProfiler(method="rows_endpoint", step="transform to a list"):
@@ -118,7 +119,8 @@ def create_rows_endpoint(
                             unsupported_columns=rows_index.parquet_index.unsupported_columns,
                             partial=rows_index.parquet_index.partial,
                             num_rows_total=rows_index.parquet_index.num_rows_total,
-                            truncated_columns=truncated_columns,
+                            # truncated_columns=truncated_columns,
+                            truncated_columns=None,
                         )
                 except CachedArtifactNotFoundError:
                     with StepProfiler(method="rows_endpoint", step="try backfill dataset"):
