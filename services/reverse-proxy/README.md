@@ -2,7 +2,7 @@
 
 > Reverse-proxy in front of the API. Only used in the docker compose (CI), not in the Helm chart (staging/prod)
 
-See [docker-compose-dataset-viewer.yml](../../tools/docker-compose-dataset-viewer.yml) for usage.
+See [docker-compose.yml](../../docker-compose.yml) for usage.
 
 The reverse proxy uses nginx:
 

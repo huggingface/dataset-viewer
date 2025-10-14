@@ -67,8 +67,7 @@ jobs:
           S3_REGION_NAME: "us-east-1"
           CLOUDFRONT_KEY_PAIR_ID: "K3814DK2QUJ71H"
           CLOUDFRONT_PRIVATE_KEY: ${{ secrets.CLOUDFRONT_PRIVATE_KEY }}
-        run: docker compose -f docker-compose-dataset-viewer.yml up -d --wait --wait-timeout 20
-        working-directory: ./tools
+        run: docker compose up -d --wait --wait-timeout 20
       - name: Install poetry
         run: pipx install poetry==${{ env.poetry-version }}
       - name: Use Python
