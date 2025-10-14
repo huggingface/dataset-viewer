@@ -20,13 +20,9 @@ export WEBHOOK_UVICORN_PORT := ${PORT_WEBHOOK}
 export API_HF_JWT_PUBLIC_KEY_URL := https://hub-ci.huggingface.co/api/keys/jwt
 export API_HF_JWT_ADDITIONAL_PUBLIC_KEYS :=
 
-DOCKER_COMPOSE := ./docker-compose.yml
-
 # environment variables per target
 start: export COMPOSE_PROJECT_NAME := datasets-server
 stop: export COMPOSE_PROJECT_NAME := datasets-server
-
-# TODO(kszucs): pass .env.debug file to docker compose
 dev-start: export COMPOSE_PROJECT_NAME := dev-datasets-server
 dev-stop: export COMPOSE_PROJECT_NAME := dev-datasets-server
 
