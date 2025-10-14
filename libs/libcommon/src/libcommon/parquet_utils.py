@@ -23,6 +23,13 @@ from libcommon.prometheus import StepProfiler
 from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.storage import StrPath
 
+try:
+    import libviewer as lv  # type: ignore
+
+    _has_libviewer = True
+except ImportError:
+    _has_libviewer = False
+
 # For partial Parquet export we have paths like "en/partial-train/0000.parquet".
 # "-" is not allowed is split names so we use it in the prefix to avoid collisions.
 # We also use this prefix for the DuckDB index file name
@@ -191,11 +198,11 @@ class ParquetIndexWithMetadata:
     features: Features
     httpfs: HTTPFileSystem
     max_arrow_data_in_memory: int
-    partial: bool
     metadata_dir: Path
 
     file_offsets: np.ndarray = field(init=False)
     num_rows_total: int = field(init=False)
+    partial: bool = field(init=False)
 
     def __post_init__(self) -> None:
         if self.httpfs._session is None:
@@ -206,6 +213,7 @@ class ParquetIndexWithMetadata:
         num_rows = np.array([f["num_rows"] for f in self.files])
         self.file_offsets = np.cumsum(num_rows)
         self.num_rows_total = np.sum(num_rows)
+        self.partial = parquet_export_is_partial(self.files[0]["url"])
 
     def query(self, offset: int, length: int) -> tuple[pa.Table, list[str]]:
         """Query the parquet files
@@ -390,45 +398,6 @@ class ParquetIndexWithMetadata:
 
         return pa_table, []
 
-    @staticmethod
-    def from_parquet_metadata_items(
-        parquet_file_metadata_items: list[ParquetFileMetadataItem],
-        features: Optional[Features],
-        parquet_metadata_directory: StrPath,
-        httpfs: HTTPFileSystem,
-        max_arrow_data_in_memory: int,
-    ) -> "ParquetIndexWithMetadata":
-        if not parquet_file_metadata_items:
-            raise EmptyParquetMetadataError("No parquet files found.")
-
-        partial = parquet_export_is_partial(parquet_file_metadata_items[0]["url"])
-        metadata_dir = Path(parquet_metadata_directory)
-
-        with StepProfiler(
-            method="parquet_index_with_metadata.from_parquet_metadata_items",
-            step="get the index from parquet metadata",
-        ):
-            try:
-                files = sorted(parquet_file_metadata_items, key=lambda f: f["filename"])
-            except Exception as e:
-                raise ParquetResponseFormatError(f"Could not parse the list of parquet files: {e}") from e
-
-        with StepProfiler(
-            method="parquet_index_with_metadata.from_parquet_metadata_items", step="get the dataset's features"
-        ):
-            if features is None:  # config-parquet version<6 didn't have features
-                first_arrow_schema = pq.read_schema(metadata_dir / files[0]["parquet_metadata_subpath"])
-                features = Features.from_arrow_schema(first_arrow_schema)
-
-        return ParquetIndexWithMetadata(
-            files=files,
-            features=features,
-            httpfs=httpfs,
-            max_arrow_data_in_memory=max_arrow_data_in_memory,
-            partial=partial,
-            metadata_dir=metadata_dir,
-        )
-
 
 class RowsIndex:
     def __init__(
@@ -439,50 +408,103 @@ class RowsIndex:
         httpfs: HfFileSystem,
         parquet_metadata_directory: StrPath,
         max_arrow_data_in_memory: int,
+        max_scan_size: int,
+        hf_token: Optional[str] = None,
+        data_store: Optional[str] = None,
+        use_libviewer_for_datasets: bool | set[str] = True,
     ):
         self.dataset = dataset
         self.config = config
         self.split = split
         self.httpfs = httpfs
-        self.parquet_index = self._init_parquet_index(
+        self.max_scan_size = max_scan_size
+        self.use_libviewer_for_datasets = use_libviewer_for_datasets
+        if not isinstance(self.use_libviewer_for_datasets, (bool, set)):
+            raise ValueError("`use_libviewer_for_datasets` must be a boolean or a set of dataset names")
+
+        self._init_dataset_info(parquet_metadata_directory)
+        self._init_parquet_index(
+            httpfs=httpfs,
             parquet_metadata_directory=parquet_metadata_directory,
             max_arrow_data_in_memory=max_arrow_data_in_memory,
         )
+        if _has_libviewer:
+            self._init_viewer_index(
+                hf_token=hf_token, data_store=data_store, metadata_store=f"file://{parquet_metadata_directory}"
+            )
+
+    def _init_dataset_info(self, parquet_metadata_directory: StrPath) -> None:
+        # get the list of parquet files and features
+        with StepProfiler(method="rows_index._get_dataset_metadata", step="all"):
+            response = get_previous_step_or_raise(
+                kind=CONFIG_PARQUET_METADATA_KIND, dataset=self.dataset, config=self.config, split=None
+            )
+
+        # set the revision of the dataset
+        self.revision = response["dataset_git_revision"]
+
+        # get the list of parquet files
+        parquet_files = response["content"]["parquet_files_metadata"]
+        # filter only files for the current split and config
+        parquet_files = [f for f in parquet_files if f["split"] == self.split and f["config"] == self.config]
+        # sort by filename to have a deterministic order
+        parquet_files = sorted(parquet_files, key=lambda x: x["filename"])
+        if not parquet_files:
+            raise EmptyParquetMetadataError("No parquet files found.")
+        self.parquet_files = parquet_files
+
+        # retrieve the features from the mongo response
+        features = response["content"].get("features")
+        if features:
+            self.features = Features.from_dict(features)
+        else:
+            # config-parquet version<6 didn't have features
+            first_metadata_file = os.path.join(
+                parquet_metadata_directory, parquet_files[0]["parquet_metadata_subpath"]
+            )
+            arrow_schema = pq.read_schema(first_metadata_file)
+            self.features = Features.from_arrow_schema(arrow_schema)
 
     def _init_parquet_index(
         self,
+        httpfs: HfFileSystem,
         parquet_metadata_directory: StrPath,
         max_arrow_data_in_memory: int,
-    ) -> ParquetIndexWithMetadata:
-        with StepProfiler(method="rows_index._init_parquet_index", step="all"):
-            # get the list of parquet files
-            with StepProfiler(method="rows_index._init_parquet_index", step="get list of parquet files for split"):
-                response = get_previous_step_or_raise(
-                    kind=CONFIG_PARQUET_METADATA_KIND,
-                    dataset=self.dataset,
-                    config=self.config,
-                    split=None,
-                )
-                self.revision = response["dataset_git_revision"]
-                content = response["content"]
-                if content.get("features"):  # config-parquet-metadata version<2 didn't have features
-                    features = Features.from_dict(content["features"])
-                else:
-                    features = None
-            logging.info(
-                f"Create ParquetIndexWithMetadata for dataset={self.dataset}, config={self.config}, split={self.split}"
+    ) -> None:
+        logging.info(
+            f"Create ParquetIndexWithMetadata for dataset={self.dataset}, config={self.config}, split={self.split}"
+        )
+        self.parquet_index = ParquetIndexWithMetadata(
+            files=self.parquet_files,
+            features=self.features,
+            httpfs=httpfs,
+            max_arrow_data_in_memory=max_arrow_data_in_memory,
+            metadata_dir=Path(parquet_metadata_directory),
+        )
+
+    def _init_viewer_index(self, hf_token: Optional[str], data_store: Optional[str], metadata_store: str) -> None:
+        logging.info(f"Create libviewer.Dataset for dataset={self.dataset}, config={self.config}, split={self.split}")
+
+        # construct the required parquet_files list for libviewer.Dataset
+        files = []
+        for f in self.parquet_files:
+            files.append(
+                {
+                    "path": f"{f['config']}/{f['split']}/{f['filename']}",
+                    "size": f["size"],
+                    "num_rows": f["num_rows"],
+                    "metadata_path": f["parquet_metadata_subpath"],
+                }
             )
-            return ParquetIndexWithMetadata.from_parquet_metadata_items(
-                [
-                    parquet_item
-                    for parquet_item in content["parquet_files_metadata"]
-                    if parquet_item["split"] == self.split and parquet_item["config"] == self.config
-                ],
-                features=features,
-                parquet_metadata_directory=parquet_metadata_directory,
-                httpfs=self.httpfs,
-                max_arrow_data_in_memory=max_arrow_data_in_memory,
-            )
+
+        self.viewer_index = lv.Dataset(
+            name=self.dataset,
+            files=files,
+            revision=self.revision,
+            hf_token=hf_token,
+            data_store=data_store,
+            metadata_store=metadata_store,
+        )
 
     # note that this cache size is global for the class, not per instance
     @lru_cache(maxsize=1)
@@ -500,8 +522,50 @@ class RowsIndex:
             `pa.Table`: The requested rows.
             `list[str]`: List of truncated columns.
         """
+        if self.use_libviewer_for_datasets is True or (
+            isinstance(self.use_libviewer_for_datasets, set) and self.dataset in self.use_libviewer_for_datasets
+        ):
+            return self.query_libviewer_index(offset=offset, length=length)
+        else:
+            return self.query_parquet_index(offset=offset, length=length)
+
+    def query_parquet_index(self, offset: int, length: int) -> tuple[pa.Table, list[str]]:
+        """Query the parquet files using ParquetIndexWithMetadata.
+
+        This is the old implementation without libviewer doing row-group pruning using pyarrow.
+        """
         logging.info(
             f"Query {type(self.parquet_index).__name__} for dataset={self.dataset}, config={self.config},"
-            f" split={self.split}, offset={offset}, length={length}, with truncated binary"
+            f" split={self.split}, offset={offset}, length={length}"
         )
         return self.parquet_index.query(offset=offset, length=length)
+
+    def query_libviewer_index(self, offset: int, length: int) -> tuple[pa.Table, list[str]]:
+        """Query the parquet files using libviewer.
+
+        This is the new implementation using libviewer doing row-group and page pruning.
+        """
+        if not _has_libviewer:
+            raise ImportError("libviewer is not installed but is required for page pruning")
+        logging.info(
+            f"Query libviewer.Dataset for dataset={self.dataset}, config={self.config},"
+            f" split={self.split}, offset={offset}, length={length}, with page pruning"
+        )
+        # IndexError is not ideal but .query() raises it for invalid offsets
+        if offset < 0:
+            raise IndexError("Offset must be non-negative")
+        if length < 0:
+            raise IndexError("Length must be non-negative")
+
+        try:
+            batches = self.viewer_index.sync_scan(offset=offset, limit=length, scan_size_limit=self.max_scan_size)
+        except lv.DatasetError as e:
+            if "Scan size limit exceeded" in str(e):
+                raise TooBigRows(str(e)) from e
+            else:
+                raise
+
+        table = pa.Table.from_batches(batches, schema=self.features.arrow_schema)
+
+        # FIXME(kszucs): binary truncation is implemented but disabled for now
+        return truncate_binary_columns(table, max_binary_length=-1, features=self.features)

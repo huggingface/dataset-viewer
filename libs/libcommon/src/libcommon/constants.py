@@ -106,3 +106,5 @@ LONG_DURATION_PROMETHEUS_HISTOGRAM_BUCKETS = (
 )
 
 YAML_FIELDS_TO_CHECK = ["dataset_info", "configs", "viewer", "language"]
+
+USE_LIBVIEWER_FOR_DATASETS = True

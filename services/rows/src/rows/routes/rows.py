@@ -22,7 +22,7 @@ from libapi.utils import (
     get_json_ok_response,
     try_backfill_dataset_then_raise,
 )
-from libcommon.constants import CONFIG_PARQUET_METADATA_KIND
+from libcommon.constants import CONFIG_PARQUET_METADATA_KIND, USE_LIBVIEWER_FOR_DATASETS
 from libcommon.parquet_utils import RowsIndex, TooBigRows
 from libcommon.prometheus import StepProfiler
 from libcommon.simple_cache import CachedArtifactError, CachedArtifactNotFoundError
@@ -61,8 +61,11 @@ def create_rows_endpoint(
             config=config,
             split=split,
             httpfs=httpfs,
+            hf_token=hf_token,
+            max_scan_size=max_arrow_data_in_memory,
             max_arrow_data_in_memory=max_arrow_data_in_memory,
             parquet_metadata_directory=parquet_metadata_directory,
+            use_libviewer_for_datasets=USE_LIBVIEWER_FOR_DATASETS,
         )
 
     async def rows_endpoint(request: Request) -> Response:

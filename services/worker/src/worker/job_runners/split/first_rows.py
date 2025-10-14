@@ -96,6 +96,7 @@ def compute_first_rows_from_parquet_response(
             config=config,
             split=split,
             httpfs=httpfs,
+            max_scan_size=max_arrow_data_in_memory,
             max_arrow_data_in_memory=max_arrow_data_in_memory,
             parquet_metadata_directory=parquet_metadata_directory,
         )

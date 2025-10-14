@@ -25,6 +25,12 @@ zstandard = "^0.22.0"
 # to include fix for https://github.com/microsoft/presidio/pull/1377
 presidio-analyzer = { git = "https://github.com/microsoft/presidio.git", rev = "2348fff508f1a45af92945d5f597ec56bd4faae6", subdirectory = "presidio-analyzer" }
 
+[tool.poetry.group.libviewer]
+optional = true
+
+[tool.poetry.group.libviewer.dependencies]
+libviewer = { path = "../../libs/libviewer", develop = true }
+
 [tool.poetry.group.dev.dependencies]
 bandit = "^1.7.4"
 moto = "^4.2.5"

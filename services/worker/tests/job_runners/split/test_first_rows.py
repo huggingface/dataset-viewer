@@ -5,7 +5,7 @@ from collections.abc import Callable, Generator
 from dataclasses import replace
 from http import HTTPStatus
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 from unittest.mock import patch
 
 import pyarrow.parquet as pq
@@ -125,12 +125,12 @@ def test_compute_from_parquet(
     has_parquet_files: bool,
     error_code: str,
 ) -> None:
-    dataset, config, split = "dataset", "config", "split"
+    dataset, config, split = "dataset", "config", "train"
     parquet_file = ds_fs.open("config/train/0000.parquet")
     fake_url = (
-        "https://fake.huggingface.co/datasets/dataset/resolve/refs%2Fconvert%2Fparquet/config/train/0000.parquet"
+        f"https://fake.huggingface.co/datasets/dataset/resolve/refs%2Fconvert%2Fparquet/{config}/{split}/0000.parquet"
     )
-    fake_metadata_subpath = "fake-parquet-metadata/dataset/config/train/0000.parquet"
+    fake_metadata_subpath = f"fake-parquet-metadata/dataset/{config}/{split}/0000.parquet"
 
     config_parquet_metadata_content = {
         "parquet_files_metadata": [
@@ -158,11 +158,23 @@ def test_compute_from_parquet(
         http_status=HTTPStatus.OK,
     )
 
-    parquet_metadata = pq.read_metadata(ds_fs.open("config/train/0000.parquet"))
+    from libviewer import Dataset as OriginalDataset  # type: ignore
+
+    def LocalDataset(*args: Any, data_store: Optional[str] = None, **kwargs: Any) -> OriginalDataset:
+        data_store = f"file://{ds_fs.local_root_dir}"
+        return OriginalDataset(*args, data_store=data_store, **kwargs)
+
+    parquet_metadata = pq.read_metadata(ds_fs.open(f"{config}/{split}/0000.parquet"))
+
+    # copy the parquet file over to the parquet metadata directory where Dataset looks for the metadata file
+    parquet_metadata_path = Path(parquet_metadata_directory) / fake_metadata_subpath
+    ds_fs.get(f"{config}/{split}/0000.parquet", str(parquet_metadata_path))
+
     with (
         patch("libcommon.parquet_utils.HTTPFile", return_value=parquet_file) as mock_http_file,
         patch("pyarrow.parquet.read_metadata", return_value=parquet_metadata) as mock_read_metadata,
         patch("pyarrow.parquet.read_schema", return_value=ds.data.schema) as mock_read_schema,
+        patch("libviewer.Dataset", new=LocalDataset),
     ):
         job_runner = get_job_runner(
             dataset,
