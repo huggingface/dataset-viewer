@@ -181,7 +181,7 @@ def create_pdf_file(
         current_position = pdf_stream.tell()
         try:
             pdf_stream.seek(0)
-            return pdf_stream.read(5) == b"%PDF-"
+            return b"%PDF" in pdf_stream.read(1000)
         finally:
             pdf_stream.seek(current_position)
 
