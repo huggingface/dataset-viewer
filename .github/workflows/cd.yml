@@ -64,7 +64,8 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ${{ matrix.directory }}/${{ matrix.project }}/Dockerfile
+          file: Dockerfile
+          target: ${{ matrix.project }}
           build-args: COMMIT=${{ steps.vars.outputs.sha_short }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
