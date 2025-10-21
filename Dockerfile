@@ -117,4 +117,4 @@ COPY libs /src/libs
 COPY jobs/mongodb_migration /src/jobs/mongodb_migration
 RUN poetry install --no-cache -P /src/jobs/mongodb_migration
 WORKDIR /src/jobs/mongodb_migration/
-ENTRYPOINT ["poetry", "run", "python", "src/data_migration/main.py"]
+ENTRYPOINT ["poetry", "run", "python", "src/mongodb_migration/main.py"]
