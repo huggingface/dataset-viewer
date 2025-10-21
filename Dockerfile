@@ -104,7 +104,7 @@ WORKDIR /src/services/worker/
 ENTRYPOINT ["poetry", "run", "python", "src/worker/main.py"]
 
 # Cache maintenance job
-FROM common AS cache-maintenance
+FROM common AS cache_maintenance
 COPY libs /src/libs
 COPY jobs/cache_maintenance /src/jobs/cache_maintenance
 RUN poetry install --no-cache -P /src/jobs/cache_maintenance
@@ -112,7 +112,7 @@ WORKDIR /src/jobs/cache_maintenance/
 ENTRYPOINT ["poetry", "run", "python", "src/cache_maintenance/main.py"]
 
 # MongoDB migration job
-FROM common AS mongodb-migration
+FROM common AS mongodb_migration
 COPY libs /src/libs
 COPY jobs/mongodb_migration /src/jobs/mongodb_migration
 RUN poetry install --no-cache -P /src/jobs/mongodb_migration
