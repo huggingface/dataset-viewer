@@ -521,6 +521,8 @@ class RowsIndex:
         self.config = config
         self.split = split
         self.httpfs = httpfs
+        # TODO(kszucs): since unsupported_features is always empty list
+        # we can remove it from ParquetIndexWithMetadata as well
         self.parquet_index = self._init_parquet_index(
             parquet_metadata_directory=parquet_metadata_directory,
             max_arrow_data_in_memory=max_arrow_data_in_memory,
@@ -614,14 +616,10 @@ class Indexer:
         parquet_metadata_directory: StrPath,
         httpfs: HTTPFileSystem,
         max_arrow_data_in_memory: int,
-        unsupported_features: list[FeatureType] = [],
-        all_columns_supported_datasets_allow_list: Union[Literal["all"], list[str]] = "all",
     ):
         self.parquet_metadata_directory = parquet_metadata_directory
         self.httpfs = httpfs
         self.max_arrow_data_in_memory = max_arrow_data_in_memory
-        self.unsupported_features = unsupported_features
-        self.all_columns_supported_datasets_allow_list = all_columns_supported_datasets_allow_list
 
     @lru_cache(maxsize=1)
     def get_rows_index(
@@ -630,11 +628,6 @@ class Indexer:
         config: str,
         split: str,
     ) -> RowsIndex:
-        filter_features = (
-            self.all_columns_supported_datasets_allow_list != "all"
-            and dataset not in self.all_columns_supported_datasets_allow_list
-        )
-        unsupported_features = self.unsupported_features if filter_features else []
         return RowsIndex(
             dataset=dataset,
             config=config,
@@ -642,5 +635,5 @@ class Indexer:
             httpfs=self.httpfs,
             parquet_metadata_directory=self.parquet_metadata_directory,
             max_arrow_data_in_memory=self.max_arrow_data_in_memory,
-            unsupported_features=unsupported_features,
+            unsupported_features=[],
         )

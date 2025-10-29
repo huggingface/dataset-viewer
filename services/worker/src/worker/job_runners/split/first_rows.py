@@ -296,8 +296,6 @@ class SplitFirstRowsJobRunner(SplitJobRunnerWithDatasetsCache):
         self.indexer = Indexer(
             parquet_metadata_directory=parquet_metadata_directory,
             httpfs=HTTPFileSystem(headers={"authorization": f"Bearer {self.app_config.common.hf_token}"}),
-            unsupported_features=[],
-            all_columns_supported_datasets_allow_list="all",
             max_arrow_data_in_memory=app_config.rows_index.max_arrow_data_in_memory,
         )
         self.storage_client = storage_client

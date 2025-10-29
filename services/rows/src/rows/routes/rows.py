@@ -33,11 +33,6 @@ from starlette.responses import Response
 logger = logging.getLogger(__name__)
 
 
-ALL_COLUMNS_SUPPORTED_DATASETS_ALLOW_LIST: Union[Literal["all"], list[str]] = [
-    "halabi2016/arabic_speech_corpus"
-]  # for testing
-
-
 def create_rows_endpoint(
     cached_assets_storage_client: StorageClient,
     parquet_metadata_directory: StrPath,
@@ -57,7 +52,6 @@ def create_rows_endpoint(
         parquet_metadata_directory=parquet_metadata_directory,
         httpfs=HTTPFileSystem(headers={"authorization": f"Bearer {hf_token}"}),
         max_arrow_data_in_memory=max_arrow_data_in_memory,
-        all_columns_supported_datasets_allow_list=ALL_COLUMNS_SUPPORTED_DATASETS_ALLOW_LIST,
     )
 
     async def rows_endpoint(request: Request) -> Response:
