@@ -458,7 +458,6 @@ class ParquetIndexWithMetadata:
         parquet_metadata_directory: StrPath,
         httpfs: HTTPFileSystem,
         max_arrow_data_in_memory: int,
-        unsupported_features: list[FeatureType] = [],
     ) -> "ParquetIndexWithMetadata":
         if not parquet_file_metadata_items:
             raise EmptyParquetMetadataError("No parquet files found.")
@@ -488,9 +487,10 @@ class ParquetIndexWithMetadata:
         ):
             if features is None:  # config-parquet version<6 didn't have features
                 features = Features.from_arrow_schema(pq.read_schema(metadata_paths[0]))
+            # TODO(kszucs): since unsupported_features is always empty list we may omit the call below
             supported_columns, unsupported_columns = get_supported_unsupported_columns(
                 features,
-                unsupported_features=unsupported_features,
+                unsupported_features=[],
             )
         return ParquetIndexWithMetadata(
             features=features,
@@ -515,7 +515,6 @@ class RowsIndex:
         httpfs: HfFileSystem,
         parquet_metadata_directory: StrPath,
         max_arrow_data_in_memory: int,
-        unsupported_features: list[FeatureType] = [],
     ):
         self.dataset = dataset
         self.config = config
@@ -526,14 +525,12 @@ class RowsIndex:
         self.parquet_index = self._init_parquet_index(
             parquet_metadata_directory=parquet_metadata_directory,
             max_arrow_data_in_memory=max_arrow_data_in_memory,
-            unsupported_features=unsupported_features,
         )
 
     def _init_parquet_index(
         self,
         parquet_metadata_directory: StrPath,
         max_arrow_data_in_memory: int,
-        unsupported_features: list[FeatureType] = [],
     ) -> ParquetIndexWithMetadata:
         with StepProfiler(method="rows_index._init_parquet_index", step="all"):
             # get the list of parquet files
@@ -563,7 +560,6 @@ class RowsIndex:
                 parquet_metadata_directory=parquet_metadata_directory,
                 httpfs=self.httpfs,
                 max_arrow_data_in_memory=max_arrow_data_in_memory,
-                unsupported_features=unsupported_features,
             )
 
     # note that this cache size is global for the class, not per instance
@@ -635,5 +631,4 @@ class Indexer:
             httpfs=self.httpfs,
             parquet_metadata_directory=self.parquet_metadata_directory,
             max_arrow_data_in_memory=self.max_arrow_data_in_memory,
-            unsupported_features=[],
         )
