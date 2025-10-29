@@ -519,6 +519,8 @@ class RowsIndex:
         self.config = config
         self.split = split
         self.httpfs = httpfs
+        # TODO(kszucs): since unsupported_features is always empty list
+        # we can remove it from ParquetIndexWithMetadata as well
         self.parquet_index = self._init_parquet_index(
             parquet_metadata_directory=parquet_metadata_directory,
             max_arrow_data_in_memory=max_arrow_data_in_memory,
