@@ -3,7 +3,7 @@
 
 import logging
 from http import HTTPStatus
-from typing import Literal, Optional, Union
+from typing import Optional
 
 from fsspec.implementations.http import HTTPFileSystem
 from libapi.authentication import auth_check

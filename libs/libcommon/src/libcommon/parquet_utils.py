@@ -5,7 +5,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass, field
 from functools import lru_cache
 from pathlib import Path
-from typing import Literal, Optional, TypedDict, Union
+from typing import Optional, TypedDict
 
 import numpy as np
 import pyarrow as pa
