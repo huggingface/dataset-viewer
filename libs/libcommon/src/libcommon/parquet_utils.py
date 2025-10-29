@@ -12,7 +12,6 @@ import pyarrow as pa
 import pyarrow.compute as pc
 import pyarrow.parquet as pq
 from datasets import Features, Value
-from datasets.features.features import FeatureType
 from datasets.table import cast_table_to_schema
 from datasets.utils.py_utils import size_str
 from fsspec.implementations.http import HTTPFile, HTTPFileSystem
@@ -520,8 +519,6 @@ class RowsIndex:
         self.config = config
         self.split = split
         self.httpfs = httpfs
-        # TODO(kszucs): since unsupported_features is always empty list
-        # we can remove it from ParquetIndexWithMetadata as well
         self.parquet_index = self._init_parquet_index(
             parquet_metadata_directory=parquet_metadata_directory,
             max_arrow_data_in_memory=max_arrow_data_in_memory,
