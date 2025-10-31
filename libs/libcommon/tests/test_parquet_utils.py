@@ -35,9 +35,6 @@ CACHED_ASSETS_FOLDER = "cached-assets"
 pytestmark = pytest.mark.anyio
 
 
-Indexer = object()
-
-
 @pytest.fixture(autouse=True)
 def cache_mongo_resource_autouse(cache_mongo_resource: CacheMongoResource) -> CacheMongoResource:
     return cache_mongo_resource
@@ -477,7 +474,6 @@ def test_rows_index_query_with_too_big_rows(
 def test_rows_index_query_with_empty_dataset(
     ds_empty: Dataset,
     ds_empty_fs: AbstractFileSystem,
-    ds_sharded: Dataset,  # TODO(kszucs): this looks like a mistake but is needed for the test
     dataset_empty_with_config_parquet_metadata: dict[str, Any],
     parquet_metadata_directory,
 ) -> Generator[RowsIndex, None, None]:
@@ -493,7 +489,7 @@ def test_rows_index_query_with_empty_dataset(
             )
 
     assert isinstance(index.parquet_index, ParquetIndexWithMetadata)
-    assert index.query(offset=0, length=1).to_pydict() == ds_sharded[:0]
+    assert index.query(offset=0, length=1).to_pydict() == ds_empty[:0]
     with pytest.raises(IndexError):
         index.query(offset=-1, length=2)
 
