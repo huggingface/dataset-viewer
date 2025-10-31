@@ -35,6 +35,9 @@ CACHED_ASSETS_FOLDER = "cached-assets"
 pytestmark = pytest.mark.anyio
 
 
+Indexer = object()
+
+
 @pytest.fixture(autouse=True)
 def cache_mongo_resource_autouse(cache_mongo_resource: CacheMongoResource) -> CacheMongoResource:
     return cache_mongo_resource
