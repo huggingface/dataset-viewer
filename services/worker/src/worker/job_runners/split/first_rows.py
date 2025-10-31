@@ -41,7 +41,9 @@ def compute_first_rows_from_parquet_response(
     rows_max_number: int,
     rows_min_number: int,
     columns_max_number: int,
-    indexer: Indexer,
+    httpfs: HTTPFileSystem,
+    max_arrow_data_in_memory: int,
+    parquet_metadata_directory: StrPath,
 ) -> SplitFirstRowsResponse:
     """
     Compute the response of 'split-first-rows' for one specific split of a dataset from the parquet files.
@@ -67,8 +69,12 @@ def compute_first_rows_from_parquet_response(
             The minimum number of rows of the response.
         columns_max_number (`int`):
             The maximum number of columns supported.
-        indexer (`Indexer`):
-            An indexer to get the rows index.
+        httpfs (`HTTPFileSystem`):
+            An HTTP filesystem to access the parquet files.
+        parquet_metadata_directory (`StrPath`):
+            The local directory where the parquet metadata are stored.
+        max_arrow_data_in_memory (`int`):
+            The maximum size in bytes of Arrow data loaded in memory.
 
     Raises:
         [~`libcommon.exceptions.ParquetResponseEmptyError`]:
@@ -85,10 +91,13 @@ def compute_first_rows_from_parquet_response(
     logging.info(f"compute 'split-first-rows' from parquet for {dataset=} {config=} {split=}")
 
     try:
-        rows_index = indexer.get_rows_index(
+        rows_index = RowsIndex(
             dataset=dataset,
             config=config,
             split=split,
+            httpfs=httpfs,
+            max_arrow_data_in_memory=max_arrow_data_in_memory,
+            parquet_metadata_directory=parquet_metadata_directory,
         )
     except EmptyParquetMetadataError:
         raise ParquetResponseEmptyError("No parquet files found.")
@@ -293,11 +302,7 @@ class SplitFirstRowsJobRunner(SplitJobRunnerWithDatasetsCache):
         )
         self.first_rows_config = app_config.first_rows
         self.parquet_metadata_directory = parquet_metadata_directory
-        self.indexer = Indexer(
-            parquet_metadata_directory=parquet_metadata_directory,
-            httpfs=HTTPFileSystem(headers={"authorization": f"Bearer {self.app_config.common.hf_token}"}),
-            max_arrow_data_in_memory=app_config.rows_index.max_arrow_data_in_memory,
-        )
+        self.httpfs = HTTPFileSystem(headers={"authorization": f"Bearer {self.app_config.common.hf_token}"})
         self.storage_client = storage_client
 
     def compute(self) -> CompleteJobResult:
@@ -314,7 +319,9 @@ class SplitFirstRowsJobRunner(SplitJobRunnerWithDatasetsCache):
                     rows_min_number=self.first_rows_config.min_number,
                     rows_max_number=MAX_NUM_ROWS_PER_PAGE,
                     columns_max_number=self.first_rows_config.columns_max_number,
-                    indexer=self.indexer,
+                    httpfs=self.httpfs,
+                    max_arrow_data_in_memory=self.app_config.rows_index.max_arrow_data_in_memory,
+                    parquet_metadata_directory=self.parquet_metadata_directory,
                 )
             )
         except (

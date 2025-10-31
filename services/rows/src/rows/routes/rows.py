@@ -22,7 +22,7 @@ from libapi.utils import (
     try_backfill_dataset_then_raise,
 )
 from libcommon.constants import CONFIG_PARQUET_METADATA_KIND
-from libcommon.parquet_utils import Indexer, TooBigRows
+from libcommon.parquet_utils import RowsIndex, TooBigRows
 from libcommon.prometheus import StepProfiler
 from libcommon.simple_cache import CachedArtifactError, CachedArtifactNotFoundError
 from libcommon.storage import StrPath
@@ -48,14 +48,10 @@ def create_rows_endpoint(
     max_age_short: int = 0,
     storage_clients: Optional[list[StorageClient]] = None,
 ) -> Endpoint:
-    indexer = Indexer(
-        parquet_metadata_directory=parquet_metadata_directory,
-        httpfs=HTTPFileSystem(headers={"authorization": f"Bearer {hf_token}"}),
-        max_arrow_data_in_memory=max_arrow_data_in_memory,
-    )
+    httpfs = HTTPFileSystem(headers={"authorization": f"Bearer {hf_token}"})
 
     async def rows_endpoint(request: Request) -> Response:
-        await indexer.httpfs.set_session()
+        await httpfs.set_session()
         revision: Optional[str] = None
         with StepProfiler(method="rows_endpoint", step="all"):
             try:
@@ -84,10 +80,13 @@ def create_rows_endpoint(
                     )
                 try:
                     with StepProfiler(method="rows_endpoint", step="get row groups index"):
-                        rows_index = indexer.get_rows_index(
+                        rows_index = RowsIndex(
                             dataset=dataset,
                             config=config,
                             split=split,
+                            httpfs=httpfs,
+                            max_arrow_data_in_memory=max_arrow_data_in_memory,
+                            parquet_metadata_directory=parquet_metadata_directory,
                         )
                         revision = rows_index.revision
                     with StepProfiler(method="rows_endpoint", step="query the rows"):
