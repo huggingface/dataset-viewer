@@ -5,14 +5,13 @@ from collections.abc import Iterable
 from dataclasses import dataclass, field
 from functools import lru_cache
 from pathlib import Path
-from typing import Literal, Optional, TypedDict, Union
+from typing import Optional, TypedDict
 
 import numpy as np
 import pyarrow as pa
 import pyarrow.compute as pc
 import pyarrow.parquet as pq
 from datasets import Features, Value
-from datasets.features.features import FeatureType
 from datasets.table import cast_table_to_schema
 from datasets.utils.py_utils import size_str
 from fsspec.implementations.http import HTTPFile, HTTPFileSystem
@@ -458,7 +457,6 @@ class ParquetIndexWithMetadata:
         parquet_metadata_directory: StrPath,
         httpfs: HTTPFileSystem,
         max_arrow_data_in_memory: int,
-        unsupported_features: list[FeatureType] = [],
     ) -> "ParquetIndexWithMetadata":
         if not parquet_file_metadata_items:
             raise EmptyParquetMetadataError("No parquet files found.")
@@ -488,9 +486,10 @@ class ParquetIndexWithMetadata:
         ):
             if features is None:  # config-parquet version<6 didn't have features
                 features = Features.from_arrow_schema(pq.read_schema(metadata_paths[0]))
+            # TODO(kszucs): since unsupported_features is always empty list we may omit the call below
             supported_columns, unsupported_columns = get_supported_unsupported_columns(
                 features,
-                unsupported_features=unsupported_features,
+                unsupported_features=[],
             )
         return ParquetIndexWithMetadata(
             features=features,
@@ -515,7 +514,6 @@ class RowsIndex:
         httpfs: HfFileSystem,
         parquet_metadata_directory: StrPath,
         max_arrow_data_in_memory: int,
-        unsupported_features: list[FeatureType] = [],
     ):
         self.dataset = dataset
         self.config = config
@@ -524,14 +522,12 @@ class RowsIndex:
         self.parquet_index = self._init_parquet_index(
             parquet_metadata_directory=parquet_metadata_directory,
             max_arrow_data_in_memory=max_arrow_data_in_memory,
-            unsupported_features=unsupported_features,
         )
 
     def _init_parquet_index(
         self,
         parquet_metadata_directory: StrPath,
         max_arrow_data_in_memory: int,
-        unsupported_features: list[FeatureType] = [],
     ) -> ParquetIndexWithMetadata:
         with StepProfiler(method="rows_index._init_parquet_index", step="all"):
             # get the list of parquet files
@@ -561,7 +557,6 @@ class RowsIndex:
                 parquet_metadata_directory=parquet_metadata_directory,
                 httpfs=self.httpfs,
                 max_arrow_data_in_memory=max_arrow_data_in_memory,
-                unsupported_features=unsupported_features,
             )
 
     # note that this cache size is global for the class, not per instance
@@ -614,14 +609,10 @@ class Indexer:
         parquet_metadata_directory: StrPath,
         httpfs: HTTPFileSystem,
         max_arrow_data_in_memory: int,
-        unsupported_features: list[FeatureType] = [],
-        all_columns_supported_datasets_allow_list: Union[Literal["all"], list[str]] = "all",
     ):
         self.parquet_metadata_directory = parquet_metadata_directory
         self.httpfs = httpfs
         self.max_arrow_data_in_memory = max_arrow_data_in_memory
-        self.unsupported_features = unsupported_features
-        self.all_columns_supported_datasets_allow_list = all_columns_supported_datasets_allow_list
 
     @lru_cache(maxsize=1)
     def get_rows_index(
@@ -630,11 +621,6 @@ class Indexer:
         config: str,
         split: str,
     ) -> RowsIndex:
-        filter_features = (
-            self.all_columns_supported_datasets_allow_list != "all"
-            and dataset not in self.all_columns_supported_datasets_allow_list
-        )
-        unsupported_features = self.unsupported_features if filter_features else []
         return RowsIndex(
             dataset=dataset,
             config=config,
@@ -642,5 +628,4 @@ class Indexer:
             httpfs=self.httpfs,
             parquet_metadata_directory=self.parquet_metadata_directory,
             max_arrow_data_in_memory=self.max_arrow_data_in_memory,
-            unsupported_features=unsupported_features,
         )
