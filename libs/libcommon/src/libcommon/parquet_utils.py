@@ -179,15 +179,14 @@ class RowGroupReader:
 
 @dataclass
 class ParquetIndexWithMetadata:
+    files: list[ParquetFileMetadataItem]
     features: Features
-    parquet_files_urls: list[str]
-    metadata_paths: list[str]
-    num_bytes: list[int]
-    num_rows: list[int]
     httpfs: HTTPFileSystem
     max_arrow_data_in_memory: int
     partial: bool
+    metadata_dir: Path
 
+    file_offsets: np.ndarray = field(init=False)
     num_rows_total: int = field(init=False)
 
     def __post_init__(self) -> None:
@@ -195,7 +194,10 @@ class ParquetIndexWithMetadata:
             self.httpfs_session = asyncio.run(self.httpfs.set_session())
         else:
             self.httpfs_session = self.httpfs._session
-        self.num_rows_total = sum(self.num_rows)
+
+        num_rows = np.array([f["num_rows"] for f in self.files])
+        self.file_offsets = np.cumsum(num_rows)
+        self.num_rows_total = np.sum(num_rows)
 
     def query_truncated_binary(self, offset: int, length: int) -> tuple[pa.Table, list[str]]:
         """Query the parquet files
@@ -226,20 +228,16 @@ class ParquetIndexWithMetadata:
         with StepProfiler(
             method="parquet_index_with_metadata.query", step="get the parquet files than contain the requested rows"
         ):
-            parquet_file_offsets = np.cumsum(self.num_rows)
-
-            last_row_in_parquet = parquet_file_offsets[-1] - 1
+            last_row_in_parquet = self.file_offsets[-1] - 1
             first_row = min(offset, last_row_in_parquet)
             last_row = min(offset + length - 1, last_row_in_parquet)
             first_parquet_file_id, last_parquet_file_id = np.searchsorted(
-                parquet_file_offsets, [first_row, last_row], side="right"
+                self.file_offsets, [first_row, last_row], side="right"
             )
             parquet_offset = (
-                offset - parquet_file_offsets[first_parquet_file_id - 1] if first_parquet_file_id > 0 else offset
+                offset - self.file_offsets[first_parquet_file_id - 1] if first_parquet_file_id > 0 else offset
             )
-            urls = self.parquet_files_urls[first_parquet_file_id : last_parquet_file_id + 1]  # noqa: E203
-            metadata_paths = self.metadata_paths[first_parquet_file_id : last_parquet_file_id + 1]  # noqa: E203
-            num_bytes = self.num_bytes[first_parquet_file_id : last_parquet_file_id + 1]  # noqa: E203
+            files_to_scan = self.files[first_parquet_file_id : last_parquet_file_id + 1]  # noqa: E203
 
         with StepProfiler(
             method="parquet_index_with_metadata.query", step="load the remote parquet files using metadata from disk"
@@ -248,17 +246,17 @@ class ParquetIndexWithMetadata:
                 pq.ParquetFile(
                     HTTPFile(
                         self.httpfs,
-                        url,
+                        f["url"],
                         session=self.httpfs_session,
-                        size=size,
+                        size=f["size"],
                         loop=self.httpfs.loop,
                         cache_type=None,
                         **self.httpfs.kwargs,
                     ),
-                    metadata=pq.read_metadata(metadata_path),
+                    metadata=pq.read_metadata(self.metadata_dir / f["parquet_metadata_subpath"]),
                     pre_buffer=True,
                 )
-                for url, metadata_path, size in zip(urls, metadata_paths, num_bytes)
+                for f in files_to_scan
             ]
 
         with StepProfiler(
@@ -359,20 +357,16 @@ class ParquetIndexWithMetadata:
         with StepProfiler(
             method="parquet_index_with_metadata.query", step="get the parquet files than contain the requested rows"
         ):
-            parquet_file_offsets = np.cumsum(self.num_rows)
-
-            last_row_in_parquet = parquet_file_offsets[-1] - 1
+            last_row_in_parquet = self.file_offsets[-1] - 1
             first_row = min(offset, last_row_in_parquet)
             last_row = min(offset + length - 1, last_row_in_parquet)
             first_parquet_file_id, last_parquet_file_id = np.searchsorted(
-                parquet_file_offsets, [first_row, last_row], side="right"
+                self.file_offsets, [first_row, last_row], side="right"
             )
             parquet_offset = (
-                offset - parquet_file_offsets[first_parquet_file_id - 1] if first_parquet_file_id > 0 else offset
+                offset - self.file_offsets[first_parquet_file_id - 1] if first_parquet_file_id > 0 else offset
             )
-            urls = self.parquet_files_urls[first_parquet_file_id : last_parquet_file_id + 1]  # noqa: E203
-            metadata_paths = self.metadata_paths[first_parquet_file_id : last_parquet_file_id + 1]  # noqa: E203
-            num_bytes = self.num_bytes[first_parquet_file_id : last_parquet_file_id + 1]  # noqa: E203
+            files_to_scan = self.files[first_parquet_file_id : last_parquet_file_id + 1]  # noqa: E203
 
         with StepProfiler(
             method="parquet_index_with_metadata.query", step="load the remote parquet files using metadata from disk"
@@ -381,17 +375,17 @@ class ParquetIndexWithMetadata:
                 pq.ParquetFile(
                     HTTPFile(
                         self.httpfs,
-                        url,
+                        f["url"],
                         session=self.httpfs_session,
-                        size=size,
+                        size=f["size"],
                         loop=self.httpfs.loop,
                         cache_type=None,
                         **self.httpfs.kwargs,
                     ),
-                    metadata=pq.read_metadata(metadata_path),
+                    metadata=pq.read_metadata(self.metadata_dir / f["parquet_metadata_subpath"]),
                     pre_buffer=True,
                 )
-                for url, metadata_path, size in zip(urls, metadata_paths, num_bytes)
+                for f in files_to_scan
             ]
 
         with StepProfiler(
@@ -458,22 +452,14 @@ class ParquetIndexWithMetadata:
             raise EmptyParquetMetadataError("No parquet files found.")
 
         partial = parquet_export_is_partial(parquet_file_metadata_items[0]["url"])
+        metadata_dir = Path(parquet_metadata_directory)
 
         with StepProfiler(
             method="parquet_index_with_metadata.from_parquet_metadata_items",
             step="get the index from parquet metadata",
         ):
             try:
-                parquet_files_metadata = sorted(
-                    parquet_file_metadata_items, key=lambda parquet_file_metadata: parquet_file_metadata["filename"]
-                )
-                parquet_files_urls = [parquet_file_metadata["url"] for parquet_file_metadata in parquet_files_metadata]
-                metadata_paths = [
-                    os.path.join(parquet_metadata_directory, parquet_file_metadata["parquet_metadata_subpath"])
-                    for parquet_file_metadata in parquet_files_metadata
-                ]
-                num_bytes = [parquet_file_metadata["size"] for parquet_file_metadata in parquet_files_metadata]
-                num_rows = [parquet_file_metadata["num_rows"] for parquet_file_metadata in parquet_files_metadata]
+                files = sorted(parquet_file_metadata_items, key=lambda f: f["filename"])
             except Exception as e:
                 raise ParquetResponseFormatError(f"Could not parse the list of parquet files: {e}") from e
 
@@ -481,17 +467,16 @@ class ParquetIndexWithMetadata:
             method="parquet_index_with_metadata.from_parquet_metadata_items", step="get the dataset's features"
         ):
             if features is None:  # config-parquet version<6 didn't have features
-                features = Features.from_arrow_schema(pq.read_schema(metadata_paths[0]))
+                first_arrow_schema = pq.read_schema(metadata_dir / files[0]["parquet_metadata_subpath"])
+                features = Features.from_arrow_schema(first_arrow_schema)
 
         return ParquetIndexWithMetadata(
+            files=files,
             features=features,
-            parquet_files_urls=parquet_files_urls,
-            metadata_paths=metadata_paths,
-            num_bytes=num_bytes,
-            num_rows=num_rows,
             httpfs=httpfs,
             max_arrow_data_in_memory=max_arrow_data_in_memory,
             partial=partial,
+            metadata_dir=metadata_dir,
         )
 
 

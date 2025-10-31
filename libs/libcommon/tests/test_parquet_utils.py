@@ -397,14 +397,13 @@ def test_indexer_get_rows_index_with_parquet_metadata(
 
     assert isinstance(index.parquet_index, ParquetIndexWithMetadata)
     assert index.parquet_index.features == ds.features
-    assert index.parquet_index.num_rows == [len(ds)]
+    assert index.parquet_index.files == dataset_with_config_parquet_metadata["parquet_files_metadata"]
+    assert len(index.parquet_index.files) == 1
     assert index.parquet_index.num_rows_total == 2
-    assert index.parquet_index.parquet_files_urls == [
-        parquet_file_metadata_item["url"]
-        for parquet_file_metadata_item in dataset_with_config_parquet_metadata["parquet_files_metadata"]
-    ]
-    assert len(index.parquet_index.metadata_paths) == 1
-    assert os.path.exists(index.parquet_index.metadata_paths[0])
+
+    for f in index.parquet_index.files:
+        metadata_path = index.parquet_index.metadata_dir / f["parquet_metadata_subpath"]
+        assert metadata_path.exists()
 
 
 def test_indexer_get_rows_index_sharded_with_parquet_metadata(
@@ -427,14 +426,15 @@ def test_indexer_get_rows_index_sharded_with_parquet_metadata(
 
     assert isinstance(index.parquet_index, ParquetIndexWithMetadata)
     assert index.parquet_index.features == ds_sharded.features
-    assert index.parquet_index.num_rows == [len(ds)] * 4
+    assert index.parquet_index.files == dataset_sharded_with_config_parquet_metadata["parquet_files_metadata"]
+
+    num_rows = [f["num_rows"] for f in index.parquet_index.files]
+    assert num_rows == [len(ds)] * 4
     assert index.parquet_index.num_rows_total == 8
-    assert index.parquet_index.parquet_files_urls == [
-        parquet_file_metadata_item["url"]
-        for parquet_file_metadata_item in dataset_sharded_with_config_parquet_metadata["parquet_files_metadata"]
-    ]
-    assert len(index.parquet_index.metadata_paths) == 4
-    assert all(os.path.exists(index.parquet_index.metadata_paths[i]) for i in range(4))
+
+    for f in index.parquet_index.files:
+        metadata_path = index.parquet_index.metadata_dir / f["parquet_metadata_subpath"]
+        assert metadata_path.exists()
 
 
 def test_rows_index_query_with_parquet_metadata(
