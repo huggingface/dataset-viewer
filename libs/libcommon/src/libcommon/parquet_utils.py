@@ -189,7 +189,6 @@ class ParquetIndexWithMetadata:
     num_bytes: list[int]
     num_rows: list[int]
     httpfs: HTTPFileSystem
-    hf_token: Optional[str]
     max_arrow_data_in_memory: int
     partial: bool
 
@@ -458,7 +457,6 @@ class ParquetIndexWithMetadata:
         features: Optional[Features],
         parquet_metadata_directory: StrPath,
         httpfs: HTTPFileSystem,
-        hf_token: Optional[str],
         max_arrow_data_in_memory: int,
         unsupported_features: list[FeatureType] = [],
     ) -> "ParquetIndexWithMetadata":
@@ -503,7 +501,6 @@ class ParquetIndexWithMetadata:
             num_bytes=num_bytes,
             num_rows=num_rows,
             httpfs=httpfs,
-            hf_token=hf_token,
             max_arrow_data_in_memory=max_arrow_data_in_memory,
             partial=partial,
         )
@@ -516,7 +513,6 @@ class RowsIndex:
         config: str,
         split: str,
         httpfs: HfFileSystem,
-        hf_token: Optional[str],
         parquet_metadata_directory: StrPath,
         max_arrow_data_in_memory: int,
         unsupported_features: list[FeatureType] = [],
@@ -526,7 +522,6 @@ class RowsIndex:
         self.split = split
         self.httpfs = httpfs
         self.parquet_index = self._init_parquet_index(
-            hf_token=hf_token,
             parquet_metadata_directory=parquet_metadata_directory,
             max_arrow_data_in_memory=max_arrow_data_in_memory,
             unsupported_features=unsupported_features,
@@ -534,7 +529,6 @@ class RowsIndex:
 
     def _init_parquet_index(
         self,
-        hf_token: Optional[str],
         parquet_metadata_directory: StrPath,
         max_arrow_data_in_memory: int,
         unsupported_features: list[FeatureType] = [],
@@ -566,7 +560,6 @@ class RowsIndex:
                 features=features,
                 parquet_metadata_directory=parquet_metadata_directory,
                 httpfs=self.httpfs,
-                hf_token=hf_token,
                 max_arrow_data_in_memory=max_arrow_data_in_memory,
                 unsupported_features=unsupported_features,
             )
@@ -623,11 +616,9 @@ class Indexer:
         max_arrow_data_in_memory: int,
         unsupported_features: list[FeatureType] = [],
         all_columns_supported_datasets_allow_list: Union[Literal["all"], list[str]] = "all",
-        hf_token: Optional[str] = None,
     ):
         self.parquet_metadata_directory = parquet_metadata_directory
         self.httpfs = httpfs
-        self.hf_token = hf_token
         self.max_arrow_data_in_memory = max_arrow_data_in_memory
         self.unsupported_features = unsupported_features
         self.all_columns_supported_datasets_allow_list = all_columns_supported_datasets_allow_list
@@ -649,7 +640,6 @@ class Indexer:
             config=config,
             split=split,
             httpfs=self.httpfs,
-            hf_token=self.hf_token,
             parquet_metadata_directory=self.parquet_metadata_directory,
             max_arrow_data_in_memory=self.max_arrow_data_in_memory,
             unsupported_features=unsupported_features,

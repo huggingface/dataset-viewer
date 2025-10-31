@@ -395,7 +395,6 @@ def test_ParquetIndexWithMetadata_query(
         num_rows=[num_rows],
         num_bytes=[num_bytes],
         httpfs=httpfs,
-        hf_token=CI_USER_TOKEN,
         max_arrow_data_in_memory=999999999,
         partial=False,
     )

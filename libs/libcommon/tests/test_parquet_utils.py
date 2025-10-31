@@ -378,7 +378,6 @@ def rows_index_with_too_big_rows(
     dataset_sharded_with_config_parquet_metadata: dict[str, Any],
 ) -> Generator[RowsIndex, None, None]:
     indexer = Indexer(
-        hf_token="token",
         parquet_metadata_directory=parquet_metadata_directory,
         httpfs=HTTPFileSystem(),
         max_arrow_data_in_memory=1,
@@ -393,7 +392,6 @@ def indexer(
     parquet_metadata_directory: StrPath,
 ) -> Indexer:
     return Indexer(
-        hf_token="token",
         parquet_metadata_directory=parquet_metadata_directory,
         httpfs=HTTPFileSystem(),
         max_arrow_data_in_memory=9999999999,

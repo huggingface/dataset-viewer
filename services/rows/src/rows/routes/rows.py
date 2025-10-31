@@ -54,7 +54,6 @@ def create_rows_endpoint(
     storage_clients: Optional[list[StorageClient]] = None,
 ) -> Endpoint:
     indexer = Indexer(
-        hf_token=hf_token,
         parquet_metadata_directory=parquet_metadata_directory,
         httpfs=HTTPFileSystem(headers={"authorization": f"Bearer {hf_token}"}),
         max_arrow_data_in_memory=max_arrow_data_in_memory,
