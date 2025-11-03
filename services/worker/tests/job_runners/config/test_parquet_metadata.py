@@ -388,8 +388,6 @@ def test_ParquetIndexWithMetadata_query(
         pf.metadata.write_metadata_file(metadata_path)
     index = ParquetIndexWithMetadata(
         features=features,
-        supported_columns=list(features),
-        unsupported_columns=[],
         parquet_files_urls=[url],
         metadata_paths=[metadata_path],
         num_rows=[num_rows],

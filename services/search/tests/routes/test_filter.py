@@ -153,7 +153,6 @@ async def test_create_response(ds: Dataset, app_config: AppConfig, storage_clien
         pa_table=pa_table,
         offset=0,
         features=ds.features,
-        unsupported_columns=[],
         num_rows_total=4,
         partial=False,
         use_row_idx_column=True,

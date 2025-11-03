@@ -22,7 +22,6 @@ from libcommon.constants import CONFIG_PARQUET_METADATA_KIND
 from libcommon.prometheus import StepProfiler
 from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.storage import StrPath
-from libcommon.viewer_utils.features import get_supported_unsupported_columns
 
 # For partial Parquet export we have paths like "en/partial-train/0000.parquet".
 # "-" is not allowed is split names so we use it in the prefix to avoid collisions.
@@ -181,8 +180,6 @@ class RowGroupReader:
 @dataclass
 class ParquetIndexWithMetadata:
     features: Features
-    supported_columns: list[str]
-    unsupported_columns: list[str]
     parquet_files_urls: list[str]
     metadata_paths: list[str]
     num_bytes: list[int]
@@ -329,10 +326,11 @@ class ParquetIndexWithMetadata:
             )  # we use a minimum length to not end up with too empty cells
             try:
                 pa_tables: list[pa.Table] = []
+                columns = list(self.features.keys())
                 truncated_columns: set[str] = set()
                 for i in range(first_row_group_id, last_row_group_id + 1):
                     rg_pa_table, rg_truncated_columns = row_group_readers[i].read_truncated_binary(
-                        self.supported_columns, max_binary_length=max_binary_length
+                        columns, max_binary_length=max_binary_length
                     )
                     pa_tables.append(rg_pa_table)
                     truncated_columns |= set(rg_truncated_columns)
@@ -438,12 +436,10 @@ class ParquetIndexWithMetadata:
                 )
 
         with StepProfiler(method="parquet_index_with_metadata.query", step="read the row groups"):
+            columns = list(self.features.keys())
             try:
                 pa_table = pa.concat_tables(
-                    [
-                        row_group_readers[i].read(self.supported_columns)
-                        for i in range(first_row_group_id, last_row_group_id + 1)
-                    ]
+                    [row_group_readers[i].read(columns) for i in range(first_row_group_id, last_row_group_id + 1)]
                 )
             except ArrowInvalid as err:
                 raise SchemaMismatchError("Parquet files have different schema.", err)
@@ -486,15 +482,9 @@ class ParquetIndexWithMetadata:
         ):
             if features is None:  # config-parquet version<6 didn't have features
                 features = Features.from_arrow_schema(pq.read_schema(metadata_paths[0]))
-            # TODO(kszucs): since unsupported_features is always empty list we may omit the call below
-            supported_columns, unsupported_columns = get_supported_unsupported_columns(
-                features,
-                unsupported_features=[],
-            )
+
         return ParquetIndexWithMetadata(
             features=features,
-            supported_columns=supported_columns,
-            unsupported_columns=unsupported_columns,
             parquet_files_urls=parquet_files_urls,
             metadata_paths=metadata_paths,
             num_bytes=num_bytes,

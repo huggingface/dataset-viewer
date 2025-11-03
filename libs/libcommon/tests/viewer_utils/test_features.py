@@ -10,7 +10,6 @@ from unittest.mock import patch
 import boto3
 import pytest
 from aiobotocore.response import StreamingBody
-from datasets import Audio, Features, Image, List, Pdf, Value
 from moto import mock_s3
 from urllib3._collections import HTTPHeaderDict
 
@@ -19,7 +18,6 @@ from libcommon.storage_client import StorageClient
 from libcommon.url_preparator import URLPreparator
 from libcommon.viewer_utils.features import (
     get_cell_value,
-    get_supported_unsupported_columns,
     infer_audio_file_extension,
     to_features_list,
 )
@@ -100,27 +98,6 @@ def test_to_features_list(
     assert first_feature["feature_idx"] == 0
     assert first_feature["name"] == DEFAULT_COLUMN_NAME
     assert first_feature["type"] == datasets_fixture.expected_feature_type
-
-
-def test_get_supported_unsupported_columns() -> None:
-    features = Features(
-        {
-            "audio1": Audio(),
-            "audio2": Audio(sampling_rate=16_000),
-            "audio3": List(Audio()),
-            "image1": Image(),
-            "image2": Image(decode=False),
-            "image3": List(Image()),
-            "string": Value("string"),
-            "binary": Value("binary"),
-            "pdf": Pdf(),
-            "pdf2": [Pdf()],
-        }
-    )
-    unsupported_features = [Value("binary"), Audio()]
-    supported_columns, unsupported_columns = get_supported_unsupported_columns(features, unsupported_features)
-    assert supported_columns == ["image1", "image2", "image3", "string", "pdf", "pdf2"]
-    assert unsupported_columns == ["audio1", "audio2", "audio3", "binary"]
 
 
 # specific test created for https://github.com/huggingface/dataset-viewer/issues/2045

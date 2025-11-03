@@ -20,16 +20,11 @@ async def create_response(
     pa_table: pa.Table,
     offset: int,
     features: Features,
-    unsupported_columns: list[str],
     num_rows_total: int,
     partial: bool,
     use_row_idx_column: bool = False,
     truncated_columns: Optional[list[str]] = None,
 ) -> PaginatedResponse:
-    if set(pa_table.column_names).intersection(set(unsupported_columns)):
-        raise RuntimeError(
-            "The pyarrow table contains unsupported columns. They should have been ignored in the row group reader."
-        )
     logging.debug(f"create response for {dataset=} {config=} {split=}")
     return {
         "features": [
@@ -46,7 +41,6 @@ async def create_response(
             storage_client=storage_client,
             offset=offset,
             features=features,
-            unsupported_columns=unsupported_columns,
             row_idx_column=ROW_IDX_COLUMN if use_row_idx_column else None,
             truncated_columns=truncated_columns,
         ),
