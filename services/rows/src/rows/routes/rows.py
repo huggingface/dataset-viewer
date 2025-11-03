@@ -52,7 +52,7 @@ def create_rows_endpoint(
     httpfs = HTTPFileSystem(headers={"authorization": f"Bearer {hf_token}"})
 
     @lru_cache(maxsize=1)
-    def get_rows_index(dataset, config, split) -> RowsIndex:
+    def get_rows_index(dataset: str, config: str, split: str) -> RowsIndex:
         # cache the RowsIndex instance and therefore save one call to Mongo
         # if multiple queries to the same dataset are done in a row (90% of
         # requests in a short time window are to the same dataset)
