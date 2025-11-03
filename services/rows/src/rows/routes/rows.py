@@ -2,6 +2,7 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
+from functools import lru_cache
 from http import HTTPStatus
 from typing import Optional
 
@@ -50,6 +51,20 @@ def create_rows_endpoint(
 ) -> Endpoint:
     httpfs = HTTPFileSystem(headers={"authorization": f"Bearer {hf_token}"})
 
+    @lru_cache(maxsize=1)
+    def get_rows_index(dataset, config, split) -> RowsIndex:
+        # cache the RowsIndex instance and therefore save one call to Mongo
+        # if multiple queries to the same dataset are done in a row (90% of
+        # requests in a short time window are to the same dataset)
+        return RowsIndex(
+            dataset=dataset,
+            config=config,
+            split=split,
+            httpfs=httpfs,
+            max_arrow_data_in_memory=max_arrow_data_in_memory,
+            parquet_metadata_directory=parquet_metadata_directory,
+        )
+
     async def rows_endpoint(request: Request) -> Response:
         await httpfs.set_session()
         revision: Optional[str] = None
@@ -80,14 +95,7 @@ def create_rows_endpoint(
                     )
                 try:
                     with StepProfiler(method="rows_endpoint", step="get row groups index"):
-                        rows_index = RowsIndex(
-                            dataset=dataset,
-                            config=config,
-                            split=split,
-                            httpfs=httpfs,
-                            max_arrow_data_in_memory=max_arrow_data_in_memory,
-                            parquet_metadata_directory=parquet_metadata_directory,
-                        )
+                        rows_index = get_rows_index(dataset=dataset, config=config, split=split)
                         revision = rows_index.revision
                     with StepProfiler(method="rows_endpoint", step="query the rows"):
                         try:
