@@ -18,7 +18,7 @@ from libcommon.exceptions import (
     SplitParquetSchemaMismatchError,
     TooBigContentError,
 )
-from libcommon.parquet_utils import EmptyParquetMetadataError, Indexer, SchemaMismatchError, TooBigRows
+from libcommon.parquet_utils import EmptyParquetMetadataError, SchemaMismatchError, TooBigRows, RowsIndex
 from libcommon.simple_cache import CachedArtifactError, CachedArtifactNotFoundError
 from libcommon.storage import StrPath
 from libcommon.storage_client import StorageClient
@@ -281,7 +281,6 @@ def compute_first_rows_from_streaming_response(
 
 class SplitFirstRowsJobRunner(SplitJobRunnerWithDatasetsCache):
     first_rows_config: FirstRowsConfig
-    indexer: Indexer
 
     @staticmethod
     def get_job_type() -> str:

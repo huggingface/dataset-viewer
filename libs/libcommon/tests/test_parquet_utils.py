@@ -352,7 +352,7 @@ def rows_index_with_parquet_metadata(
     ds_sharded: Dataset,
     ds_sharded_fs: AbstractFileSystem,
     dataset_sharded_with_config_parquet_metadata: dict[str, Any],
-    parquet_metadata_directory,
+    parquet_metadata_directory: StrPath,
 ) -> Generator[RowsIndex, None, None]:
     with ds_sharded_fs.open("default/train/0003.parquet") as f:
         with patch("libcommon.parquet_utils.HTTPFile", return_value=f):
@@ -381,7 +381,7 @@ def test_parquet_export_is_partial() -> None:
 def test_indexer_get_rows_index_with_parquet_metadata(
     ds: Dataset,
     ds_fs: AbstractFileSystem,
-    parquet_metadata_directory,
+    parquet_metadata_directory: StrPath,
     dataset_with_config_parquet_metadata: dict[str, Any],
 ) -> None:
     with ds_fs.open("default/train/0000.parquet") as f:
@@ -411,7 +411,7 @@ def test_indexer_get_rows_index_sharded_with_parquet_metadata(
     ds: Dataset,
     ds_sharded: Dataset,
     ds_sharded_fs: AbstractFileSystem,
-    parquet_metadata_directory,
+    parquet_metadata_directory: StrPath,
     dataset_sharded_with_config_parquet_metadata: dict[str, Any],
 ) -> None:
     with ds_sharded_fs.open("default/train/0003.parquet") as f:
@@ -475,8 +475,8 @@ def test_rows_index_query_with_empty_dataset(
     ds_empty: Dataset,
     ds_empty_fs: AbstractFileSystem,
     dataset_empty_with_config_parquet_metadata: dict[str, Any],
-    parquet_metadata_directory,
-) -> Generator[RowsIndex, None, None]:
+    parquet_metadata_directory: StrPath,
+) -> None:
     with ds_empty_fs.open("default/train/0000.parquet") as f:
         with patch("libcommon.parquet_utils.HTTPFile", return_value=f):
             index = RowsIndex(
