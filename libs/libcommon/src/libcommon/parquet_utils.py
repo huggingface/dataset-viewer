@@ -505,7 +505,6 @@ class ParquetIndexWithMetadata:
         )
 
 
-@lru_cache(maxsize=1)
 class RowsIndex:
     def __init__(
         self,
