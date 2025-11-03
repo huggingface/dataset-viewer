@@ -557,3 +557,53 @@ def test_get_num_parquet_files_to_index(
         max_size_bytes=max_size_bytes,
     )
     assert (num_files, num_bytes, num_rows) == expected
+
+
+def test_rows_index_instance_caching(
+    ds: Dataset,
+    ds_empty: Dataset,
+    parquet_metadata_directory: StrPath,
+    dataset_with_config_parquet_metadata: dict[str, Any],
+    dataset_empty_with_config_parquet_metadata: dict[str, Any],
+) -> None:
+    index_a = RowsIndex(
+        dataset="ds",
+        config="default",
+        split="train",
+        parquet_metadata_directory=parquet_metadata_directory,
+        httpfs=HTTPFileSystem(),
+        max_arrow_data_in_memory=9999999999,
+    )
+    # @lru_cache(maxsize) is applied on RowsIndex so the same parameters
+    # should return the same instance
+    index_b = RowsIndex(
+        dataset="ds",
+        config="default",
+        split="train",
+        parquet_metadata_directory=parquet_metadata_directory,
+        httpfs=HTTPFileSystem(),
+        max_arrow_data_in_memory=9999999999,
+    )
+    # since the dataset name is different the cache will store a different
+    # instance
+    index_c = RowsIndex(
+        dataset="ds_empty",
+        config="default",
+        split="train",
+        parquet_metadata_directory=parquet_metadata_directory,
+        httpfs=HTTPFileSystem(),
+        max_arrow_data_in_memory=9999999999,
+    )
+    # instantiates the `ds` instance again since `ds_empty` moved it out of
+    # the cache
+    index_d = RowsIndex(
+        dataset="ds",
+        config="default",
+        split="train",
+        parquet_metadata_directory=parquet_metadata_directory,
+        httpfs=HTTPFileSystem(),
+        max_arrow_data_in_memory=9999999999,
+    )
+    assert index_a is index_b
+    assert index_a is not index_c
+    assert index_a is not index_d
