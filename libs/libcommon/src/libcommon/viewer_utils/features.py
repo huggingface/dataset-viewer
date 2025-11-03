@@ -29,7 +29,6 @@ from datasets import (
     Value,
     Video,
 )
-from datasets.features.features import FeatureType, _visit
 from PIL import Image as PILImage
 
 from libcommon.dtos import FeatureItem
