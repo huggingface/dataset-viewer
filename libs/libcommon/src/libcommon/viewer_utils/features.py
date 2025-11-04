@@ -29,7 +29,6 @@ from datasets import (
     Value,
     Video,
 )
-from datasets.features.features import FeatureType, _visit
 from PIL import Image as PILImage
 
 from libcommon.dtos import FeatureItem
@@ -529,30 +528,3 @@ def to_features_list(features: Features) -> list[FeatureItem]:
         }
         for idx, name in enumerate(features)
     ]
-
-
-def get_supported_unsupported_columns(
-    features: Features,
-    unsupported_features: list[FeatureType] = [],
-) -> tuple[list[str], list[str]]:
-    supported_columns, unsupported_columns = [], []
-
-    for column, feature in features.items():
-        str_column = str(column)
-        supported = True
-
-        def classify(feature: FeatureType) -> None:
-            nonlocal supported
-            for unsupported_feature in unsupported_features:
-                if type(unsupported_feature) is type(feature) is Value:
-                    if unsupported_feature.dtype == feature.dtype:
-                        supported = False
-                elif type(unsupported_feature) is type(feature):
-                    supported = False
-
-        _visit(feature, classify)
-        if supported:
-            supported_columns.append(str_column)
-        else:
-            unsupported_columns.append(str_column)
-    return supported_columns, unsupported_columns

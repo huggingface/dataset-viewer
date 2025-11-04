@@ -205,15 +205,10 @@ async def to_rows_list(
     split: str,
     offset: int,
     features: Features,
-    unsupported_columns: list[str],
     storage_client: StorageClient,
     row_idx_column: Optional[str] = None,
     truncated_columns: Optional[list[str]] = None,
 ) -> list[RowItem]:
-    num_rows = pa_table.num_rows
-    for idx, (column, feature) in enumerate(features.items()):
-        if column in unsupported_columns:
-            pa_table = pa_table.add_column(idx, column, pa.array([None] * num_rows))
     # transform the rows, if needed (e.g. save the images or audio to the assets, and return their URL)
     try:
         transformed_rows = await transform_rows(

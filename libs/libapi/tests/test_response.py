@@ -42,7 +42,6 @@ async def test_create_response(storage_client: StorageClient) -> None:
         pa_table=ds.data,
         offset=0,
         features=ds.features,
-        unsupported_columns=[],
         num_rows_total=10,
         partial=False,
     )
@@ -67,7 +66,6 @@ async def test_create_response_with_row_idx_column(storage_client: StorageClient
         pa_table=ds.data,
         offset=0,
         features=ds.features,
-        unsupported_columns=[],
         num_rows_total=10,
         partial=False,
         use_row_idx_column=True,
@@ -96,7 +94,6 @@ async def test_create_response_with_image(image_path: str, storage_client: Stora
         pa_table=ds_image.data,
         offset=0,
         features=ds_image.features,
-        unsupported_columns=[],
         num_rows_total=10,
         partial=False,
     )
@@ -137,7 +134,6 @@ async def test_create_response_with_document(document_path: str, storage_client:
         pa_table=ds_document.data,
         offset=0,
         features=ds_document.features,
-        unsupported_columns=[],
         num_rows_total=10,
         partial=False,
     )

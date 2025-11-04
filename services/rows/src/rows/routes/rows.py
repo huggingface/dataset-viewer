@@ -115,7 +115,6 @@ def create_rows_endpoint(
                             pa_table=pa_table,
                             offset=offset,
                             features=rows_index.parquet_index.features,
-                            unsupported_columns=rows_index.parquet_index.unsupported_columns,
                             partial=rows_index.parquet_index.partial,
                             num_rows_total=rows_index.parquet_index.num_rows_total,
                             truncated_columns=truncated_columns,

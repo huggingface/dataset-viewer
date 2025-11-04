@@ -35,10 +35,7 @@ from libcommon.dtos import PaginatedResponse
 from libcommon.prometheus import StepProfiler
 from libcommon.storage import StrPath, clean_dir
 from libcommon.storage_client import StorageClient
-from libcommon.viewer_utils.features import (
-    get_supported_unsupported_columns,
-    to_features_list,
-)
+from libcommon.viewer_utils.features import to_features_list
 from starlette.requests import Request
 from starlette.responses import Response
 
@@ -86,14 +83,11 @@ async def create_response(
     storage_client: StorageClient,
     offset: int,
     features: Features,
-    unsupported_columns: list[str],
     num_rows_total: int,
     partial: bool,
 ) -> PaginatedResponse:
     features_without_key = features.copy()
     features_without_key.pop(ROW_IDX_COLUMN, None)
-    if len(pa_table) > 0:
-        pa_table = pa_table.drop(unsupported_columns)
     logging.info(f"create response for {dataset=} {config=} {split=}")
 
     return PaginatedResponse(
@@ -107,7 +101,6 @@ async def create_response(
             storage_client=storage_client,
             offset=offset,
             features=features,
-            unsupported_columns=unsupported_columns,
             row_idx_column=ROW_IDX_COLUMN,
         ),
         num_rows_total=num_rows_total,
@@ -202,16 +195,14 @@ def create_search_endpoint(
                     # features must contain the row idx column for full_text_search
                     features = Features.from_dict(content_parquet_metadata["features"])
                     features[ROW_IDX_COLUMN] = Value("int64")
-                with StepProfiler(method="search_endpoint", step="get supported and unsupported columns"):
-                    supported_columns, unsupported_columns = get_supported_unsupported_columns(
-                        features,
-                    )
+                    columns = list(features.keys())
+
                 with StepProfiler(method="search_endpoint", step="perform FTS command"):
                     logging.debug(f"connect to index file {index_file_location}")
                     num_rows_total, pa_table = await anyio.to_thread.run_sync(
                         full_text_search,
                         index_file_location,
-                        supported_columns,
+                        columns,
                         query,
                         offset,
                         length,
@@ -235,7 +226,6 @@ def create_search_endpoint(
                         storage_client=cached_assets_storage_client,
                         offset=offset,
                         features=features or Features.from_arrow_schema(pa_table.schema),
-                        unsupported_columns=unsupported_columns,
                         num_rows_total=num_rows_total,
                         partial=partial,
                     )

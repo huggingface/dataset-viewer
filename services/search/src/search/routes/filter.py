@@ -33,7 +33,6 @@ from libcommon.constants import ROW_IDX_COLUMN
 from libcommon.prometheus import StepProfiler
 from libcommon.storage import StrPath, clean_dir
 from libcommon.storage_client import StorageClient
-from libcommon.viewer_utils.features import get_supported_unsupported_columns
 from starlette.requests import Request
 from starlette.responses import Response
 
@@ -147,15 +146,13 @@ def create_filter_endpoint(
                     # features must contain the row idx column for full_text_search
                     features = Features.from_dict(content_parquet_metadata["features"])
                     features[ROW_IDX_COLUMN] = Value("int64")
-                with StepProfiler(method="filter_endpoint", step="get supported and unsupported columns"):
-                    supported_columns, unsupported_columns = get_supported_unsupported_columns(
-                        features,
-                    )
+                    columns = list(features.keys())
+
                 with StepProfiler(method="filter_endpoint", step="execute filter query"):
                     num_rows_total, pa_table = await anyio.to_thread.run_sync(
                         execute_filter_query,
                         index_file_location,
-                        supported_columns,
+                        columns,
                         where,
                         orderby,
                         length,
@@ -180,7 +177,6 @@ def create_filter_endpoint(
                         pa_table=pa_table,
                         offset=offset,
                         features=features or Features.from_arrow_schema(pa_table.schema),
-                        unsupported_columns=unsupported_columns,
                         num_rows_total=num_rows_total,
                         partial=partial,
                         use_row_idx_column=True,
