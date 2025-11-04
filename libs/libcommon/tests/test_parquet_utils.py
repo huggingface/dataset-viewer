@@ -397,14 +397,13 @@ def test_indexer_get_rows_index_with_parquet_metadata(
 
     assert isinstance(index.parquet_index, ParquetIndexWithMetadata)
     assert index.parquet_index.features == ds.features
-    assert index.parquet_index.num_rows == [len(ds)]
+    assert index.parquet_index.files == dataset_with_config_parquet_metadata["parquet_files_metadata"]
+    assert len(index.parquet_index.files) == 1
     assert index.parquet_index.num_rows_total == 2
-    assert index.parquet_index.parquet_files_urls == [
-        parquet_file_metadata_item["url"]
-        for parquet_file_metadata_item in dataset_with_config_parquet_metadata["parquet_files_metadata"]
-    ]
-    assert len(index.parquet_index.metadata_paths) == 1
-    assert os.path.exists(index.parquet_index.metadata_paths[0])
+
+    for f in index.parquet_index.files:
+        metadata_path = index.parquet_index.metadata_dir / f["parquet_metadata_subpath"]
+        assert metadata_path.exists()
 
 
 def test_indexer_get_rows_index_sharded_with_parquet_metadata(
@@ -427,25 +426,36 @@ def test_indexer_get_rows_index_sharded_with_parquet_metadata(
 
     assert isinstance(index.parquet_index, ParquetIndexWithMetadata)
     assert index.parquet_index.features == ds_sharded.features
-    assert index.parquet_index.num_rows == [len(ds)] * 4
+    assert index.parquet_index.files == dataset_sharded_with_config_parquet_metadata["parquet_files_metadata"]
+
+    num_rows = [f["num_rows"] for f in index.parquet_index.files]
+    assert num_rows == [len(ds)] * 4
     assert index.parquet_index.num_rows_total == 8
-    assert index.parquet_index.parquet_files_urls == [
-        parquet_file_metadata_item["url"]
-        for parquet_file_metadata_item in dataset_sharded_with_config_parquet_metadata["parquet_files_metadata"]
-    ]
-    assert len(index.parquet_index.metadata_paths) == 4
-    assert all(os.path.exists(index.parquet_index.metadata_paths[i]) for i in range(4))
+
+    for f in index.parquet_index.files:
+        metadata_path = index.parquet_index.metadata_dir / f["parquet_metadata_subpath"]
+        assert metadata_path.exists()
 
 
 def test_rows_index_query_with_parquet_metadata(
     rows_index_with_parquet_metadata: RowsIndex, ds_sharded: Dataset
 ) -> None:
     assert isinstance(rows_index_with_parquet_metadata.parquet_index, ParquetIndexWithMetadata)
-    assert rows_index_with_parquet_metadata.query(offset=1, length=3).to_pydict() == ds_sharded[1:4]
-    assert rows_index_with_parquet_metadata.query(offset=1, length=-1).to_pydict() == ds_sharded[:0]
-    assert rows_index_with_parquet_metadata.query(offset=1, length=0).to_pydict() == ds_sharded[:0]
-    assert rows_index_with_parquet_metadata.query(offset=999999, length=1).to_pydict() == ds_sharded[:0]
-    assert rows_index_with_parquet_metadata.query(offset=1, length=99999999).to_pydict() == ds_sharded[1:]
+    result, _ = rows_index_with_parquet_metadata.query(offset=1, length=3)
+    assert result.to_pydict() == ds_sharded[1:4]
+
+    result, _ = rows_index_with_parquet_metadata.query(offset=1, length=-1)
+    assert result.to_pydict() == ds_sharded[:0]
+
+    result, _ = rows_index_with_parquet_metadata.query(offset=1, length=0)
+    assert result.to_pydict() == ds_sharded[:0]
+
+    result, _ = rows_index_with_parquet_metadata.query(offset=999999, length=1)
+    assert result.to_pydict() == ds_sharded[:0]
+
+    result, _ = rows_index_with_parquet_metadata.query(offset=1, length=99999999)
+    assert result.to_pydict() == ds_sharded[1:]
+
     with pytest.raises(IndexError):
         rows_index_with_parquet_metadata.query(offset=-1, length=2)
 
@@ -489,7 +499,8 @@ def test_rows_index_query_with_empty_dataset(
             )
 
     assert isinstance(index.parquet_index, ParquetIndexWithMetadata)
-    assert index.query(offset=0, length=1).to_pydict() == ds_empty[:0]
+    result, _ = index.query(offset=0, length=1)
+    assert result.to_pydict() == ds_empty[:0]
     with pytest.raises(IndexError):
         index.query(offset=-1, length=2)
 

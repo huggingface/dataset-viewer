@@ -100,9 +100,7 @@ def create_rows_endpoint(
                     with StepProfiler(method="rows_endpoint", step="query the rows"):
                         try:
                             # Some datasets have very long binary data that we truncate
-                            pa_table, truncated_columns = rows_index.query_truncated_binary(
-                                offset=offset, length=length
-                            )
+                            pa_table, truncated_columns = rows_index.query(offset=offset, length=length)
                         except TooBigRows as err:
                             raise TooBigContentError(str(err)) from None
                     with StepProfiler(method="rows_endpoint", step="transform to a list"):
