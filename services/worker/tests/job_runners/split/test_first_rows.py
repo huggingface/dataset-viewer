@@ -216,13 +216,12 @@ def test_compute_from_parquet(
             assert len(mock_http_file.call_args_list) == 1
             assert mock_http_file.call_args_list[0][0][1] == fake_url
             assert len(mock_read_metadata.call_args_list) == 1
-            assert mock_read_metadata.call_args_list[0][0][0] == os.path.join(
-                parquet_metadata_directory, fake_metadata_subpath
-            )
+
+            metadata_path = Path(parquet_metadata_directory) / fake_metadata_subpath
+            assert mock_read_metadata.call_args_list[0][0][0] == metadata_path
             assert len(mock_read_schema.call_args_list) == 1
-            assert mock_read_schema.call_args_list[0][0][0] == os.path.join(
-                parquet_metadata_directory, fake_metadata_subpath
-            )
+            assert mock_read_schema.call_args_list[0][0][0] == metadata_path
+
         job_runner.post_compute()
 
 

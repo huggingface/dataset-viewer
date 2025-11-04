@@ -388,16 +388,19 @@ def test_ParquetIndexWithMetadata_query(
         features = Features.from_arrow_schema(pf.schema_arrow)
         pf.metadata.write_metadata_file(metadata_path)
 
-    file_metadata = {
-        "url": url,
-        "filename": filename,
-        "size": num_bytes,
-        "num_rows": num_rows,
-        "parquet_metadata_subpath": "metadata.parquet",
-    }
+    file_metadata = ParquetFileMetadataItem(
+        dataset="dataset",
+        config="config",
+        split="split",
+        url=url,
+        filename=filename,
+        size=num_bytes,
+        num_rows=num_rows,
+        parquet_metadata_subpath="metadata.parquet",
+    )
 
     index = ParquetIndexWithMetadata(
-        files=[file_metadata],
+        files=[file_metadata],  # type: ignore[list-item]
         features=features,
         httpfs=httpfs,
         max_arrow_data_in_memory=999999999,
