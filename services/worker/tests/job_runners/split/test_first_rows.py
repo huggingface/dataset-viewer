@@ -1,7 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-import os
 from collections.abc import Callable, Generator
 from dataclasses import replace
 from http import HTTPStatus
