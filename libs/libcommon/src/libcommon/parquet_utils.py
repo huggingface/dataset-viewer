@@ -138,11 +138,30 @@ def is_list_pa_type(parquet_file_path: Path, feature_name: str) -> bool:
     return is_list
 
 
+def truncate_binary_columns(table: pa.Table, max_binary_length: int, features: Features) -> tuple[pa.Table, list[str]]:
+    # truncate binary columns in the Arrow table to the specified maximum length
+    # return a new Arrow table and the list of truncated columns
+    if max_binary_length < 0:
+        return table, []
+
+    columns: dict[str, pa.Array] = {}
+    truncated_column_names: list[str] = []
+    for field_idx, field in enumerate(table.schema):  # noqa: F402
+        if features[field.name] == Value("binary") and table[field_idx].nbytes > max_binary_length:
+            truncated_array = pc.binary_slice(table[field_idx], 0, max_binary_length // len(table))
+            columns[field.name] = truncated_array
+            truncated_column_names.append(field.name)
+        else:
+            columns[field.name] = table[field_idx]
+
+    return pa.table(columns), truncated_column_names
+
+
 @dataclass
 class RowGroupReader:
     parquet_file: pq.ParquetFile
     group_id: int
-    features: Features
+    schema: pa.Schema
 
     def read(self, columns: list[str]) -> pa.Table:
         if not set(self.parquet_file.schema_arrow.names) <= set(columns):
@@ -151,18 +170,7 @@ class RowGroupReader:
             )
         pa_table = self.parquet_file.read_row_group(i=self.group_id, columns=columns)
         # cast_table_to_schema adds null values to missing columns
-        return cast_table_to_schema(pa_table, self.features.arrow_schema)
-
-    def read_truncated_binary(self, columns: list[str], max_binary_length: int) -> tuple[pa.Table, list[str]]:
-        pa_table = self.parquet_file.read_row_group(i=self.group_id, columns=columns)
-        truncated_columns: list[str] = []
-        if max_binary_length:
-            for field_idx, field in enumerate(pa_table.schema):
-                if self.features[field.name] == Value("binary") and pa_table[field_idx].nbytes > max_binary_length:
-                    truncated_array = pc.binary_slice(pa_table[field_idx], 0, max_binary_length // len(pa_table))
-                    pa_table = pa_table.set_column(field_idx, field, truncated_array)
-                    truncated_columns.append(field.name)
-        return cast_table_to_schema(pa_table, self.features.arrow_schema), truncated_columns
+        return cast_table_to_schema(pa_table, self.schema)
 
     def read_size(self, columns: Optional[Iterable[str]] = None) -> int:
         if columns is None:
@@ -265,7 +273,7 @@ class ParquetIndexWithMetadata:
                 ]
             )
             row_group_readers = [
-                RowGroupReader(parquet_file=parquet_file, group_id=group_id, features=self.features)
+                RowGroupReader(parquet_file=parquet_file, group_id=group_id, schema=self.features.arrow_schema)
                 for parquet_file in parquet_files
                 for group_id in range(parquet_file.metadata.num_row_groups)
             ]
@@ -339,8 +347,9 @@ class ParquetIndexWithMetadata:
                 columns = list(self.features.keys())
                 truncated_columns: set[str] = set()
                 for i in range(first_row_group_id, last_row_group_id + 1):
-                    rg_pa_table, rg_truncated_columns = row_group_readers[i].read_truncated_binary(
-                        columns, max_binary_length=max_binary_length
+                    rg_pa_table = row_group_readers[i].read(columns)
+                    rg_pa_table, rg_truncated_columns = truncate_binary_columns(
+                        rg_pa_table, max_binary_length, self.features
                     )
                     pa_tables.append(rg_pa_table)
                     truncated_columns |= set(rg_truncated_columns)
