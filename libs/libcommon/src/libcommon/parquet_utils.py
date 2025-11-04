@@ -191,7 +191,6 @@ class ParquetIndexWithMetadata:
     features: Features
     httpfs: HTTPFileSystem
     max_arrow_data_in_memory: int
-    partial: bool
     metadata_dir: Path
 
     file_offsets: np.ndarray = field(init=False)
@@ -401,7 +400,6 @@ class ParquetIndexWithMetadata:
         if not parquet_file_metadata_items:
             raise EmptyParquetMetadataError("No parquet files found.")
 
-        partial = parquet_export_is_partial(parquet_file_metadata_items[0]["url"])
         metadata_dir = Path(parquet_metadata_directory)
 
         with StepProfiler(
@@ -425,7 +423,6 @@ class ParquetIndexWithMetadata:
             features=features,
             httpfs=httpfs,
             max_arrow_data_in_memory=max_arrow_data_in_memory,
-            partial=partial,
             metadata_dir=metadata_dir,
         )
 
