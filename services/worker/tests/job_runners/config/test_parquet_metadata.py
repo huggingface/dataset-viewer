@@ -379,24 +379,33 @@ def test_ParquetIndexWithMetadata_query(
         )
     )
     url = hf_hub_url(repo_id=hub_public_big, filename=filename, repo_type="dataset")
-    metadata_path = str(tmp_path_factory.mktemp("test_ParquetIndexWithMetadata_query") / "metadata.parquet")
+    metadata_dir = tmp_path_factory.mktemp("test_ParquetIndexWithMetadata_query")
+    metadata_path = str(metadata_dir / "metadata.parquet")
     with httpfs.open(url) as f:
         num_bytes = f.size
         pf = pq.ParquetFile(url, filesystem=httpfs)
         num_rows = pf.metadata.num_rows
         features = Features.from_arrow_schema(pf.schema_arrow)
         pf.metadata.write_metadata_file(metadata_path)
+
+    file_metadata = {
+        "url": url,
+        "filename": filename,
+        "size": num_bytes,
+        "num_rows": num_rows,
+        "parquet_metadata_subpath": "metadata.parquet",
+    }
+
     index = ParquetIndexWithMetadata(
+        files=[file_metadata],
         features=features,
-        parquet_files_urls=[url],
-        metadata_paths=[metadata_path],
-        num_rows=[num_rows],
-        num_bytes=[num_bytes],
         httpfs=httpfs,
         max_arrow_data_in_memory=999999999,
         partial=False,
+        metadata_dir=metadata_dir,
     )
     with patch("libcommon.parquet_utils.HTTPFile", AuthenticatedHTTPFile):
-        out = index.query(offset=0, length=2).to_pydict()
+        result, _ = index.query(offset=0, length=2)
+        out = result.to_pydict()
     assert out == ds[:2]
     assert AuthenticatedHTTPFile.last_url == url

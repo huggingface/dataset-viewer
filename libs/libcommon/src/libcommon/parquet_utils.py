@@ -306,7 +306,12 @@ class ParquetIndexWithMetadata:
         return pa_table.slice(parquet_offset - first_row_in_pa_table, length), truncated_columns
 
     def _read_with_binary(
-        self, row_group_readers, first_row_group_id, last_row_group_id, all_columns, binary_columns
+        self,
+        row_group_readers: list[RowGroupReader],
+        first_row_group_id: int,
+        last_row_group_id: int,
+        all_columns: set[str],
+        binary_columns: set[str],
     ) -> tuple[pa.Table, list[str]]:
         with StepProfiler(
             method="parquet_index_with_metadata.row_groups_size_check_truncated_binary",
@@ -360,7 +365,7 @@ class ParquetIndexWithMetadata:
         return pa_table, list(truncated_columns)
 
     def _read_without_binary(
-        self, row_group_readers, first_row_group_id, last_row_group_id
+        self, row_group_readers: list[RowGroupReader], first_row_group_id: int, last_row_group_id: int
     ) -> tuple[pa.Table, list[str]]:
         with StepProfiler(
             method="parquet_index_with_metadata.row_groups_size_check", step="check if the rows can fit in memory"
