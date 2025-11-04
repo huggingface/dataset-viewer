@@ -404,6 +404,7 @@ def test_ParquetIndexWithMetadata_query(
         features=features,
         httpfs=httpfs,
         max_arrow_data_in_memory=999999999,
+        partial=False,
         metadata_dir=metadata_dir,
     )
     with patch("libcommon.parquet_utils.HTTPFile", AuthenticatedHTTPFile):
