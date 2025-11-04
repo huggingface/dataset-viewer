@@ -441,11 +441,21 @@ def test_rows_index_query_with_parquet_metadata(
     rows_index_with_parquet_metadata: RowsIndex, ds_sharded: Dataset
 ) -> None:
     assert isinstance(rows_index_with_parquet_metadata.parquet_index, ParquetIndexWithMetadata)
-    assert rows_index_with_parquet_metadata.query(offset=1, length=3).to_pydict() == ds_sharded[1:4]
-    assert rows_index_with_parquet_metadata.query(offset=1, length=-1).to_pydict() == ds_sharded[:0]
-    assert rows_index_with_parquet_metadata.query(offset=1, length=0).to_pydict() == ds_sharded[:0]
-    assert rows_index_with_parquet_metadata.query(offset=999999, length=1).to_pydict() == ds_sharded[:0]
-    assert rows_index_with_parquet_metadata.query(offset=1, length=99999999).to_pydict() == ds_sharded[1:]
+    result, _ = rows_index_with_parquet_metadata.query(offset=1, length=3)
+    assert result.to_pydict() == ds_sharded[1:4]
+
+    result, _ = rows_index_with_parquet_metadata.query(offset=1, length=-1)
+    assert result.to_pydict() == ds_sharded[:0]
+
+    result, _ = rows_index_with_parquet_metadata.query(offset=1, length=0)
+    assert result.to_pydict() == ds_sharded[:0]
+
+    result, _ = rows_index_with_parquet_metadata.query(offset=999999, length=1)
+    assert result.to_pydict() == ds_sharded[:0]
+
+    result, _ = rows_index_with_parquet_metadata.query(offset=1, length=99999999)
+    assert result.to_pydict() == ds_sharded[1:]
+
     with pytest.raises(IndexError):
         rows_index_with_parquet_metadata.query(offset=-1, length=2)
 
@@ -489,7 +499,8 @@ def test_rows_index_query_with_empty_dataset(
             )
 
     assert isinstance(index.parquet_index, ParquetIndexWithMetadata)
-    assert index.query(offset=0, length=1).to_pydict() == ds_empty[:0]
+    result, _ = index.query(offset=0, length=1)
+    assert result.to_pydict() == ds_empty[:0]
     with pytest.raises(IndexError):
         index.query(offset=-1, length=2)
 

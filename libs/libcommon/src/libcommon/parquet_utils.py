@@ -199,14 +199,13 @@ class ParquetIndexWithMetadata:
         self.file_offsets = np.cumsum(num_rows)
         self.num_rows_total = np.sum(num_rows)
 
-    def query_truncated_binary(self, offset: int, length: int) -> tuple[pa.Table, list[str]]:
+    def query(self, offset: int, length: int) -> tuple[pa.Table, list[str]]:
         """Query the parquet files
 
         Note that this implementation will always read at least one row group, to get the list of columns and always
         have the same schema, even if the requested rows are invalid (out of range).
 
-        This is the same as query() except that:
-
+        If binary columns are present, then:
         - it computes a maximum size to allocate to binary data in step "parquet_index_with_metadata.row_groups_size_check_truncated_binary"
         - it uses `read_truncated_binary()` in step "parquet_index_with_metadata.query_truncated_binary".
 
@@ -221,10 +220,6 @@ class ParquetIndexWithMetadata:
             `pa.Table`: The requested rows.
             `list[strl]: List of truncated columns.
         """
-        all_columns = set(self.features)
-        binary_columns = set(column for column, feature in self.features.items() if feature == Value("binary"))
-        if not binary_columns:
-            return self.query(offset=offset, length=length), []
         with StepProfiler(
             method="parquet_index_with_metadata.query", step="get the parquet files than contain the requested rows"
         ):
@@ -288,6 +283,23 @@ class ParquetIndexWithMetadata:
                 row_group_offsets, [first_row, last_row], side="right"
             )
 
+        all_columns = set(self.features)
+        binary_columns = set(column for column, feature in self.features.items() if feature == Value("binary"))
+        if binary_columns:
+            pa_table, truncated_columns = self._read_with_binary(
+                row_group_readers, first_row_group_id, last_row_group_id, all_columns, binary_columns
+            )
+        else:
+            pa_table, truncated_columns = self._read_without_binary(
+                row_group_readers, first_row_group_id, last_row_group_id
+            )
+
+        first_row_in_pa_table = row_group_offsets[first_row_group_id - 1] if first_row_group_id > 0 else 0
+        return pa_table.slice(parquet_offset - first_row_in_pa_table, length), truncated_columns
+
+    def _read_with_binary(
+        self, row_group_readers, first_row_group_id, last_row_group_id, all_columns, binary_columns
+    ) -> tuple[pa.Table, list[str]]:
         with StepProfiler(
             method="parquet_index_with_metadata.row_groups_size_check_truncated_binary",
             step="check if the rows can fit in memory",
@@ -335,88 +347,12 @@ class ParquetIndexWithMetadata:
                 pa_table = pa.concat_tables(pa_tables)
             except ArrowInvalid as err:
                 raise SchemaMismatchError("Parquet files have different schema.", err)
-            first_row_in_pa_table = row_group_offsets[first_row_group_id - 1] if first_row_group_id > 0 else 0
-            return pa_table.slice(parquet_offset - first_row_in_pa_table, length), list(truncated_columns)
 
-    def query(self, offset: int, length: int) -> pa.Table:
-        """Query the parquet files
+        return pa_table, list(truncated_columns)
 
-        Note that this implementation will always read at least one row group, to get the list of columns and always
-        have the same schema, even if the requested rows are invalid (out of range).
-
-        Args:
-            offset (`int`): The first row to read.
-            length (`int`): The number of rows to read.
-
-        Raises:
-            [`TooBigRows`]: if the arrow data from the parquet row groups is bigger than max_arrow_data_in_memory
-
-        Returns:
-            `pa.Table`: The requested rows.
-        """
-        with StepProfiler(
-            method="parquet_index_with_metadata.query", step="get the parquet files than contain the requested rows"
-        ):
-            last_row_in_parquet = self.file_offsets[-1] - 1
-            first_row = min(offset, last_row_in_parquet)
-            last_row = min(offset + length - 1, last_row_in_parquet)
-            first_parquet_file_id, last_parquet_file_id = np.searchsorted(
-                self.file_offsets, [first_row, last_row], side="right"
-            )
-            parquet_offset = (
-                offset - self.file_offsets[first_parquet_file_id - 1] if first_parquet_file_id > 0 else offset
-            )
-            files_to_scan = self.files[first_parquet_file_id : last_parquet_file_id + 1]  # noqa: E203
-
-        with StepProfiler(
-            method="parquet_index_with_metadata.query", step="load the remote parquet files using metadata from disk"
-        ):
-            parquet_files = [
-                pq.ParquetFile(
-                    HTTPFile(
-                        self.httpfs,
-                        f["url"],
-                        session=self.httpfs_session,
-                        size=f["size"],
-                        loop=self.httpfs.loop,
-                        cache_type=None,
-                        **self.httpfs.kwargs,
-                    ),
-                    metadata=pq.read_metadata(self.metadata_dir / f["parquet_metadata_subpath"]),
-                    pre_buffer=True,
-                )
-                for f in files_to_scan
-            ]
-
-        with StepProfiler(
-            method="parquet_index_with_metadata.query", step="get the row groups than contain the requested rows"
-        ):
-            row_group_offsets = np.cumsum(
-                [
-                    parquet_file.metadata.row_group(group_id).num_rows
-                    for parquet_file in parquet_files
-                    for group_id in range(parquet_file.metadata.num_row_groups)
-                ]
-            )
-            row_group_readers = [
-                RowGroupReader(parquet_file=parquet_file, group_id=group_id, features=self.features)
-                for parquet_file in parquet_files
-                for group_id in range(parquet_file.metadata.num_row_groups)
-            ]
-
-            if len(row_group_offsets) == 0 or row_group_offsets[-1] == 0:  # if the dataset is empty
-                if offset < 0:
-                    raise IndexError("Offset must be non-negative")
-                return cast_table_to_schema(parquet_files[0].read(), self.features.arrow_schema)
-
-            last_row_in_parquet = row_group_offsets[-1] - 1
-            first_row = min(parquet_offset, last_row_in_parquet)
-            last_row = min(parquet_offset + length - 1, last_row_in_parquet)
-
-            first_row_group_id, last_row_group_id = np.searchsorted(
-                row_group_offsets, [first_row, last_row], side="right"
-            )
-
+    def _read_without_binary(
+        self, row_group_readers, first_row_group_id, last_row_group_id
+    ) -> tuple[pa.Table, list[str]]:
         with StepProfiler(
             method="parquet_index_with_metadata.row_groups_size_check", step="check if the rows can fit in memory"
         ):
@@ -437,8 +373,8 @@ class ParquetIndexWithMetadata:
                 )
             except ArrowInvalid as err:
                 raise SchemaMismatchError("Parquet files have different schema.", err)
-            first_row_in_pa_table = row_group_offsets[first_row_group_id - 1] if first_row_group_id > 0 else 0
-            return pa_table.slice(parquet_offset - first_row_in_pa_table, length)
+
+        return pa_table, []
 
     @staticmethod
     def from_parquet_metadata_items(
@@ -536,28 +472,7 @@ class RowsIndex:
 
     # note that this cache size is global for the class, not per instance
     @lru_cache(maxsize=1)
-    def query(self, offset: int, length: int) -> pa.Table:
-        """Query the parquet files
-
-        Note that this implementation will always read at least one row group, to get the list of columns and always
-        have the same schema, even if the requested rows are invalid (out of range).
-
-        Args:
-            offset (`int`): The first row to read.
-            length (`int`): The number of rows to read.
-
-        Returns:
-            `pa.Table`: The requested rows.
-        """
-        logging.info(
-            f"Query {type(self.parquet_index).__name__} for dataset={self.dataset}, config={self.config},"
-            f" split={self.split}, offset={offset}, length={length}"
-        )
-        return self.parquet_index.query(offset=offset, length=length)
-
-    # note that this cache size is global for the class, not per instance
-    @lru_cache(maxsize=1)
-    def query_truncated_binary(self, offset: int, length: int) -> tuple[pa.Table, list[str]]:
+    def query(self, offset: int, length: int) -> tuple[pa.Table, list[str]]:
         """Query the parquet files
 
         Note that this implementation will always read at least one row group, to get the list of columns and always
@@ -575,4 +490,4 @@ class RowsIndex:
             f"Query {type(self.parquet_index).__name__} for dataset={self.dataset}, config={self.config},"
             f" split={self.split}, offset={offset}, length={length}, with truncated binary"
         )
-        return self.parquet_index.query_truncated_binary(offset=offset, length=length)
+        return self.parquet_index.query(offset=offset, length=length)
