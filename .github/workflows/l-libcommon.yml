@@ -38,4 +38,3 @@ jobs:
     with:
       working-directory: libs/libviewer
       poetry-args: "--with dev"
-    secrets: inherit
