@@ -10,11 +10,7 @@ from huggingface_hub.repocard_data import DatasetCardData
 from tqdm.contrib.concurrent import thread_map
 
 from libcommon.constants import ROW_IDX_COLUMN
-from libcommon.parquet_utils import (
-    PARTIAL_PREFIX,
-    is_list_pa_type,
-    parquet_export_is_partial,
-)
+from libcommon.parquet_utils import is_list_pa_type
 from libcommon.statistics_utils import (
     STRING_DTYPES,
     AudioColumn,
@@ -37,8 +33,8 @@ CREATE_TABLE_COMMAND_FROM_LIST_OF_PARQUET_FILES = (
     "CREATE OR REPLACE TABLE data AS SELECT {columns} FROM read_parquet({source});"
 )
 CREATE_TABLE_JOIN_WITH_TRANSFORMED_DATA_COMMAND_FROM_LIST_OF_PARQUET_FILES = """
-    CREATE OR REPLACE TABLE data AS 
-    SELECT {columns}, transformed_df.* FROM read_parquet({source}) 
+    CREATE OR REPLACE TABLE data AS
+    SELECT {columns}, transformed_df.* FROM read_parquet({source})
     POSITIONAL JOIN transformed_df;
 """
 CREATE_SEQUENCE_COMMAND = "CREATE OR REPLACE SEQUENCE serial START 0 MINVALUE 0;"
@@ -185,25 +181,6 @@ def compute_transformed_data(parquet_paths: list[Path], features: dict[str, Any]
                 transformed_df = compute_image_width_height_column(parquet_paths, feature_name, transformed_df)
 
     return transformed_df
-
-
-def duckdb_index_is_partial(duckdb_index_url: str) -> bool:
-    """
-    Check if the DuckDB index is on the full dataset or if it's partial.
-    It could be partial for two reasons:
-
-    1. if the Parquet export that was used to build it is partial
-    2. if it's a partial index of the Parquet export
-
-    Args:
-        duckdb_index_url (`str`): The URL of the DuckDB index file.
-
-    Returns:
-        `bool`: True is the DuckDB index is partial,
-            or False if it's an index of the full dataset.
-    """
-    _, duckdb_index_file_name = duckdb_index_url.rsplit("/", 1)
-    return parquet_export_is_partial(duckdb_index_url) or duckdb_index_file_name.startswith(PARTIAL_PREFIX)
 
 
 def create_index(
