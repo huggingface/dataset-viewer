@@ -23,11 +23,15 @@ on:
       - ".github/workflows/_unit-tests-python.yml"
       - "tools/docker-compose-mongo.yml"
 jobs:
-  quality:
+  quality-libcommon:
     uses: ./.github/workflows/_quality-python.yml
     with:
       working-directory: libs/libcommon
-  unit-tests:
+  quality-libviewer:
+    uses: ./.github/workflows/_quality-python.yml
+    with:
+      working-directory: libs/libviewer
+  unit-tests-libcommon:
     uses: ./.github/workflows/_unit-tests-python.yml
     with:
       working-directory: libs/libcommon
