@@ -9,6 +9,7 @@ on:
       - main
     paths:
       - "libs/libcommon/**"
+      - "libs/libviewer/**"
       - ".github/workflows/l-libcommon.yml"
       - ".github/workflows/_quality-python.yml"
       - ".github/workflows/_unit-tests-python.yml"
@@ -16,6 +17,7 @@ on:
   pull_request:
     paths:
       - "libs/libcommon/**"
+      - "libs/libviewer/**"
       - ".github/workflows/l-libcommon.yml"
       - ".github/workflows/_quality-python.yml"
       - ".github/workflows/_unit-tests-python.yml"
@@ -30,4 +32,9 @@ jobs:
     with:
       working-directory: libs/libcommon
       poetry-args: "--with libviewer"
+    secrets: inherit
+  unit-tests-libviewer:
+    uses: ./.github/workflows/_unit-tests-python.yml
+    with:
+      working-directory: libs/libviewer
     secrets: inherit
