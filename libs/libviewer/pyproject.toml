@@ -11,6 +11,9 @@ click = "8.1.8"
 pyarrow = "15.0.2"
 huggingface-hub = {version = "^0.31.0", extras = ["hf-transfer"]}
 
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.0.0"
+
 [tool.poetry.build]
 script = "build.py"
 
