@@ -27,10 +27,6 @@ jobs:
     uses: ./.github/workflows/_quality-python.yml
     with:
       working-directory: libs/libcommon
-  quality-libviewer:
-    uses: ./.github/workflows/_quality-python.yml
-    with:
-      working-directory: libs/libviewer
   unit-tests-libcommon:
     uses: ./.github/workflows/_unit-tests-python.yml
     with:
