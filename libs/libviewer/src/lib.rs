@@ -1,6 +1,8 @@
 mod dataset;
 mod parquet;
 
+use std::backtrace;
+
 use arrow::pyarrow::IntoPyArrow;
 use pyo3::create_exception;
 use pyo3::prelude::*;
@@ -16,7 +18,9 @@ create_exception!(libviewer, PyDatasetError, pyo3::exceptions::PyException);
 
 impl From<DatasetError> for PyErr {
     fn from(err: DatasetError) -> Self {
-        PyDatasetError::new_err(err.to_string())
+        let backtrace = backtrace::Backtrace::capture();
+        let message = format!("{}\nBacktrace:\n{}", err, backtrace);
+        PyDatasetError::new_err(message)
     }
 }
 

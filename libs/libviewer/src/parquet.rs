@@ -85,9 +85,6 @@ pub async fn read_metadata(
         .with_offset_index_policy(PageIndexPolicy::Optional);
     // .with_prefetch_hint(16 * 1024);
 
-    // Check that the file exists
-    let _ = store.head(&path).await?;
-
     let metadata = if let Some(file_size) = size {
         metadata_reader.load_and_finish(&mut object_reader, file_size).await?
     } else {
