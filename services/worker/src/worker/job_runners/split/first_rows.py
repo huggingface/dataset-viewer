@@ -8,7 +8,7 @@ from typing import Optional
 
 from datasets import IterableDataset, get_dataset_config_info, load_dataset
 from fsspec.implementations.http import HTTPFileSystem
-from libcommon.constants import MAX_NUM_ROWS_PER_PAGE
+from libcommon.constants import MAX_NUM_ROWS_PER_PAGE, USE_LIBVIEWER_FOR_DATASETS
 from libcommon.dtos import JobInfo, RowsContent, SplitFirstRowsResponse
 from libcommon.exceptions import (
     DatasetWithScriptNotSupportedError,
@@ -99,6 +99,7 @@ def compute_first_rows_from_parquet_response(
             max_scan_size=max_arrow_data_in_memory,
             max_arrow_data_in_memory=max_arrow_data_in_memory,
             parquet_metadata_directory=parquet_metadata_directory,
+            use_libviewer_for_datasets=USE_LIBVIEWER_FOR_DATASETS
         )
     except EmptyParquetMetadataError:
         raise ParquetResponseEmptyError("No parquet files found.")
