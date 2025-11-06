@@ -28,7 +28,7 @@ def generate_sample_table(num_rows: int) -> pa.Table:
 
 
 def write_partitioned_parquet_dataset(
-    table: pa.Table, data_dir: Path, metadata_dir: Path, num_partitions: int = 5
+    table: pa.Table, data_dir: Path, metadata_dir: Path, write_page_index: bool = True, num_partitions: int = 5,
 ) -> None:
     """
     Split table into partitions and write to parquet files with metadata.
@@ -90,7 +90,8 @@ def write_partitioned_parquet_dataset(
     [(0, 0), (1, 0), (10, 5), (20, 15), (150, 180), (100, 900), (250, 750)],
 )
 @pytest.mark.parametrize("num_partitions", [1, 5, 10])
-def test_sync_scan(tmp_path, limit, offset, num_partitions):
+@pytest.mark.parametrize("with_offset_index", [True, False])
+def test_sync_scan(tmp_path, limit, offset, num_partitions, with_offset_index):
     data_dir = tmp_path / "data"
     metadata_dir = tmp_path / "metadata"
 
@@ -100,6 +101,7 @@ def test_sync_scan(tmp_path, limit, offset, num_partitions):
         data_dir=data_dir,
         metadata_dir=metadata_dir,
         num_partitions=num_partitions,
+        write_page_index=with_offset_index,
     )
 
     # Calculate expected number of files to be read
