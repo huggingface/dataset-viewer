@@ -77,6 +77,7 @@ pub async fn read_metadata(
     path: impl Into<Path>,
 ) -> Result<Arc<ParquetMetaData>> {
     let path = path.into();
+    println!("Reading parquet metadata for {:?} on store {:?}", path, store);
 
     let mut object_reader = ParquetObjectReader::new(store, path.clone());
     let metadata_reader = ParquetMetaDataReader::new()
@@ -90,6 +91,7 @@ pub async fn read_metadata(
     // } else {
     //     metadata.load_via_suffix_and_finish(self).await?
     // };
+
     let metadata = metadata_reader
         .load_via_suffix_and_finish(&mut object_reader)
         .await?;
