@@ -15,7 +15,6 @@ from datasets import Features, Value
 from datasets.table import cast_table_to_schema
 from datasets.utils.py_utils import size_str
 from fsspec.implementations.http import HTTPFile, HTTPFileSystem
-from huggingface_hub import HfFileSystem
 from pyarrow.lib import ArrowInvalid
 
 from libcommon.constants import CONFIG_PARQUET_METADATA_KIND
@@ -405,7 +404,7 @@ class RowsIndex:
         dataset: str,
         config: str,
         split: str,
-        httpfs: HfFileSystem,
+        httpfs: HTTPFileSystem,
         parquet_metadata_directory: StrPath,
         max_arrow_data_in_memory: int,
         max_scan_size: int,
@@ -467,7 +466,7 @@ class RowsIndex:
 
     def _init_parquet_index(
         self,
-        httpfs: HfFileSystem,
+        httpfs: HTTPFileSystem,
         parquet_metadata_directory: StrPath,
         max_arrow_data_in_memory: int,
     ) -> None:
