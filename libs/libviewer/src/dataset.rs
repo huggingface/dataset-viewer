@@ -150,7 +150,7 @@ impl Dataset {
                 Some(rows) => (None, rows),
                 None => {
                     let metadata =
-                        read_metadata(self.metadata_store.clone(), file.metadata_path.as_ref(), file.size)
+                        read_metadata(self.metadata_store.clone(), file.metadata_path.as_ref(), None)
                             .await?;
                     let num_rows = metadata.file_metadata().num_rows() as u64;
                     (Some(metadata), num_rows)
@@ -173,7 +173,7 @@ impl Dataset {
                 let metadata = match metadata {
                     Some(meta) => meta,
                     None => {
-                        read_metadata(self.metadata_store.clone(), file.metadata_path.as_ref(), file.size)
+                        read_metadata(self.metadata_store.clone(), file.metadata_path.as_ref(), None)
                             .await?
                     }
                 };
@@ -199,7 +199,7 @@ impl Dataset {
             .unwrap_or(&self.files)
             .iter()
             .map(async move |file| {
-                let metadata = read_metadata(self.data_store.clone(), file.path.as_ref(), file.size).await?;
+                let metadata = read_metadata(self.data_store.clone(), file.path.as_ref(), None).await?;
                 write_metadata(
                     metadata,
                     self.metadata_store.clone(),
