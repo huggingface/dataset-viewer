@@ -78,7 +78,7 @@ pub async fn read_metadata(
 ) -> Result<Arc<ParquetMetaData>> {
     let path = path.into();
 
-    let mut object_reader = ParquetObjectReader::new(store, path.clone());
+    let mut object_reader = ParquetObjectReader::new(store.clone(), path.clone());
     let metadata_reader = ParquetMetaDataReader::new()
         .with_column_index_policy(PageIndexPolicy::Skip)
         .with_offset_index_policy(PageIndexPolicy::Optional);
