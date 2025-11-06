@@ -21,7 +21,8 @@ ENV PATH="/root/.cargo/bin:${PATH}"
 # Build libviewer
 COPY libs/libviewer /src/libs/libviewer
 WORKDIR /src/libs/libviewer
-RUN maturin build --release --strip --out /tmp/dist
+# RUN maturin build --release --strip --out /tmp/dist
+RUN maturin build --out /tmp/dist
 
 # Base stage with shared setup
 FROM python:${PYTHON_VERSION}-slim AS common
