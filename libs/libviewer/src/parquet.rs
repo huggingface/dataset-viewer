@@ -75,6 +75,7 @@ impl<T: AsyncFileReader> AsyncFileReader for LimitedAsyncReader<T> {
 pub async fn read_metadata(
     store: Arc<dyn ObjectStore>,
     path: impl Into<Path>,
+    size: Option<u64>,
 ) -> Result<Arc<ParquetMetaData>> {
     let path = path.into();
 
@@ -84,22 +85,11 @@ pub async fn read_metadata(
         .with_offset_index_policy(PageIndexPolicy::Optional);
     // .with_prefetch_hint(16 * 1024);
 
-    // TODO(kszucs): if file_size is known then use load_and_finish
-    // let metadata = if let Some(file_size) = self.file_size {
-    //     metadata.load_and_finish(self, file_size).await?
-    // } else {
-    //     metadata.load_via_suffix_and_finish(self).await?
-    // };
-
-    let metadata = metadata_reader
-        .load_via_suffix_and_finish(&mut object_reader)
-        .await
-        .map_err(|e| {
-            ParquetError::General(format!(
-                "Failed to read metadata from path '{}' in store: {}: {}",
-                path, store, e
-            ))
-        })?;
+    let metadata = if let Some(file_size) = size {
+        metadata_reader.load_and_finish(&mut object_reader, file_size).await?
+    } else {
+        metadata_reader.load_via_suffix_and_finish(&mut object_reader).await?
+    };
 
     Ok(Arc::new(metadata))
 }
