@@ -18,7 +18,7 @@ create_exception!(libviewer, PyDatasetError, pyo3::exceptions::PyException);
 
 impl From<DatasetError> for PyErr {
     fn from(err: DatasetError) -> Self {
-        let backtrace = backtrace::Backtrace::capture();
+        let backtrace = backtrace::Backtrace::force_capture();
         let message = format!("{}\nBacktrace:\n{}", err, backtrace);
         PyDatasetError::new_err(message)
     }
