@@ -531,7 +531,7 @@ class RowsIndex:
             except Exception as e:
                 # list files at the metadata directory for debugging
                 files = [str(f) for f in Path(self.parquet_metadata_directory).iterdir()]
-                raise RuntimeError(
+                raise ValueError(
                     f"Error while querying libviewer.Dataset for dataset={self.dataset},"
                     f" config={self.config}, split={self.split}. "
                     f"Parquet metadata files: {files} at {self.parquet_metadata_directory}"

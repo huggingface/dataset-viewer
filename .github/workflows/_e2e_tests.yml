@@ -114,4 +114,4 @@ jobs:
           E2E_ADMIN_USER_TOKEN: "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"
         # FIXME(kszucs): temporarily only run the 54 rows test
         run: |
-          poetry run python -m pytest -vv -s tests/test_55_first_rows.py
+          poetry run python -m pytest -vv -s tests/test_54_rows.py::test_rows_endpoint
