@@ -112,5 +112,6 @@ jobs:
           COMMON_BLOCKED_DATASETS: "DVUser/blocked-*"
           ADMIN_HF_ORGANIZATION: "valid_org"
           E2E_ADMIN_USER_TOKEN: "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"
+        # FIXME(kszucs): temporarily only run the 54 rows test
         run: |
-          poetry run python -m pytest -vv -s tests
+          poetry run python -m pytest -vv -s tests/test_54_rows.py

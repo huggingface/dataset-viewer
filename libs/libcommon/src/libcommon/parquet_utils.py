@@ -418,6 +418,8 @@ class RowsIndex:
         self.httpfs = httpfs
         self.max_scan_size = max_scan_size
         self.use_libviewer_for_datasets = use_libviewer_for_datasets
+        self.parquet_metadata_directory = parquet_metadata_directory
+
         if not isinstance(self.use_libviewer_for_datasets, (bool, set)):
             raise ValueError("`use_libviewer_for_datasets` must be a boolean or a set of dataset names")
 
@@ -524,7 +526,16 @@ class RowsIndex:
         if self.use_libviewer_for_datasets is True or (
             isinstance(self.use_libviewer_for_datasets, set) and self.dataset in self.use_libviewer_for_datasets
         ):
-            return self.query_libviewer_index(offset=offset, length=length)
+            try:
+                return self.query_libviewer_index(offset=offset, length=length)
+            except Exception as e:
+                # list files at the metadata directory for debugging
+                files = [str(f) for f in Path(self.parquet_metadata_directory).iterdir()]
+                raise RuntimeError(
+                    f"Error while querying libviewer.Dataset for dataset={self.dataset},"
+                    f" config={self.config}, split={self.split}. "
+                    f"Parquet metadata files: {files} at {self.parquet_metadata_directory}"
+                ) from e
         else:
             return self.query_parquet_index(offset=offset, length=length)
 
