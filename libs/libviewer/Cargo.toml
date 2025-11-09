@@ -13,8 +13,8 @@ arrow = { version = "56.2", features = ["pyarrow"] }
 bytes = "1.10.1"
 futures = "0.3"
 object_store = "0.12.0"
-object_store_opendal = "0.52.0"
-opendal = { version = "0.53.2", features = ["services-huggingface"] }
+object_store_opendal = "0.54.1"
+opendal = { version = "0.54.1", features = ["services-huggingface"] }
 parquet = { version = "56.2", features = ["async", "object_store"] }
 pyo3 = { version = "^0.25", features = ["extension-module"] }
 pyo3-async-runtimes = { version = "^0.25", features = ["tokio-runtime"] }
@@ -23,3 +23,6 @@ thiserror = "2.0.12"
 thrift = "0.17"
 tokio = "1.45"
 url = "2.5.4"
+
+[patch.crates-io]
+opendal = { git = "https://github.com/kszucs/opendal", branch = "hf-endpoint" }
