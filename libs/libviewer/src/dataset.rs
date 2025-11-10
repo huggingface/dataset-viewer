@@ -12,6 +12,7 @@ use parquet::file::metadata::ParquetMetaData;
 use thiserror::Error;
 use tokio::task;
 use url::Url;
+use futures::StreamExt;
 
 use crate::parquet::{read_batch_stream, read_metadata, write_metadata};
 use crate::IndexedFile;
@@ -41,6 +42,9 @@ pub enum DatasetError {
 
     #[error("Join error: {0}")]
     JoinError(#[from] tokio::task::JoinError),
+
+    #[error("Scan error: {0}")]
+    ScanError(String),
 }
 
 type Result<T, E = DatasetError> = std::result::Result<T, E>;
@@ -231,7 +235,19 @@ impl Dataset {
             let data_store = self.data_store.clone();
             task::spawn(async move { scan.execute(data_store, scan_size_limit).await })
         });
-        let results = future::try_join_all(tasks).await?;
+        let results = future::try_join_all(tasks).await;
+
+        if results.is_err() {
+            // list files on the data store and add the list to the error message
+            let file_list = self.data_store.list(None).collect::<Vec<_>>().await;
+            let message = format!(
+                "Failed to join scan tasks: {}. Data store files: {:?}",
+                results.err().unwrap(), file_list
+            );
+            return Err(DatasetError::ScanError(message));
+        }
+        let results = results.unwrap();
+
         let batches = results
             .into_iter()
             .collect::<Result<Vec<_>>>()?
