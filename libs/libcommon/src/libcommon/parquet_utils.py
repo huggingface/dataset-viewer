@@ -524,7 +524,7 @@ class RowsIndex:
                 files = [str(f) for f in Path(self.parquet_metadata_directory).rglob("*")]
                 raise ValueError(
                     f"Error while querying libviewer.Dataset for dataset={self.dataset},"
-                    f" config={self.config}, split={self.split}. "
+                    f" config={self.config}, split={self.split}. Parquet scan files: {self.viewer_index.files}."
                     f"Parquet metadata files: {files} at {self.parquet_metadata_directory}"
                 ) from e
         else:

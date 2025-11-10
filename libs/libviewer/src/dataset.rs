@@ -22,13 +22,16 @@ pub enum DatasetError {
     Url(#[from] url::ParseError),
 
     #[error("Failed to parse object store URL: {0}")]
-    OpendalError(#[from] opendal::Error),
+    Opendal(#[from] opendal::Error),
 
     #[error("IO error: {0}")]
     Io(#[from] std::io::Error),
 
     #[error("Arrow error: {0}")]
     Arrow(#[from] arrow::error::ArrowError),
+
+    #[error("Plan error: {0}")]
+    Plan(String),
 
     #[error("{0}")]
     Parquet(#[from] ::parquet::errors::ParquetError),
@@ -225,7 +228,9 @@ impl Dataset {
         // 3. flatten the streams into a single stream
         // 4. collect the record batches into a single vector
 
-        let plan = self.plan(limit, offset).await?;
+        let plan = self.plan(limit, offset).await.map_err(|e| {
+            DatasetError::Plan(format!("Failed to create scan plan for dataset {}: {}", self.name, e))
+        })?;
         let tasks = plan.into_iter().map(|scan| {
             let data_store = self.data_store.clone();
             task::spawn(async move { scan.execute(data_store, scan_size_limit).await })
