@@ -30,9 +30,6 @@ pub enum DatasetError {
     #[error("Arrow error: {0}")]
     Arrow(#[from] arrow::error::ArrowError),
 
-    #[error("Plan error: {0}")]
-    Plan(String),
-
     #[error("{0}")]
     Parquet(#[from] ::parquet::errors::ParquetError),
 
@@ -111,6 +108,7 @@ impl Dataset {
         }
         let operator = Operator::new(builder)?.finish();
         let data_store = Arc::new(OpendalStore::new(operator));
+
         // Initialize the metadata store from the given URI, usually a local directory
         let metadata_store = store_from_uri(metadata_uri)?;
 
@@ -228,9 +226,7 @@ impl Dataset {
         // 3. flatten the streams into a single stream
         // 4. collect the record batches into a single vector
 
-        let plan = self.plan(limit, offset).await.map_err(|e| {
-            DatasetError::Plan(format!("Failed to create scan plan for dataset {}: {}", self.name, e))
-        })?;
+        let plan = self.plan(limit, offset).await?;
         let tasks = plan.into_iter().map(|scan| {
             let data_store = self.data_store.clone();
             task::spawn(async move { scan.execute(data_store, scan_size_limit).await })
