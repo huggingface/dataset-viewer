@@ -434,6 +434,8 @@ class RowsIndex:
             response = get_previous_step_or_raise(
                 kind=CONFIG_PARQUET_METADATA_KIND, dataset=self.dataset, config=self.config, split=None
             )
+            # FIXME(kszucs): remove this
+            self.response = response
 
         # set the revision of the dataset
         self.revision = response["dataset_git_revision"]
@@ -528,6 +530,7 @@ class RowsIndex:
                     f"Parquet files: {self.parquet_files}. "
                     f"Parquet index files: {self.viewer_index.files}. "
                     f"Parquet metadata files: {files} at {self.parquet_metadata_directory}"
+                    f"Mongo response: {self.response}"
                 ) from e
         else:
             return self.query_parquet_index(offset=offset, length=length)
