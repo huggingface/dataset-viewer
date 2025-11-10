@@ -45,6 +45,9 @@ pub enum DatasetError {
 
     #[error("Scan error: {0}")]
     ScanError(String),
+
+    #[error("Planning error: {0}")]
+    PlanError(String),
 }
 
 type Result<T, E = DatasetError> = std::result::Result<T, E>;
@@ -230,7 +233,18 @@ impl Dataset {
         // 3. flatten the streams into a single stream
         // 4. collect the record batches into a single vector
 
-        let plan = self.plan(limit, offset).await?;
+        let plan = self.plan(limit, offset).await;
+        if plan.is_err() {
+            // list metadata files on the metadata store and add the list to the error message
+            let file_list = self.metadata_store.list(None).collect::<Vec<_>>().await;
+            let message = format!(
+                "Failed to create scan plan: {}. Metadata store files: {:?}",
+                plan.err().unwrap(), file_list
+            );
+            return Err(DatasetError::ScanError(message));
+        }
+        let plan = plan.unwrap();
+
         let tasks = plan.into_iter().map(|scan| {
             let data_store = self.data_store.clone();
             task::spawn(async move { scan.execute(data_store, scan_size_limit).await })
