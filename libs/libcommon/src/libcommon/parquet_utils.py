@@ -523,7 +523,7 @@ class RowsIndex:
                 # list files at the metadata directory for debugging
                 files = [str(f) for f in Path(self.parquet_metadata_directory).rglob("*")]
                 raise ValueError(
-                    f"Error while querying libviewer.Dataset for dataset={self.dataset},"
+                    f"Error while querying libviewer.Dataset: {e} for dataset={self.dataset},"
                     f" config={self.config}, split={self.split}. Parquet scan files: {self.viewer_index.files}."
                     f"Parquet metadata files: {files} at {self.parquet_metadata_directory}"
                 ) from e
