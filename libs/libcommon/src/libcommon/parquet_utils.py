@@ -494,7 +494,8 @@ class RowsIndex:
         self.viewer_index = lv.Dataset(
             name=self.dataset,
             files=files,
-            revision=self.revision,
+            #revision=self.revision,
+            revision="refs/convert/parquet",
             hf_token=hf_token,
             data_store=data_store,
             metadata_store=f"file://{self.parquet_metadata_directory}"
