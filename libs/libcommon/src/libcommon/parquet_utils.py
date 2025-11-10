@@ -418,23 +418,17 @@ class RowsIndex:
         self.httpfs = httpfs
         self.max_scan_size = max_scan_size
         self.use_libviewer_for_datasets = use_libviewer_for_datasets
-        self.parquet_metadata_directory = parquet_metadata_directory
+        self.parquet_metadata_directory = Path(parquet_metadata_directory)
 
         if not isinstance(self.use_libviewer_for_datasets, (bool, set)):
             raise ValueError("`use_libviewer_for_datasets` must be a boolean or a set of dataset names")
 
-        self._init_dataset_info(parquet_metadata_directory)
-        self._init_parquet_index(
-            httpfs=httpfs,
-            parquet_metadata_directory=parquet_metadata_directory,
-            max_arrow_data_in_memory=max_arrow_data_in_memory,
-        )
+        self._init_dataset_info()
+        self._init_parquet_index(httpfs=httpfs, max_arrow_data_in_memory=max_arrow_data_in_memory)
         if _has_libviewer:
-            self._init_viewer_index(
-                hf_token=hf_token, data_store=data_store, metadata_store=f"file://{parquet_metadata_directory}"
-            )
+            self._init_viewer_index(hf_token=hf_token, data_store=data_store)
 
-    def _init_dataset_info(self, parquet_metadata_directory: StrPath) -> None:
+    def _init_dataset_info(self) -> None:
         # get the list of parquet files and features
         with StepProfiler(method="rows_index._get_dataset_metadata", step="all"):
             response = get_previous_step_or_raise(
@@ -460,16 +454,13 @@ class RowsIndex:
             self.features = Features.from_dict(features)
         else:
             # config-parquet version<6 didn't have features
-            first_metadata_file = os.path.join(
-                parquet_metadata_directory, parquet_files[0]["parquet_metadata_subpath"]
-            )
+            first_metadata_file = self.parquet_metadata_directory / parquet_files[0]["parquet_metadata_subpath"]
             arrow_schema = pq.read_schema(first_metadata_file)
             self.features = Features.from_arrow_schema(arrow_schema)
 
     def _init_parquet_index(
         self,
         httpfs: HTTPFileSystem,
-        parquet_metadata_directory: StrPath,
         max_arrow_data_in_memory: int,
     ) -> None:
         logging.info(
@@ -480,10 +471,10 @@ class RowsIndex:
             features=self.features,
             httpfs=httpfs,
             max_arrow_data_in_memory=max_arrow_data_in_memory,
-            metadata_dir=Path(parquet_metadata_directory),
+            metadata_dir=self.parquet_metadata_directory,
         )
 
-    def _init_viewer_index(self, hf_token: Optional[str], data_store: Optional[str], metadata_store: str) -> None:
+    def _init_viewer_index(self, hf_token: Optional[str], data_store: Optional[str]) -> None:
         logging.info(f"Create libviewer.Dataset for dataset={self.dataset}, config={self.config}, split={self.split}")
 
         # construct the required parquet_files list for libviewer.Dataset
@@ -504,7 +495,7 @@ class RowsIndex:
             revision=self.revision,
             hf_token=hf_token,
             data_store=data_store,
-            metadata_store=metadata_store,
+            metadata_store=f"file://{self.parquet_metadata_directory}"
         )
 
     # note that this cache size is global for the class, not per instance
@@ -530,7 +521,7 @@ class RowsIndex:
                 return self.query_libviewer_index(offset=offset, length=length)
             except Exception as e:
                 # list files at the metadata directory for debugging
-                files = [str(f) for f in Path(self.parquet_metadata_directory).iterdir()]
+                files = [str(f) for f in Path(self.parquet_metadata_directory).rglob("*")]
                 raise ValueError(
                     f"Error while querying libviewer.Dataset for dataset={self.dataset},"
                     f" config={self.config}, split={self.split}. "
