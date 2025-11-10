@@ -249,22 +249,24 @@ impl Dataset {
             let data_store = self.data_store.clone();
             task::spawn(async move { scan.execute(data_store, scan_size_limit).await })
         });
-        let results = future::try_join_all(tasks).await;
+        let results = future::try_join_all(tasks).await?;
 
-        if results.is_err() {
+        let batches = results
+            .into_iter()
+            .collect::<Result<Vec<_>>>();
+
+        if batches.is_err() {
             // list files on the data store and add the list to the error message
             let file_list = self.data_store.list(None).collect::<Vec<_>>().await;
             let message = format!(
                 "Failed to join scan tasks: {}. Data store files: {:?}",
-                results.err().unwrap(), file_list
+                batches.err().unwrap(), file_list
             );
             return Err(DatasetError::ScanError(message));
         }
-        let results = results.unwrap();
+        let batches = batches.unwrap();
 
-        let batches = results
-            .into_iter()
-            .collect::<Result<Vec<_>>>()?
+        let batches = batches
             .into_iter()
             .flatten()
             .collect::<Vec<_>>();
