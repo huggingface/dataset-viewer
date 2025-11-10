@@ -99,7 +99,7 @@ impl Dataset {
         hf_token: Option<&str>,
     ) -> Result<Self> {
         // Initialize the data store (Huggingface in this case)
-        let mut builder = Huggingface::default().repo_type("dataset").repo_id(name);
+        let mut builder = Huggingface::default().repo_type("dataset").repo_id(name).endpoint("https://hub-ci.huggingface.co");
         if let Some(token) = hf_token {
             builder = builder.token(token);
         }
