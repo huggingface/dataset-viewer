@@ -80,9 +80,9 @@ pub async fn read_metadata(
     let path = path.into();
 
     let mut object_reader = ParquetObjectReader::new(store, path.clone());
-    let metadata_reader = ParquetMetaDataReader::new();
-        // .with_column_index_policy(PageIndexPolicy::Skip)
-        // .with_offset_index_policy(PageIndexPolicy::Optional);
+    let metadata_reader = ParquetMetaDataReader::new()
+        .with_column_index_policy(PageIndexPolicy::Skip)
+        .with_offset_index_policy(PageIndexPolicy::Optional);
     // .with_prefetch_hint(16 * 1024);
 
     let metadata = if let Some(file_size) = size {
