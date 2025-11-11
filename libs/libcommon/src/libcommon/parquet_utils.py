@@ -497,7 +497,7 @@ class RowsIndex:
             revision="refs/convert/parquet",
             hf_token=hf_token,
             data_store=data_store,
-            metadata_store=f"file://{self.parquet_metadata_directory}"
+            metadata_store=f"file://{self.parquet_metadata_directory}",
         )
 
     # note that this cache size is global for the class, not per instance

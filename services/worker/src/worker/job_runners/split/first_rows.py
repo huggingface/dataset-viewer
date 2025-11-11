@@ -99,7 +99,7 @@ def compute_first_rows_from_parquet_response(
             max_scan_size=max_arrow_data_in_memory,
             max_arrow_data_in_memory=max_arrow_data_in_memory,
             parquet_metadata_directory=parquet_metadata_directory,
-            use_libviewer_for_datasets=USE_LIBVIEWER_FOR_DATASETS
+            use_libviewer_for_datasets=USE_LIBVIEWER_FOR_DATASETS,
         )
     except EmptyParquetMetadataError:
         raise ParquetResponseEmptyError("No parquet files found.")

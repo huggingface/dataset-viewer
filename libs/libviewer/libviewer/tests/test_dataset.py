@@ -28,10 +28,16 @@ def generate_sample_table(num_rows: int) -> pa.Table:
 
 
 def write_partitioned_parquet_dataset(
-    table: pa.Table, data_dir: Path, metadata_dir: Path, write_page_index: bool = True, num_partitions: int = 5,
+    table: pa.Table,
+    data_dir: Path,
+    metadata_dir: Path,
+    write_page_index: bool = True,
+    num_partitions: int = 5,
 ) -> None:
     """
     Split table into partitions and write to parquet files with metadata.
+    Both the data files and metadata files are written to the local
+    filesystem for testing purposes.
 
     Args:
         table: The PyArrow Table to partition
