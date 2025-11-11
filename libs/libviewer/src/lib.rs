@@ -4,10 +4,10 @@ mod parquet;
 use std::backtrace;
 
 use arrow::pyarrow::IntoPyArrow;
+use log::debug;
 use pyo3::create_exception;
 use pyo3::prelude::*;
 use pyo3_async_runtimes;
-use log::debug;
 use tokio;
 
 use crate::dataset::{Dataset, DatasetError};
@@ -84,14 +84,14 @@ impl PyDataset {
         limit: Option<u64>,
         offset: Option<u64>,
         scan_size_limit: u64,
-    ) -> PyResult<Vec<PyObject>> {
+    ) -> PyResult<Vec<Py<PyAny>>> {
         let rt = tokio::runtime::Runtime::new()?;
         let record_batches = rt.block_on(self.dataset.scan(limit, offset, scan_size_limit))?;
-        let pyarrow_batches = record_batches
+
+        record_batches
             .into_iter()
-            .map(|batch| batch.into_pyarrow(py))
-            .collect::<PyResult<Vec<_>>>()?;
-        Ok(pyarrow_batches)
+            .map(|batch| Ok(batch.into_pyarrow(py)?.unbind()))
+            .collect::<PyResult<Vec<_>>>()
     }
 
     #[pyo3(signature = (limit=None, offset=None, scan_size_limit=DEFAULT_SCAN_SIZE_LIMIT))]
@@ -103,15 +103,16 @@ impl PyDataset {
         scan_size_limit: u64,
     ) -> PyResult<Bound<'py, PyAny>> {
         let this = self.clone();
+
         pyo3_async_runtimes::tokio::future_into_py(py, async move {
             let record_batches = this.dataset.scan(limit, offset, scan_size_limit).await?;
-            let pyarrow_batches = Python::with_gil(|py| {
+
+            Python::attach(|py| {
                 record_batches
                     .into_iter()
-                    .map(|batch| batch.into_pyarrow(py))
+                    .map(|batch| Ok(batch.into_pyarrow(py)?.unbind()))
                     .collect::<PyResult<Vec<_>>>()
-            })?;
-            Ok(pyarrow_batches)
+            })
         })
     }
 
@@ -135,16 +136,11 @@ impl PyDataset {
     }
 }
 
-/// A Python module implemented in Rust. The name of this function must match
-/// the `lib.name` setting in the `Cargo.toml`, else Python will not be able to
-/// import the module.
 #[pymodule]
 #[pyo3(name = "_internal")]
 fn dv(m: &Bound<'_, PyModule>) -> PyResult<()> {
     // Initialize the logger once (safe to call multiple times)
-    let _ = env_logger::builder()
-        .is_test(false)
-        .try_init();
+    let _ = env_logger::builder().is_test(false).try_init();
 
     debug!("Rust library initialized!");
 

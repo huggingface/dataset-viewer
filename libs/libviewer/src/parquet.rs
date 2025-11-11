@@ -86,9 +86,13 @@ pub async fn read_metadata(
     // .with_prefetch_hint(16 * 1024);
 
     let metadata = if let Some(file_size) = size {
-        metadata_reader.load_and_finish(&mut object_reader, file_size).await?
+        metadata_reader
+            .load_and_finish(&mut object_reader, file_size)
+            .await?
     } else {
-        metadata_reader.load_via_suffix_and_finish(&mut object_reader).await?
+        metadata_reader
+            .load_via_suffix_and_finish(&mut object_reader)
+            .await?
     };
 
     Ok(Arc::new(metadata))

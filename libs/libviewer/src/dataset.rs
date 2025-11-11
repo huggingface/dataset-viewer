@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use arrow::array::RecordBatch;
 use futures::future;
+use futures::StreamExt;
 use futures::TryStreamExt;
 use object_store::prefix::PrefixStore;
 use object_store::ObjectStore;
@@ -12,7 +13,6 @@ use parquet::file::metadata::ParquetMetaData;
 use thiserror::Error;
 use tokio::task;
 use url::Url;
-use futures::StreamExt;
 
 use crate::parquet::{read_batch_stream, read_metadata, write_metadata};
 use crate::IndexedFile;
@@ -106,7 +106,10 @@ impl Dataset {
         hf_token: Option<&str>,
     ) -> Result<Self> {
         // Initialize the data store (Huggingface in this case)
-        let mut builder = Huggingface::default().repo_type("dataset").repo_id(name).endpoint("https://hub-ci.huggingface.co");
+        let mut builder = Huggingface::default()
+            .repo_type("dataset")
+            .repo_id(name)
+            .endpoint("https://hub-ci.huggingface.co");
         if let Some(token) = hf_token {
             builder = builder.token(token);
         }
@@ -157,9 +160,12 @@ impl Dataset {
             let (metadata, num_rows) = match file.num_rows {
                 Some(rows) => (None, rows),
                 None => {
-                    let metadata =
-                        read_metadata(self.metadata_store.clone(), file.metadata_path.as_ref(), None)
-                            .await?;
+                    let metadata = read_metadata(
+                        self.metadata_store.clone(),
+                        file.metadata_path.as_ref(),
+                        None,
+                    )
+                    .await?;
                     let num_rows = metadata.file_metadata().num_rows() as u64;
                     (Some(metadata), num_rows)
                 }
@@ -181,8 +187,12 @@ impl Dataset {
                 let metadata = match metadata {
                     Some(meta) => meta,
                     None => {
-                        read_metadata(self.metadata_store.clone(), file.metadata_path.as_ref(), None)
-                            .await?
+                        read_metadata(
+                            self.metadata_store.clone(),
+                            file.metadata_path.as_ref(),
+                            None,
+                        )
+                        .await?
                     }
                 };
                 scans.push(ParquetScan {
@@ -207,7 +217,8 @@ impl Dataset {
             .unwrap_or(&self.files)
             .iter()
             .map(async move |file| {
-                let metadata = read_metadata(self.data_store.clone(), file.path.as_ref(), None).await?;
+                let metadata =
+                    read_metadata(self.data_store.clone(), file.path.as_ref(), None).await?;
                 write_metadata(
                     metadata,
                     self.metadata_store.clone(),
@@ -239,7 +250,8 @@ impl Dataset {
             let file_list = self.metadata_store.list(None).collect::<Vec<_>>().await;
             let message = format!(
                 "Failed to create scan plan: {}. Metadata store files: {:?}",
-                plan.err().unwrap(), file_list
+                plan.err().unwrap(),
+                file_list
             );
             return Err(DatasetError::ScanError(message));
         }
@@ -251,25 +263,21 @@ impl Dataset {
         });
         let results = future::try_join_all(tasks).await?;
 
-        let batches = results
-            .into_iter()
-            .collect::<Result<Vec<_>>>();
+        let batches = results.into_iter().collect::<Result<Vec<_>>>();
 
         if batches.is_err() {
             // list files on the data store and add the list to the error message
             let file_list = self.data_store.list(None).collect::<Vec<_>>().await;
             let message = format!(
                 "Failed to join scan tasks: {}. Data store files: {:?}",
-                batches.err().unwrap(), file_list
+                batches.err().unwrap(),
+                file_list
             );
             return Err(DatasetError::ScanError(message));
         }
         let batches = batches.unwrap();
 
-        let batches = batches
-            .into_iter()
-            .flatten()
-            .collect::<Vec<_>>();
+        let batches = batches.into_iter().flatten().collect::<Vec<_>>();
 
         Ok(batches)
     }
