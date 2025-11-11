@@ -1499,7 +1499,7 @@ checksum = "384b8ab6d37215f3c5301a95a4accb5d64aa607f1fcb26a11b5303878451b4fe"
 [[package]]
 name = "opendal"
 version = "0.54.1"
-source = "git+https://github.com/kszucs/opendal?branch=hf-endpoint#fd51142ab5bc5df2cf4aa6154707d008e7b7245e"
+source = "git+https://github.com/kszucs/opendal?branch=hf-endpoint#e476dde472b54591cadd01d2c77e9f1ce2b83116"
 dependencies = [
  "anyhow",
  "backon",
