@@ -17,7 +17,7 @@ from datasets.utils.py_utils import size_str
 from fsspec.implementations.http import HTTPFile, HTTPFileSystem
 from pyarrow.lib import ArrowInvalid
 
-from libcommon.constants import CONFIG_PARQUET_METADATA_KIND
+from libcommon.constants import CONFIG_PARQUET_METADATA_KIND, USE_LIBVIEWER_FOR_DATASETS
 from libcommon.prometheus import StepProfiler
 from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.storage import StrPath
@@ -398,6 +398,30 @@ class ParquetIndexWithMetadata:
         return pa_table, []
 
 
+def should_use_libviewer(
+    dataset: str, use_libviewer_for_datasets: bool | set[str] = USE_LIBVIEWER_FOR_DATASETS
+) -> bool:
+    """
+    Decide whether to use libviewer for the given dataset.
+
+    Args:
+        dataset (`str`): The name of the dataset.
+        use_libviewer_for_datasets (`bool` or `set[str]`):
+            Which datasets to use libviewer for creating the parquet metadata.
+    """
+    if isinstance(use_libviewer_for_datasets, bool):
+        use_libviewer = use_libviewer_for_datasets
+    elif isinstance(use_libviewer_for_datasets, set):
+        use_libviewer = dataset in use_libviewer_for_datasets
+    else:
+        raise ValueError("`use_libviewer_for_datasets` must be a boolean or a set of dataset names")
+
+    if use_libviewer and not _has_libviewer:
+        raise ImportError("libviewer is not installed")
+
+    return use_libviewer
+
+
 class RowsIndex:
     def __init__(
         self,
@@ -410,7 +434,6 @@ class RowsIndex:
         max_scan_size: Optional[int] = None,
         hf_token: Optional[str] = None,
         data_store: Optional[str] = None,
-        use_libviewer_for_datasets: bool | set[str] = True,
     ):
         self.dataset = dataset
         self.config = config
@@ -419,13 +442,7 @@ class RowsIndex:
         self.max_scan_size = max_scan_size if max_scan_size is not None else max_arrow_data_in_memory
         self.parquet_metadata_directory = Path(parquet_metadata_directory)
 
-        if isinstance(use_libviewer_for_datasets, bool):
-            self._use_libviewer = use_libviewer_for_datasets
-        elif isinstance(use_libviewer_for_datasets, set):
-            self._use_libviewer = dataset in use_libviewer_for_datasets
-        else:
-            raise ValueError("`use_libviewer_for_datasets` must be a boolean or a set of dataset names")
-
+        self._use_libviewer = should_use_libviewer(dataset)
         self._init_dataset_info()
         if self._use_libviewer:
             if not _has_libviewer:

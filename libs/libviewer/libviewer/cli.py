@@ -1,7 +1,12 @@
-import click
+import logging
 import pathlib
 
+import click
+
 from libviewer import Dataset
+
+
+logging.basicConfig(level=logging.INFO)
 
 
 @click.group()
@@ -95,10 +100,8 @@ def index(ctx):
     dataset = ctx.obj["dataset"]
     metadata_dir = ctx.obj["metadata_dir"]
 
-    print(f"Indexing dataset '{dataset}' in '{metadata_dir}'")
+    print(f"Indexing dataset '{dataset.name}' in '{metadata_dir}'")
 
     # Ensure the metadata directory exists
     metadata_dir.mkdir(parents=True, exist_ok=True)
-
-    print("Indexing dataset with offset index enabled...")
     dataset.sync_index()
