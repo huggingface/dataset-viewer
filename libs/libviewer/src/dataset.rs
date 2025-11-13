@@ -2,7 +2,6 @@ use std::sync::Arc;
 
 use arrow::array::RecordBatch;
 use futures::future;
-use futures::StreamExt;
 use futures::TryStreamExt;
 use object_store::prefix::PrefixStore;
 use object_store::ObjectStore;
@@ -16,12 +15,7 @@ use url::Url;
 
 use crate::parquet::{read_batch_stream, read_metadata, write_metadata};
 use crate::IndexedFile;
-use arrow::array::{Float64Array, Int64Array, StringArray};
-use arrow::datatypes::{DataType, Field, Schema};
-use parquet::arrow::ArrowWriter;
-use parquet::file::properties::WriterProperties;
-use std::fs;
-use tempfile::TempDir;
+
 
 #[derive(Error, Debug)]
 pub enum DatasetError {
@@ -48,12 +42,6 @@ pub enum DatasetError {
 
     #[error("Join error: {0}")]
     JoinError(#[from] tokio::task::JoinError),
-
-    #[error("Scan error: {0}")]
-    ScanError(String),
-
-    #[error("Planning error: {0}")]
-    PlanError(String),
 }
 
 type Result<T, E = DatasetError> = std::result::Result<T, E>;
@@ -244,47 +232,33 @@ impl Dataset {
         limit: Option<u64>,
         offset: Option<u64>,
         scan_size_limit: u64,
-    ) -> Result<Vec<RecordBatch>> {
+    ) -> Result<(Vec<RecordBatch>, Vec<IndexedFile>)> {
         // 1. create an object reader for each file in the access plan
         // 2. generate a stream of record batches from each reader
         // 3. flatten the streams into a single stream
         // 4. collect the record batches into a single vector
 
-        let plan = self.plan(limit, offset).await;
-        if plan.is_err() {
-            // list metadata files on the metadata store and add the list to the error message
-            let file_list = self.metadata_store.list(None).collect::<Vec<_>>().await;
-            let message = format!(
-                "Failed to create scan plan: {}. Metadata store files: {:?}",
-                plan.err().unwrap(),
-                file_list
-            );
-            return Err(DatasetError::ScanError(message));
-        }
-        let plan = plan.unwrap();
+        let plan = self.plan(limit, offset).await?;
+        let files_to_index = plan.iter().filter_map(|scan| {
+            if scan.metadata.offset_index().is_none() {
+                Some(scan.file.clone())
+            } else {
+                None
+            }
+        }).collect();
 
         let tasks = plan.into_iter().map(|scan| {
             let data_store = self.data_store.clone();
             task::spawn(async move { scan.execute(data_store, scan_size_limit).await })
         });
         let results = future::try_join_all(tasks).await?;
+        let batches = results
+            .into_iter()
+            .collect::<Result<Vec<_>>>()?
+            .into_iter()
+            .flatten()
+            .collect::<Vec<_>>();
 
-        let batches = results.into_iter().collect::<Result<Vec<_>>>();
-
-        if batches.is_err() {
-            // list files on the data store and add the list to the error message
-            let file_list = self.data_store.list(None).collect::<Vec<_>>().await;
-            let message = format!(
-                "Failed to join scan tasks: {}. Data store files: {:?}",
-                batches.err().unwrap(),
-                file_list
-            );
-            return Err(DatasetError::ScanError(message));
-        }
-        let batches = batches.unwrap();
-
-        let batches = batches.into_iter().flatten().collect::<Vec<_>>();
-
-        Ok(batches)
+        Ok((batches, files_to_index))
     }
 }

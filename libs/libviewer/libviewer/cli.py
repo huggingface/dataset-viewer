@@ -76,11 +76,15 @@ def query(ctx, offset, limit):
     )
 
     dataset = ctx.obj["dataset"]
-    batches = dataset.sync_scan(limit, offset)
+    batches, files_to_index = dataset.sync_scan(limit, offset)
 
     # Print the result
     for batch in batches:
         print(f"Batch length: {len(batch)}")
+
+    print(f"Files to index (missing offset index): {len(files_to_index)}")
+    for file in files_to_index:
+        print(f"- {file['filename']}")
 
 
 @cli.command()

@@ -79,14 +79,15 @@ impl PyDataset {
         limit: Option<u64>,
         offset: Option<u64>,
         scan_size_limit: u64,
-    ) -> PyResult<Vec<Py<PyAny>>> {
+    ) -> PyResult<(Vec<Py<PyAny>>, Vec<IndexedFile>)> {
         let rt = tokio::runtime::Runtime::new()?;
-        let record_batches = rt.block_on(self.dataset.scan(limit, offset, scan_size_limit))?;
-
-        record_batches
+        let (record_batches, files_to_index) = rt.block_on(self.dataset.scan(limit, offset, scan_size_limit))?;
+        let pyarrow_batches = record_batches
             .into_iter()
             .map(|batch| Ok(batch.into_pyarrow(py)?.unbind()))
-            .collect::<PyResult<Vec<_>>>()
+            .collect::<PyResult<Vec<_>>>()?;
+
+        Ok((pyarrow_batches, files_to_index))
     }
 
     #[pyo3(signature = (limit=None, offset=None, scan_size_limit=DEFAULT_SCAN_SIZE_LIMIT))]
@@ -100,14 +101,16 @@ impl PyDataset {
         let this = self.clone();
 
         pyo3_async_runtimes::tokio::future_into_py(py, async move {
-            let record_batches = this.dataset.scan(limit, offset, scan_size_limit).await?;
+            let (record_batches, files_to_index) = this.dataset.scan(limit, offset, scan_size_limit).await?;
 
-            Python::attach(|py| {
+            let pyarrow_batches = Python::attach(|py| {
                 record_batches
                     .into_iter()
                     .map(|batch| Ok(batch.into_pyarrow(py)?.unbind()))
                     .collect::<PyResult<Vec<_>>>()
-            })
+            })?;
+
+            Ok((pyarrow_batches, files_to_index))
         })
     }
 
