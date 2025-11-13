@@ -129,6 +129,7 @@ def compute_parquet_metadata_response(
     except Exception as e:
         raise PreviousStepFormatError("Previous step did not return the expected content.") from e
 
+    parquet_files_metadata: list[ParquetFileMetadataItem]
     if should_use_libviewer(dataset):
         logging.info(f"Using libviewer to create parquet metadata for {dataset=} {config=}")
 
@@ -166,8 +167,11 @@ def compute_parquet_metadata_response(
         result = viewer.sync_index()
 
         # construct the expected response format with num_rows from the result
-        parquet_files_metadata: list[ParquetFileMetadataItem] = [
+        parquet_files_metadata = [
             {
+                "dataset": item["dataset"],
+                "config": item["config"],
+                "split": item["split"],
                 "url": item["url"],
                 "filename": item["filename"],
                 "size": item["size"],
@@ -178,7 +182,7 @@ def compute_parquet_metadata_response(
         ]
     else:
         desc = f"{dataset}/{config}"
-        parquet_files_metadata: list[ParquetFileMetadataItem] = thread_map(
+        parquet_files_metadata = thread_map(
             functools.partial(
                 create_parquet_metadata_file_from_remote_parquet,
                 hf_endpoint=hf_endpoint,
