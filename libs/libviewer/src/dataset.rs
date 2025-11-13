@@ -16,7 +16,6 @@ use url::Url;
 use crate::parquet::{read_batch_stream, read_metadata, write_metadata};
 use crate::IndexedFile;
 
-
 #[derive(Error, Debug)]
 pub enum DatasetError {
     #[error("Failed to parse URL: {0}")]
@@ -239,13 +238,16 @@ impl Dataset {
         // 4. collect the record batches into a single vector
 
         let plan = self.plan(limit, offset).await?;
-        let files_to_index = plan.iter().filter_map(|scan| {
-            if scan.metadata.offset_index().is_none() {
-                Some(scan.file.clone())
-            } else {
-                None
-            }
-        }).collect();
+        let files_to_index = plan
+            .iter()
+            .filter_map(|scan| {
+                if scan.metadata.offset_index().is_none() {
+                    Some(scan.file.clone())
+                } else {
+                    None
+                }
+            })
+            .collect();
 
         let tasks = plan.into_iter().map(|scan| {
             let data_store = self.data_store.clone();
