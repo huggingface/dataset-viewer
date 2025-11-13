@@ -117,10 +117,10 @@ impl PyDataset {
     }
 
     #[pyo3(signature = (files=None))]
-    fn sync_index(&self, files: Option<Vec<IndexedFile>>) -> PyResult<()> {
+    fn sync_index(&self, files: Option<Vec<IndexedFile>>) -> PyResult<Vec<IndexedFile>> {
         let rt = tokio::runtime::Runtime::new()?;
-        rt.block_on(self.dataset.index(files.as_deref()))?;
-        Ok(())
+        let indexed_files = rt.block_on(self.dataset.index(files.as_deref()))?;
+        Ok(indexed_files)
     }
 
     #[pyo3(signature = (files=None))]
@@ -131,7 +131,8 @@ impl PyDataset {
     ) -> PyResult<Bound<'py, PyAny>> {
         let this = self.clone();
         pyo3_async_runtimes::tokio::future_into_py(py, async move {
-            Ok(this.dataset.index(files.as_deref()).await?)
+            let indexed_files = this.dataset.index(files.as_deref()).await?;
+            Ok(indexed_files)
         })
     }
 }

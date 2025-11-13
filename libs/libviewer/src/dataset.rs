@@ -204,7 +204,7 @@ impl Dataset {
         Ok(scans)
     }
 
-    pub async fn index(&self, files: Option<&[IndexedFile]>) -> Result<()> {
+    pub async fn index(&self, files: Option<&[IndexedFile]>) -> Result<Vec<IndexedFile>> {
         let files_to_index = files.unwrap_or(&self.files);
 
         let progress = ProgressBar::new(files_to_index.len() as u64);
@@ -226,18 +226,23 @@ impl Dataset {
                 async move {
                     log::info!("Indexing file: {:?}", file.path);
                     let metadata = read_metadata(data_store, file.path.as_ref(), None).await?;
+                    let num_rows = metadata.file_metadata().num_rows() as u64;
                     write_metadata(metadata, metadata_store, file.metadata_path.as_ref()).await?;
                     progress.inc(1);
                     progress.set_message(format!("{}", file.path));
-                    Ok::<_, DatasetError>(())
+
+                    // return the indexed file with updated num_rows
+                    let mut indexed_file = file.clone();
+                    indexed_file.num_rows = Some(num_rows);
+                    Ok::<IndexedFile, DatasetError>(indexed_file)
                 }
             })
             .collect::<Vec<_>>();
 
-        future::try_join_all(futures).await?;
+        let indexed_files = future::try_join_all(futures).await?;
         progress.finish_with_message("Indexing complete");
 
-        Ok(())
+        Ok(indexed_files)
     }
 
     pub async fn scan(

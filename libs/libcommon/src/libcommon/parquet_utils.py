@@ -17,10 +17,10 @@ from datasets.utils.py_utils import size_str
 from fsspec.implementations.http import HTTPFile, HTTPFileSystem
 from pyarrow.lib import ArrowInvalid
 
-from libcommon.constants import CONFIG_PARQUET_METADATA_KIND, USE_LIBVIEWER_FOR_DATASETS
 from libcommon.prometheus import StepProfiler
 from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.storage import StrPath
+from libcommon import constants
 
 try:
     import libviewer as lv  # type: ignore
@@ -398,9 +398,7 @@ class ParquetIndexWithMetadata:
         return pa_table, []
 
 
-def should_use_libviewer(
-    dataset: str, use_libviewer_for_datasets: bool | set[str] = USE_LIBVIEWER_FOR_DATASETS
-) -> bool:
+def should_use_libviewer(dataset: str) -> bool:
     """
     Decide whether to use libviewer for the given dataset.
 
@@ -409,12 +407,12 @@ def should_use_libviewer(
         use_libviewer_for_datasets (`bool` or `set[str]`):
             Which datasets to use libviewer for creating the parquet metadata.
     """
-    if isinstance(use_libviewer_for_datasets, bool):
-        use_libviewer = use_libviewer_for_datasets
-    elif isinstance(use_libviewer_for_datasets, set):
-        use_libviewer = dataset in use_libviewer_for_datasets
+    if isinstance(constants.USE_LIBVIEWER_FOR_DATASETS, bool):
+        use_libviewer = constants.USE_LIBVIEWER_FOR_DATASETS
+    elif isinstance(constants.USE_LIBVIEWER_FOR_DATASETS, set):
+        use_libviewer = dataset in constants.USE_LIBVIEWER_FOR_DATASETS
     else:
-        raise ValueError("`use_libviewer_for_datasets` must be a boolean or a set of dataset names")
+        raise ValueError("`USE_LIBVIEWER_FOR_DATASETS` must be a boolean or a set of dataset names")
 
     if use_libviewer and not _has_libviewer:
         raise ImportError("libviewer is not installed")
@@ -455,7 +453,7 @@ class RowsIndex:
         # get the list of parquet files and features
         with StepProfiler(method="rows_index._get_dataset_metadata", step="all"):
             response = get_previous_step_or_raise(
-                kind=CONFIG_PARQUET_METADATA_KIND, dataset=self.dataset, config=self.config, split=None
+                kind=constants.CONFIG_PARQUET_METADATA_KIND, dataset=self.dataset, config=self.config, split=None
             )
             # FIXME(kszucs): remove this
             self.response = response
