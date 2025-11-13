@@ -2,7 +2,6 @@ mod dataset;
 mod parquet;
 
 use arrow::pyarrow::IntoPyArrow;
-use log::debug;
 use pyo3::create_exception;
 use pyo3::prelude::*;
 use pyo3_async_runtimes;
@@ -135,11 +134,6 @@ impl PyDataset {
 #[pymodule]
 #[pyo3(name = "_internal")]
 fn dv(m: &Bound<'_, PyModule>) -> PyResult<()> {
-    // Initialize the logger once (safe to call multiple times)
-    let _ = env_logger::builder().is_test(false).try_init();
-
-    debug!("Rust library initialized!");
-
     m.add_class::<PyDataset>()?;
     m.add("PyDatasetError", m.py().get_type::<PyDatasetError>())?;
     Ok(())

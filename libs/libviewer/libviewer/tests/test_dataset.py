@@ -1,5 +1,4 @@
 import pytest
-import enum
 import pyarrow as pa
 from pathlib import Path
 import pyarrow.parquet as pq

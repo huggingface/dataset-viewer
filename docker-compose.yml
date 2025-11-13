@@ -44,7 +44,6 @@ x-service-env: &service-env
   API_HF_TIMEOUT_SECONDS: ${API_HF_TIMEOUT_SECONDS}
   API_MAX_AGE_LONG: ${API_MAX_AGE_LONG}
   API_MAX_AGE_SHORT: ${API_MAX_AGE_SHORT}
-  RUST_BACKTRACE: 1
 
 services:
   reverse-proxy:
