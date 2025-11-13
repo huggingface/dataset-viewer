@@ -21,6 +21,7 @@ def create_parquet_metadata_dir(
     return dir_path, parquet_metadata_dir_subpath
 
 
+# TODO(kszucs): must use libviewer's indexer to avoid having corrupted metadata files written by pyarrow in case of an existing offset index
 def create_parquet_metadata_file(
     dataset: str,
     config: str,

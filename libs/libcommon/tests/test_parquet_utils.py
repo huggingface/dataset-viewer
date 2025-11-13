@@ -24,6 +24,7 @@ from libcommon.parquet_utils import (
     extract_split_directory_from_parquet_url,
     get_num_parquet_files_to_process,
     parquet_export_is_partial,
+    should_use_libviewer,
 )
 from libcommon.resources import CacheMongoResource
 from libcommon.simple_cache import upsert_response
@@ -366,6 +367,19 @@ def rows_index_with_parquet_metadata(
             )
 
 
+def test_should_use_libviewer() -> None:
+    # default is False
+    assert should_use_libviewer("anything") is False
+
+    with patch("libcommon.constants.USE_LIBVIEWER_FOR_DATASETS", True):
+        assert should_use_libviewer("anything") is True
+
+    with patch("libcommon.constants.USE_LIBVIEWER_FOR_DATASETS", {"dataset1", "dataset2"}):
+        assert should_use_libviewer("dataset1") is True
+        assert should_use_libviewer("dataset2") is True
+        assert should_use_libviewer("dataset3") is False
+
+
 def test_parquet_export_is_partial() -> None:
     assert parquet_export_is_partial(
         "https://hf.co/datasets/canonical/resolve/refs%2Fconvert%2Fparquet/en/partial-train/0000.parquet"
@@ -441,23 +455,60 @@ def test_rows_index_query_with_parquet_metadata(
     rows_index_with_parquet_metadata: RowsIndex, ds_sharded: Dataset
 ) -> None:
     assert isinstance(rows_index_with_parquet_metadata.parquet_index, ParquetIndexWithMetadata)
-    result, _ = rows_index_with_parquet_metadata.query(offset=1, length=3)
+    result, _ = rows_index_with_parquet_metadata.query_parquet_index(offset=1, length=3)
     assert result.to_pydict() == ds_sharded[1:4]
 
-    result, _ = rows_index_with_parquet_metadata.query(offset=1, length=-1)
+    result, _ = rows_index_with_parquet_metadata.query_parquet_index(offset=1, length=-1)
     assert result.to_pydict() == ds_sharded[:0]
 
-    result, _ = rows_index_with_parquet_metadata.query(offset=1, length=0)
+    result, _ = rows_index_with_parquet_metadata.query_parquet_index(offset=1, length=0)
     assert result.to_pydict() == ds_sharded[:0]
 
-    result, _ = rows_index_with_parquet_metadata.query(offset=999999, length=1)
+    result, _ = rows_index_with_parquet_metadata.query_parquet_index(offset=999999, length=1)
     assert result.to_pydict() == ds_sharded[:0]
 
-    result, _ = rows_index_with_parquet_metadata.query(offset=1, length=99999999)
+    result, _ = rows_index_with_parquet_metadata.query_parquet_index(offset=1, length=99999999)
     assert result.to_pydict() == ds_sharded[1:]
 
     with pytest.raises(IndexError):
-        rows_index_with_parquet_metadata.query(offset=-1, length=2)
+        rows_index_with_parquet_metadata.query_parquet_index(offset=-1, length=2)
+
+
+def test_rows_index_query_with_parquet_metadata_libviewer(
+    ds_sharded: Dataset,
+    ds_sharded_fs: AbstractFileSystem,
+    dataset_sharded_with_config_parquet_metadata: dict[str, Any],
+    parquet_metadata_directory: StrPath,
+) -> None:
+    # test the same with page pruning API
+    import libviewer as lv  # type: ignore
+
+    with patch("libcommon.constants.USE_LIBVIEWER_FOR_DATASETS", True):
+        rows_index_with_parquet_metadata = RowsIndex(
+            dataset="ds_sharded",
+            config="default",
+            split="train",
+            parquet_metadata_directory=parquet_metadata_directory,
+            httpfs=HTTPFileSystem(),
+            hf_token="token",
+            max_scan_size=9999999999,
+            max_arrow_data_in_memory=9999999999,
+            data_store=f"file://{ds_sharded_fs.local_root_dir}",
+        )
+
+    assert isinstance(rows_index_with_parquet_metadata.viewer_index, lv.Dataset)
+    result, _truncated_cols = rows_index_with_parquet_metadata.query_libviewer_index(offset=1, length=3)
+    assert result.to_pydict() == ds_sharded[1:4]
+    result, _truncated_cols = rows_index_with_parquet_metadata.query_libviewer_index(offset=1, length=0)
+    assert result.to_pydict() == ds_sharded[:0]
+    result, _truncated_cols = rows_index_with_parquet_metadata.query_libviewer_index(offset=999999, length=1)
+    assert result.to_pydict() == ds_sharded[:0]
+    result, _truncated_cols = rows_index_with_parquet_metadata.query_libviewer_index(offset=1, length=99999999)
+    assert result.to_pydict() == ds_sharded[1:]
+    with pytest.raises(IndexError):
+        rows_index_with_parquet_metadata.query_libviewer_index(offset=0, length=-1)
+    with pytest.raises(IndexError):
+        rows_index_with_parquet_metadata.query_libviewer_index(offset=-1, length=2)
 
 
 def test_rows_index_query_with_too_big_rows(
@@ -478,7 +529,24 @@ def test_rows_index_query_with_too_big_rows(
             )
 
     with pytest.raises(TooBigRows):
-        index.query(offset=0, length=3)
+        index.query_parquet_index(offset=0, length=3)
+
+    with patch("libcommon.constants.USE_LIBVIEWER_FOR_DATASETS", True):
+        index = RowsIndex(
+            dataset="ds_sharded",
+            config="default",
+            split="train",
+            parquet_metadata_directory=parquet_metadata_directory,
+            httpfs=HTTPFileSystem(),
+            hf_token="token",
+            max_scan_size=1,
+            max_arrow_data_in_memory=1,
+            data_store=f"file://{ds_sharded_fs.local_root_dir}",
+        )
+
+    # test the same with page pruning API
+    with pytest.raises(TooBigRows):
+        index.query_libviewer_index(offset=0, length=2)
 
 
 def test_rows_index_query_with_empty_dataset(
@@ -499,10 +567,32 @@ def test_rows_index_query_with_empty_dataset(
             )
 
     assert isinstance(index.parquet_index, ParquetIndexWithMetadata)
-    result, _ = index.query(offset=0, length=1)
+    result, _ = index.query_parquet_index(offset=0, length=1)
     assert result.to_pydict() == ds_empty[:0]
     with pytest.raises(IndexError):
-        index.query(offset=-1, length=2)
+        index.query_parquet_index(offset=-1, length=2)
+
+    # test the same with page pruning API
+    import libviewer as lv
+
+    with patch("libcommon.constants.USE_LIBVIEWER_FOR_DATASETS", True):
+        index = RowsIndex(
+            dataset="ds_empty",
+            config="default",
+            split="train",
+            parquet_metadata_directory=parquet_metadata_directory,
+            httpfs=HTTPFileSystem(),
+            hf_token="token",
+            max_scan_size=9999999999,
+            max_arrow_data_in_memory=9999999999,
+            data_store=f"file://{ds_empty_fs.local_root_dir}",
+        )
+
+    assert isinstance(index.viewer_index, lv.Dataset)
+    result, _ = index.query_libviewer_index(offset=0, length=1)
+    assert result.to_pydict() == ds_empty[:0]
+    with pytest.raises(IndexError):
+        index.query_libviewer_index(offset=-1, length=2)
 
 
 def test_indexer_schema_mistmatch_error(
@@ -523,7 +613,7 @@ def test_indexer_schema_mistmatch_error(
                     max_arrow_data_in_memory=9999999999,
                 )
                 with pytest.raises(SchemaMismatchError):
-                    index.query(offset=0, length=3)
+                    index.query_parquet_index(offset=0, length=3)
 
 
 @pytest.mark.parametrize(

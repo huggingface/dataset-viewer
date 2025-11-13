@@ -47,6 +47,12 @@ torch = [
 torchcodec = { version = "0.7.0", markers = "sys_platform != 'linux' or platform_machine != 'aarch64'" }
 tqdm = "^4.66.3"
 
+[tool.poetry.group.libviewer]
+optional = true
+
+[tool.poetry.group.libviewer.dependencies]
+libviewer = { path = "../libviewer", develop = true }
+
 [tool.poetry.group.dev.dependencies]
 aiobotocore = "2.13.0"
 bandit = "^1.7.4"

@@ -9,9 +9,16 @@ license = "Apache-2.0"
 python = "3.12.11"
 jsonschema = "^4.17.0"
 libapi = {path = "../../libs/libapi", develop = true}
+libcommon = {path = "../../libs/libcommon", develop = true}
 soundfile = ">=0.12.1"
 uvicorn = "^0.30.1"
 watchdog = { extras = ["watchmedo"], version = "^2.2.1" }
+
+[tool.poetry.group.libviewer]
+optional = true
+
+[tool.poetry.group.libviewer.dependencies]
+libviewer = { path = "../../libs/libviewer", develop = true }
 
 [tool.poetry.group.dev.dependencies]
 bandit = "^1.7.4"

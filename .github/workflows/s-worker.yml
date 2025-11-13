@@ -31,4 +31,5 @@ jobs:
     uses: ./.github/workflows/_unit-tests-python.yml
     with:
       working-directory: services/worker
+      poetry-args: "--with libviewer"
     secrets: inherit
