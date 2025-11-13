@@ -151,7 +151,9 @@ def test_sync_scan(
     batches, files_to_index = dataset.sync_scan(limit=limit, offset=offset)
     was_able_to_use_page_pruning = len(files_to_index) == 0
     assert len(batches) == expected_files_to_read
-    assert was_able_to_use_page_pruning == (with_offset_index and not use_pyarrow_metadata)
+    assert was_able_to_use_page_pruning == (
+        with_offset_index and not use_pyarrow_metadata
+    )
 
     # Concatenate batches and compare with expected sliced table
     result = pa.Table.from_batches(batches, schema=table.schema)

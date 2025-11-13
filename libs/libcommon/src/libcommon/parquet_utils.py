@@ -556,7 +556,9 @@ class RowsIndex:
             raise IndexError("Length must be non-negative")
 
         try:
-            batches, _files_to_index = self.viewer_index.sync_scan(offset=offset, limit=length, scan_size_limit=self.max_scan_size)
+            batches, _files_to_index = self.viewer_index.sync_scan(
+                offset=offset, limit=length, scan_size_limit=self.max_scan_size
+            )
         except lv.DatasetError as e:
             if "Scan size limit exceeded" in str(e):
                 raise TooBigRows(str(e)) from e
