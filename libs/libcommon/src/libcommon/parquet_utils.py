@@ -417,16 +417,22 @@ class RowsIndex:
         self.split = split
         self.httpfs = httpfs
         self.max_scan_size = max_scan_size
-        self.use_libviewer_for_datasets = use_libviewer_for_datasets
         self.parquet_metadata_directory = Path(parquet_metadata_directory)
 
-        if not isinstance(self.use_libviewer_for_datasets, (bool, set)):
+        if isinstance(use_libviewer_for_datasets, bool):
+            self._use_libviewer = use_libviewer_for_datasets
+        elif isinstance(use_libviewer_for_datasets, set):
+            self._use_libviewer = dataset in use_libviewer_for_datasets
+        else:
             raise ValueError("`use_libviewer_for_datasets` must be a boolean or a set of dataset names")
 
         self._init_dataset_info()
-        self._init_parquet_index(httpfs=httpfs, max_arrow_data_in_memory=max_arrow_data_in_memory)
-        if _has_libviewer:
+        if self._use_libviewer:
+            if not _has_libviewer:
+                raise ImportError("libviewer is not installed")
             self._init_viewer_index(hf_token=hf_token, data_store=data_store)
+        else:
+            self._init_parquet_index(httpfs=httpfs, max_arrow_data_in_memory=max_arrow_data_in_memory)
 
     def _init_dataset_info(self) -> None:
         # get the list of parquet files and features
@@ -516,22 +522,8 @@ class RowsIndex:
             `pa.Table`: The requested rows.
             `list[str]`: List of truncated columns.
         """
-        if self.use_libviewer_for_datasets is True or (
-            isinstance(self.use_libviewer_for_datasets, set) and self.dataset in self.use_libviewer_for_datasets
-        ):
-            try:
-                return self.query_libviewer_index(offset=offset, length=length)
-            except Exception as e:
-                # list files at the metadata directory for debugging
-                files = [str(f) for f in Path(self.parquet_metadata_directory).rglob("*")]
-                raise ValueError(
-                    f"Error while querying libviewer.Dataset: {e} for dataset={self.dataset},"
-                    f" config={self.config}, split={self.split}. Revision: {self.revision}. "
-                    f"Parquet files: {self.parquet_files}. "
-                    f"Parquet index files: {self.viewer_index.files}. "
-                    f"Parquet metadata files: {files} at {self.parquet_metadata_directory}"
-                    f"Mongo response: {self.response}"
-                ) from e
+        if self._use_libviewer:
+            return self.query_libviewer_index(offset=offset, length=length)
         else:
             return self.query_parquet_index(offset=offset, length=length)
 

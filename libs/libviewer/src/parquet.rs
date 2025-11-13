@@ -75,7 +75,7 @@ impl<T: AsyncFileReader> AsyncFileReader for LimitedAsyncReader<T> {
 pub async fn read_metadata(
     store: Arc<dyn ObjectStore>,
     path: impl Into<Path>,
-    size: Option<usize>,
+    prefetch_hint: Option<usize>,
 ) -> Result<Arc<ParquetMetaData>> {
     let path = path.into();
 
@@ -84,7 +84,7 @@ pub async fn read_metadata(
     let mut metadata_reader = ParquetMetaDataReader::new()
         .with_column_index_policy(PageIndexPolicy::Skip)
         .with_offset_index_policy(PageIndexPolicy::Optional)
-        .with_prefetch_hint(size);
+        .with_prefetch_hint(prefetch_hint);
 
     // first try to read the metadata with offset index but if it fails, retry without
     // reading the offset index; this is necessary because pyarrow writes metadata only
