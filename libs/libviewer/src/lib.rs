@@ -41,19 +41,20 @@ struct PyDataset {
 #[pymethods]
 impl PyDataset {
     #[new]
-    #[pyo3(signature = (name, files, metadata_store, data_store = None, hf_token=None, revision = None))]
+    #[pyo3(signature = (name, files, metadata_store, data_store = None, hf_token=None, hf_endpoint = None, revision = None))]
     fn new(
         name: &str,
         files: Vec<IndexedFile>,
         metadata_store: &str,
         data_store: Option<&str>,
         hf_token: Option<&str>,
+        hf_endpoint: Option<&str>,
         revision: Option<&str>,
     ) -> PyResult<Self> {
         let dataset = if let Some(data_store) = data_store {
             Dataset::from_uri(name, files, data_store, metadata_store)?
         } else {
-            Dataset::from_hub(name, files, metadata_store, revision, hf_token)?
+            Dataset::from_hub(name, files, metadata_store, revision, hf_token, hf_endpoint)?
         };
         Ok(PyDataset { dataset })
     }

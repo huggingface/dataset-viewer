@@ -501,16 +501,15 @@ class RowsIndex:
         logging.info(f"Create libviewer.Dataset for dataset={self.dataset}, config={self.config}, split={self.split}")
 
         # construct the required parquet_files list for libviewer.Dataset
-        files = []
-        for f in self.parquet_files:
-            files.append(
-                {
-                    "path": f"{f['config']}/{f['split']}/{f['filename']}",
-                    "size": f["size"],
-                    "num_rows": f["num_rows"],
-                    "metadata_path": f["parquet_metadata_subpath"],
-                }
-            )
+        files = [
+            {
+                "path": f"{f['config']}/{f['split']}/{f['filename']}",
+                "size": f["size"],
+                "num_rows": f["num_rows"],
+                "metadata_path": f["parquet_metadata_subpath"],
+            }
+            for f in self.parquet_files
+        ]
 
         self.viewer_index = lv.Dataset(
             name=self.dataset,

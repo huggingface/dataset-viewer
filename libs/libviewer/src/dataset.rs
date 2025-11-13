@@ -99,6 +99,7 @@ impl Dataset {
         metadata_uri: &str,
         revision: Option<&str>,
         hf_token: Option<&str>,
+        hf_endpoint: Option<&str>,
     ) -> Result<Self> {
         // Initialize the data store (Huggingface in this case)
         let mut builder = Huggingface::default().repo_type("dataset").repo_id(name);
@@ -107,6 +108,9 @@ impl Dataset {
         }
         if let Some(rev) = revision {
             builder = builder.revision(rev);
+        }
+        if let Some(endpoint) = hf_endpoint {
+            builder = builder.endpoint(endpoint);
         }
         let operator = Operator::new(builder)?.finish();
         let data_store = Arc::new(OpendalStore::new(operator));
