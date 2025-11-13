@@ -75,27 +75,34 @@ impl<T: AsyncFileReader> AsyncFileReader for LimitedAsyncReader<T> {
 pub async fn read_metadata(
     store: Arc<dyn ObjectStore>,
     path: impl Into<Path>,
-    size: Option<u64>,
+    size: Option<usize>,
 ) -> Result<Arc<ParquetMetaData>> {
     let path = path.into();
 
-    let mut object_reader = ParquetObjectReader::new(store, path);
-    let metadata_reader = ParquetMetaDataReader::new()
-        .with_column_index_policy(PageIndexPolicy::Optional)
+    // configure the metadata reader with optionally reading the offset index if present
+    let mut object_reader = ParquetObjectReader::new(store.clone(), path.clone());
+    let mut metadata_reader = ParquetMetaDataReader::new()
+        .with_column_index_policy(PageIndexPolicy::Skip)
         .with_offset_index_policy(PageIndexPolicy::Optional)
-        .with_prefetch_hint(Some(16 * 1024));
+        .with_prefetch_hint(size);
 
-
-
-    let metadata = if let Some(file_size) = size {
+    // first try to read the metadata with offset index but if it fails, retry without
+    // reading the offset index; this is necessary because pyarrow writes metadata only
+    // parquet files without adjusting offset_index_offset to correspond to the actual
+    // location in the newly written metadata only file
+    if metadata_reader
+        .try_load_via_suffix(&mut object_reader)
+        .await
+        .is_err()
+    {
+        // expecting a External(Generic { source: InvalidRange { source: StartTooLarge { .. } } })
+        // error here if the offset index is corrupted; retry without reading the offset index
+        metadata_reader = metadata_reader.with_offset_index_policy(PageIndexPolicy::Skip);
         metadata_reader
-            .load_and_finish(&mut object_reader, file_size)
-            .await?
-    } else {
-        metadata_reader
-            .load_via_suffix_and_finish(&mut object_reader)
-            .await?
-    };
+            .try_load_via_suffix(&mut object_reader)
+            .await?;
+    }
+    let metadata = metadata_reader.finish()?;
 
     Ok(Arc::new(metadata))
 }

@@ -16,6 +16,12 @@ use url::Url;
 
 use crate::parquet::{read_batch_stream, read_metadata, write_metadata};
 use crate::IndexedFile;
+use arrow::array::{Float64Array, Int64Array, StringArray};
+use arrow::datatypes::{DataType, Field, Schema};
+use parquet::arrow::ArrowWriter;
+use parquet::file::properties::WriterProperties;
+use std::fs;
+use tempfile::TempDir;
 
 #[derive(Error, Debug)]
 pub enum DatasetError {

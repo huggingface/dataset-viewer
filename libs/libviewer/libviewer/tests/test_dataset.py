@@ -1,4 +1,5 @@
 import pytest
+import enum
 import pyarrow as pa
 from pathlib import Path
 import pyarrow.parquet as pq
@@ -27,11 +28,22 @@ def generate_sample_table(num_rows: int) -> pa.Table:
     )
 
 
+def write_pyarrow_metadata_files(files, data_dir: Path, metadata_dir: Path) -> None:
+    for f in files:
+        # Read the parquet metadata from the data file
+        parquet_metadata = pq.read_metadata(data_dir / f["path"])
+
+        # Write parquet metadata to the metadata file destination
+        with open(metadata_dir / f["metadata_path"], "wb") as f:
+            parquet_metadata.write_metadata_file(f)
+
+
 def write_partitioned_parquet_dataset(
     table: pa.Table,
     data_dir: Path,
     metadata_dir: Path,
-    write_page_index: bool = True,
+    write_page_index: bool,
+    use_pyarrow_metadata: bool,
     num_partitions: int = 5,
 ) -> None:
     """
@@ -67,17 +79,15 @@ def write_partitioned_parquet_dataset(
 
         # Write partition to parquet
         data_path = f"data_partition_{i}.parquet"
-        partition_file = data_dir / data_path
-        pq.write_table(partition_table, partition_file)
-
-        # Read the parquet metadata
-        parquet_metadata = pq.read_metadata(partition_file)
-
-        # Write parquet metadata to a separate file
         metadata_path = f"metadata_partition_{i}.parquet"
-        metadata_file = metadata_dir / metadata_path
-        with open(metadata_file, "wb") as f:
-            parquet_metadata.write_metadata_file(f)
+
+        partition_file = data_dir / data_path
+        pq.write_table(
+            partition_table,
+            partition_file,
+            write_page_index=write_page_index,
+            store_schema=False,
+        )
 
         files.append(
             {
@@ -88,7 +98,19 @@ def write_partitioned_parquet_dataset(
             }
         )
 
-    return files
+    dataset = Dataset(
+        files=files,
+        name="test_dataset",
+        data_store=f"file://{data_dir}",
+        metadata_store=f"file://{metadata_dir}",
+    )
+
+    if use_pyarrow_metadata:
+        write_pyarrow_metadata_files(files, data_dir, metadata_dir)
+    else:
+        dataset.sync_index()
+
+    return dataset, files
 
 
 @pytest.mark.parametrize(
@@ -97,17 +119,21 @@ def write_partitioned_parquet_dataset(
 )
 @pytest.mark.parametrize("num_partitions", [1, 5, 10])
 @pytest.mark.parametrize("with_offset_index", [True, False])
-def test_sync_scan(tmp_path, limit, offset, num_partitions, with_offset_index):
+@pytest.mark.parametrize("use_pyarrow_metadata", [True, False])
+def test_sync_scan(
+    tmp_path, limit, offset, num_partitions, with_offset_index, use_pyarrow_metadata
+):
     data_dir = tmp_path / "data"
     metadata_dir = tmp_path / "metadata"
 
     table = generate_sample_table(num_rows=1000)
-    files = write_partitioned_parquet_dataset(
+    dataset, _files = write_partitioned_parquet_dataset(
         table=table,
         data_dir=data_dir,
         metadata_dir=metadata_dir,
         num_partitions=num_partitions,
         write_page_index=with_offset_index,
+        use_pyarrow_metadata=use_pyarrow_metadata,
     )
 
     # Calculate expected number of files to be read
@@ -120,13 +146,6 @@ def test_sync_scan(tmp_path, limit, offset, num_partitions, with_offset_index):
         expected_files_to_read = min(
             end_partition - start_partition + 1, num_partitions
         )
-
-    dataset = Dataset(
-        files=files,
-        name="test_dataset",
-        data_store=f"file://{data_dir}",
-        metadata_store=f"file://{metadata_dir}",
-    )
 
     # Perform synchronous scan, the returned batches should match
     # the number of scanned files
