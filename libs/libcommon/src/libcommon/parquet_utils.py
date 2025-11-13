@@ -407,7 +407,7 @@ class RowsIndex:
         httpfs: HTTPFileSystem,
         parquet_metadata_directory: StrPath,
         max_arrow_data_in_memory: int,
-        max_scan_size: int,
+        max_scan_size: Optional[int] = None,
         hf_token: Optional[str] = None,
         data_store: Optional[str] = None,
         use_libviewer_for_datasets: bool | set[str] = True,
@@ -416,7 +416,7 @@ class RowsIndex:
         self.config = config
         self.split = split
         self.httpfs = httpfs
-        self.max_scan_size = max_scan_size
+        self.max_scan_size = max_scan_size if max_scan_size is not None else max_arrow_data_in_memory
         self.parquet_metadata_directory = Path(parquet_metadata_directory)
 
         if isinstance(use_libviewer_for_datasets, bool):

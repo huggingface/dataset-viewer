@@ -362,10 +362,8 @@ def rows_index_with_parquet_metadata(
                 split="train",
                 parquet_metadata_directory=parquet_metadata_directory,
                 httpfs=HTTPFileSystem(),
-                hf_token="token",
-                max_scan_size=9999999999,
                 max_arrow_data_in_memory=9999999999,
-                data_store=f"file://{ds_sharded_fs.local_root_dir}",
+                use_libviewer_for_datasets=False,
             )
 
 
@@ -395,9 +393,8 @@ def test_indexer_get_rows_index_with_parquet_metadata(
                 split="train",
                 parquet_metadata_directory=parquet_metadata_directory,
                 httpfs=HTTPFileSystem(),
-                hf_token="token",
-                max_scan_size=9999999999,
                 max_arrow_data_in_memory=9999999999,
+                use_libviewer_for_datasets=False,
             )
 
     assert isinstance(index.parquet_index, ParquetIndexWithMetadata)
@@ -426,9 +423,8 @@ def test_indexer_get_rows_index_sharded_with_parquet_metadata(
                 split="train",
                 parquet_metadata_directory=parquet_metadata_directory,
                 httpfs=HTTPFileSystem(),
-                hf_token="token",
-                max_scan_size=9999999999,
                 max_arrow_data_in_memory=9999999999,
+                use_libviewer_for_datasets=False,
             )
 
     assert isinstance(index.parquet_index, ParquetIndexWithMetadata)
@@ -466,8 +462,28 @@ def test_rows_index_query_with_parquet_metadata(
     with pytest.raises(IndexError):
         rows_index_with_parquet_metadata.query_parquet_index(offset=-1, length=2)
 
+
+def test_rows_index_query_with_parquet_metadata_libviewer(
+    ds_sharded: Dataset,
+    ds_sharded_fs: AbstractFileSystem,
+    dataset_sharded_with_config_parquet_metadata: dict[str, Any],
+    parquet_metadata_directory: StrPath,
+) -> None:
     # test the same with page pruning API
     import libviewer as lv  # type: ignore
+
+    rows_index_with_parquet_metadata = RowsIndex(
+        dataset="ds_sharded",
+        config="default",
+        split="train",
+        parquet_metadata_directory=parquet_metadata_directory,
+        httpfs=HTTPFileSystem(),
+        hf_token="token",
+        max_scan_size=9999999999,
+        max_arrow_data_in_memory=9999999999,
+        data_store=f"file://{ds_sharded_fs.local_root_dir}",
+        use_libviewer_for_datasets=True,
+    )
 
     assert isinstance(rows_index_with_parquet_metadata.viewer_index, lv.Dataset)
     result, _truncated_cols = rows_index_with_parquet_metadata.query_libviewer_index(offset=1, length=3)
@@ -498,14 +514,25 @@ def test_rows_index_query_with_too_big_rows(
                 split="train",
                 parquet_metadata_directory=parquet_metadata_directory,
                 httpfs=HTTPFileSystem(),
-                hf_token="token",
-                max_scan_size=1,
                 max_arrow_data_in_memory=1,
-                data_store=f"file://{ds_sharded_fs.local_root_dir}",
+                use_libviewer_for_datasets=False,
             )
 
     with pytest.raises(TooBigRows):
         index.query_parquet_index(offset=0, length=3)
+
+    index = RowsIndex(
+        dataset="ds_sharded",
+        config="default",
+        split="train",
+        parquet_metadata_directory=parquet_metadata_directory,
+        httpfs=HTTPFileSystem(),
+        hf_token="token",
+        max_scan_size=1,
+        max_arrow_data_in_memory=1,
+        data_store=f"file://{ds_sharded_fs.local_root_dir}",
+        use_libviewer_for_datasets=True,
+    )
 
     # test the same with page pruning API
     with pytest.raises(TooBigRows):
@@ -526,10 +553,8 @@ def test_rows_index_query_with_empty_dataset(
                 split="train",
                 parquet_metadata_directory=parquet_metadata_directory,
                 httpfs=HTTPFileSystem(),
-                hf_token="token",
-                max_scan_size=9999999999,
                 max_arrow_data_in_memory=9999999999,
-                data_store=f"file://{ds_empty_fs.local_root_dir}",
+                use_libviewer_for_datasets=False,
             )
 
     assert isinstance(index.parquet_index, ParquetIndexWithMetadata)
@@ -540,6 +565,19 @@ def test_rows_index_query_with_empty_dataset(
 
     # test the same with page pruning API
     import libviewer as lv
+
+    index = RowsIndex(
+        dataset="ds_empty",
+        config="default",
+        split="train",
+        parquet_metadata_directory=parquet_metadata_directory,
+        httpfs=HTTPFileSystem(),
+        hf_token="token",
+        max_scan_size=9999999999,
+        max_arrow_data_in_memory=9999999999,
+        data_store=f"file://{ds_empty_fs.local_root_dir}",
+        use_libviewer_for_datasets=True,
+    )
 
     assert isinstance(index.viewer_index, lv.Dataset)
     result, _ = index.query_libviewer_index(offset=0, length=1)
@@ -563,10 +601,8 @@ def test_indexer_schema_mistmatch_error(
                     split="train",
                     parquet_metadata_directory=parquet_metadata_directory,
                     httpfs=HTTPFileSystem(),
-                    hf_token="token",
-                    max_scan_size=9999999999,
                     max_arrow_data_in_memory=9999999999,
-                    data_store=f"file://{ds_sharded_fs.local_root_dir}",
+                    use_libviewer_for_datasets=False,
                 )
                 with pytest.raises(SchemaMismatchError):
                     index.query_parquet_index(offset=0, length=3)
