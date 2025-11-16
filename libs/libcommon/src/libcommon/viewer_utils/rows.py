@@ -107,12 +107,12 @@ def create_first_rows_response(
     Returns:
         `SplitFirstRowsResponse`: the response for the first rows of the split.
     """
+    truncated_columns_flag = False
     if features and len(features) > columns_max_number:
-        raise TooManyColumnsError(
-            f"The number of columns ({len(features)}) exceeds the maximum supported number of columns"
-            f" ({columns_max_number}). This is a current limitation of the datasets viewer. You can reduce the number"
-            " of columns if you want the viewer to work."
-        )
+        truncated_columns_flag = True
+        # Truncate to first N columns
+        limited_feature_names = list(features.keys())[:columns_max_number]
+        features = Features({name: features[name] for name in limited_feature_names})
 
     # validate size of response without the rows
     features_list = to_features_list(features=features)
@@ -188,7 +188,7 @@ def create_first_rows_response(
 
     response = response_features_only
     response["rows"] = row_items
-    response["truncated"] = (not rows_content.all_fetched) or truncated
+    response["truncated"] = (not rows_content.all_fetched) or truncated or truncated_columns_flag
 
     # return the response
     return response
