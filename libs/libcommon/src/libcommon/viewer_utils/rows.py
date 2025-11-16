@@ -107,12 +107,13 @@ def create_first_rows_response(
     Returns:
         `SplitFirstRowsResponse`: the response for the first rows of the split.
     """
-    truncated_columns_flag = False
+    columns_were_truncated = False
     if features and len(features) > columns_max_number:
-        truncated_columns_flag = True
-        # Truncate to first N columns
-        limited_feature_names = list(features.keys())[:columns_max_number]
-        features = Features({name: features[name] for name in limited_feature_names})
+        original_columns = list(features.keys())
+        kept_columns = original_columns[:columns_max_number]
+        features = Features({k: features[k] for k in kept_columns})
+        truncated_columns = original_columns[columns_max_number:]
+        columns_were_truncated = True
 
     # validate size of response without the rows
     features_list = to_features_list(features=features)
@@ -188,7 +189,14 @@ def create_first_rows_response(
 
     response = response_features_only
     response["rows"] = row_items
-    response["truncated"] = (not rows_content.all_fetched) or truncated or truncated_columns_flag
+    response["truncated"] = (
+        (not rows_content.all_fetched)
+        or truncated
+        or columns_were_truncated
+    )
+    
+    if columns_were_truncated:
+        response["truncated_columns"] = truncated_columns
 
     # return the response
     return response
