@@ -190,11 +190,14 @@ def compute_opt_in_out_urls_scan_response(
             full_scan=None,
         )
 
+    truncated = False
     if len(image_url_columns) > columns_max_number:
-        raise TooManyColumnsError(
-            f"The number of columns ({len(image_url_columns)}) exceeds the maximum supported number of columns to scan"
-            f" ({columns_max_number})."
+        logging.warning(
+            f"Too many columns ({len(image_url_columns)}) for opt-in/out scan. "
+            f"Truncating to first {columns_max_number} columns."
         )
+        image_url_columns = image_url_columns[:columns_max_number]
+        truncated = True
 
     # get the rows
     rows_content = get_rows_or_raise(
@@ -252,6 +255,7 @@ def compute_opt_in_out_urls_scan_response(
         num_scanned_rows=num_scanned_rows,
         has_urls_columns=True,
         full_scan=rows_content.all_fetched,
+        truncated_columns=truncated,
     )
 
 
