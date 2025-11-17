@@ -251,7 +251,7 @@ class CommitterConfig:
             )
 
 
-@dataclass
+@dataclass(frozen=True)
 class LibviewerConfig:
     enable_for_datasets: bool | set[str] = False
 

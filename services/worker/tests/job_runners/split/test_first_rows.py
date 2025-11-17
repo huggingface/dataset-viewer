@@ -20,6 +20,7 @@ from libcommon.simple_cache import upsert_response
 from libcommon.storage import StrPath
 from libcommon.storage_client import StorageClient
 from libcommon.utils import get_json_size
+from libcommon.config import LibviewerConfig
 
 from worker.config import AppConfig
 from worker.job_runners.split.first_rows import SplitFirstRowsJobRunner
@@ -293,7 +294,7 @@ def test_compute_from_parquet_libviewer(
 
     with (
         patch("libviewer.Dataset", new=LocalDataset),
-        patch("libcommon.constants.USE_LIBVIEWER_FOR_DATASETS", True),
+        patch("libcommon.parquet_utils.libviewer_config", LibviewerConfig(enable_for_datasets=True)),
     ):
         job_runner = get_job_runner(
             dataset,

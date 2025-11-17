@@ -16,6 +16,7 @@ from datasets.table import embed_table_storage
 from fsspec import AbstractFileSystem
 from fsspec.implementations.http import HTTPFileSystem
 
+from libcommon.config import LibviewerConfig
 from libcommon.parquet_utils import (
     ParquetIndexWithMetadata,
     RowsIndex,
@@ -371,10 +372,12 @@ def test_should_use_libviewer() -> None:
     # default is False
     assert should_use_libviewer("anything") is False
 
-    with patch("libcommon.parquet_utils.libviewer_config.enable_for_datasets", True):
+    with patch("libcommon.parquet_utils.libviewer_config", LibviewerConfig(enable_for_datasets=True)):
         assert should_use_libviewer("anything") is True
 
-    with patch("libcommon.parquet_utils.libviewer_config.enable_for_datasets", {"dataset1", "dataset2"}):
+    with patch(
+        "libcommon.parquet_utils.libviewer_config", LibviewerConfig(enable_for_datasets={"dataset1", "dataset2"})
+    ):
         assert should_use_libviewer("dataset1") is True
         assert should_use_libviewer("dataset2") is True
         assert should_use_libviewer("dataset3") is False
@@ -490,7 +493,7 @@ def test_rows_index_query_with_parquet_metadata_libviewer(
     # test the same with page pruning API
     import libviewer as lv  # type: ignore
 
-    with patch("libcommon.parquet_utils.libviewer_config.enable_for_datasets", True):
+    with patch("libcommon.parquet_utils.libviewer_config", LibviewerConfig(enable_for_datasets=True)):
         rows_index_with_parquet_metadata = RowsIndex(
             dataset="ds_sharded",
             config="default",
@@ -545,7 +548,7 @@ def test_rows_index_query_with_too_big_rows(
     with pytest.raises(TooBigRows):
         index.query_parquet_index(offset=0, length=3)
 
-    with patch("libcommon.parquet_utils.libviewer_config.enable_for_datasets", True):
+    with patch("libcommon.parquet_utils.libviewer_config", LibviewerConfig(enable_for_datasets=True)):
         index = RowsIndex(
             dataset="ds_sharded",
             config="default",
@@ -590,7 +593,7 @@ def test_rows_index_query_with_empty_dataset(
     # test the same with page pruning API
     import libviewer as lv
 
-    with patch("libcommon.parquet_utils.libviewer_config.enable_for_datasets", True):
+    with patch("libcommon.parquet_utils.libviewer_config", LibviewerConfig(enable_for_datasets=True)):
         index = RowsIndex(
             dataset="ds_empty",
             config="default",
