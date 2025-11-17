@@ -112,7 +112,6 @@ def create_first_rows_response(
         original_columns = list(features.keys())
         kept_columns = original_columns[:columns_max_number]
         features = Features({k: features[k] for k in kept_columns})
-        truncated_columns = original_columns[columns_max_number:]
         columns_were_truncated = True
 
     # validate size of response without the rows
@@ -195,8 +194,7 @@ def create_first_rows_response(
         or columns_were_truncated
     )
     
-    if columns_were_truncated:
-        response["truncated_columns"] = truncated_columns
+    response["truncated_columns"] = columns_were_truncated
 
     # return the response
     return response
