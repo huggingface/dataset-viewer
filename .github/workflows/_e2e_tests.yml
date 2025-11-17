@@ -4,6 +4,10 @@
 name: Launch end-to-end tests
 on:
   workflow_call:
+    inputs:
+      libviewer_enable:
+        required: false
+        type: string
 env:
   python-version: 3.12.11
   poetry-version: "2.1.4"
@@ -67,6 +71,8 @@ jobs:
           S3_REGION_NAME: "us-east-1"
           CLOUDFRONT_KEY_PAIR_ID: "K3814DK2QUJ71H"
           CLOUDFRONT_PRIVATE_KEY: ${{ secrets.CLOUDFRONT_PRIVATE_KEY }}
+          # configure when to use libviewer for querying parquet files
+          LIBVIEWER_ENABLE_FOR_DATASETS: ${{ inputs.libviewer_enable }}
         run: docker compose up -d --wait --wait-timeout 20
       - name: Install poetry
         run: pipx install poetry==${{ env.poetry-version }}
