@@ -497,7 +497,9 @@ class RowsIndex:
             metadata_dir=self.parquet_metadata_directory,
         )
 
-    def _init_viewer_index(self, hf_token: Optional[str], hf_endpoint: str, data_store: Optional[str]) -> None:
+    def _init_viewer_index(
+        self, hf_token: Optional[str], hf_endpoint: Optional[str], data_store: Optional[str]
+    ) -> None:
         logging.info(f"Create libviewer.Dataset for dataset={self.dataset}, config={self.config}, split={self.split}")
 
         # construct the required parquet_files list for libviewer.Dataset
