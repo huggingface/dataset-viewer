@@ -425,6 +425,7 @@ class RowsIndex:
         max_arrow_data_in_memory: int,
         max_scan_size: Optional[int] = None,
         hf_token: Optional[str] = None,
+        hf_endpoint: Optional[str] = None,
         data_store: Optional[str] = None,
     ):
         self.dataset = dataset
@@ -439,7 +440,7 @@ class RowsIndex:
         if self._use_libviewer:
             if not _has_libviewer:
                 raise ImportError("libviewer is not installed")
-            self._init_viewer_index(hf_token=hf_token, data_store=data_store)
+            self._init_viewer_index(hf_token=hf_token, hf_endpoint=hf_endpoint, data_store=data_store)
         else:
             self._init_parquet_index(httpfs=httpfs, max_arrow_data_in_memory=max_arrow_data_in_memory)
 

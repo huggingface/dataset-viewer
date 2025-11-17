@@ -62,6 +62,7 @@ def create_rows_endpoint(
             split=split,
             httpfs=httpfs,
             hf_token=hf_token,
+            hf_endpoint=hf_endpoint,
             max_scan_size=max_arrow_data_in_memory,
             max_arrow_data_in_memory=max_arrow_data_in_memory,
             parquet_metadata_directory=parquet_metadata_directory,
