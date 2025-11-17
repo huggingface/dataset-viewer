@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+
 CACHE_COLLECTION_RESPONSES = "cachedResponsesBlue"
 CACHE_MONGOENGINE_ALIAS = "cache"
 HF_DATASETS_CACHE_APPNAME = "hf_datasets_cache"
@@ -106,5 +107,3 @@ LONG_DURATION_PROMETHEUS_HISTOGRAM_BUCKETS = (
 )
 
 YAML_FIELDS_TO_CHECK = ["dataset_info", "configs", "viewer", "language"]
-
-USE_LIBVIEWER_FOR_DATASETS = False

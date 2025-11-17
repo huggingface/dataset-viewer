@@ -33,6 +33,8 @@ x-common-env: &common-env
   PROMETHEUS_MULTIPROC_DIR: ${PROMETHEUS_MULTIPROC_DIR}
   # datasets
   NUMBA_CACHE_DIR: ${NUMBA_CACHE_DIR}
+  # libviewer
+  LIBVIEWER_ENABLE_FOR_DATASETS: ${LIBVIEWER_ENABLE_FOR_DATASETS}
 
 x-service-env: &service-env
   <<: *common-env

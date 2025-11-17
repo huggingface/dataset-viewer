@@ -249,3 +249,21 @@ class CommitterConfig:
             return cls(
                 hf_token=env.str(name="HF_TOKEN", default=COMMITTER_HF_TOKEN),
             )
+
+
+@dataclass
+class LibviewerConfig:
+    enable_for_datasets: bool | set[str] = False
+
+    @classmethod
+    def from_env(cls) -> "LibviewerConfig":
+        env = Env(expand_vars=True)
+        with env.prefixed("LIBVIEWER_"):
+            enable_for_datasets_raw = env.str(name="ENABLE_FOR_DATASETS", default="")
+            if enable_for_datasets_raw == "1":
+                enable_for_datasets = True
+            elif enable_for_datasets_raw == "0":
+                enable_for_datasets = False
+            else:
+                enable_for_datasets = set(ds.strip() for ds in enable_for_datasets_raw.split(",") if ds.strip())
+            return cls(enable_for_datasets=enable_for_datasets)

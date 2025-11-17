@@ -371,10 +371,10 @@ def test_should_use_libviewer() -> None:
     # default is False
     assert should_use_libviewer("anything") is False
 
-    with patch("libcommon.constants.USE_LIBVIEWER_FOR_DATASETS", True):
+    with patch("libcommon.parquet_utils.libviewer_config.enable_for_datasets", True):
         assert should_use_libviewer("anything") is True
 
-    with patch("libcommon.constants.USE_LIBVIEWER_FOR_DATASETS", {"dataset1", "dataset2"}):
+    with patch("libcommon.parquet_utils.libviewer_config.enable_for_datasets", {"dataset1", "dataset2"}):
         assert should_use_libviewer("dataset1") is True
         assert should_use_libviewer("dataset2") is True
         assert should_use_libviewer("dataset3") is False
@@ -455,6 +455,7 @@ def test_rows_index_query_with_parquet_metadata(
     rows_index_with_parquet_metadata: RowsIndex, ds_sharded: Dataset
 ) -> None:
     assert isinstance(rows_index_with_parquet_metadata.parquet_index, ParquetIndexWithMetadata)
+    assert not hasattr(rows_index_with_parquet_metadata, "viewer_index")
     result, _ = rows_index_with_parquet_metadata.query_parquet_index(offset=1, length=3)
     assert result.to_pydict() == ds_sharded[1:4]
 
@@ -473,6 +474,12 @@ def test_rows_index_query_with_parquet_metadata(
     with pytest.raises(IndexError):
         rows_index_with_parquet_metadata.query_parquet_index(offset=-1, length=2)
 
+    # test that the other query() calls query_parquet_index() rather than query_libviewer_index()
+    result, _ = rows_index_with_parquet_metadata.query(offset=1, length=3)
+    assert result.to_pydict() == ds_sharded[1:4]
+    with pytest.raises(AttributeError):
+        rows_index_with_parquet_metadata.query_libviewer_index(offset=1, length=3)
+
 
 def test_rows_index_query_with_parquet_metadata_libviewer(
     ds_sharded: Dataset,
@@ -483,7 +490,7 @@ def test_rows_index_query_with_parquet_metadata_libviewer(
     # test the same with page pruning API
     import libviewer as lv  # type: ignore
 
-    with patch("libcommon.constants.USE_LIBVIEWER_FOR_DATASETS", True):
+    with patch("libcommon.parquet_utils.libviewer_config.enable_for_datasets", True):
         rows_index_with_parquet_metadata = RowsIndex(
             dataset="ds_sharded",
             config="default",
@@ -497,6 +504,7 @@ def test_rows_index_query_with_parquet_metadata_libviewer(
         )
 
     assert isinstance(rows_index_with_parquet_metadata.viewer_index, lv.Dataset)
+    assert not hasattr(rows_index_with_parquet_metadata, "parquet_index")
     result, _truncated_cols = rows_index_with_parquet_metadata.query_libviewer_index(offset=1, length=3)
     assert result.to_pydict() == ds_sharded[1:4]
     result, _truncated_cols = rows_index_with_parquet_metadata.query_libviewer_index(offset=1, length=0)
@@ -509,6 +517,12 @@ def test_rows_index_query_with_parquet_metadata_libviewer(
         rows_index_with_parquet_metadata.query_libviewer_index(offset=0, length=-1)
     with pytest.raises(IndexError):
         rows_index_with_parquet_metadata.query_libviewer_index(offset=-1, length=2)
+
+    # test that the other query() calls query_libviewer_index() rather than query_parquet_index()
+    result, _ = rows_index_with_parquet_metadata.query(offset=1, length=3)
+    assert result.to_pydict() == ds_sharded[1:4]
+    with pytest.raises(AttributeError):
+        rows_index_with_parquet_metadata.query_parquet_index(offset=1, length=3)
 
 
 def test_rows_index_query_with_too_big_rows(
@@ -531,7 +545,7 @@ def test_rows_index_query_with_too_big_rows(
     with pytest.raises(TooBigRows):
         index.query_parquet_index(offset=0, length=3)
 
-    with patch("libcommon.constants.USE_LIBVIEWER_FOR_DATASETS", True):
+    with patch("libcommon.parquet_utils.libviewer_config.enable_for_datasets", True):
         index = RowsIndex(
             dataset="ds_sharded",
             config="default",
@@ -567,6 +581,7 @@ def test_rows_index_query_with_empty_dataset(
             )
 
     assert isinstance(index.parquet_index, ParquetIndexWithMetadata)
+    assert not hasattr(index, "viewer_index")
     result, _ = index.query_parquet_index(offset=0, length=1)
     assert result.to_pydict() == ds_empty[:0]
     with pytest.raises(IndexError):
@@ -575,7 +590,7 @@ def test_rows_index_query_with_empty_dataset(
     # test the same with page pruning API
     import libviewer as lv
 
-    with patch("libcommon.constants.USE_LIBVIEWER_FOR_DATASETS", True):
+    with patch("libcommon.parquet_utils.libviewer_config.enable_for_datasets", True):
         index = RowsIndex(
             dataset="ds_empty",
             config="default",
@@ -589,6 +604,7 @@ def test_rows_index_query_with_empty_dataset(
         )
 
     assert isinstance(index.viewer_index, lv.Dataset)
+    assert not hasattr(index, "parquet_index")
     result, _ = index.query_libviewer_index(offset=0, length=1)
     assert result.to_pydict() == ds_empty[:0]
     with pytest.raises(IndexError):
