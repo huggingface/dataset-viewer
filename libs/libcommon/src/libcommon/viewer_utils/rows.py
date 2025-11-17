@@ -188,12 +188,7 @@ def create_first_rows_response(
 
     response = response_features_only
     response["rows"] = row_items
-    response["truncated"] = (
-        (not rows_content.all_fetched)
-        or truncated
-        or columns_were_truncated
-    )
-
+    response["truncated"] = (not rows_content.all_fetched) or truncated
     response["truncated_rows"] = (not rows_content.all_fetched) or truncated
     response["truncated_columns"] = columns_were_truncated
 
