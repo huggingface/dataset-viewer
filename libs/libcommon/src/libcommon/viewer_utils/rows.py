@@ -10,7 +10,6 @@ from libcommon.dtos import Row, RowsContent, SplitFirstRowsResponse
 from libcommon.exceptions import (
     RowsPostProcessingError,
     TooBigContentError,
-    TooManyColumnsError,
 )
 from libcommon.storage_client import StorageClient
 from libcommon.utils import get_json_size

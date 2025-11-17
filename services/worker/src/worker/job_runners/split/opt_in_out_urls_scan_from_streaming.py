@@ -16,7 +16,6 @@ from libcommon.exceptions import (
     InfoError,
     MissingSpawningTokenError,
     PreviousStepFormatError,
-    TooManyColumnsError,
 )
 from libcommon.simple_cache import get_previous_step_or_raise
 
