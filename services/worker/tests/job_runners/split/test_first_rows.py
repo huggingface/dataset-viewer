@@ -13,6 +13,7 @@ import pytest
 from datasets import Dataset
 from datasets.packaged_modules import csv
 from fsspec import AbstractFileSystem
+from libcommon.config import LibviewerConfig
 from libcommon.dtos import Priority
 from libcommon.exceptions import CustomError, TooLongColumnNameError
 from libcommon.resources import CacheMongoResource, QueueMongoResource
@@ -20,7 +21,6 @@ from libcommon.simple_cache import upsert_response
 from libcommon.storage import StrPath
 from libcommon.storage_client import StorageClient
 from libcommon.utils import get_json_size
-from libcommon.config import LibviewerConfig
 
 from worker.config import AppConfig
 from worker.job_runners.split.first_rows import SplitFirstRowsJobRunner
