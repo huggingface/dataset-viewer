@@ -114,9 +114,9 @@ def create_rows_endpoint(
                             storage_client=cached_assets_storage_client,
                             pa_table=pa_table,
                             offset=offset,
-                            features=rows_index.parquet_index.features,
-                            partial=rows_index.parquet_index.partial,
-                            num_rows_total=rows_index.parquet_index.num_rows_total,
+                            features=rows_index.features,
+                            partial=rows_index.partial,
+                            num_rows_total=rows_index.num_rows_total,
                             truncated_columns=truncated_columns,
                         )
                 except CachedArtifactNotFoundError:

@@ -210,7 +210,6 @@ class ParquetIndexWithMetadata:
             self.httpfs_session = self.httpfs._session
 
         self.file_offsets = np.cumsum([f["num_rows"] for f in self.files])
-        self.partial = parquet_export_is_partial(self.files[0]["url"])
 
     def query(self, offset: int, length: int) -> tuple[pa.Table, list[str]]:
         """Query the parquet files
@@ -466,8 +465,10 @@ class RowsIndex:
             raise EmptyParquetMetadataError("No parquet files found.")
         self.parquet_files = parquet_files
 
-        # calculate the total number of rows, required for the first_rows response
+        # calculate the total number of rows, required for the `first_rows` response
         self.num_rows_total = sum(f["num_rows"] for f in self.parquet_files)
+        # required for `rows` endpoint's response
+        self.partial = parquet_export_is_partial(self.parquet_files[0]["url"])
 
         # retrieve the features from the mongo response
         features = response["content"].get("features")

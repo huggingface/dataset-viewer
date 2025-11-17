@@ -413,10 +413,10 @@ def test_indexer_get_rows_index_with_parquet_metadata(
             )
 
     assert isinstance(index.parquet_index, ParquetIndexWithMetadata)
-    assert index.parquet_index.features == ds.features
+    assert index.features == ds.features
     assert index.parquet_index.files == dataset_with_config_parquet_metadata["parquet_files_metadata"]
     assert len(index.parquet_index.files) == 1
-    assert index.parquet_index.num_rows_total == 2
+    assert index.num_rows_total == 2
 
     for f in index.parquet_index.files:
         metadata_path = index.parquet_index.metadata_dir / f["parquet_metadata_subpath"]
@@ -447,7 +447,7 @@ def test_indexer_get_rows_index_sharded_with_parquet_metadata(
 
     num_rows = [f["num_rows"] for f in index.parquet_index.files]
     assert num_rows == [len(ds)] * 4
-    assert index.parquet_index.num_rows_total == 8
+    assert index.num_rows_total == 8
 
     for f in index.parquet_index.files:
         metadata_path = index.parquet_index.metadata_dir / f["parquet_metadata_subpath"]
