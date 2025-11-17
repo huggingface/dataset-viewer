@@ -175,7 +175,7 @@ def compute_parquet_metadata_response(
                 "url": item["url"],
                 "filename": item["filename"],
                 "size": item["size"],
-                "num_rows": res.num_rows,
+                "num_rows": res["num_rows"],
                 "parquet_metadata_subpath": f"{parquet_metadata_dir_subpath}/{item['filename']}",
             }
             for item, res in zip(parquet_file_items, result)
