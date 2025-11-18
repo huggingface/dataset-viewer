@@ -401,8 +401,8 @@ def test_compute_libviewer(
                     / parquet_file_metadata_item["parquet_metadata_subpath"]
                 )
                 metadata = pq.read_metadata(metadata_path)
-                data = get_dummy_parquet_buffer(write_page_index=write_page_index)
-                expected_metadata = pq.ParquetFile(data).metadata
+                data_buffer = get_dummy_parquet_buffer(write_page_index=write_page_index)
+                expected_metadata = pq.ParquetFile(data_buffer).metadata
                 assert metadata.num_columns == expected_metadata.num_columns
                 assert metadata.num_rows == expected_metadata.num_rows
                 assert metadata.schema == expected_metadata.schema
