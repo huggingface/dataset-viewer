@@ -199,9 +199,7 @@ class ParquetIndexWithMetadata:
     httpfs: HTTPFileSystem
     max_arrow_data_in_memory: int
     metadata_dir: Path
-
     file_offsets: np.ndarray = field(init=False)
-    partial: bool = field(init=False)
 
     def __post_init__(self) -> None:
         if self.httpfs._session is None:
