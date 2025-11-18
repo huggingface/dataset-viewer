@@ -34,7 +34,7 @@ x-common-env: &common-env
   # datasets
   NUMBA_CACHE_DIR: ${NUMBA_CACHE_DIR}
   # libviewer
-  # LIBVIEWER_ENABLE_FOR_DATASETS: ${LIBVIEWER_ENABLE_FOR_DATASETS}
+  LIBVIEWER_ENABLE_FOR_DATASETS: ${LIBVIEWER_ENABLE_FOR_DATASETS}
 
 x-service-env: &service-env
   <<: *common-env
@@ -132,7 +132,6 @@ services:
       API_UVICORN_HOSTNAME: 0.0.0.0 # required for docker compose
       API_UVICORN_NUM_WORKERS: ${ROWS_UVICORN_NUM_WORKERS}
       API_UVICORN_PORT: ${ROWS_UVICORN_PORT}
-      LIBVIEWER_ENABLE_FOR_DATASETS: ${LIBVIEWER_ENABLE_FOR_DATASETS}
     ports:
       # for debug
       - ${ROWS_UVICORN_PORT}:${ROWS_UVICORN_PORT}
