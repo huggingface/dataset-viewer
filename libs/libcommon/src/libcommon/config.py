@@ -259,7 +259,7 @@ class LibviewerConfig:
     def from_env(cls) -> "LibviewerConfig":
         env = Env(expand_vars=True)
         with env.prefixed("LIBVIEWER_"):
-            enable_for_datasets_raw = env.str(name="ENABLE_FOR_DATASETS", default="")
+            enable_for_datasets_raw = env.str(name="ENABLE_FOR_DATASETS", default="0")
             if enable_for_datasets_raw == "1":
                 return cls(enable_for_datasets=True)
             elif enable_for_datasets_raw == "0":
