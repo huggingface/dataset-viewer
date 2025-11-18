@@ -142,7 +142,7 @@ impl PyDataset {
 #[pyo3(name = "_internal")]
 fn dv(m: &Bound<'_, PyModule>) -> PyResult<()> {
     // Bridge the Rust log crate with the Python logging module
-    pyo3_log::init();
+    // pyo3_log::init();
 
     m.add_class::<PyDataset>()?;
     m.add("PyDatasetError", m.py().get_type::<PyDatasetError>())?;
