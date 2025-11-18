@@ -38,7 +38,9 @@ jobs:
     with:
       working-directory: e2e
   e2e-tests:
+    # execute it after libviewer tests
     uses: ./.github/workflows/_e2e_tests.yml
+    needs: e2e-tests-libviewer
     secrets: inherit
     with:
       libviewer_enable: "0"
