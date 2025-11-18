@@ -34,7 +34,7 @@ x-common-env: &common-env
   # datasets
   NUMBA_CACHE_DIR: ${NUMBA_CACHE_DIR}
   # libviewer
-  LIBVIEWER_ENABLE_FOR_DATASETS: ${LIBVIEWER_ENABLE_FOR_DATASETS}
+  # LIBVIEWER_ENABLE_FOR_DATASETS: ${LIBVIEWER_ENABLE_FOR_DATASETS}
 
 x-service-env: &service-env
   <<: *common-env
