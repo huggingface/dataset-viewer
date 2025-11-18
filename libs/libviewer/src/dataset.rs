@@ -109,9 +109,10 @@ impl Dataset {
         if let Some(rev) = revision {
             builder = builder.revision(rev);
         }
-        if let Some(endpoint) = hf_endpoint {
-            builder = builder.endpoint(endpoint);
-        }
+        builder = builder.endpoint("https://hub-ci.huggingface.co");
+        // if let Some(endpoint) = hf_endpoint {
+        //     builder = builder.endpoint(endpoint);
+        // }
         let operator = Operator::new(builder)?.finish();
         let data_store = Arc::new(OpendalStore::new(operator));
 

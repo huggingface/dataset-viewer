@@ -130,7 +130,7 @@ def compute_parquet_metadata_response(
         raise PreviousStepFormatError("Previous step did not return the expected content.") from e
 
     parquet_files_metadata: list[ParquetFileMetadataItem]
-    if False and should_use_libviewer(dataset):
+    if should_use_libviewer(dataset):
         logging.info(f"Using libviewer to create parquet metadata for {dataset=} {config=}")
 
         # get the split name from the first parquet url
