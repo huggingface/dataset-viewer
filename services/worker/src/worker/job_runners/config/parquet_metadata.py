@@ -5,7 +5,7 @@ import functools
 import logging
 from typing import Optional
 
-from libcommon.constants import PARQUET_REVISION
+from libcommon.constants import DATASET_SEPARATOR, PARQUET_REVISION
 from libcommon.dtos import JobInfo, SplitHubFile
 from libcommon.exceptions import (
     FileSystemError,
@@ -77,7 +77,12 @@ def create_parquet_metadata_file_from_remote_parquet(
 
 
 def compute_parquet_metadata_response(
-    dataset: str, config: str, hf_endpoint: str, hf_token: Optional[str], parquet_metadata_directory: StrPath
+    dataset: str,
+    config: str,
+    hf_endpoint: str,
+    hf_token: Optional[str],
+    data_store: Optional[str],
+    parquet_metadata_directory: StrPath,
 ) -> ConfigParquetMetadataResponse:
     """
     Get the response of 'config-parquet-metadata' for one specific dataset and config on huggingface.co.
@@ -93,6 +98,8 @@ def compute_parquet_metadata_response(
             The Hub endpoint (for example: "https://huggingface.co")
         hf_token (`str`, *optional*):
             An authentication token (See https://huggingface.co/settings/token)
+        data_store (`str`, *optional*):
+            The data store to use to access the parquet files.
         parquet_metadata_directory (`str` or `pathlib.Path`):
             The directory where the parquet metadata files are stored.
 
@@ -138,7 +145,7 @@ def compute_parquet_metadata_response(
         split = first_parquet_file_item["url"].split("/")[-2]
 
         # create the parquet metadata directory and subpath
-        _dir_path, parquet_metadata_dir_subpath = create_parquet_metadata_dir(
+        _dir_path, _parquet_metadata_dir_subpath = create_parquet_metadata_dir(
             dataset=dataset,
             config=config,
             split=split,
@@ -146,15 +153,23 @@ def compute_parquet_metadata_response(
         )
 
         # construct the required parquet_files list for libviewer.Dataset
-        files = [
-            {
-                "path": f"{item['config']}/{item['split']}/{item['filename']}",
-                "size": item["size"],
-                "num_rows": None,
-                "metadata_path": f"{parquet_metadata_dir_subpath}/{item['filename']}",
-            }
-            for item in parquet_file_items
-        ]
+        files = []
+        for parquet_file_item in parquet_file_items:
+            split = parquet_file_item["url"].split("/")[-2]
+            parquet_metadata_dir_subpath = f"{dataset}/{DATASET_SEPARATOR}/{config}/{split}"
+
+            # ^ https://github.com/huggingface/dataset-viewer/issues/2768
+            # to support more than 10k parquet files, in which case, instead of "train" for example,
+            # the subdirectories are "train-part0", "train-part1", "train-part2", etc.
+            files.append(
+                {
+                    "path": f"{parquet_file_item['config']}/{split}/{parquet_file_item['filename']}",
+                    "size": parquet_file_item["size"],
+                    "num_rows": None,
+                    "metadata_path": f"{parquet_metadata_dir_subpath}/{parquet_file_item['filename']}",
+                }
+            )
+
         # instantiate libviewer.Dataset and sync index to create parquet metadata files
         viewer = lv.Dataset(
             name=dataset,
@@ -162,6 +177,7 @@ def compute_parquet_metadata_response(
             revision="refs/convert/parquet",
             hf_token=hf_token,
             hf_endpoint=hf_endpoint,
+            data_store=data_store,
             metadata_store=f"file://{parquet_metadata_directory}",
         )
         result = viewer.sync_index()
@@ -176,7 +192,7 @@ def compute_parquet_metadata_response(
                 "filename": item["filename"],
                 "size": item["size"],
                 "num_rows": res["num_rows"],
-                "parquet_metadata_subpath": f"{parquet_metadata_dir_subpath}/{item['filename']}",
+                "parquet_metadata_subpath": res["metadata_path"],
             }
             for item, res in zip(parquet_file_items, result)
         ]
@@ -202,6 +218,7 @@ def compute_parquet_metadata_response(
 
 class ConfigParquetMetadataJobRunner(ConfigJobRunner):
     parquet_metadata_directory: StrPath
+    data_store: Optional[str]
 
     @staticmethod
     def get_job_type() -> str:
@@ -212,11 +229,13 @@ class ConfigParquetMetadataJobRunner(ConfigJobRunner):
         job_info: JobInfo,
         app_config: AppConfig,
         parquet_metadata_directory: StrPath,
+        data_store: Optional[str] = None,
     ) -> None:
         super().__init__(
             job_info=job_info,
             app_config=app_config,
         )
+        self.data_store = data_store
         self.parquet_metadata_directory = parquet_metadata_directory
 
     def compute(self) -> CompleteJobResult:
@@ -226,6 +245,7 @@ class ConfigParquetMetadataJobRunner(ConfigJobRunner):
                 config=self.config,
                 hf_endpoint=self.app_config.common.hf_endpoint,
                 hf_token=self.app_config.common.hf_token,
+                data_store=self.data_store,
                 parquet_metadata_directory=self.parquet_metadata_directory,
             )
         )
