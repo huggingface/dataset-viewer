@@ -586,4 +586,5 @@ class RowsIndex:
         table = pa.Table.from_batches(batches, schema=self.features.arrow_schema)
 
         # FIXME(kszucs): binary truncation is implemented but disabled for now
+        # since we can't iterate on small batches in sync_scan() and truncate batches per batches yet
         return truncate_binary_columns(table, max_binary_length=-1, features=self.features)
