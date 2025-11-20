@@ -9,6 +9,7 @@ on:
       - main
     paths:
       - "libs/libcommon/**"
+      - "libs/libviewer/**"
       - ".github/workflows/l-libcommon.yml"
       - ".github/workflows/_quality-python.yml"
       - ".github/workflows/_unit-tests-python.yml"
@@ -16,17 +17,25 @@ on:
   pull_request:
     paths:
       - "libs/libcommon/**"
+      - "libs/libviewer/**"
       - ".github/workflows/l-libcommon.yml"
       - ".github/workflows/_quality-python.yml"
       - ".github/workflows/_unit-tests-python.yml"
       - "tools/docker-compose-mongo.yml"
 jobs:
-  quality:
+  quality-libcommon:
     uses: ./.github/workflows/_quality-python.yml
     with:
       working-directory: libs/libcommon
-  unit-tests:
+  unit-tests-libcommon:
     uses: ./.github/workflows/_unit-tests-python.yml
     with:
       working-directory: libs/libcommon
+      poetry-args: "--with libviewer"
+    secrets: inherit
+  unit-tests-libviewer:
+    uses: ./.github/workflows/_unit-tests-python.yml
+    with:
+      working-directory: libs/libviewer
+      poetry-args: "--with dev"
     secrets: inherit

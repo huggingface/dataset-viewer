@@ -17,12 +17,12 @@ from tqdm.contrib.concurrent import thread_map
 matplotlib.use("SVG")
 
 DEV = os.environ.get("DEV", False)
-HF_ENDPOINT = os.environ.get("HF_ENDPOINT", "https://huggingface.co")
+HF_ENDPOINT = os.environ.get("HF_ENDPOINT", "https://hub-ci.huggingface.co" if DEV else "https://huggingface.co")
 PROD_DV_ENDPOINT = os.environ.get(
     "PROD_DV_ENDPOINT", "https://datasets-server.huggingface.co"
 )
 DEV_DV_ENDPOINT = os.environ.get("DEV_DV_ENDPOINT", "http://localhost:8100")
-ADMIN_HF_ORGANIZATION = os.environ.get("ADMIN_HF_ORGANIZATION", "huggingface")
+ADMIN_HF_ORGANIZATION = os.environ.get("ADMIN_HF_ORGANIZATION", "valid_org" if DEV else "datasets-maintainers")
 HF_TOKEN = os.environ.get("HF_TOKEN")
 
 DV_ENDPOINT = DEV_DV_ENDPOINT if DEV else PROD_DV_ENDPOINT
@@ -686,11 +686,11 @@ with gr.Blocks() as demo:
         if not token:
             return {auth_error: gr.Markdown(value="", visible=False)}
         try:
-            user = hfh.whoami(token=token)
+            user = hfh.HfApi(endpoint=HF_ENDPOINT).whoami(token=token)
         except requests.HTTPError as err:
             return {auth_error: gr.Markdown(value=f"❌ Error ({err})", visible=True)}
-        orgs = [org["name"] for org in user["orgs"]]
-        if ADMIN_HF_ORGANIZATION in orgs:
+        orgs = [org["name"] for org in user.get("orgs", [])]
+        if ADMIN_HF_ORGANIZATION is None or ADMIN_HF_ORGANIZATION in orgs:
             return {
                 auth_page: gr.Row(visible=False),
                 welcome_title: gr.Markdown(value=f"### Welcome {user['name']}"),

@@ -8,6 +8,10 @@ on:
       working-directory:
         required: true
         type: string
+      poetry-args:
+        required: false
+        type: string
+        default: ""
 env:
   # required to get access to use a cached poetry venv in "/home/runner/.cache/pypoetry/virtualenvs"
   POETRY_VIRTUALENVS_IN_PROJECT: false
@@ -40,7 +44,7 @@ jobs:
         # "poetry env use" is required: https://github.com/actions/setup-python/issues/374#issuecomment-1088938718
         run: |
           poetry env use "${{ env.python-version }}"
-          poetry install
+          poetry install ${{ inputs.poetry-args }}
       - name: Launch mongo
         env:
           MONGO_PORT: ${{ env.mongo-port }}

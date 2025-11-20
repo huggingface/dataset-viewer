@@ -42,6 +42,8 @@ def compute_first_rows_from_parquet_response(
     rows_min_number: int,
     columns_max_number: int,
     httpfs: HTTPFileSystem,
+    hf_token: Optional[str],
+    hf_endpoint: str,
     max_arrow_data_in_memory: int,
     parquet_metadata_directory: StrPath,
 ) -> SplitFirstRowsResponse:
@@ -71,6 +73,10 @@ def compute_first_rows_from_parquet_response(
             The maximum number of columns supported.
         httpfs (`HTTPFileSystem`):
             An HTTP filesystem to access the parquet files.
+        hf_token (`str`, *optional*):
+            An authentication token (See https://huggingface.co/settings/token)
+        hf_endpoint (`str`):
+            The Hub endpoint (for example: "https://huggingface.co")
         parquet_metadata_directory (`StrPath`):
             The local directory where the parquet metadata are stored.
         max_arrow_data_in_memory (`int`):
@@ -96,13 +102,16 @@ def compute_first_rows_from_parquet_response(
             config=config,
             split=split,
             httpfs=httpfs,
+            hf_token=hf_token,
+            hf_endpoint=hf_endpoint,
+            max_scan_size=max_arrow_data_in_memory,
             max_arrow_data_in_memory=max_arrow_data_in_memory,
             parquet_metadata_directory=parquet_metadata_directory,
         )
     except EmptyParquetMetadataError:
         raise ParquetResponseEmptyError("No parquet files found.")
 
-    features = rows_index.parquet_index.features
+    features = rows_index.features
 
     # get the rows
     def get_rows_content(rows_max_number: int) -> RowsContent:
@@ -111,7 +120,7 @@ def compute_first_rows_from_parquet_response(
             pa_table, truncated_columns = rows_index.query(offset=0, length=rows_max_number)
             return RowsContent(
                 rows=pa_table.to_pylist(),
-                all_fetched=rows_index.parquet_index.num_rows_total <= rows_max_number,
+                all_fetched=rows_index.num_rows_total <= rows_max_number,
                 truncated_columns=truncated_columns,
             )
         except TooBigRows as err:
@@ -319,6 +328,8 @@ class SplitFirstRowsJobRunner(SplitJobRunnerWithDatasetsCache):
                     rows_max_number=MAX_NUM_ROWS_PER_PAGE,
                     columns_max_number=self.first_rows_config.columns_max_number,
                     httpfs=self.httpfs,
+                    hf_token=self.app_config.common.hf_token,
+                    hf_endpoint=self.app_config.common.hf_endpoint,
                     max_arrow_data_in_memory=self.app_config.rows_index.max_arrow_data_in_memory,
                     parquet_metadata_directory=self.parquet_metadata_directory,
                 )

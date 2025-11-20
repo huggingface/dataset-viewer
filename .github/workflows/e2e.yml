@@ -40,3 +40,10 @@ jobs:
   e2e-tests:
     uses: ./.github/workflows/_e2e_tests.yml
     secrets: inherit
+    with:
+      libviewer_enable: "0"
+  e2e-tests-libviewer:
+    uses: ./.github/workflows/_e2e_tests.yml
+    secrets: inherit
+    with:
+      libviewer_enable: "1"

@@ -61,6 +61,9 @@ def create_rows_endpoint(
             config=config,
             split=split,
             httpfs=httpfs,
+            hf_token=hf_token,
+            hf_endpoint=hf_endpoint,
+            max_scan_size=max_arrow_data_in_memory,
             max_arrow_data_in_memory=max_arrow_data_in_memory,
             parquet_metadata_directory=parquet_metadata_directory,
         )
@@ -112,9 +115,9 @@ def create_rows_endpoint(
                             storage_client=cached_assets_storage_client,
                             pa_table=pa_table,
                             offset=offset,
-                            features=rows_index.parquet_index.features,
-                            partial=rows_index.parquet_index.partial,
-                            num_rows_total=rows_index.parquet_index.num_rows_total,
+                            features=rows_index.features,
+                            partial=rows_index.partial,
+                            num_rows_total=rows_index.num_rows_total,
                             truncated_columns=truncated_columns,
                         )
                 except CachedArtifactNotFoundError:
