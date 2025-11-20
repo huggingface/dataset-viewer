@@ -3,7 +3,6 @@ use std::sync::Arc;
 use arrow::array::RecordBatch;
 use futures::future;
 use futures::TryStreamExt;
-use indicatif::{ProgressBar, ProgressStyle};
 use log;
 use object_store::prefix::PrefixStore;
 use object_store::ObjectStore;
@@ -211,29 +210,18 @@ impl Dataset {
     pub async fn index(&self, files: Option<&[IndexedFile]>) -> Result<Vec<IndexedFile>> {
         let files_to_index = files.unwrap_or(&self.files);
 
-        let progress = ProgressBar::new(files_to_index.len() as u64);
-        progress.set_style(
-            ProgressStyle::default_bar()
-                .template("[{elapsed_precise}] {bar:40.cyan/blue} {pos}/{len} {msg}")
-                .unwrap()
-                .progress_chars("##-"),
-        );
-
         let futures = files_to_index
             .iter()
             .map(|file| {
                 let data_store = self.data_store.clone();
                 let metadata_store = self.metadata_store.clone();
                 let file = file.clone();
-                let progress = progress.clone();
 
                 async move {
                     log::info!("Indexing file: {:?}", file.path);
                     let metadata = read_metadata(data_store, file.path.as_ref(), None).await?;
                     let num_rows = metadata.file_metadata().num_rows() as u64;
                     write_metadata(metadata, metadata_store, file.metadata_path.as_ref()).await?;
-                    progress.inc(1);
-                    progress.set_message(format!("{}", file.path));
 
                     // return the indexed file with updated num_rows
                     let mut indexed_file = file.clone();
@@ -244,7 +232,11 @@ impl Dataset {
             .collect::<Vec<_>>();
 
         let indexed_files = future::try_join_all(futures).await?;
-        progress.finish_with_message("Indexing complete");
+        log::info!(
+            "Indexing completed for dataset {} with {} files",
+            self.name,
+            indexed_files.len()
+        );
 
         Ok(indexed_files)
     }
