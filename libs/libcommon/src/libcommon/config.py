@@ -251,7 +251,7 @@ class CommitterConfig:
             )
 
 
-LIBVIEWER_ENABLE_FOR_DATASETS = "lhoestq/libviewer-0,lhoestq/libviewer-1,lhoestq/libviewer-2,kszucs/libviewer-1,kszucs/libviewer-2,kszucs/libviewer-3"
+LIBVIEWER_ENABLE_FOR_DATASETS = "lhoestq/libviewer-0,lhoestq/libviewer-1,moondream/refcoco-m,nvidia/OpenMathReasoning,incredible45/Gutenberg-BookCorpus-Cleaned-Data-English,Major-TOM/Core-AlphaEarth-Embeddings,nvidia/OpenCodeReasoning-2"
 
 
 def _enable_for_datasets_factory() -> Union[set[str], bool]:
