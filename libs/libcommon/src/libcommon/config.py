@@ -256,7 +256,11 @@ LIBVIEWER_ENABLE_FOR_DATASETS = "lhoestq/libviewer-0,lhoestq/libviewer-1,lhoestq
 
 @dataclass(frozen=True)
 class LibviewerConfig:
-    enable_for_datasets: Union[set[str], bool] = LIBVIEWER_ENABLE_FOR_DATASETS
+    enable_for_datasets: Union[set[str], bool] = (
+        set(ds.strip() for ds in LIBVIEWER_ENABLE_FOR_DATASETS.split(",") if ds.strip())
+        if isinstance(LIBVIEWER_ENABLE_FOR_DATASETS, str)
+        else LIBVIEWER_ENABLE_FOR_DATASETS
+    )
 
     @classmethod
     def from_env(cls) -> "LibviewerConfig":
