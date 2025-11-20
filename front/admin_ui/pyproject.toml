@@ -13,6 +13,12 @@ matplotlib = "^3.7.0"
 pygraphviz = "~1.10"
 requests = "^2.32.2"
 
+[tool.poetry.group.libviewer]
+optional = true
+
+[tool.poetry.group.libviewer.dependencies]
+libviewer = { path = "../../libs/libviewer", develop = true }
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"

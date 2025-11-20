@@ -10,6 +10,12 @@ python = "3.12.11"
 environs = "^14.3.0"
 libcommon = {path = "../../libs/libcommon", develop = true}
 
+[tool.poetry.group.libviewer]
+optional = true
+
+[tool.poetry.group.libviewer.dependencies]
+libviewer = { path = "../../libs/libviewer", develop = true }
+
 [tool.poetry.group.dev.dependencies]
 bandit = "^1.7.4"
 mypy = "^1.10.0"
