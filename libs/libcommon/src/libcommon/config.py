@@ -254,13 +254,17 @@ class CommitterConfig:
 LIBVIEWER_ENABLE_FOR_DATASETS = "lhoestq/libviewer-0,lhoestq/libviewer-1,lhoestq/libviewer-2,kszucs/libviewer-1,kszucs/libviewer-2,kszucs/libviewer-3"
 
 
-@dataclass(frozen=True)
-class LibviewerConfig:
-    enable_for_datasets: Union[set[str], bool] = (
+def _enable_for_datasets_factory() -> Union[set[str], bool]:
+    return (
         set(ds.strip() for ds in LIBVIEWER_ENABLE_FOR_DATASETS.split(",") if ds.strip())
         if isinstance(LIBVIEWER_ENABLE_FOR_DATASETS, str)
         else LIBVIEWER_ENABLE_FOR_DATASETS
     )
+
+
+@dataclass(frozen=True)
+class LibviewerConfig:
+    enable_for_datasets: Union[set[str], bool] = field(default_factory=_enable_for_datasets_factory)
 
     @classmethod
     def from_env(cls) -> "LibviewerConfig":
