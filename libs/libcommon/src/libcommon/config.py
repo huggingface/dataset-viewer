@@ -251,6 +251,9 @@ class CommitterConfig:
             )
 
 
+LIBVIEWER_ENABLE_FOR_DATASETS = "lhoestq/libviewer-0,lhoestq/libviewer-1,lhoestq/libviewer-2,kszucs/libviewer-1,kszucs/libviewer-2,kszucs/libviewer-3"
+
+
 @dataclass(frozen=True)
 class LibviewerConfig:
     enable_for_datasets: Union[set[str], bool] = False
@@ -259,7 +262,7 @@ class LibviewerConfig:
     def from_env(cls) -> "LibviewerConfig":
         env = Env(expand_vars=True)
         with env.prefixed("LIBVIEWER_"):
-            enable_for_datasets_raw = env.str(name="ENABLE_FOR_DATASETS", default="0")
+            enable_for_datasets_raw = env.str(name="ENABLE_FOR_DATASETS", default=LIBVIEWER_ENABLE_FOR_DATASETS)
             if enable_for_datasets_raw == "1":
                 return cls(enable_for_datasets=True)
             elif enable_for_datasets_raw == "0":
