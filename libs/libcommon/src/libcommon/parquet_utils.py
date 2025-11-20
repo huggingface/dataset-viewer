@@ -6,6 +6,7 @@ from dataclasses import dataclass, field
 from functools import lru_cache
 from pathlib import Path
 from typing import Optional, TypedDict
+from urllib.parse import unquote
 
 import numpy as np
 import pyarrow as pa
@@ -501,20 +502,22 @@ class RowsIndex:
         logging.info(f"Create libviewer.Dataset for dataset={self.dataset}, config={self.config}, split={self.split}")
 
         # construct the required parquet_files list for libviewer.Dataset
+
         files = [
             {
-                "path": f"{f['config']}/{f['split']}/{f['filename']}",
+                "path": f["url"].split("/resolve/", 1)[1].split("/", 1)[1],
                 "size": f["size"],
                 "num_rows": f["num_rows"],
                 "metadata_path": f["parquet_metadata_subpath"],
             }
             for f in self.parquet_files
         ]
+        revision = unquote(self.parquet_files[0]["url"].split("/resolve/", 1)[1].split("/", 1)[0])
 
         self.viewer_index = lv.Dataset(
             name=self.dataset,
             files=files,
-            revision="refs/convert/parquet",
+            revision=revision,
             hf_token=hf_token,
             hf_endpoint=hf_endpoint,
             data_store=data_store,
