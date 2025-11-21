@@ -20,25 +20,16 @@ jobs:
     name: Build and push docker images to public Docker Hub
     strategy:
       matrix:
-        include:
-          - directory: jobs
-            project: mongodb_migration
-          - directory: jobs
-            project: cache_maintenance
-          - directory: services
-            project: admin
-          - directory: services
-            project: api
-          - directory: services
-            project: rows
-          - directory: services
-            project: search
-          - directory: services
-            project: sse-api
-          - directory: services
-            project: worker
-          - directory: services
-            project: webhook
+        project:
+          - mongodb_migration
+          - cache_maintenance
+          - admin
+          - api
+          - rows
+          - search
+          - sse-api
+          - worker
+          - webhook
     runs-on: "ubuntu-latest"
     steps:
       - name: Checkout repository
@@ -57,7 +48,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.repository-prefix }}${{ matrix.directory }}-${{ matrix.project }}
+          images: ${{ env.repository-prefix }}-${{ matrix.project }}
           tags: |
             type=raw,value=sha-${{ steps.vars.outputs.sha_short }}
       - name: Build and push Docker image
@@ -71,8 +62,8 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           # see https://github.com/docker/build-push-action/blob/master/docs/advanced/cache.md#registry-cache
-          cache-from: type=registry,ref=${{ env.repository-prefix }}${{ matrix.directory }}-${{ matrix.project }}:buildcache
-          cache-to: type=registry,ref=${{ env.repository-prefix }}${{ matrix.directory }}-${{ matrix.project }}:buildcache,mode=max
+          cache-from: type=registry,ref=${{ env.repository-prefix }}-${{ matrix.project }}:buildcache
+          cache-to: type=registry,ref=${{ env.repository-prefix }}-${{ matrix.project }}:buildcache,mode=max
 
   code-quality-helm:
     runs-on: ubuntu-latest
