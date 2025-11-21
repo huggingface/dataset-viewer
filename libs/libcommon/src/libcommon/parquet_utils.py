@@ -583,9 +583,12 @@ class RowsIndex:
             else:
                 raise
 
-        table = pa.concat_tables(
-            [cast_table_to_schema(pa.Table.from_batches([batch]), self.features.arrow_schema) for batch in batches]
-        )
+        if len(batches) > 0:
+            table = pa.concat_tables(
+                [cast_table_to_schema(pa.Table.from_batches([batch]), self.features.arrow_schema) for batch in batches]
+            )
+        else:
+            table = pa.Table.from_batches([], schema=self.features.arrow_schema)
 
         # FIXME(kszucs): binary truncation is implemented but disabled for now
         # since we can't iterate on small batches in sync_scan() and truncate batches per batches yet
