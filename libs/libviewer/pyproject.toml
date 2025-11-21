@@ -9,6 +9,7 @@ license = "Apache-2.0"
 python = "3.12.11"
 click = "8.1.8"
 pyarrow = "15.0.2"
+anyio = ">=3.4.0,<5"
 huggingface-hub = {version = "^0.31.0", extras = ["hf-transfer"]}
 
 [tool.poetry.group.dev.dependencies]
