@@ -133,3 +133,5 @@ class SplitFirstRowsResponse(FullSplitItem):
     features: list[FeatureItem]
     rows: list[RowItem]
     truncated: bool
+    truncated_rows: bool
+    truncated_columns: bool
