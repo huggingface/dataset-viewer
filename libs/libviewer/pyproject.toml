@@ -6,9 +6,10 @@ version = "0.1.0"
 license = "Apache-2.0"
 
 [tool.poetry.dependencies]
+anyio = ">=3.4.0,<5"
 python = "3.12.11"
 click = "8.1.8"
-pyarrow = "15.0.2"
+pyarrow = "^21.0.0"
 huggingface-hub = {version = "^0.31.0", extras = ["hf-transfer"]}
 
 [tool.poetry.group.dev.dependencies]
@@ -30,11 +31,6 @@ classifiers = [
     "Programming Language :: Python :: Implementation :: PyPy",
 ]
 dynamic = ["version"]
-dependencies = [
-    "click",
-    "pyarrow",
-    "huggingface_hub"
-]
 
 [project.scripts]
 dv = "libviewer.cli:cli"

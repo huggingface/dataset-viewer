@@ -34,7 +34,10 @@ from libcommon.storage import StrPath
 REVISION_NAME = "revision"
 CACHED_ASSETS_FOLDER = "cached-assets"
 
-pytestmark = pytest.mark.anyio
+
+@pytest.fixture
+def anyio_backend() -> str:
+    return "asyncio"
 
 
 @pytest.fixture(autouse=True)
@@ -454,37 +457,39 @@ def test_indexer_get_rows_index_sharded_with_parquet_metadata(
         assert metadata_path.exists()
 
 
-def test_rows_index_query_with_parquet_metadata(
+@pytest.mark.anyio
+async def test_rows_index_query_with_parquet_metadata(
     rows_index_with_parquet_metadata: RowsIndex, ds_sharded: Dataset
 ) -> None:
     assert isinstance(rows_index_with_parquet_metadata.parquet_index, ParquetIndexWithMetadata)
     assert not hasattr(rows_index_with_parquet_metadata, "viewer_index")
-    result, _ = rows_index_with_parquet_metadata.query_parquet_index(offset=1, length=3)
+    result, _ = await rows_index_with_parquet_metadata.query_parquet_index(offset=1, length=3)
     assert result.to_pydict() == ds_sharded[1:4]
 
-    result, _ = rows_index_with_parquet_metadata.query_parquet_index(offset=1, length=-1)
+    result, _ = await rows_index_with_parquet_metadata.query_parquet_index(offset=1, length=-1)
     assert result.to_pydict() == ds_sharded[:0]
 
-    result, _ = rows_index_with_parquet_metadata.query_parquet_index(offset=1, length=0)
+    result, _ = await rows_index_with_parquet_metadata.query_parquet_index(offset=1, length=0)
     assert result.to_pydict() == ds_sharded[:0]
 
-    result, _ = rows_index_with_parquet_metadata.query_parquet_index(offset=999999, length=1)
+    result, _ = await rows_index_with_parquet_metadata.query_parquet_index(offset=999999, length=1)
     assert result.to_pydict() == ds_sharded[:0]
 
-    result, _ = rows_index_with_parquet_metadata.query_parquet_index(offset=1, length=99999999)
+    result, _ = await rows_index_with_parquet_metadata.query_parquet_index(offset=1, length=99999999)
     assert result.to_pydict() == ds_sharded[1:]
 
     with pytest.raises(IndexError):
-        rows_index_with_parquet_metadata.query_parquet_index(offset=-1, length=2)
+        await rows_index_with_parquet_metadata.query_parquet_index(offset=-1, length=2)
 
     # test that the other query() calls query_parquet_index() rather than query_libviewer_index()
-    result, _ = rows_index_with_parquet_metadata.query(offset=1, length=3)
+    result, _ = await rows_index_with_parquet_metadata.query(offset=1, length=3)
     assert result.to_pydict() == ds_sharded[1:4]
     with pytest.raises(AttributeError):
-        rows_index_with_parquet_metadata.query_libviewer_index(offset=1, length=3)
+        await rows_index_with_parquet_metadata.query_libviewer_index(offset=1, length=3)
 
 
-def test_rows_index_query_with_parquet_metadata_libviewer(
+@pytest.mark.anyio
+async def test_rows_index_query_with_parquet_metadata_libviewer(
     ds_sharded: Dataset,
     ds_sharded_fs: AbstractFileSystem,
     dataset_sharded_with_config_parquet_metadata: dict[str, Any],
@@ -508,27 +513,28 @@ def test_rows_index_query_with_parquet_metadata_libviewer(
 
     assert isinstance(rows_index_with_parquet_metadata.viewer_index, lv.Dataset)
     assert not hasattr(rows_index_with_parquet_metadata, "parquet_index")
-    result, _truncated_cols = rows_index_with_parquet_metadata.query_libviewer_index(offset=1, length=3)
+    result, _truncated_cols = await rows_index_with_parquet_metadata.query_libviewer_index(offset=1, length=3)
     assert result.to_pydict() == ds_sharded[1:4]
-    result, _truncated_cols = rows_index_with_parquet_metadata.query_libviewer_index(offset=1, length=0)
+    result, _truncated_cols = await rows_index_with_parquet_metadata.query_libviewer_index(offset=1, length=0)
     assert result.to_pydict() == ds_sharded[:0]
-    result, _truncated_cols = rows_index_with_parquet_metadata.query_libviewer_index(offset=999999, length=1)
+    result, _truncated_cols = await rows_index_with_parquet_metadata.query_libviewer_index(offset=999999, length=1)
     assert result.to_pydict() == ds_sharded[:0]
-    result, _truncated_cols = rows_index_with_parquet_metadata.query_libviewer_index(offset=1, length=99999999)
+    result, _truncated_cols = await rows_index_with_parquet_metadata.query_libviewer_index(offset=1, length=99999999)
     assert result.to_pydict() == ds_sharded[1:]
     with pytest.raises(IndexError):
-        rows_index_with_parquet_metadata.query_libviewer_index(offset=0, length=-1)
+        await rows_index_with_parquet_metadata.query_libviewer_index(offset=0, length=-1)
     with pytest.raises(IndexError):
-        rows_index_with_parquet_metadata.query_libviewer_index(offset=-1, length=2)
+        await rows_index_with_parquet_metadata.query_libviewer_index(offset=-1, length=2)
 
     # test that the other query() calls query_libviewer_index() rather than query_parquet_index()
-    result, _ = rows_index_with_parquet_metadata.query(offset=1, length=3)
+    result, _ = await rows_index_with_parquet_metadata.query(offset=1, length=3)
     assert result.to_pydict() == ds_sharded[1:4]
     with pytest.raises(AttributeError):
-        rows_index_with_parquet_metadata.query_parquet_index(offset=1, length=3)
+        await rows_index_with_parquet_metadata.query_parquet_index(offset=1, length=3)
 
 
-def test_rows_index_query_with_too_big_rows(
+@pytest.mark.anyio
+async def test_rows_index_query_with_too_big_rows(
     parquet_metadata_directory: StrPath,
     ds_sharded: Dataset,
     ds_sharded_fs: AbstractFileSystem,
@@ -546,7 +552,7 @@ def test_rows_index_query_with_too_big_rows(
             )
 
     with pytest.raises(TooBigRows):
-        index.query_parquet_index(offset=0, length=3)
+        await index.query_parquet_index(offset=0, length=3)
 
     with patch("libcommon.parquet_utils.libviewer_config", LibviewerConfig(enable_for_datasets=True)):
         index = RowsIndex(
@@ -563,10 +569,11 @@ def test_rows_index_query_with_too_big_rows(
 
     # test the same with page pruning API
     with pytest.raises(TooBigRows):
-        index.query_libviewer_index(offset=0, length=2)
+        await index.query_libviewer_index(offset=0, length=2)
 
 
-def test_rows_index_query_with_empty_dataset(
+@pytest.mark.anyio
+async def test_rows_index_query_with_empty_dataset(
     ds_empty: Dataset,
     ds_empty_fs: AbstractFileSystem,
     dataset_empty_with_config_parquet_metadata: dict[str, Any],
@@ -585,10 +592,10 @@ def test_rows_index_query_with_empty_dataset(
 
     assert isinstance(index.parquet_index, ParquetIndexWithMetadata)
     assert not hasattr(index, "viewer_index")
-    result, _ = index.query_parquet_index(offset=0, length=1)
+    result, _ = await index.query_parquet_index(offset=0, length=1)
     assert result.to_pydict() == ds_empty[:0]
     with pytest.raises(IndexError):
-        index.query_parquet_index(offset=-1, length=2)
+        await index.query_parquet_index(offset=-1, length=2)
 
     # test the same with page pruning API
     import libviewer as lv
@@ -608,13 +615,14 @@ def test_rows_index_query_with_empty_dataset(
 
     assert isinstance(index.viewer_index, lv.Dataset)
     assert not hasattr(index, "parquet_index")
-    result, _ = index.query_libviewer_index(offset=0, length=1)
+    result, _ = await index.query_libviewer_index(offset=0, length=1)
     assert result.to_pydict() == ds_empty[:0]
     with pytest.raises(IndexError):
-        index.query_libviewer_index(offset=-1, length=2)
+        await index.query_libviewer_index(offset=-1, length=2)
 
 
-def test_indexer_schema_mistmatch_error(
+@pytest.mark.anyio
+async def test_indexer_schema_mistmatch_error(
     ds_sharded_fs: AbstractFileSystem,
     ds_sharded_fs_with_different_schema: AbstractFileSystem,
     dataset_sharded_with_config_parquet_metadata: dict[str, Any],
@@ -632,7 +640,7 @@ def test_indexer_schema_mistmatch_error(
                     max_arrow_data_in_memory=9999999999,
                 )
                 with pytest.raises(SchemaMismatchError):
-                    index.query_parquet_index(offset=0, length=3)
+                    await index.query_parquet_index(offset=0, length=3)
 
 
 @pytest.mark.parametrize(

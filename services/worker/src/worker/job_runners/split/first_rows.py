@@ -2,10 +2,12 @@
 # Copyright 2022 The HuggingFace Authors.
 
 
+import functools
 import logging
 from pathlib import Path
 from typing import Optional
 
+import anyio
 from datasets import IterableDataset, get_dataset_config_info, load_dataset
 from fsspec.implementations.http import HTTPFileSystem
 from libcommon.constants import MAX_NUM_ROWS_PER_PAGE
@@ -117,7 +119,8 @@ def compute_first_rows_from_parquet_response(
     def get_rows_content(rows_max_number: int) -> RowsContent:
         try:
             # Some datasets have very long binary data that we truncate
-            pa_table, truncated_columns = rows_index.query(offset=0, length=rows_max_number)
+            queryfn = functools.partial(rows_index.query, offset=0, length=rows_max_number)
+            pa_table, truncated_columns = anyio.run(queryfn)
             return RowsContent(
                 rows=pa_table.to_pylist(),
                 all_fetched=rows_index.num_rows_total <= rows_max_number,
