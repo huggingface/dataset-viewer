@@ -34,7 +34,10 @@ from libcommon.storage import StrPath
 REVISION_NAME = "revision"
 CACHED_ASSETS_FOLDER = "cached-assets"
 
-pytestmark = pytest.mark.anyio
+
+@pytest.fixture
+def anyio_backend() -> str:
+    return "asyncio"
 
 
 @pytest.fixture(autouse=True)
@@ -454,7 +457,7 @@ def test_indexer_get_rows_index_sharded_with_parquet_metadata(
         assert metadata_path.exists()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_rows_index_query_with_parquet_metadata(
     rows_index_with_parquet_metadata: RowsIndex, ds_sharded: Dataset
 ) -> None:
@@ -485,7 +488,7 @@ async def test_rows_index_query_with_parquet_metadata(
         await rows_index_with_parquet_metadata.query_libviewer_index(offset=1, length=3)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_rows_index_query_with_parquet_metadata_libviewer(
     ds_sharded: Dataset,
     ds_sharded_fs: AbstractFileSystem,
@@ -530,7 +533,7 @@ async def test_rows_index_query_with_parquet_metadata_libviewer(
         await rows_index_with_parquet_metadata.query_parquet_index(offset=1, length=3)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_rows_index_query_with_too_big_rows(
     parquet_metadata_directory: StrPath,
     ds_sharded: Dataset,
@@ -569,7 +572,7 @@ async def test_rows_index_query_with_too_big_rows(
         await index.query_libviewer_index(offset=0, length=2)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_rows_index_query_with_empty_dataset(
     ds_empty: Dataset,
     ds_empty_fs: AbstractFileSystem,
@@ -618,7 +621,7 @@ async def test_rows_index_query_with_empty_dataset(
         await index.query_libviewer_index(offset=-1, length=2)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_indexer_schema_mistmatch_error(
     ds_sharded_fs: AbstractFileSystem,
     ds_sharded_fs_with_different_schema: AbstractFileSystem,
