@@ -3,11 +3,12 @@ import logging
 import os
 from collections.abc import Iterable
 from dataclasses import dataclass, field
-from functools import lru_cache
+from functools import lru_cache, partial
 from pathlib import Path
 from typing import Optional, TypedDict
 from urllib.parse import unquote
 
+import anyio
 import numpy as np
 import pyarrow as pa
 import pyarrow.compute as pc
@@ -526,7 +527,7 @@ class RowsIndex:
 
     # note that this cache size is global for the class, not per instance
     @lru_cache(maxsize=1)
-    def query(self, offset: int, length: int) -> tuple[pa.Table, list[str]]:
+    async def query(self, offset: int, length: int) -> tuple[pa.Table, list[str]]:
         """Query the parquet files
 
         Note that this implementation will always read at least one row group, to get the list of columns and always
@@ -541,11 +542,11 @@ class RowsIndex:
             `list[str]`: List of truncated columns.
         """
         if self._use_libviewer:
-            return self.query_libviewer_index(offset=offset, length=length)
+            return await self.query_libviewer_index(offset=offset, length=length)
         else:
-            return self.query_parquet_index(offset=offset, length=length)
+            return await self.query_parquet_index(offset=offset, length=length)
 
-    def query_parquet_index(self, offset: int, length: int) -> tuple[pa.Table, list[str]]:
+    async def query_parquet_index(self, offset: int, length: int) -> tuple[pa.Table, list[str]]:
         """Query the parquet files using ParquetIndexWithMetadata.
 
         This is the old implementation without libviewer doing row-group pruning using pyarrow.
@@ -554,9 +555,11 @@ class RowsIndex:
             f"Query {type(self.parquet_index).__name__} for dataset={self.dataset}, config={self.config},"
             f" split={self.split}, offset={offset}, length={length}"
         )
-        return self.parquet_index.query(offset=offset, length=length)
+        # run_sync doesn't support keyword arguments, so use partial
+        queryfn = partial(self.parquet_index.query, offset=offset, length=length)
+        return await anyio.to_thread.run_sync(queryfn)
 
-    def query_libviewer_index(self, offset: int, length: int) -> tuple[pa.Table, list[str]]:
+    async def query_libviewer_index(self, offset: int, length: int) -> tuple[pa.Table, list[str]]:
         """Query the parquet files using libviewer.
 
         This is the new implementation using libviewer doing row-group and page pruning.
@@ -574,7 +577,7 @@ class RowsIndex:
             raise IndexError("Length must be non-negative")
 
         try:
-            batches, _files_to_index = self.viewer_index.sync_scan(
+            batches, _files_to_index = await self.viewer_index.scan(
                 offset=offset, limit=length, scan_size_limit=self.max_scan_size
             )
         except lv.DatasetError as e:

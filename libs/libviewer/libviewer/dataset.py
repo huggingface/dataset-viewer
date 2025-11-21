@@ -1,5 +1,7 @@
 import os
+import functools
 
+import anyio
 from huggingface_hub import hf_hub_download, list_repo_files
 
 from ._internal import PyDataset, PyDatasetError as DatasetError  # noqa: F401
@@ -101,3 +103,15 @@ class Dataset(PyDataset):
             data_store="file://",
             metadata_store=metadata_store,
         )
+
+    def sync_scan(
+        self, limit=None, offset=None, scan_size_limit=1 * 1024 * 1024 * 1024
+    ):
+        fn = functools.partial(
+            self.scan, limit=limit, offset=offset, scan_size_limit=scan_size_limit
+        )
+        return anyio.run(fn)
+
+    def sync_index(self, files=None):
+        fn = functools.partial(self.index, files=files)
+        return anyio.run(fn)
