@@ -4,6 +4,7 @@
 
 import logging
 from dataclasses import dataclass, field
+from functools import partial
 from typing import Literal, Optional, TypeGuard, Union
 
 from environs import Env
@@ -251,30 +252,28 @@ class CommitterConfig:
             )
 
 
-LIBVIEWER_ENABLE_FOR_DATASETS = "moondream/refcoco-m,nvidia/OpenMathReasoning,incredible45/Gutenberg-BookCorpus-Cleaned-Data-English,Major-TOM/Core-AlphaEarth-Embeddings,nvidia/OpenCodeReasoning-2,Caoza/PhysX-Mobility,hammh0a/AraLingBench,uv-scripts/sam3,llm-jp/AnswerCarefully,HuggingFaceM4/FineVision,Trendyol/Trendyol-Cybersecurity-Instruction-Tuning-Dataset,nick007x/arxiv-papers,HuggingFaceFW/finewiki,rl-research/dr-tulu-rl-data,jnsungp/unitree-g1-robocasa-pick-apple-bowl-depth-1k,HuggingFaceFW/fineweb-2,nvidia/OpenMathReasoning,neulab/agent-data-collection,karpathy/fineweb-edu-100b-shuffle,zhihefang/UltraHR-100K,meituan-longcat/AMO-Bench,TeichAI/claude-sonnet-4.5-high-reasoning-250x,encord-team/E-MM1-100M,HuggingFaceFW/finepdfs-edu,atlasia/MoulSot-100,ILSVRC/imagenet-1k,bigcode/the-stack,MMMU/MMMU,linxy/LaTeX_OCR,fbougares/TEDxTN,nvidia/Llama-Nemotron-Post-Training-Dataset,twinkle-ai/Formosa-Vision,allenai/dolma3_dolmino_pool,allenai/dolma3_longmino_pool,allenai/Dolci-Think-DPO-7B"
+LIBVIEWER_ENABLE_FOR_DATASETS: str = "1"
 
 
-def _enable_for_datasets_factory() -> Union[set[str], bool]:
-    return (
-        set(ds.strip() for ds in LIBVIEWER_ENABLE_FOR_DATASETS.split(",") if ds.strip())
-        if isinstance(LIBVIEWER_ENABLE_FOR_DATASETS, str)
-        else LIBVIEWER_ENABLE_FOR_DATASETS
-    )
+def _enable_for_datasets_factory(enable_for_datasets_raw: str) -> Union[set[str], bool]:
+    if enable_for_datasets_raw == "1":
+        return True
+    elif enable_for_datasets_raw == "0":
+        return False
+    else:
+        return set(ds.strip() for ds in enable_for_datasets_raw.split(",") if ds.strip())
 
 
 @dataclass(frozen=True)
 class LibviewerConfig:
-    enable_for_datasets: Union[set[str], bool] = field(default_factory=_enable_for_datasets_factory)
+    enable_for_datasets: Union[set[str], bool] = field(
+        default_factory=partial(_enable_for_datasets_factory, LIBVIEWER_ENABLE_FOR_DATASETS)
+    )
 
     @classmethod
     def from_env(cls) -> "LibviewerConfig":
         env = Env(expand_vars=True)
         with env.prefixed("LIBVIEWER_"):
             enable_for_datasets_raw = env.str(name="ENABLE_FOR_DATASETS", default=LIBVIEWER_ENABLE_FOR_DATASETS)
-            if enable_for_datasets_raw == "1":
-                return cls(enable_for_datasets=True)
-            elif enable_for_datasets_raw == "0":
-                return cls(enable_for_datasets=False)
-            else:
-                datasets = set(ds.strip() for ds in enable_for_datasets_raw.split(",") if ds.strip())
-                return cls(enable_for_datasets=datasets)
+            enable_for_datasets = _enable_for_datasets_factory(enable_for_datasets_raw)
+            return cls(enable_for_datasets=enable_for_datasets)

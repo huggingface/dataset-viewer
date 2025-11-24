@@ -104,7 +104,8 @@ module = [
     "requests.*",
     "dateutil.*",
     "torchcodec.*",
-    "duckdb.*"
+    "duckdb.*",
+    "libviewer.*"
 ]
 ignore_missing_imports = true
 
