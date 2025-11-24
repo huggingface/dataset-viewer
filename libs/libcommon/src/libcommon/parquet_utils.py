@@ -3,7 +3,7 @@ import logging
 import os
 from collections.abc import Iterable
 from dataclasses import dataclass, field
-from functools import lru_cache, partial
+from functools import partial
 from pathlib import Path
 from typing import Optional, TypedDict
 from urllib.parse import unquote
@@ -13,6 +13,7 @@ import numpy as np
 import pyarrow as pa
 import pyarrow.compute as pc
 import pyarrow.parquet as pq
+from async_lru import alru_cache
 from datasets import Features, Value
 from datasets.table import cast_table_to_schema
 from datasets.utils.py_utils import size_str
@@ -526,7 +527,7 @@ class RowsIndex:
         )
 
     # note that this cache size is global for the class, not per instance
-    @lru_cache(maxsize=1)
+    @alru_cache(maxsize=1)
     async def query(self, offset: int, length: int) -> tuple[pa.Table, list[str]]:
         """Query the parquet files
 
