@@ -372,11 +372,11 @@ def rows_index_with_parquet_metadata(
 
 
 def test_should_use_libviewer() -> None:
-    # default is False
-    assert should_use_libviewer("anything") is False
+    # default is True
+    assert should_use_libviewer("anything") is True
 
-    with patch("libcommon.parquet_utils.libviewer_config", LibviewerConfig(enable_for_datasets=True)):
-        assert should_use_libviewer("anything") is True
+    with patch("libcommon.parquet_utils.libviewer_config", LibviewerConfig(enable_for_datasets=False)):
+        assert should_use_libviewer("anything") is False
 
     with patch(
         "libcommon.parquet_utils.libviewer_config", LibviewerConfig(enable_for_datasets={"dataset1", "dataset2"})
