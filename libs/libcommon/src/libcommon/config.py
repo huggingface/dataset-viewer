@@ -251,7 +251,7 @@ class CommitterConfig:
             )
 
 
-LIBVIEWER_ENABLE_FOR_DATASETS = "lhoestq/libviewer-0,lhoestq/libviewer-1,moondream/refcoco-m,nvidia/OpenMathReasoning,incredible45/Gutenberg-BookCorpus-Cleaned-Data-English,Major-TOM/Core-AlphaEarth-Embeddings,nvidia/OpenCodeReasoning-2"
+LIBVIEWER_ENABLE_FOR_DATASETS = "moondream/refcoco-m,nvidia/OpenMathReasoning,incredible45/Gutenberg-BookCorpus-Cleaned-Data-English,Major-TOM/Core-AlphaEarth-Embeddings,nvidia/OpenCodeReasoning-2,Caoza/PhysX-Mobility,hammh0a/AraLingBench,uv-scripts/sam3,llm-jp/AnswerCarefully,HuggingFaceM4/FineVision,Trendyol/Trendyol-Cybersecurity-Instruction-Tuning-Dataset,nick007x/arxiv-papers,HuggingFaceFW/finewiki,rl-research/dr-tulu-rl-data,jnsungp/unitree-g1-robocasa-pick-apple-bowl-depth-1k,HuggingFaceFW/fineweb-2,nvidia/OpenMathReasoning,neulab/agent-data-collection,karpathy/fineweb-edu-100b-shuffle,zhihefang/UltraHR-100K,meituan-longcat/AMO-Bench,TeichAI/claude-sonnet-4.5-high-reasoning-250x,encord-team/E-MM1-100M,HuggingFaceFW/finepdfs-edu,atlasia/MoulSot-100,ILSVRC/imagenet-1k,bigcode/the-stack,MMMU/MMMU,linxy/LaTeX_OCR,fbougares/TEDxTN,nvidia/Llama-Nemotron-Post-Training-Dataset,twinkle-ai/Formosa-Vision,allenai/dolma3_dolmino_pool,allenai/dolma3_longmino_pool,allenai/Dolci-Think-DPO-7B"
 
 
 def _enable_for_datasets_factory() -> Union[set[str], bool]:
