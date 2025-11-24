@@ -27,7 +27,7 @@ from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.storage import StrPath
 
 try:
-    import libviewer as lv  # type: ignore
+    import libviewer as lv
 
     _has_libviewer = True
 except ImportError:

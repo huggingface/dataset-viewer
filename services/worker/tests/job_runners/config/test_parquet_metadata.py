@@ -267,55 +267,57 @@ def test_compute(
         content={"config_names": [{"dataset": dataset, "config": config}]},
         http_status=HTTPStatus.OK,
     )
-    job_runner = ConfigParquetMetadataJobRunner(
-        job_info={
-            "type": ConfigParquetMetadataJobRunner.get_job_type(),
-            "params": {
-                "dataset": dataset,
-                "revision": REVISION_NAME,
-                "config": config,
-                "split": None,
-            },
-            "job_id": "job_id",
-            "priority": Priority.NORMAL,
-            "difficulty": 50,
-            "started_at": None,
-        },
-        app_config=app_config,
-        parquet_metadata_directory=parquet_metadata_directory,
-    )
-    job_runner.pre_compute()
 
-    if should_raise:
-        with pytest.raises(Exception) as e:
-            job_runner.compute()
-        assert e.type.__name__ == expected_error_code
-    else:
-        with patch("worker.utils.hf_hub_open_file") as mock_OpenFile:
-            # create a new buffer within each test run since the file is closed under the hood in .compute()
-            mock_OpenFile.return_value = get_dummy_parquet_buffer()
-            content = job_runner.compute().content
-            assert content == expected_content
-            assert mock_OpenFile.call_count == len(upstream_content["parquet_files"])
-            for parquet_file_item in upstream_content["parquet_files"]:
-                split_directory = extract_split_directory_from_parquet_url(parquet_file_item["url"])
-                path = hffs_parquet_url(dataset, config, split_directory, parquet_file_item["filename"])
-                mock_OpenFile.assert_any_call(
-                    file_url=path,
-                    hf_endpoint=app_config.common.hf_endpoint,
-                    hf_token=app_config.common.hf_token,
-                    revision=PARQUET_REVISION,
+    with patch("libcommon.parquet_utils.libviewer_config", LibviewerConfig(enable_for_datasets=False)):
+        job_runner = ConfigParquetMetadataJobRunner(
+            job_info={
+                "type": ConfigParquetMetadataJobRunner.get_job_type(),
+                "params": {
+                    "dataset": dataset,
+                    "revision": REVISION_NAME,
+                    "config": config,
+                    "split": None,
+                },
+                "job_id": "job_id",
+                "priority": Priority.NORMAL,
+                "difficulty": 50,
+                "started_at": None,
+            },
+            app_config=app_config,
+            parquet_metadata_directory=parquet_metadata_directory,
+        )
+        job_runner.pre_compute()
+
+        if should_raise:
+            with pytest.raises(Exception) as e:
+                job_runner.compute()
+            assert e.type.__name__ == expected_error_code
+        else:
+            with patch("worker.utils.hf_hub_open_file") as mock_OpenFile:
+                # create a new buffer within each test run since the file is closed under the hood in .compute()
+                mock_OpenFile.return_value = get_dummy_parquet_buffer()
+                content = job_runner.compute().content
+                assert content == expected_content
+                assert mock_OpenFile.call_count == len(upstream_content["parquet_files"])
+                for parquet_file_item in upstream_content["parquet_files"]:
+                    split_directory = extract_split_directory_from_parquet_url(parquet_file_item["url"])
+                    path = hffs_parquet_url(dataset, config, split_directory, parquet_file_item["filename"])
+                    mock_OpenFile.assert_any_call(
+                        file_url=path,
+                        hf_endpoint=app_config.common.hf_endpoint,
+                        hf_token=app_config.common.hf_token,
+                        revision=PARQUET_REVISION,
+                    )
+            assert content["parquet_files_metadata"]
+            for parquet_file_metadata_item in content["parquet_files_metadata"]:
+                assert (
+                    pq.read_metadata(
+                        Path(job_runner.parquet_metadata_directory)
+                        / parquet_file_metadata_item["parquet_metadata_subpath"]
+                    )
+                    == pq.ParquetFile(get_dummy_parquet_buffer()).metadata
                 )
-        assert content["parquet_files_metadata"]
-        for parquet_file_metadata_item in content["parquet_files_metadata"]:
-            assert (
-                pq.read_metadata(
-                    Path(job_runner.parquet_metadata_directory)
-                    / parquet_file_metadata_item["parquet_metadata_subpath"]
-                )
-                == pq.ParquetFile(get_dummy_parquet_buffer()).metadata
-            )
-    job_runner.post_compute()
+        job_runner.post_compute()
 
 
 @pytest.mark.parametrize(
@@ -365,52 +367,50 @@ def test_compute_libviewer(
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_bytes(data)
 
-    with patch("libcommon.parquet_utils.libviewer_config", LibviewerConfig(enable_for_datasets=True)):
-        job_runner = ConfigParquetMetadataJobRunner(
-            job_info={
-                "type": ConfigParquetMetadataJobRunner.get_job_type(),
-                "params": {
-                    "dataset": dataset,
-                    "revision": REVISION_NAME,
-                    "config": config,
-                    "split": None,
-                },
-                "job_id": "job_id",
-                "priority": Priority.NORMAL,
-                "difficulty": 50,
-                "started_at": None,
+    job_runner = ConfigParquetMetadataJobRunner(
+        job_info={
+            "type": ConfigParquetMetadataJobRunner.get_job_type(),
+            "params": {
+                "dataset": dataset,
+                "revision": REVISION_NAME,
+                "config": config,
+                "split": None,
             },
-            app_config=app_config,
-            data_store=f"file://{data_store}",
-            parquet_metadata_directory=parquet_metadata_directory,
-        )
-        job_runner.pre_compute()
+            "job_id": "job_id",
+            "priority": Priority.NORMAL,
+            "difficulty": 50,
+            "started_at": None,
+        },
+        app_config=app_config,
+        data_store=f"file://{data_store}",
+        parquet_metadata_directory=parquet_metadata_directory,
+    )
+    job_runner.pre_compute()
 
-        if should_raise:
-            with pytest.raises(Exception) as e:
-                job_runner.compute()
-            assert e.type.__name__ == expected_error_code
-        else:
-            content = job_runner.compute().content
-            assert content == expected_content
+    if should_raise:
+        with pytest.raises(Exception) as e:
+            job_runner.compute()
+        assert e.type.__name__ == expected_error_code
+    else:
+        content = job_runner.compute().content
+        assert content == expected_content
 
-            assert content["parquet_files_metadata"]
-            for parquet_file_metadata_item in content["parquet_files_metadata"]:
-                metadata_path = (
-                    Path(job_runner.parquet_metadata_directory)
-                    / parquet_file_metadata_item["parquet_metadata_subpath"]
-                )
-                metadata = pq.read_metadata(metadata_path)
-                data_buffer = get_dummy_parquet_buffer(write_page_index=write_page_index)
-                expected_metadata = pq.ParquetFile(data_buffer).metadata
-                assert metadata.num_columns == expected_metadata.num_columns
-                assert metadata.num_rows == expected_metadata.num_rows
-                assert metadata.schema == expected_metadata.schema
-                assert metadata.num_row_groups == expected_metadata.num_row_groups
-                # metadata written by libviewer has different serialized_size
-                assert metadata.serialized_size != expected_metadata.serialized_size
+        assert content["parquet_files_metadata"]
+        for parquet_file_metadata_item in content["parquet_files_metadata"]:
+            metadata_path = (
+                Path(job_runner.parquet_metadata_directory) / parquet_file_metadata_item["parquet_metadata_subpath"]
+            )
+            metadata = pq.read_metadata(metadata_path)
+            data_buffer = get_dummy_parquet_buffer(write_page_index=write_page_index)
+            expected_metadata = pq.ParquetFile(data_buffer).metadata
+            assert metadata.num_columns == expected_metadata.num_columns
+            assert metadata.num_rows == expected_metadata.num_rows
+            assert metadata.schema == expected_metadata.schema
+            assert metadata.num_row_groups == expected_metadata.num_row_groups
+            # metadata written by libviewer has different serialized_size
+            assert metadata.serialized_size != expected_metadata.serialized_size
 
-        job_runner.post_compute()
+    job_runner.post_compute()
 
 
 class AuthenticatedHTTPFile(HTTPFile):  # type: ignore

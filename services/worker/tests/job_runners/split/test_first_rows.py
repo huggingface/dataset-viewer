@@ -164,6 +164,7 @@ def test_compute_from_parquet(
         patch("libcommon.parquet_utils.HTTPFile", return_value=parquet_file) as mock_http_file,
         patch("pyarrow.parquet.read_metadata", return_value=parquet_metadata) as mock_read_metadata,
         patch("pyarrow.parquet.read_schema", return_value=ds.data.schema) as mock_read_schema,
+        patch("libcommon.parquet_utils.libviewer_config", LibviewerConfig(enable_for_datasets=False)),
     ):
         job_runner = get_job_runner(
             dataset,
@@ -292,10 +293,7 @@ def test_compute_from_parquet_libviewer(
     parquet_metadata_path = Path(parquet_metadata_directory) / fake_metadata_subpath
     ds_fs.get(f"{config}/{split}/0000.parquet", str(parquet_metadata_path))
 
-    with (
-        patch("libviewer.Dataset", new=LocalDataset),
-        patch("libcommon.parquet_utils.libviewer_config", LibviewerConfig(enable_for_datasets=True)),
-    ):
+    with patch("libviewer.Dataset", new=LocalDataset):
         job_runner = get_job_runner(
             dataset,
             config,
