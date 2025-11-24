@@ -7,6 +7,7 @@ license = "Apache-2.0"
 
 [tool.poetry.dependencies]
 python = "3.12.11"
+anyio = ">=3.4.0,<5"
 appdirs = "^1.4.4"
 cryptography = "^43.0.1"
 datasets = {version = "4.1.1", extras = ["vision"]}

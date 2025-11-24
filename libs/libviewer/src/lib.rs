@@ -74,25 +74,6 @@ impl PyDataset {
     }
 
     #[pyo3(signature = (limit=None, offset=None, scan_size_limit=DEFAULT_SCAN_SIZE_LIMIT))]
-    fn sync_scan(
-        &self,
-        py: Python<'_>,
-        limit: Option<u64>,
-        offset: Option<u64>,
-        scan_size_limit: u64,
-    ) -> PyResult<(Vec<Py<PyAny>>, Vec<IndexedFile>)> {
-        let rt = tokio::runtime::Runtime::new()?;
-        let (record_batches, files_to_index) =
-            rt.block_on(self.dataset.scan(limit, offset, scan_size_limit))?;
-        let pyarrow_batches = record_batches
-            .into_iter()
-            .map(|batch| Ok(batch.into_pyarrow(py)?.unbind()))
-            .collect::<PyResult<Vec<_>>>()?;
-
-        Ok((pyarrow_batches, files_to_index))
-    }
-
-    #[pyo3(signature = (limit=None, offset=None, scan_size_limit=DEFAULT_SCAN_SIZE_LIMIT))]
     fn scan<'py>(
         &self,
         py: Python<'py>,
@@ -118,13 +99,6 @@ impl PyDataset {
     }
 
     #[pyo3(signature = (files=None))]
-    fn sync_index(&self, files: Option<Vec<IndexedFile>>) -> PyResult<Vec<IndexedFile>> {
-        let rt = tokio::runtime::Runtime::new()?;
-        let indexed_files = rt.block_on(self.dataset.index(files.as_deref()))?;
-        Ok(indexed_files)
-    }
-
-    #[pyo3(signature = (files=None))]
     fn index<'py>(
         &self,
         py: Python<'py>,
@@ -143,6 +117,7 @@ impl PyDataset {
 fn dv(m: &Bound<'_, PyModule>) -> PyResult<()> {
     // Bridge the Rust log crate with the Python logging module
     // pyo3_log::init();
+    env_logger::init();
 
     m.add_class::<PyDataset>()?;
     m.add("PyDatasetError", m.py().get_type::<PyDatasetError>())?;
