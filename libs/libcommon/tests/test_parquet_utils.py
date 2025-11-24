@@ -518,7 +518,7 @@ async def test_rows_index_query_with_parquet_metadata_libviewer(
     parquet_metadata_directory: StrPath,
 ) -> None:
     # test the same with page pruning API
-    import libviewer as lv  # type: ignore
+    import libviewer as lv
 
     rows_index_with_parquet_metadata = RowsIndex(
         dataset="ds_sharded",
