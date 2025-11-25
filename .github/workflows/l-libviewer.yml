@@ -34,8 +34,6 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ env.python-version }}
-          cache: "poetry"
-          cache-dependency-path: ${{ inputs.working-directory }}/poetry.lock
       - name: Install dependencies
         # "poetry env use" is required: https://github.com/actions/setup-python/issues/374#issuecomment-1088938718
         run: |
@@ -66,8 +64,6 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ env.python-version }}
-          cache: "poetry"
-          cache-dependency-path: ${{ inputs.working-directory }}/poetry.lock
       - name: Install dependencies
         # "poetry env use" is required: https://github.com/actions/setup-python/issues/374#issuecomment-1088938718
         run: |
