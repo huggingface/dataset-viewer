@@ -5,7 +5,6 @@ use arrow::pyarrow::IntoPyArrow;
 use pyo3::create_exception;
 use pyo3::prelude::*;
 use pyo3_async_runtimes;
-use tokio;
 
 use crate::dataset::{Dataset, DatasetError};
 

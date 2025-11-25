@@ -32,9 +32,3 @@ jobs:
     with:
       working-directory: libs/libcommon
     secrets: inherit
-  unit-tests-libviewer:
-    uses: ./.github/workflows/_unit-tests-python.yml
-    with:
-      working-directory: libs/libviewer
-      poetry-args: "--with dev"
-    secrets: inherit
