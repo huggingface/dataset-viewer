@@ -4,8 +4,7 @@
 
 import logging
 from dataclasses import dataclass, field
-from functools import partial
-from typing import Literal, Optional, TypeGuard, Union
+from typing import Literal, Optional, TypeGuard
 
 from environs import Env
 from marshmallow.validate import OneOf

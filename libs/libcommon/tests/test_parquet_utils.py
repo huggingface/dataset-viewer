@@ -9,13 +9,12 @@ from pathlib import Path
 from typing import Any
 from unittest.mock import patch
 
-import datasets
+import libviewer as lv
 import pyarrow.parquet as pq
 import pytest
 from datasets import Dataset, Image, concatenate_datasets
 from datasets.table import embed_table_storage
 from fsspec import AbstractFileSystem
-from fsspec.implementations.http import HTTPFileSystem
 
 from libcommon.parquet_utils import (
     RowsIndex,
@@ -28,7 +27,6 @@ from libcommon.parquet_utils import (
 from libcommon.resources import CacheMongoResource
 from libcommon.simple_cache import upsert_response
 from libcommon.storage import StrPath
-import libviewer as lv
 
 REVISION_NAME = "revision"
 CACHED_ASSETS_FOLDER = "cached-assets"
@@ -501,7 +499,6 @@ async def test_rows_index_query_with_empty_dataset(
     assert result.to_pydict() == ds_empty[:0]
     with pytest.raises(IndexError):
         await index.query_libviewer_index(offset=-1, length=2)
-
 
 
 @pytest.mark.anyio

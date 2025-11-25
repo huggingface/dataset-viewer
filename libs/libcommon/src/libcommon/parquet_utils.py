@@ -1,31 +1,21 @@
-import asyncio
 import logging
 import os
-from collections.abc import Iterable
-from dataclasses import dataclass, field
-from functools import partial
 from pathlib import Path
 from typing import Optional, TypedDict
 from urllib.parse import unquote
 
-import anyio
-import numpy as np
+import libviewer as lv
 import pyarrow as pa
 import pyarrow.compute as pc
 import pyarrow.parquet as pq
 from async_lru import alru_cache
 from datasets import Features, Value
-from datasets.table import cast_table_to_schema, CastError
-from datasets.utils.py_utils import size_str
-from fsspec.implementations.http import HTTPFile, HTTPFileSystem
-from pyarrow.lib import ArrowInvalid
+from datasets.table import CastError, cast_table_to_schema
 
 from libcommon.constants import CONFIG_PARQUET_METADATA_KIND
 from libcommon.prometheus import StepProfiler
 from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.storage import StrPath
-import libviewer as lv
-
 
 # For partial Parquet export we have paths like "en/partial-train/0000.parquet".
 # "-" is not allowed is split names so we use it in the prefix to avoid collisions.
@@ -295,9 +285,14 @@ class RowsIndex:
 
         if len(batches) > 0:
             try:
-                parts = [cast_table_to_schema(pa.Table.from_batches([batch]), self.features.arrow_schema) for batch in batches]
+                parts = [
+                    cast_table_to_schema(pa.Table.from_batches([batch]), self.features.arrow_schema)
+                    for batch in batches
+                ]
             except CastError as e:
-                raise SchemaMismatchError(f"The schema of the parquet files does not match the expected schema: {e}") from e
+                raise SchemaMismatchError(
+                    f"The schema of the parquet files does not match the expected schema: {e}"
+                ) from e
             table = pa.concat_tables(parts)
         else:
             table = pa.Table.from_batches([], schema=self.features.arrow_schema)
