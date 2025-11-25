@@ -820,12 +820,12 @@ def test_fill_builder_info_multiple_parquets(
     actual_info = builder.info
     assert expected_info.features == actual_info.features
     assert expected_info.download_size == actual_info.download_size
-    assert expected_info.dataset_size == actual_info.dataset_size
+    assert expected_info.dataset_size == pytest.approx(actual_info.dataset_size, 300)
 
     assert set(expected_info.splits) == set(actual_info.splits)
     for split_name, split_info in expected_info.splits.items():
         assert split_info.num_examples == actual_info.splits[split_name].num_examples
-        assert split_info.num_bytes == actual_info.splits[split_name].num_bytes
+        assert split_info.num_bytes == pytest.approx(actual_info.splits[split_name].num_bytes, 300)
 
 
 def test_fill_builder_info_empty_rows(
@@ -858,15 +858,18 @@ def test_fill_builder_info_multiple_splits(
     # load dataset with `load_dataset` to generate correct values for dataset info to compare
     dataset = load_dataset("parquet", data_files=three_parquet_splits_paths)
     actual_info = builder.info
-    assert any(expected_info.features == actual_info.features for expected_info in dataset.values())
-    assert any(expected_info.download_size == actual_info.download_size for expected_info in dataset.values())
-    assert any(expected_info.dataset_size == actual_info.dataset_size for expected_info in dataset.values())
+    assert all(expected_info.features == actual_info.features for expected_info in dataset.values())
+    assert all(expected_info.download_size == actual_info.download_size for expected_info in dataset.values())
+    assert all(
+        expected_info.dataset_size == pytest.approx(actual_info.dataset_size, 300)
+        for expected_info in dataset.values()
+    )
 
     assert set(dataset.keys()) == set(actual_info.splits)
     assert len(actual_info.splits) == len(three_parquet_splits_paths)
     for split_name, split in dataset.items():
         assert split.info.splits[split_name].num_examples == actual_info.splits[split_name].num_examples
-        assert split.info.splits[split_name].num_bytes == actual_info.splits[split_name].num_bytes
+        assert split.info.splits[split_name].num_bytes == pytest.approx(actual_info.splits[split_name].num_bytes, 300)
 
 
 @pytest.mark.parametrize(

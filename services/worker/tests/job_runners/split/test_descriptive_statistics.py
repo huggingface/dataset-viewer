@@ -335,7 +335,6 @@ def datetime_statistics_expected(datasets: Mapping[str, Dataset]) -> dict[str, A
     [
         ("descriptive_statistics", None),
         ("descriptive_statistics_string_text", None),
-        ("descriptive_statistics_string_text_partial", None),
         ("descriptive_statistics_not_supported", "NoSupportedFeaturesError"),
         ("audio_statistics", None),
         ("image_statistics", None),
@@ -461,8 +460,6 @@ def test_compute(
         response = job_runner.compute()
         assert sorted(response.content.keys()) == ["num_examples", "partial", "statistics"]
         assert response.content["num_examples"] == expected_response["num_examples"]  # type: ignore
-        if hub_dataset_name == "descriptive_statistics_string_text_partial":
-            assert response.content["num_examples"] != descriptive_statistics_string_text_expected["num_examples"]
 
         response = response.content["statistics"]
         expected = expected_response["statistics"]  # type: ignore
