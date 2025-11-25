@@ -65,13 +65,18 @@ RUN poetry install --no-cache --no-root
 COPY --from=viewer /tmp/dist /tmp/dist
 RUN pip install /tmp/dist/libviewer-*.whl
 
+# Add libcommon source code for later stages
+COPY libs/libcommon /src/libs/libcommon
+# Install libcommon root package for later stages
+RUN poetry install --no-cache --only-root
+
 # Below are the actual API services which depend on libapi and libcommon.
 # Since the majority of the dependencies are already installed in the
 # `common` stage we let poetry to handle the rest.
 
 # API service
 FROM common AS api
-COPY libs /src/libs
+COPY libs/libapi /src/libs/libapi
 COPY services/api /src/services/api
 WORKDIR /src/services/api
 RUN poetry install --no-cache
@@ -79,7 +84,7 @@ ENTRYPOINT ["poetry", "run", "python", "src/api/main.py"]
 
 # Admin service
 FROM common AS admin
-COPY libs /src/libs
+COPY libs/libapi /src/libs/libapi
 COPY services/admin /src/services/admin
 WORKDIR /src/services/admin
 RUN poetry install --no-cache
@@ -87,7 +92,7 @@ ENTRYPOINT ["poetry", "run", "python", "src/admin/main.py"]
 
 # Rows service
 FROM common AS rows
-COPY libs /src/libs
+COPY libs/libapi /src/libs/libapi
 COPY services/rows /src/services/rows
 WORKDIR /src/services/rows
 RUN poetry install --no-cache
@@ -95,7 +100,7 @@ ENTRYPOINT ["poetry", "run", "python", "src/rows/main.py"]
 
 # Search service
 FROM common AS search
-COPY libs /src/libs
+COPY libs/libapi /src/libs/libapi
 COPY services/search /src/services/search
 WORKDIR /src/services/search
 RUN poetry install --no-cache
@@ -103,7 +108,7 @@ ENTRYPOINT ["poetry", "run", "python", "src/search/main.py"]
 
 # SSE API service
 FROM common AS sse-api
-COPY libs /src/libs
+COPY libs/libapi /src/libs/libapi
 COPY services/sse-api /src/services/sse-api
 WORKDIR /src/services/sse-api
 RUN poetry install --no-cache
@@ -111,7 +116,7 @@ ENTRYPOINT ["poetry", "run", "python", "src/sse_api/main.py"]
 
 # Webhook service
 FROM common AS webhook
-COPY libs /src/libs
+COPY libs/libapi /src/libs/libapi
 COPY services/webhook /src/services/webhook
 WORKDIR /src/services/webhook
 RUN poetry install --no-cache
@@ -119,7 +124,6 @@ ENTRYPOINT ["poetry", "run", "python", "src/webhook/main.py"]
 
 # Worker service
 FROM common AS worker
-COPY libs /src/libs
 COPY services/worker /src/services/worker
 WORKDIR /src/services/worker
 # presidio-analyzer > spacy > thinc doesn't ship aarch64 wheels so need to compile
@@ -133,7 +137,6 @@ ENTRYPOINT ["poetry", "run", "python", "src/worker/main.py"]
 
 # Cache maintenance job
 FROM common AS cache_maintenance
-COPY libs /src/libs
 COPY jobs/cache_maintenance /src/jobs/cache_maintenance
 WORKDIR /src/jobs/cache_maintenance
 RUN poetry install --no-cache
@@ -141,7 +144,6 @@ ENTRYPOINT ["poetry", "run", "python", "src/cache_maintenance/main.py"]
 
 # MongoDB migration job
 FROM common AS mongodb_migration
-COPY libs /src/libs
 COPY jobs/mongodb_migration /src/jobs/mongodb_migration
 WORKDIR /src/jobs/mongodb_migration
 RUN poetry install --no-cache
