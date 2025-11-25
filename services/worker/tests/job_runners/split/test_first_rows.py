@@ -5,10 +5,9 @@ from collections.abc import Callable, Generator
 from dataclasses import replace
 from http import HTTPStatus
 from pathlib import Path
-from typing import Any, Optional
+from typing import Optional
 from unittest.mock import patch
 
-import pyarrow.parquet as pq
 import pytest
 from datasets import Dataset
 from datasets.packaged_modules import csv
