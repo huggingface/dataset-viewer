@@ -35,8 +35,6 @@ from worker.job_manager import JobManager
 from worker.job_runners.config.parquet_and_info import (
     ConfigParquetAndInfoJobRunner,
     ParquetFile,
-    ParquetFileValidator,
-    TooBigRowGroupsError,
     _is_too_big_from_datasets,
     _is_too_big_from_hub,
     create_commits,
@@ -44,7 +42,6 @@ from worker.job_runners.config.parquet_and_info import (
     get_delete_operations,
     get_urlpaths_in_gen_kwargs,
     get_writer_batch_size_from_info,
-    get_writer_batch_size_from_row_group_size,
     limit_parquet_writes,
     list_generated_parquet_files,
     parse_repo_filename,
@@ -791,35 +788,18 @@ def test_limit_parquet_writes(tmp_path: Path) -> None:
         assert builder.info.splits["train"].num_examples == num_examples < expected_max_num_examples
 
 
-@pytest.mark.parametrize(
-    "validate,too_big_row_groups",
-    [
-        (None, False),
-        (ParquetFileValidator(max_row_group_byte_size=1).validate, True),
-        (ParquetFileValidator(max_row_group_byte_size=100_000).validate, False),
-    ],
-)
 def test_fill_builder_info(
     hub_responses_big: HubDatasetTest,
     app_config: AppConfig,
     tmp_path: Path,
-    validate: Optional[Callable[[pq.ParquetFile], None]],
-    too_big_row_groups: bool,
 ) -> None:
     cache_dir = str(tmp_path / "test_fill_builder_info")
     name = hub_responses_big["name"]
     builder = load_dataset_builder(name, cache_dir=cache_dir)
     builder.info = datasets.info.DatasetInfo()
-    if too_big_row_groups:
-        with pytest.raises(TooBigRowGroupsError) as exc_info:
-            fill_builder_info(builder, hf_endpoint=app_config.common.hf_endpoint, hf_token=None, validate=validate)
-        assert isinstance(exc_info.value, TooBigRowGroupsError)
-        assert isinstance(exc_info.value.num_rows, int)
-        assert isinstance(exc_info.value.row_group_byte_size, int)
-    else:
-        fill_builder_info(builder, hf_endpoint=app_config.common.hf_endpoint, hf_token=None, validate=validate)
-        expected_info = hub_responses_big["parquet_and_info_response"]["dataset_info"]
-        assert expected_info == asdict(builder.info)
+    fill_builder_info(builder, hf_endpoint=app_config.common.hf_endpoint, hf_token=None)
+    expected_info = hub_responses_big["parquet_and_info_response"]["dataset_info"]
+    assert expected_info == asdict(builder.info)
 
 
 def test_fill_builder_info_multiple_parquets(
@@ -832,8 +812,7 @@ def test_fill_builder_info_multiple_parquets(
     name = hub_public_three_parquet_files_builder
     builder = load_dataset_builder(name, cache_dir=cache_dir)
     builder.info = datasets.info.DatasetInfo()
-    validate = ParquetFileValidator(max_row_group_byte_size=100_000).validate
-    fill_builder_info(builder, hf_endpoint=app_config.common.hf_endpoint, hf_token=None, validate=validate)
+    fill_builder_info(builder, hf_endpoint=app_config.common.hf_endpoint, hf_token=None)
 
     # load dataset with `load_dataset` to generate correct values for dataset info to compare
     dataset = load_dataset("parquet", data_files=three_parquet_files_paths, split="train")
@@ -841,14 +820,12 @@ def test_fill_builder_info_multiple_parquets(
     actual_info = builder.info
     assert expected_info.features == actual_info.features
     assert expected_info.download_size == actual_info.download_size
-    # uncompressed dataset size is approximate
-    # since we estimate approximate compression ratio by reading only first row group
-    assert expected_info.dataset_size == pytest.approx(actual_info.dataset_size, 300)
+    assert expected_info.dataset_size == actual_info.dataset_size
 
     assert set(expected_info.splits) == set(actual_info.splits)
     for split_name, split_info in expected_info.splits.items():
         assert split_info.num_examples == actual_info.splits[split_name].num_examples
-        assert split_info.num_bytes == pytest.approx(actual_info.splits[split_name].num_bytes, 300)
+        assert split_info.num_bytes == actual_info.splits[split_name].num_bytes
 
 
 def test_fill_builder_info_empty_rows(
@@ -860,8 +837,7 @@ def test_fill_builder_info_empty_rows(
     name = hub_public_parquet_splits_empty_rows
     builder = load_dataset_builder(name, cache_dir=cache_dir)
     builder.info = datasets.info.DatasetInfo()
-    validate = ParquetFileValidator(max_row_group_byte_size=100_000).validate
-    fill_builder_info(builder, hf_endpoint=app_config.common.hf_endpoint, hf_token=None, validate=validate)
+    fill_builder_info(builder, hf_endpoint=app_config.common.hf_endpoint, hf_token=None)
     assert "train" in builder.info.splits
     assert builder.info.splits["train"].num_examples == 0
     assert builder.info.splits["train"].num_bytes == 0
@@ -877,50 +853,20 @@ def test_fill_builder_info_multiple_splits(
     name = hub_public_three_parquet_splits_builder
     builder = load_dataset_builder(name, cache_dir=cache_dir)
     builder.info = datasets.info.DatasetInfo()
-    validate = ParquetFileValidator(max_row_group_byte_size=100_000).validate
-    fill_builder_info(builder, hf_endpoint=app_config.common.hf_endpoint, hf_token=None, validate=validate)
+    fill_builder_info(builder, hf_endpoint=app_config.common.hf_endpoint, hf_token=None)
 
     # load dataset with `load_dataset` to generate correct values for dataset info to compare
     dataset = load_dataset("parquet", data_files=three_parquet_splits_paths)
     actual_info = builder.info
     assert any(expected_info.features == actual_info.features for expected_info in dataset.values())
     assert any(expected_info.download_size == actual_info.download_size for expected_info in dataset.values())
-    # uncompressed dataset size is approximate
-    # since we estimate approximate compression ratio by reading only first row group
-    assert any(
-        expected_info.dataset_size == pytest.approx(actual_info.dataset_size, 300)
-        for expected_info in dataset.values()
-    )
+    assert any(expected_info.dataset_size == actual_info.dataset_size for expected_info in dataset.values())
 
     assert set(dataset.keys()) == set(actual_info.splits)
     assert len(actual_info.splits) == len(three_parquet_splits_paths)
     for split_name, split in dataset.items():
         assert split.info.splits[split_name].num_examples == actual_info.splits[split_name].num_examples
-        assert split.info.splits[split_name].num_bytes == pytest.approx(actual_info.splits[split_name].num_bytes, 300)
-
-
-@pytest.mark.parametrize(
-    "num_rows, row_group_byte_size, max_row_group_byte_size, expected",
-    [
-        (1000, 1000, 500, 100),
-        (1000, 1000_000, 500_000, 100),
-        (123456789, 123456789, 1000, 100),
-        (987654321, 987654321, 1000, 900),
-        (1000, 10, 1000, 1000),
-        (10, 1000, 1000, 100),
-    ],
-)
-def test_get_writer_batch_size_from_row_group_size(
-    num_rows: int, row_group_byte_size: int, max_row_group_byte_size: int, expected: int
-) -> None:
-    writer_batch_size = get_writer_batch_size_from_row_group_size(
-        num_rows=num_rows,
-        row_group_byte_size=row_group_byte_size,
-        max_row_group_byte_size=max_row_group_byte_size,
-        factor_of=100,
-        divide_step=10,
-    )
-    assert writer_batch_size == expected
+        assert split.info.splits[split_name].num_bytes == actual_info.splits[split_name].num_bytes
 
 
 @pytest.mark.parametrize(
