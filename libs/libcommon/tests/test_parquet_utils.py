@@ -7,7 +7,6 @@ from collections.abc import Generator
 from http import HTTPStatus
 from pathlib import Path
 from typing import Any
-from unittest.mock import patch
 
 import libviewer as lv
 import pyarrow.parquet as pq
@@ -365,15 +364,13 @@ def test_indexer_get_rows_index_with_parquet_metadata(
     parquet_metadata_directory: StrPath,
     dataset_with_config_parquet_metadata: dict[str, Any],
 ) -> None:
-    with ds_fs.open("default/train/0000.parquet") as f:
-        with patch("libcommon.parquet_utils.HTTPFile", return_value=f):
-            index = RowsIndex(
-                dataset="ds",
-                config="default",
-                split="train",
-                parquet_metadata_directory=parquet_metadata_directory,
-                max_scan_size=9999999999,
-            )
+    index = RowsIndex(
+        dataset="ds",
+        config="default",
+        split="train",
+        parquet_metadata_directory=parquet_metadata_directory,
+        max_scan_size=9999999999,
+    )
 
     assert index.features == ds.features
     assert index.num_rows_total == 2
@@ -396,15 +393,13 @@ def test_indexer_get_rows_index_sharded_with_parquet_metadata(
     parquet_metadata_directory: StrPath,
     dataset_sharded_with_config_parquet_metadata: dict[str, Any],
 ) -> None:
-    with ds_sharded_fs.open("default/train/0003.parquet") as f:
-        with patch("libcommon.parquet_utils.HTTPFile", return_value=f):
-            index = RowsIndex(
-                dataset="ds_sharded",
-                config="default",
-                split="train",
-                parquet_metadata_directory=parquet_metadata_directory,
-                max_scan_size=9999999999,
-            )
+    index = RowsIndex(
+        dataset="ds_sharded",
+        config="default",
+        split="train",
+        parquet_metadata_directory=parquet_metadata_directory,
+        max_scan_size=9999999999,
+    )
 
     assert isinstance(index.viewer_index, lv.Dataset)
     assert index.viewer_index.files == [

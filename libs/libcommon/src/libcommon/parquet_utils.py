@@ -178,8 +178,6 @@ class RowsIndex:
             response = get_previous_step_or_raise(
                 kind=CONFIG_PARQUET_METADATA_KIND, dataset=self.dataset, config=self.config, split=None
             )
-            # FIXME(kszucs): remove this
-            self.response = response
 
         # set the revision of the dataset
         self.revision = response["dataset_git_revision"]
