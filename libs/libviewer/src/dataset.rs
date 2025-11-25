@@ -3,7 +3,6 @@ use std::sync::Arc;
 use arrow::array::RecordBatch;
 use futures::future;
 use futures::TryStreamExt;
-use log;
 use object_store::prefix::PrefixStore;
 use object_store::ObjectStore;
 use object_store_opendal::OpendalStore;
@@ -169,11 +168,7 @@ impl Dataset {
             // here we handle file pruning based on the offset and limit
             if current_offset + num_rows > offset {
                 // this file must be scanned, calculate the offset within the file
-                let file_offset = if offset > current_offset {
-                    offset - current_offset
-                } else {
-                    0
-                };
+                let file_offset = offset.saturating_sub(current_offset);
 
                 // calculate the limit for this file
                 let file_limit = remaining_limit.min(num_rows - file_offset);
@@ -194,7 +189,7 @@ impl Dataset {
                     file: file.clone(),
                     limit: file_limit,
                     offset: file_offset,
-                    metadata: metadata,
+                    metadata
                 });
 
                 if remaining_limit == 0 {

@@ -4,11 +4,10 @@ mod parquet;
 use arrow::pyarrow::IntoPyArrow;
 use pyo3::create_exception;
 use pyo3::prelude::*;
-use pyo3_async_runtimes;
 
 use crate::dataset::{Dataset, DatasetError};
 
-const DEFAULT_SCAN_SIZE_LIMIT: u64 = 1 * 1024 * 1024 * 1024; // 1 GiB
+const DEFAULT_SCAN_SIZE_LIMIT: u64 = 1024 * 1024 * 1024; // 1 GiB
 
 create_exception!(libviewer, PyDatasetError, pyo3::exceptions::PyException);
 
