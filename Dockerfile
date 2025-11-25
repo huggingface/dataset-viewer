@@ -55,11 +55,7 @@ COPY libs/libcommon/poetry.lock \
 # can resolve it but we later overwrite libviewer with the prebuilt
 # wheel.
 RUN mkdir -p /src/libs/libviewer && \
-    cat > /src/libs/libviewer/pyproject.toml << 'EOF'
-[project]
-name = "libviewer"
-version = "0.0.0"
-EOF
+    printf "[project]\nname = \"libviewer\"\nversion = \"0.0.0\"\n" > /src/libs/libviewer/pyproject.toml
 
 # Install libcommon itself
 WORKDIR /src/libs/libcommon
