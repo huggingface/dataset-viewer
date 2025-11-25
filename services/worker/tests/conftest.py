@@ -149,5 +149,4 @@ def parquet_metadata_directory(app_config: AppConfig) -> StrPath:
     return init_parquet_metadata_dir(app_config.parquet_metadata.storage_directory)
 
 
-# Import fixture modules as plugins
-pytest_plugins = ["tests.fixtures.datasets", "tests.fixtures.files", "tests.fixtures.hub", "libcommon.tests.fixtures.fsspec"]
+pytest_plugins = ["tests.fixtures.datasets", "tests.fixtures.files", "tests.fixtures.hub", "tests.fixtures.fsspec"]
