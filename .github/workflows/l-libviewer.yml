@@ -59,7 +59,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install poetry
-        run: pipx install poetry==${{ env.poetry-version }}
+        run: pipx install poetry==${{ env.poetry-version }} maturin
       - name: Use Python
         uses: actions/setup-python@v5
         with:
