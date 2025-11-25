@@ -189,7 +189,7 @@ impl Dataset {
                     file: file.clone(),
                     limit: file_limit,
                     offset: file_offset,
-                    metadata
+                    metadata,
                 });
 
                 if remaining_limit == 0 {
