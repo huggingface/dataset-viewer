@@ -14,12 +14,6 @@ soundfile = ">=0.12.1"
 uvicorn = "^0.30.1"
 watchdog = { extras = ["watchmedo"], version = "^2.2.1" }
 
-[tool.poetry.group.libviewer]
-optional = true
-
-[tool.poetry.group.libviewer.dependencies]
-libviewer = { path = "../../libs/libviewer", develop = true }
-
 [tool.poetry.group.dev.dependencies]
 bandit = "^1.7.4"
 boto3 = "^1.34.0"

@@ -51,9 +51,19 @@ COPY libs/libcommon/poetry.lock \
      libs/libcommon/pyproject.toml \
      /src/libs/libcommon/
 
+# Add dummy pyproject.toml for libviewer so that poetry install
+# can resolve it but we later overwrite libviewer with the prebuilt
+# wheel.
+RUN mkdir -p /src/libs/libviewer && \
+    cat > /src/libs/libviewer/pyproject.toml << 'EOF'
+[project]
+name = "libviewer"
+version = "0.0.0"
+EOF
+
 # Install libcommon itself
 WORKDIR /src/libs/libcommon
-RUN poetry install --no-cache --no-root --without libviewer
+RUN poetry install --no-cache --no-root
 
 # Install libviewer from the prebuilt wheel
 COPY --from=viewer /tmp/dist /tmp/dist
