@@ -17,6 +17,7 @@ huggingface-hub = {version = "^0.31.0", extras = ["hf-transfer"]}
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.0.0"
+ruff = "^0.14.6"
 
 [build-system]
 requires = ["maturin>=1.4,<2.0"]

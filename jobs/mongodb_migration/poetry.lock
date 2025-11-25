@@ -526,21 +526,6 @@ files = [
 ]
 
 [[package]]
-name = "click"
-version = "8.1.8"
-description = "Composable command line interface toolkit"
-optional = false
-python-versions = ">=3.7"
-groups = ["main"]
-files = [
-    {file = "click-8.1.8-py3-none-any.whl", hash = "sha256:63c132bbbed01578a06712a2d1f497bb62d9c1c0d329b7903a866228027263b2"},
-    {file = "click-8.1.8.tar.gz", hash = "sha256:ed53c9d8990d83c2a27deae68e4ee337473f6330c040a31d4225c9574d16096a"},
-]
-
-[package.dependencies]
-colorama = {version = "*", markers = "platform_system == \"Windows\""}
-
-[[package]]
 name = "colorama"
 version = "0.4.6"
 description = "Cross-platform colored terminal text."
@@ -1100,7 +1085,6 @@ environs = "^14.3.0"
 filelock = "^3.18.0"
 fsspec = {version = "2024.3.1", extras = ["s3"]}
 huggingface-hub = {version = "^0.31.0", extras = ["hf-transfer"]}
-libviewer = {path = "../libviewer", develop = true}
 mongo-types = "0.15.1"
 mongoengine = "^0.29.1"
 networkx = "^3.0"
@@ -1131,26 +1115,6 @@ tqdm = "^4.66.3"
 [package.source]
 type = "directory"
 url = "../../libs/libcommon"
-
-[[package]]
-name = "libviewer"
-version = "0.1.0"
-description = "Library for utils common to all the services"
-optional = false
-python-versions = "3.12.11"
-groups = ["main"]
-files = []
-develop = true
-
-[package.dependencies]
-anyio = ">=3.4.0,<5"
-click = "8.1.8"
-huggingface-hub = {version = "^0.31.0", extras = ["hf-transfer"]}
-pyarrow = "^21.0.0"
-
-[package.source]
-type = "directory"
-url = "../../libs/libviewer"
 
 [[package]]
 name = "license-expression"

@@ -51,13 +51,13 @@ COPY libs/libcommon/poetry.lock \
      libs/libcommon/pyproject.toml \
      /src/libs/libcommon/
 
+# Install libcommon itself
+WORKDIR /src/libs/libcommon
+RUN poetry install --no-cache --no-root --without libviewer
+
 # Install libviewer from the prebuilt wheel
 COPY --from=viewer /tmp/dist /tmp/dist
 RUN pip install /tmp/dist/libviewer-*.whl
-
-# Install libcommon itself
-WORKDIR /src/libs/libcommon
-RUN poetry install --no-cache --no-root
 
 # Below are the actual API services which depend on libapi and libcommon.
 # Since the majority of the dependencies are already installed in the
