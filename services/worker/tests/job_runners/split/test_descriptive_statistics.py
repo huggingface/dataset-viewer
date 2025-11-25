@@ -268,23 +268,6 @@ def descriptive_statistics_string_text_expected(datasets: Mapping[str, Dataset])
 
 
 @pytest.fixture
-def descriptive_statistics_string_text_partial_expected(datasets: Mapping[str, Dataset]) -> dict[str, Any]:
-    ds = datasets["descriptive_statistics_string_text"]
-    df = ds.to_pandas()[:50]  # see `fixtures.hub.hub_public_descriptive_statistics_parquet_builder`
-    expected_statistics = {}
-    for column_name in df.columns:
-        column_stats = count_expected_statistics_for_string_column(df[column_name])
-        if sum(column_stats["histogram"]["hist"]) != df.shape[0] - column_stats["nan_count"]:
-            raise ValueError(column_name, column_stats)
-        expected_statistics[column_name] = {
-            "column_name": column_name,
-            "column_type": ColumnType.STRING_TEXT,
-            "column_statistics": column_stats,
-        }
-    return {"num_examples": df.shape[0], "statistics": expected_statistics, "partial": True}
-
-
-@pytest.fixture
 def audio_statistics_expected() -> dict[str, Any]:
     column_names_to_durations = [
         ("audio", [1.0, 2.0, 3.0, 4.0]),  # datasets consists of 4 audio files of 1, 2, 3, 4 seconds lengths
@@ -352,7 +335,6 @@ def datetime_statistics_expected(datasets: Mapping[str, Dataset]) -> dict[str, A
     [
         ("descriptive_statistics", None),
         ("descriptive_statistics_string_text", None),
-        ("descriptive_statistics_string_text_partial", None),
         ("descriptive_statistics_not_supported", "NoSupportedFeaturesError"),
         ("audio_statistics", None),
         ("image_statistics", None),
@@ -368,7 +350,6 @@ def test_compute(
     get_parquet_metadata_job_runner: GetParquetMetadataJobRunner,
     hub_responses_descriptive_statistics: HubDatasetTest,
     hub_responses_descriptive_statistics_string_text: HubDatasetTest,
-    hub_responses_descriptive_statistics_parquet_builder: HubDatasetTest,
     hub_responses_gated_descriptive_statistics: HubDatasetTest,
     hub_responses_descriptive_statistics_not_supported: HubDatasetTest,
     hub_responses_audio_statistics: HubDatasetTest,
@@ -378,7 +359,6 @@ def test_compute(
     expected_error_code: Optional[str],
     descriptive_statistics_expected: dict[str, Any],
     descriptive_statistics_string_text_expected: dict[str, Any],
-    descriptive_statistics_string_text_partial_expected: dict[str, Any],
     audio_statistics_expected: dict[str, Any],
     image_statistics_expected: dict[str, Any],
     datetime_statistics_expected: dict[str, Any],
@@ -386,7 +366,6 @@ def test_compute(
     hub_datasets = {
         "descriptive_statistics": hub_responses_descriptive_statistics,
         "descriptive_statistics_string_text": hub_responses_descriptive_statistics_string_text,
-        "descriptive_statistics_string_text_partial": hub_responses_descriptive_statistics_parquet_builder,
         "descriptive_statistics_not_supported": hub_responses_descriptive_statistics_not_supported,
         "gated": hub_responses_gated_descriptive_statistics,
         "audio_statistics": hub_responses_audio_statistics,
@@ -398,7 +377,6 @@ def test_compute(
         "descriptive_statistics_partial": descriptive_statistics_expected,
         "gated": descriptive_statistics_expected,
         "descriptive_statistics_string_text": descriptive_statistics_string_text_expected,
-        "descriptive_statistics_string_text_partial": descriptive_statistics_string_text_partial_expected,
         "audio_statistics": audio_statistics_expected,
         "image_statistics": image_statistics_expected,
         "datetime_statistics": datetime_statistics_expected,
@@ -415,7 +393,8 @@ def test_compute(
         else replace(
             app_config,
             parquet_and_info=replace(
-                app_config.parquet_and_info, max_dataset_size_bytes=1, max_row_group_byte_size_for_copy=1
+                app_config.parquet_and_info,
+                max_dataset_size_bytes=1,
             ),
         )
     )
@@ -481,8 +460,6 @@ def test_compute(
         response = job_runner.compute()
         assert sorted(response.content.keys()) == ["num_examples", "partial", "statistics"]
         assert response.content["num_examples"] == expected_response["num_examples"]  # type: ignore
-        if hub_dataset_name == "descriptive_statistics_string_text_partial":
-            assert response.content["num_examples"] != descriptive_statistics_string_text_expected["num_examples"]
 
         response = response.content["statistics"]
         expected = expected_response["statistics"]  # type: ignore

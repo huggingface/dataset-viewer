@@ -583,7 +583,10 @@ class RowsIndex:
             )
         except lv.DatasetError as e:
             if "Scan size limit exceeded" in str(e):
-                raise TooBigRows(str(e)) from e
+                raise TooBigRows(
+                    str(e)
+                    + f"\n\nMake sure that\n\n1. individual rows are of reasonable size (max {size_str(self.max_scan_size // length)}/row)\n2. the Parquet files contain a page index to enable random access without loading entire row groups"
+                ) from e
             else:
                 raise
 

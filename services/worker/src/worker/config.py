@@ -223,7 +223,6 @@ class PresidioEntitiesScanConfig:
 PARQUET_AND_INFO_COMMIT_MESSAGE = "Update parquet files"
 PARQUET_AND_INFO_COMMITTER_HF_TOKEN = None
 PARQUET_AND_INFO_MAX_DATASET_SIZE_BYTES = 100_000_000
-PARQUET_AND_INFO_MAX_ROW_GROUP_BYTE_SIZE_FOR_COPY = 100_000_000
 PARQUET_AND_INFO_SOURCE_REVISION = "main"
 PARQUET_AND_INFO_TARGET_REVISION = "refs/convert/parquet"
 PARQUET_AND_INFO_URL_TEMPLATE = "/datasets/%s/resolve/%s/%s"
@@ -234,7 +233,6 @@ PARQUET_AND_INFO_FULLY_CONVERTED_DATASETS: list[str] = []
 class ParquetAndInfoConfig:
     commit_message: str = PARQUET_AND_INFO_COMMIT_MESSAGE
     max_dataset_size_bytes: int = PARQUET_AND_INFO_MAX_DATASET_SIZE_BYTES
-    max_row_group_byte_size_for_copy: int = PARQUET_AND_INFO_MAX_ROW_GROUP_BYTE_SIZE_FOR_COPY
     source_revision: str = PARQUET_AND_INFO_SOURCE_REVISION
     target_revision: str = PARQUET_AND_INFO_TARGET_REVISION
     url_template: str = PARQUET_AND_INFO_URL_TEMPLATE
@@ -249,10 +247,6 @@ class ParquetAndInfoConfig:
                 max_dataset_size_bytes=env.int(
                     name="MAX_DATASET_SIZE_BYTES",
                     default=PARQUET_AND_INFO_MAX_DATASET_SIZE_BYTES,
-                ),
-                max_row_group_byte_size_for_copy=env.int(
-                    name="MAX_ROW_GROUP_BYTE_SIZE_FOR_COPY",
-                    default=PARQUET_AND_INFO_MAX_ROW_GROUP_BYTE_SIZE_FOR_COPY,
                 ),
                 source_revision=env.str(name="SOURCE_REVISION", default=PARQUET_AND_INFO_SOURCE_REVISION),
                 target_revision=env.str(name="TARGET_REVISION", default=PARQUET_AND_INFO_TARGET_REVISION),

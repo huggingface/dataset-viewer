@@ -375,35 +375,6 @@ def get_writer_batch_size_from_info(ds_config_info: datasets.info.DatasetInfo) -
         return None
 
 
-def get_writer_batch_size_from_row_group_size(
-    num_rows: int, row_group_byte_size: int, max_row_group_byte_size: int, factor_of: int, divide_step: int
-) -> int:
-    """
-    Get the writer_batch_size that defines the maximum row group size in the parquet files,
-    given a sample row group size that mught be too big.
-
-    This allows to optimize random access to parquet file, since accessing 1 row requires
-    to read its entire row group.
-
-    Args:
-        num_rows (`int`):
-            Number of rows in the sample row group.
-        row_group_byte_size (`int`):
-            Number of bytes of uncompressed data in the sample row group.
-        max_row_group_byte_size (`int`):
-            Maximum number of bytes of uncompressed data for batches that
-            will be passed to a dataset builder.
-    Returns:
-        `int`: Writer batch size to pass to a dataset builder.
-    """
-    writer_batch_size = max(num_rows // factor_of * factor_of, factor_of)
-    writer_batch_byte_size = row_group_byte_size * writer_batch_size / num_rows
-    while writer_batch_size > factor_of and writer_batch_byte_size > max_row_group_byte_size:
-        writer_batch_size = max(writer_batch_size // divide_step // factor_of * factor_of, factor_of)
-        writer_batch_byte_size = row_group_byte_size * writer_batch_size / num_rows
-    return writer_batch_size
-
-
 def copy_parquet_files(builder: DatasetBuilder) -> list[CommitOperationCopy]:
     """Copy parquet files by copying the git LFS pointer files"""
     data_files = builder.config.data_files
@@ -442,32 +413,23 @@ class ParquetValidationError(ValueError):
     """When a parquet file is not validated for copy"""
 
 
-class TooBigRowGroupsError(ParquetValidationError):
-    """When a parquet file has row groups that are too big for copy"""
-
-    def __init__(self, *args: object, num_rows: int, row_group_byte_size: int) -> None:
-        super().__init__(*args)
-        self.num_rows = num_rows
-        self.row_group_byte_size = row_group_byte_size
-
-
-def retry_validate_get_num_examples_and_size(
-    url: str, hf_endpoint: str, hf_token: Optional[str], validate: Optional[Callable[[pq.ParquetFile], None]]
-) -> tuple[int, int]:
+def retry_get_num_examples_size_and_num_bytes(
+    url: str,
+    hf_endpoint: str,
+    hf_token: Optional[str],
+) -> tuple[int, int, int]:
     """
-    Get number of examples in a parquet file at a given url, and its size in bytes.
-    Also validate parquet file if validation function is passed with `validate` argument.
+    Get number of examples in a parquet file at a given url, its size in bytes, and num bytes of uncompressed data.
 
     Returns:
-        `tuple[int, int]` - (num examples, size in bytes)
+        `tuple[int, int]` - (num examples, file size in bytes, and num bytes of uncompressed data)
     """
     try:
         f = retry_on_arrow_invalid_open_file(url, hf_endpoint, hf_token)
         pf, size = pq.ParquetFile(f), f.size
-        if validate:
-            validate(pf)
+        num_bytes = sum(pf.metadata.row_group(i).total_byte_size for i in range(pf.num_row_groups))
         f.close()
-        return pf.metadata.num_rows, size
+        return pf.metadata.num_rows, size, num_bytes
 
     except RuntimeError as err:
         if err.__cause__ and isinstance(err.__cause__, pa.ArrowInvalid):
@@ -476,77 +438,37 @@ def retry_validate_get_num_examples_and_size(
             raise err
 
 
-def retry_validate_get_features_num_examples_size_and_compression_ratio(
-    url: str, hf_endpoint: str, hf_token: Optional[str], validate: Optional[Callable[[pq.ParquetFile], None]]
+def retry_get_features_num_examples_size_and_num_bytes(
+    url: str,
+    hf_endpoint: str,
+    hf_token: Optional[str],
 ) -> tuple[Features, int, int, int]:
     """
-    Get parquet file as a pq.ParquetFile at a given url, and its size in bytes.
-    Also validate parquet file if validation function is passed with `validate` argument.
+    Get parquet file as a pq.ParquetFile at a given url, its size in bytes, and num bytes of uncompressed data.
 
     Returns:
-        `tuple[pq.ParquetFile, int]` - (parquet files, size in bytes)
+        `tuple[Features, int, int, int]` - (features, num examples, file size in bytes, and num bytes of uncompressed data)
     """
     try:
         f = retry_on_arrow_invalid_open_file(url, hf_endpoint, hf_token)
         pf, size = pq.ParquetFile(f), f.size
-        num_row_groups = pf.metadata.num_row_groups
-        compression_ratio = 0
-        if num_row_groups > 0:
-            if validate:
-                validate(pf)
-            first_row_group = pf.read_row_group(0)
-            compression_ratio = first_row_group.nbytes / first_row_group.num_rows
+        num_bytes = sum(pf.metadata.row_group(i).total_byte_size for i in range(pf.num_row_groups))
         features = Features.from_arrow_schema(pf.schema_arrow)
         num_examples = pf.metadata.num_rows
         f.close()
-        return features, num_examples, size, compression_ratio
+        return features, num_examples, size, num_bytes
 
     except RuntimeError as err:
         if err.__cause__ and isinstance(err.__cause__, pa.ArrowInvalid):
             raise NotAParquetFileError(f"Not a parquet file: '{url}'") from err.__cause__
         else:
             raise err
-
-
-class ParquetFileValidator:
-    """
-    Validate the Parquet files before they are copied to the target revision.
-    In particular, we check that the row group size is not too big, otherwise the dataset viewer
-    doesn't work correctly.
-
-    Note: we only validate the first parquet files (default 5 first files).
-    We don't want to check the biggest row group of all the dataset, but rather just get the order
-    of magnitude of the size. Otherwise we might end up converting a dataset that has 99% good row
-    groups but 1% that is a bit too big, which is overkill.
-    """
-
-    def __init__(self, max_row_group_byte_size: int, max_validation: int = 5) -> None:
-        self.max_row_group_byte_size = max_row_group_byte_size
-        self.num_validations = 0
-        self.max_validations = max_validation
-
-    def validate(self, pf: pq.ParquetFile) -> None:
-        if self.num_validations >= self.max_validations:
-            return
-        row_group_metadata = pf.metadata.row_group(0)
-        row_group_size = row_group_metadata.total_byte_size
-        if row_group_metadata.total_byte_size > self.max_row_group_byte_size:
-            raise TooBigRowGroupsError(
-                (
-                    f"Parquet file has too big row groups. First row group has {row_group_size} which exceeds the"
-                    f" limit of {self.max_row_group_byte_size}"
-                ),
-                num_rows=row_group_metadata.num_rows,
-                row_group_byte_size=row_group_metadata.total_byte_size,
-            )
-        self.num_validations += 1
 
 
 def fill_builder_info(
     builder: DatasetBuilder,
     hf_endpoint: str,
     hf_token: Optional[str],
-    validate: Optional[Callable[[pq.ParquetFile], None]],
 ) -> None:
     """Fill the builder DatasetInfo from the copied parquet files"""
     data_files = builder.config.data_files
@@ -562,9 +484,10 @@ def fill_builder_info(
     builder.info.splits = SplitDict()
     builder.info.download_size = 0
     builder.info.dataset_size = 0
-    logging.info("Start validation of parquet files.")
+    logging.info("Start counting rows of parquet files.")
     for split, urls in data_files.items():
         num_examples = 0
+        num_bytes = 0
         split = str(split)  # in case it's a NamedSplit
         first_url = urls[0]
         try:
@@ -573,54 +496,49 @@ def fill_builder_info(
                 features,
                 first_num_examples,
                 first_size,
-                compression_ratio,
-            ) = retry_validate_get_features_num_examples_size_and_compression_ratio(
+                first_num_bytes,
+            ) = retry_get_features_num_examples_size_and_num_bytes(
                 first_url,
                 hf_endpoint,
                 hf_token,
-                validate,
             )
             if builder.info.features is None:
                 builder.info.features = features
             builder.info.download_size += first_size
             num_examples += first_num_examples
-        except ParquetValidationError:
-            raise
+            num_bytes += first_num_bytes
         except Exception as e:
             raise FileSystemError(f"Could not read the parquet files: {e}") from e
 
         if len(urls) > 1:
             try:
                 if len(urls) > 100:
-                    logging.info(f"Validating lots of Parquet files: {len(urls)}")
-                num_examples_and_sizes: list[tuple[int, int]] = thread_map(
+                    logging.info(f"Counting rows of lots of Parquet files: {len(urls)}")
+                num_examples_sizes_and_num_bytes: list[tuple[int, int]] = thread_map(
                     functools.partial(
-                        retry_validate_get_num_examples_and_size,
+                        retry_get_num_examples_size_and_num_bytes,
                         hf_endpoint=hf_endpoint,
                         hf_token=hf_token,
-                        validate=validate,
                     ),
                     urls[1:],
                     unit="pq",
                     disable=True,
                 )
-                num_examples_list, sizes = zip(*num_examples_and_sizes)
+                num_examples_list, sizes_list, num_bytes_list = zip(*num_examples_sizes_and_num_bytes)
                 num_examples += sum(num_examples_list)
-                builder.info.download_size += sum(sizes)
-            except ParquetValidationError:
-                raise
+                num_bytes += sum(num_bytes_list)
+                builder.info.download_size += sum(sizes_list)
             except Exception as e:
                 raise FileSystemError(f"Could not read the parquet files: {e}") from e
 
         if num_examples > 0:
-            approx_num_bytes = int(compression_ratio * num_examples)
-            builder.info.splits.add(SplitInfo(split, num_bytes=approx_num_bytes, num_examples=num_examples))
-            builder.info.dataset_size += approx_num_bytes
+            builder.info.splits.add(SplitInfo(split, num_bytes=num_bytes, num_examples=num_examples))
+            builder.info.dataset_size += num_bytes
         else:
             builder.info.splits.add(SplitInfo(split, num_bytes=0, num_examples=0))
 
         logging.info(
-            f"{sum(len(split_files) for split_files in data_files.values())} parquet files are valid for copy."
+            f"{sum(len(split_files) for split_files in data_files.values())} parquet files are ready for copy."
         )
 
 
@@ -1286,7 +1204,6 @@ def compute_config_parquet_and_info_response(
     commit_message: str,
     url_template: str,
     max_dataset_size_bytes: int,
-    max_row_group_byte_size_for_copy: int,
 ) -> ConfigParquetAndInfoResponse:
     """
     Get the response of 'config-parquet-and-info' for one specific dataset and config on huggingface.co.
@@ -1317,8 +1234,6 @@ def compute_config_parquet_and_info_response(
         max_dataset_size_bytes (`int`):
             The maximum size of a dataset in bytes. If the dataset is under the limit (which means that the size
             can be fetched), it will be allowed.
-        max_row_group_byte_size_for_copy (`int`):
-            The maximum size in bytes of parquet files that are allowed to be copied without being converted.
 
     Raises:
         [~`libcommon.exceptions.DatasetNotFoundError`]:
@@ -1393,42 +1308,11 @@ def compute_config_parquet_and_info_response(
     parquet_operations: Union[list[CommitOperationAdd], list[CommitOperationCopy]] = []
     try:
         if is_parquet_builder_with_hub_files(builder):
-            try:
-                logging.info(
-                    f"{dataset=} {config=} is already in parquet, validating and copying original parquet files."
-                )
-                parquet_operations = copy_parquet_files(builder)
-                logging.info(f"{len(parquet_operations)} parquet files to copy for {dataset=} {config=}.")
-                validate = ParquetFileValidator(max_row_group_byte_size=max_row_group_byte_size_for_copy).validate
-                with patch("huggingface_hub.hf_file_system.http_backoff", http_backoff_with_timeout):
-                    fill_builder_info(builder, hf_endpoint=hf_endpoint, hf_token=hf_token, validate=validate)
-            except TooBigRowGroupsError as err:
-                # aim for a writer_batch_size that is factor of 100
-                # and with a batch_byte_size that is smaller than max_row_group_byte_size_for_copy
-                logging.info(
-                    f"Parquet files of {dataset=} {config=} has too big row groups, "
-                    f"reconverting it with row groups size={max_row_group_byte_size_for_copy}"
-                )
-                writer_batch_size = get_writer_batch_size_from_row_group_size(
-                    num_rows=err.num_rows,
-                    row_group_byte_size=err.row_group_byte_size,
-                    max_row_group_byte_size=max_row_group_byte_size_for_copy,
-                    factor_of=100,
-                    divide_step=10,
-                )
-                if writer_batch_size / err.num_rows * err.row_group_byte_size > max_row_group_byte_size_for_copy:
-                    writer_batch_size = get_writer_batch_size_from_row_group_size(
-                        num_rows=err.num_rows,
-                        row_group_byte_size=err.row_group_byte_size,
-                        max_row_group_byte_size=max_row_group_byte_size_for_copy,
-                        factor_of=10,
-                        divide_step=2,
-                    )
-                parquet_operations, partial, estimated_dataset_info = stream_convert_to_parquet(
-                    builder,
-                    max_dataset_size_bytes=max_dataset_size_bytes,
-                    writer_batch_size=writer_batch_size,
-                )
+            logging.info(f"{dataset=} {config=} is already in parquet, validating and copying original parquet files.")
+            parquet_operations = copy_parquet_files(builder)
+            logging.info(f"{len(parquet_operations)} parquet files to copy for {dataset=} {config=}.")
+            with patch("huggingface_hub.hf_file_system.http_backoff", http_backoff_with_timeout):
+                fill_builder_info(builder, hf_endpoint=hf_endpoint, hf_token=hf_token)
         elif is_video_builder(builder):  # videos should be saved from their URLs, not from locally downloaded files
             logging.info(
                 f"{dataset=} {config=} is a video dataset, converting it by streaming to store the video URLs"
@@ -1563,6 +1447,5 @@ class ConfigParquetAndInfoJobRunner(ConfigJobRunnerWithDatasetsCache):
                 commit_message=self.parquet_and_info_config.commit_message,
                 url_template=self.parquet_and_info_config.url_template,
                 max_dataset_size_bytes=self.parquet_and_info_config.max_dataset_size_bytes,
-                max_row_group_byte_size_for_copy=self.parquet_and_info_config.max_row_group_byte_size_for_copy,
             )
         )

@@ -310,15 +310,6 @@ def two_parquet_files_paths(tmp_path_factory: pytest.TempPathFactory, datasets: 
 
 
 @pytest.fixture(scope="session")
-def hub_public_descriptive_statistics_parquet_builder(two_parquet_files_paths: list[str]) -> Iterator[str]:
-    # to test partial stats, pushing "descriptive_statistics_string_text" dataset split into two parquet files
-    # stats will be computed only on the first file (first 50 samples)
-    repo_id = create_hub_dataset_repo(prefix="parquet_builder", file_paths=two_parquet_files_paths)
-    yield repo_id
-    delete_hub_dataset_repo(repo_id=repo_id)
-
-
-@pytest.fixture(scope="session")
 def three_parquet_files_paths(tmp_path_factory: pytest.TempPathFactory, datasets: Mapping[str, Dataset]) -> list[str]:
     dataset = datasets["descriptive_statistics_string_text"]
     path1 = str(tmp_path_factory.mktemp("data") / "0.parquet")
@@ -541,11 +532,9 @@ def create_dataset_info_response_for_big_parquet(dataset: str, config: str) -> A
         "config_name": config,
         "dataset_name": dataset_name,
         "version": {"version_str": "0.0.0", "major": 0, "minor": 0, "patch": 0},
-        "splits": {
-            "train": {"name": "train", "num_bytes": 5653946, "num_examples": len(BIG_rows), "dataset_name": None}
-        },
+        "splits": {"train": {"name": "train", "num_bytes": 1428, "num_examples": len(BIG_rows), "dataset_name": None}},
         "download_size": BIG_PARQUET_FILE,
-        "dataset_size": 5653946,
+        "dataset_size": 1428,  # small because of parquet dictionary
     }
 
 
@@ -577,9 +566,9 @@ def create_dataset_info_response_for_audio(dataset: str, config: str) -> Any:
         "config_name": config,
         "dataset_name": dataset_name,
         "version": {"version_str": "0.0.0", "major": 0, "minor": 0, "patch": 0},
-        "splits": {"train": {"name": "train", "num_bytes": 15364, "num_examples": 1, "dataset_name": None}},
+        "splits": {"train": {"name": "train", "num_bytes": 15448, "num_examples": 1, "dataset_name": None}},
         "download_size": AUDIO_PARQUET_SIZE,
-        "dataset_size": 15364,
+        "dataset_size": 15448,
     }
 
 
@@ -1128,19 +1117,6 @@ def hub_responses_datetime_statistics(
         "name": hub_public_datetime_statistics,
         "config_names_response": create_config_names_response(hub_public_datetime_statistics),
         "splits_response": create_splits_response(hub_public_datetime_statistics),
-        "first_rows_response": None,
-        "parquet_and_info_response": None,
-    }
-
-
-@pytest.fixture
-def hub_responses_descriptive_statistics_parquet_builder(
-    hub_public_descriptive_statistics_parquet_builder: str,
-) -> HubDatasetTest:
-    return {
-        "name": hub_public_descriptive_statistics_parquet_builder,
-        "config_names_response": create_config_names_response(hub_public_descriptive_statistics_parquet_builder),
-        "splits_response": create_splits_response(hub_public_descriptive_statistics_parquet_builder),
         "first_rows_response": None,
         "parquet_and_info_response": None,
     }
