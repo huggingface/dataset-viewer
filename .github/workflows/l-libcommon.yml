@@ -31,7 +31,6 @@ jobs:
     uses: ./.github/workflows/_unit-tests-python.yml
     with:
       working-directory: libs/libcommon
-      poetry-args: "--with libviewer"
     secrets: inherit
   unit-tests-libviewer:
     uses: ./.github/workflows/_unit-tests-python.yml
