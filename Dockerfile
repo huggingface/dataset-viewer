@@ -50,6 +50,12 @@ RUN pip install -U pip && pip install "poetry==${POETRY_VERSION}"
 COPY libs/libcommon/poetry.lock \
      libs/libcommon/pyproject.toml \
      /src/libs/libcommon/
+
+# Install libviewer from the prebuilt wheel
+COPY --from=viewer /tmp/dist /tmp/dist
+RUN pip install /tmp/dist/libviewer-*.whl
+
+# Install libcommon itself
 WORKDIR /src/libs/libcommon
 RUN poetry install --no-cache --no-root
 
@@ -75,8 +81,6 @@ ENTRYPOINT ["poetry", "run", "python", "src/admin/main.py"]
 
 # Rows service
 FROM common AS rows
-COPY --from=viewer /tmp/dist /tmp/dist
-RUN pip install /tmp/dist/libviewer-*.whl
 COPY libs /src/libs
 COPY services/rows /src/services/rows
 WORKDIR /src/services/rows
@@ -109,8 +113,6 @@ ENTRYPOINT ["poetry", "run", "python", "src/webhook/main.py"]
 
 # Worker service
 FROM common AS worker
-COPY --from=viewer /tmp/dist /tmp/dist
-RUN pip install /tmp/dist/libviewer-*.whl
 COPY libs /src/libs
 COPY services/worker /src/services/worker
 WORKDIR /src/services/worker
