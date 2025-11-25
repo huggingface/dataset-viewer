@@ -277,8 +277,8 @@ class RowsIndex:
                 raise TooBigRows(
                     f"{e}\n\n"
                     f"Make sure that\n\n"
-                    "1. individual rows are of reasonable size\n"
-                    "2. the Parquet files contain a page index to enable random access without loading entire row groups"
+                    "1. the Parquet files contain a page index to enable random access without loading entire row groups"
+                    "2. otherwise use smaller row-group sizes when serializing the Parquet files\n"
                 ) from e
             else:
                 raise
