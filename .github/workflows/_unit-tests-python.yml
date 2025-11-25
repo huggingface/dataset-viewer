@@ -35,9 +35,9 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ env.python-version }}
-          # cache: "poetry"
-          # cache-dependency-path: |
-          #   ${{ inputs.working-directory }}/poetry.lock
+          cache: "poetry"
+          cache-dependency-path: |
+            ${{ inputs.working-directory }}/poetry.lock
       - name: Install packages
         run: sudo apt update; sudo apt install -y ffmpeg libavcodec-extra libsndfile1
       - name: Install dependencies
