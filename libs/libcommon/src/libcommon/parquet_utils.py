@@ -15,23 +15,17 @@ import pyarrow.compute as pc
 import pyarrow.parquet as pq
 from async_lru import alru_cache
 from datasets import Features, Value
-from datasets.table import cast_table_to_schema
+from datasets.table import cast_table_to_schema, CastError
 from datasets.utils.py_utils import size_str
 from fsspec.implementations.http import HTTPFile, HTTPFileSystem
 from pyarrow.lib import ArrowInvalid
 
-from libcommon.config import LibviewerConfig
 from libcommon.constants import CONFIG_PARQUET_METADATA_KIND
 from libcommon.prometheus import StepProfiler
 from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.storage import StrPath
+import libviewer as lv
 
-try:
-    import libviewer as lv
-
-    _has_libviewer = True
-except ImportError:
-    _has_libviewer = False
 
 # For partial Parquet export we have paths like "en/partial-train/0000.parquet".
 # "-" is not allowed is split names so we use it in the prefix to avoid collisions.
@@ -167,263 +161,13 @@ def truncate_binary_columns(table: pa.Table, max_binary_length: int, features: F
     return pa.table(columns), truncated_column_names
 
 
-@dataclass
-class RowGroupReader:
-    parquet_file: pq.ParquetFile
-    group_id: int
-    schema: pa.Schema
-
-    def read(self, columns: list[str]) -> pa.Table:
-        if not set(self.parquet_file.schema_arrow.names) <= set(columns):
-            raise SchemaMismatchError(
-                f"Parquet files have different columns: {sorted(columns)} and {sorted(self.parquet_file.schema_arrow.names)}"
-            )
-        pa_table = self.parquet_file.read_row_group(i=self.group_id, columns=columns)
-        # cast_table_to_schema adds null values to missing columns
-        return cast_table_to_schema(pa_table, self.schema)
-
-    def read_size(self, columns: Optional[Iterable[str]] = None) -> int:
-        if columns is None:
-            return self.parquet_file.metadata.row_group(self.group_id).total_byte_size  # type: ignore
-        else:
-            columns = set(columns)
-            columns_metadata = self.parquet_file.metadata.row_group(self.group_id).to_dict()["columns"]
-            return sum(
-                column_metadata["total_uncompressed_size"]
-                for column_metadata in columns_metadata
-                if column_metadata["path_in_schema"] in columns
-            )
-
-
-@dataclass
-class ParquetIndexWithMetadata:
-    files: list[ParquetFileMetadataItem]
-    features: Features
-    httpfs: HTTPFileSystem
-    max_arrow_data_in_memory: int
-    metadata_dir: Path
-    file_offsets: np.ndarray = field(init=False)
-
-    def __post_init__(self) -> None:
-        if self.httpfs._session is None:
-            self.httpfs_session = asyncio.run(self.httpfs.set_session())
-        else:
-            self.httpfs_session = self.httpfs._session
-
-        self.file_offsets = np.cumsum([f["num_rows"] for f in self.files])
-
-    def query(self, offset: int, length: int) -> tuple[pa.Table, list[str]]:
-        """Query the parquet files
-
-        Note that this implementation will always read at least one row group, to get the list of columns and always
-        have the same schema, even if the requested rows are invalid (out of range).
-
-        If binary columns are present, then:
-        - it computes a maximum size to allocate to binary data in step "parquet_index_with_metadata.row_groups_size_check_truncated_binary"
-        - it uses `read_truncated_binary()` in step "parquet_index_with_metadata.query_truncated_binary".
-
-        Args:
-            offset (`int`): The first row to read.
-            length (`int`): The number of rows to read.
-
-        Raises:
-            [`TooBigRows`]: if the arrow data from the parquet row groups is bigger than max_arrow_data_in_memory
-
-        Returns:
-            `pa.Table`: The requested rows.
-            `list[strl]: List of truncated columns.
-        """
-        with StepProfiler(
-            method="parquet_index_with_metadata.query", step="get the parquet files than contain the requested rows"
-        ):
-            last_row_in_parquet = self.file_offsets[-1] - 1
-            first_row = min(offset, last_row_in_parquet)
-            last_row = min(offset + length - 1, last_row_in_parquet)
-            first_parquet_file_id, last_parquet_file_id = np.searchsorted(
-                self.file_offsets, [first_row, last_row], side="right"
-            )
-            parquet_offset = (
-                offset - self.file_offsets[first_parquet_file_id - 1] if first_parquet_file_id > 0 else offset
-            )
-            files_to_scan = self.files[first_parquet_file_id : last_parquet_file_id + 1]  # noqa: E203
-
-        with StepProfiler(
-            method="parquet_index_with_metadata.query", step="load the remote parquet files using metadata from disk"
-        ):
-            parquet_files = [
-                pq.ParquetFile(
-                    HTTPFile(
-                        self.httpfs,
-                        f["url"],
-                        session=self.httpfs_session,
-                        size=f["size"],
-                        loop=self.httpfs.loop,
-                        cache_type=None,
-                        **self.httpfs.kwargs,
-                    ),
-                    metadata=pq.read_metadata(self.metadata_dir / f["parquet_metadata_subpath"]),
-                    pre_buffer=True,
-                )
-                for f in files_to_scan
-            ]
-
-        with StepProfiler(
-            method="parquet_index_with_metadata.query", step="get the row groups than contain the requested rows"
-        ):
-            row_group_offsets = np.cumsum(
-                [
-                    parquet_file.metadata.row_group(group_id).num_rows
-                    for parquet_file in parquet_files
-                    for group_id in range(parquet_file.metadata.num_row_groups)
-                ]
-            )
-            row_group_readers = [
-                RowGroupReader(parquet_file=parquet_file, group_id=group_id, schema=self.features.arrow_schema)
-                for parquet_file in parquet_files
-                for group_id in range(parquet_file.metadata.num_row_groups)
-            ]
-
-            if len(row_group_offsets) == 0 or row_group_offsets[-1] == 0:  # if the dataset is empty
-                if offset < 0:
-                    raise IndexError("Offset must be non-negative")
-                return cast_table_to_schema(parquet_files[0].read(), self.features.arrow_schema), []
-
-            last_row_in_parquet = row_group_offsets[-1] - 1
-            first_row = min(parquet_offset, last_row_in_parquet)
-            last_row = min(parquet_offset + length - 1, last_row_in_parquet)
-
-            first_row_group_id, last_row_group_id = np.searchsorted(
-                row_group_offsets, [first_row, last_row], side="right"
-            )
-
-        all_columns = set(self.features)
-        binary_columns = set(column for column, feature in self.features.items() if feature == Value("binary"))
-        if binary_columns:
-            pa_table, truncated_columns = self._read_with_binary(
-                row_group_readers, first_row_group_id, last_row_group_id, all_columns, binary_columns
-            )
-        else:
-            pa_table, truncated_columns = self._read_without_binary(
-                row_group_readers, first_row_group_id, last_row_group_id
-            )
-
-        first_row_in_pa_table = row_group_offsets[first_row_group_id - 1] if first_row_group_id > 0 else 0
-        return pa_table.slice(parquet_offset - first_row_in_pa_table, length), truncated_columns
-
-    def _read_with_binary(
-        self,
-        row_group_readers: list[RowGroupReader],
-        first_row_group_id: int,
-        last_row_group_id: int,
-        all_columns: set[str],
-        binary_columns: set[str],
-    ) -> tuple[pa.Table, list[str]]:
-        with StepProfiler(
-            method="parquet_index_with_metadata.row_groups_size_check_truncated_binary",
-            step="check if the rows can fit in memory",
-        ):
-            in_memory_max_non_binary_size = sum(
-                [
-                    row_group_readers[i].read_size(columns=all_columns - binary_columns)
-                    for i in range(first_row_group_id, last_row_group_id + 1)
-                ]
-            )
-            in_memory_max_binary_size = max(
-                [
-                    row_group_readers[i].read_size(columns=binary_columns)
-                    for i in range(first_row_group_id, last_row_group_id + 1)
-                ]
-            )
-            in_memory_max_size = in_memory_max_non_binary_size + in_memory_max_binary_size
-            if in_memory_max_size > self.max_arrow_data_in_memory:
-                raise TooBigRows(
-                    "Rows from parquet row groups are too big to be read:"
-                    f" {size_str(in_memory_max_size)} (max={size_str(self.max_arrow_data_in_memory)})"
-                )
-
-        with StepProfiler(method="parquet_index_with_metadata.query_truncated_binary", step="read the row groups"):
-            # This is a simple heuristic of how much we need to truncate binary data
-            max_binary_length = max(
-                int(
-                    (self.max_arrow_data_in_memory - in_memory_max_non_binary_size)
-                    / (last_row_group_id + 1 - first_row_group_id)
-                    / len(binary_columns)
-                    / 2  # we divide more in case the row groups are not evenly distributed
-                ),
-                20,
-            )  # we use a minimum length to not end up with too empty cells
-            try:
-                pa_tables: list[pa.Table] = []
-                columns = list(self.features.keys())
-                truncated_columns: set[str] = set()
-                for i in range(first_row_group_id, last_row_group_id + 1):
-                    rg_pa_table = row_group_readers[i].read(columns)
-                    rg_pa_table, rg_truncated_columns = truncate_binary_columns(
-                        rg_pa_table, max_binary_length, self.features
-                    )
-                    pa_tables.append(rg_pa_table)
-                    truncated_columns |= set(rg_truncated_columns)
-                pa_table = pa.concat_tables(pa_tables)
-            except ArrowInvalid as err:
-                raise SchemaMismatchError("Parquet files have different schema.", err)
-
-        return pa_table, list(truncated_columns)
-
-    def _read_without_binary(
-        self, row_group_readers: list[RowGroupReader], first_row_group_id: int, last_row_group_id: int
-    ) -> tuple[pa.Table, list[str]]:
-        with StepProfiler(
-            method="parquet_index_with_metadata.row_groups_size_check", step="check if the rows can fit in memory"
-        ):
-            row_groups_size = sum(
-                [row_group_readers[i].read_size() for i in range(first_row_group_id, last_row_group_id + 1)]
-            )
-            if row_groups_size > self.max_arrow_data_in_memory:
-                raise TooBigRows(
-                    "Rows from parquet row groups are too big to be read:"
-                    f" {size_str(row_groups_size)} (max={size_str(self.max_arrow_data_in_memory)})"
-                )
-
-        with StepProfiler(method="parquet_index_with_metadata.query", step="read the row groups"):
-            columns = list(self.features.keys())
-            try:
-                pa_table = pa.concat_tables(
-                    [row_group_readers[i].read(columns) for i in range(first_row_group_id, last_row_group_id + 1)]
-                )
-            except ArrowInvalid as err:
-                raise SchemaMismatchError("Parquet files have different schema.", err)
-
-        return pa_table, []
-
-
-# TODO(kszucs): should remove once libviewer is the default
-libviewer_config = LibviewerConfig.from_env()
-
-
-def should_use_libviewer(dataset: str) -> bool:
-    """Decide whether to use libviewer for the given dataset."""
-    if isinstance(libviewer_config.enable_for_datasets, bool):
-        use_libviewer = libviewer_config.enable_for_datasets
-    elif isinstance(libviewer_config.enable_for_datasets, set):
-        use_libviewer = dataset in libviewer_config.enable_for_datasets
-    else:
-        raise ValueError("`LibviewerConfig.enable_for_datasets` must be a boolean or a set of dataset names")
-
-    if use_libviewer and not _has_libviewer:
-        raise ImportError("libviewer is not installed")
-
-    return use_libviewer
-
-
 class RowsIndex:
     def __init__(
         self,
         dataset: str,
         config: str,
         split: str,
-        httpfs: HTTPFileSystem,
         parquet_metadata_directory: StrPath,
-        max_arrow_data_in_memory: int,
         max_scan_size: Optional[int] = None,
         hf_token: Optional[str] = None,
         hf_endpoint: Optional[str] = None,
@@ -432,18 +176,11 @@ class RowsIndex:
         self.dataset = dataset
         self.config = config
         self.split = split
-        self.httpfs = httpfs
-        self.max_scan_size = max_scan_size if max_scan_size is not None else max_arrow_data_in_memory
+        self.max_scan_size = max_scan_size
         self.parquet_metadata_directory = Path(parquet_metadata_directory)
 
-        self._use_libviewer = should_use_libviewer(dataset)
         self._init_dataset_info()
-        if self._use_libviewer:
-            if not _has_libviewer:
-                raise ImportError("libviewer is not installed")
-            self._init_viewer_index(hf_token=hf_token, hf_endpoint=hf_endpoint, data_store=data_store)
-        else:
-            self._init_parquet_index(httpfs=httpfs, max_arrow_data_in_memory=max_arrow_data_in_memory)
+        self._init_viewer_index(hf_token=hf_token, hf_endpoint=hf_endpoint, data_store=data_store)
 
     def _init_dataset_info(self) -> None:
         # get the list of parquet files and features
@@ -481,22 +218,6 @@ class RowsIndex:
             first_metadata_file = self.parquet_metadata_directory / parquet_files[0]["parquet_metadata_subpath"]
             arrow_schema = pq.read_schema(first_metadata_file)
             self.features = Features.from_arrow_schema(arrow_schema)
-
-    def _init_parquet_index(
-        self,
-        httpfs: HTTPFileSystem,
-        max_arrow_data_in_memory: int,
-    ) -> None:
-        logging.info(
-            f"Create ParquetIndexWithMetadata for dataset={self.dataset}, config={self.config}, split={self.split}"
-        )
-        self.parquet_index = ParquetIndexWithMetadata(
-            files=self.parquet_files,
-            features=self.features,
-            httpfs=httpfs,
-            max_arrow_data_in_memory=max_arrow_data_in_memory,
-            metadata_dir=self.parquet_metadata_directory,
-        )
 
     def _init_viewer_index(
         self, hf_token: Optional[str], hf_endpoint: Optional[str], data_store: Optional[str]
@@ -542,31 +263,13 @@ class RowsIndex:
             `pa.Table`: The requested rows.
             `list[str]`: List of truncated columns.
         """
-        if self._use_libviewer:
-            return await self.query_libviewer_index(offset=offset, length=length)
-        else:
-            return await self.query_parquet_index(offset=offset, length=length)
-
-    async def query_parquet_index(self, offset: int, length: int) -> tuple[pa.Table, list[str]]:
-        """Query the parquet files using ParquetIndexWithMetadata.
-
-        This is the old implementation without libviewer doing row-group pruning using pyarrow.
-        """
-        logging.info(
-            f"Query {type(self.parquet_index).__name__} for dataset={self.dataset}, config={self.config},"
-            f" split={self.split}, offset={offset}, length={length}"
-        )
-        # run_sync doesn't support keyword arguments, so use partial
-        queryfn = partial(self.parquet_index.query, offset=offset, length=length)
-        return await anyio.to_thread.run_sync(queryfn)
+        return await self.query_libviewer_index(offset=offset, length=length)
 
     async def query_libviewer_index(self, offset: int, length: int) -> tuple[pa.Table, list[str]]:
         """Query the parquet files using libviewer.
 
         This is the new implementation using libviewer doing row-group and page pruning.
         """
-        if not _has_libviewer:
-            raise ImportError("libviewer is not installed but is required for page pruning")
         logging.info(
             f"Query libviewer.Dataset for dataset={self.dataset}, config={self.config},"
             f" split={self.split}, offset={offset}, length={length}, with page pruning"
@@ -591,9 +294,11 @@ class RowsIndex:
                 raise
 
         if len(batches) > 0:
-            table = pa.concat_tables(
-                [cast_table_to_schema(pa.Table.from_batches([batch]), self.features.arrow_schema) for batch in batches]
-            )
+            try:
+                parts = [cast_table_to_schema(pa.Table.from_batches([batch]), self.features.arrow_schema) for batch in batches]
+            except CastError as e:
+                raise SchemaMismatchError(f"The schema of the parquet files does not match the expected schema: {e}") from e
+            table = pa.concat_tables(parts)
         else:
             table = pa.Table.from_batches([], schema=self.features.arrow_schema)
 

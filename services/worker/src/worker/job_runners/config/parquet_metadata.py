@@ -12,7 +12,7 @@ from libcommon.exceptions import (
     ParquetResponseEmptyError,
     PreviousStepFormatError,
 )
-from libcommon.parquet_utils import extract_split_directory_from_parquet_url, should_use_libviewer
+from libcommon.parquet_utils import extract_split_directory_from_parquet_url
 from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.storage import StrPath
 from libcommon.viewer_utils.parquet_metadata import create_parquet_metadata_dir, create_parquet_metadata_file

@@ -20,7 +20,7 @@ from libcommon.exceptions import (
     SplitParquetSchemaMismatchError,
     TooBigContentError,
 )
-from libcommon.parquet_utils import EmptyParquetMetadataError, RowsIndex, SchemaMismatchError, TooBigRows
+from libcommon.parquet_utils import EmptyParquetMetadataError, RowsIndex, TooBigRows
 from libcommon.simple_cache import CachedArtifactError, CachedArtifactNotFoundError
 from libcommon.storage import StrPath
 from libcommon.storage_client import StorageClient
