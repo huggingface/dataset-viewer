@@ -59,19 +59,15 @@ COPY libs/libcommon/poetry.lock \
 WORKDIR /src/libs/libcommon
 RUN poetry install --no-cache --no-root
 
-# Install libviewer wheel built in the viewer stage
-COPY --from=viewer /tmp/dist /tmp/dist
-RUN pip install /tmp/dist/libviewer-*.whl
-
 # Add libcommon source but do not install
 COPY libs/libcommon /src/libs/libcommon
-RUN poetry install --no-cache --only-root
+RUN poetry install --no-cache
 
 # Base image for all services
 FROM libcommon AS libapi
 COPY libs/libapi /src/libs/libapi
 WORKDIR /src/libs/libapi
-RUN poetry install --no-cache --only-root
+RUN poetry install --no-cache
 
 # Below are the actual API services which depend on libapi and libcommon.
 # Since the majority of the dependencies are already installed in the
@@ -81,7 +77,7 @@ RUN poetry install --no-cache --only-root
 FROM libapi AS api
 COPY services/api /src/services/api
 WORKDIR /src/services/api
-RUN poetry install --no-cache --only-root
+RUN poetry install --no-cache
 CMD ["poetry", "run", "python", "src/api/main.py"]
 
 # Admin service
@@ -95,28 +91,34 @@ CMD ["poetry", "run", "python", "src/admin/main.py"]
 FROM libapi AS rows
 COPY services/rows /src/services/rows
 WORKDIR /src/services/rows
-RUN poetry install --no-cache --only-root
+RUN poetry install --no-cache
+# Install libviewer wheel built in the viewer stage
+COPY --from=viewer /tmp/dist /tmp/dist
+RUN pip install /tmp/dist/libviewer-*.whl
 CMD ["poetry", "run", "python", "src/rows/main.py"]
 
 # Search service
 FROM libapi AS search
 COPY services/search /src/services/search
 WORKDIR /src/services/search
-RUN poetry install --no-cache --only-root
+RUN poetry install --no-cache
+# Install libviewer wheel built in the viewer stage
+COPY --from=viewer /tmp/dist /tmp/dist
+RUN pip install /tmp/dist/libviewer-*.whl
 CMD ["poetry", "run", "python", "src/search/main.py"]
 
 # SSE API service
 FROM libapi AS sse-api
 COPY services/sse-api /src/services/sse-api
 WORKDIR /src/services/sse-api
-RUN poetry install --no-cache --only-root
+RUN poetry install --no-cache
 CMD ["poetry", "run", "python", "src/sse_api/main.py"]
 
 # Webhook service
 FROM libapi AS webhook
 COPY services/webhook /src/services/webhook
 WORKDIR /src/services/webhook
-RUN poetry install --no-cache --only-root
+RUN poetry install --no-cache
 CMD ["poetry", "run", "python", "src/webhook/main.py"]
 
 # Worker service
@@ -128,7 +130,10 @@ RUN if [ "$(uname -m)" = "aarch64" ]; then \
       apt-get update && apt-get install -y build-essential && \
       rm -rf /var/lib/apt/lists/*; \
     fi
-RUN poetry install --no-cache --only-root
+RUN poetry install --no-cache
+# Install libviewer wheel built in the viewer stage
+COPY --from=viewer /tmp/dist /tmp/dist
+RUN pip install /tmp/dist/libviewer-*.whl
 RUN python -m spacy download en_core_web_lg
 CMD ["poetry", "run", "python", "src/worker/main.py"]
 
@@ -136,12 +141,12 @@ CMD ["poetry", "run", "python", "src/worker/main.py"]
 FROM libcommon AS cache_maintenance
 COPY jobs/cache_maintenance /src/jobs/cache_maintenance
 WORKDIR /src/jobs/cache_maintenance
-RUN poetry install --no-cache --only-root
+RUN poetry install --no-cache
 CMD ["poetry", "run", "python", "src/cache_maintenance/main.py"]
 
 # MongoDB migration job
 FROM libcommon AS mongodb_migration
 COPY jobs/mongodb_migration /src/jobs/mongodb_migration
 WORKDIR /src/jobs/mongodb_migration
-RUN poetry install --no-cache --only-root
+RUN poetry install --no-cache
 CMD ["poetry", "run", "python", "src/mongodb_migration/main.py"]
