@@ -24,7 +24,7 @@ WORKDIR /src/libs/libviewer
 RUN maturin build --release --strip --out /tmp/dist
 
 # Base stage with shared setup
-FROM python:${PYTHON_VERSION}-slim AS common
+FROM python:${PYTHON_VERSION}-slim AS libcommon
 
 # System dependencies
 RUN apt-get update \
@@ -46,84 +46,77 @@ ENV PYTHONFAULTHANDLER=1 \
 # Install pip and poetry
 RUN pip install -U pip && pip install "poetry==${POETRY_VERSION}"
 
-# Install libcommon's dependencies but not libcommon itself
-COPY libs/libcommon/poetry.lock \
-     libs/libcommon/pyproject.toml \
-     /src/libs/libcommon/
-
 # Add dummy pyproject.toml for libviewer so that poetry install
 # can resolve it but we later overwrite libviewer with the prebuilt
 # wheel.
 RUN mkdir -p /src/libs/libviewer && \
     printf "[project]\nname = \"libviewer\"\nversion = \"0.0.0\"\n" > /src/libs/libviewer/pyproject.toml
 
-# Install libcommon itself
+# Install libcommon's dependencies but not libcommon itself.
+COPY libs/libcommon/poetry.lock \
+     libs/libcommon/pyproject.toml \
+     /src/libs/libcommon/
 WORKDIR /src/libs/libcommon
 RUN poetry install --no-cache --no-root
 
-# Install libviewer from the prebuilt wheel
-COPY --from=viewer /tmp/dist /tmp/dist
-RUN pip install /tmp/dist/libviewer-*.whl
-
-# Add libcommon source code for later stages
+# Add libcommon source but do not install
 COPY libs/libcommon /src/libs/libcommon
-# Install libcommon root package for later stages
-RUN poetry install --no-cache --only-root
+
+# Base image for all services
+FROM libcommon AS libapi
+COPY libs/libapi /src/libs/libapi
 
 # Below are the actual API services which depend on libapi and libcommon.
 # Since the majority of the dependencies are already installed in the
 # `common` stage we let poetry to handle the rest.
 
 # API service
-FROM common AS api
-COPY libs/libapi /src/libs/libapi
+FROM libapi AS api
 COPY services/api /src/services/api
 WORKDIR /src/services/api
 RUN poetry install --no-cache
-ENTRYPOINT ["poetry", "run", "python", "src/api/main.py"]
+CMD ["poetry", "run", "python", "src/api/main.py"]
 
 # Admin service
-FROM common AS admin
-COPY libs/libapi /src/libs/libapi
+FROM libapi AS admin
 COPY services/admin /src/services/admin
 WORKDIR /src/services/admin
 RUN poetry install --no-cache
-ENTRYPOINT ["poetry", "run", "python", "src/admin/main.py"]
+CMD ["poetry", "run", "python", "src/admin/main.py"]
 
 # Rows service
-FROM common AS rows
-COPY libs/libapi /src/libs/libapi
+FROM libapi AS rows
 COPY services/rows /src/services/rows
 WORKDIR /src/services/rows
 RUN poetry install --no-cache
-ENTRYPOINT ["poetry", "run", "python", "src/rows/main.py"]
+# Install libviewer wheel built in the viewer stage
+COPY --from=viewer /tmp/dist /tmp/dist
+RUN pip install /tmp/dist/libviewer-*.whl
+CMD ["poetry", "run", "python", "src/rows/main.py"]
 
 # Search service
-FROM common AS search
-COPY libs/libapi /src/libs/libapi
+FROM libapi AS search
 COPY services/search /src/services/search
 WORKDIR /src/services/search
 RUN poetry install --no-cache
-ENTRYPOINT ["poetry", "run", "python", "src/search/main.py"]
+CMD ["poetry", "run", "python", "src/search/main.py"]
 
 # SSE API service
-FROM common AS sse-api
-COPY libs/libapi /src/libs/libapi
+FROM libapi AS sse-api
 COPY services/sse-api /src/services/sse-api
 WORKDIR /src/services/sse-api
 RUN poetry install --no-cache
-ENTRYPOINT ["poetry", "run", "python", "src/sse_api/main.py"]
+CMD ["poetry", "run", "python", "src/sse_api/main.py"]
 
 # Webhook service
-FROM common AS webhook
-COPY libs/libapi /src/libs/libapi
+FROM libapi AS webhook
 COPY services/webhook /src/services/webhook
 WORKDIR /src/services/webhook
 RUN poetry install --no-cache
-ENTRYPOINT ["poetry", "run", "python", "src/webhook/main.py"]
+CMD ["poetry", "run", "python", "src/webhook/main.py"]
 
 # Worker service
-FROM common AS worker
+FROM libcommon AS worker
 COPY services/worker /src/services/worker
 WORKDIR /src/services/worker
 # presidio-analyzer > spacy > thinc doesn't ship aarch64 wheels so need to compile
@@ -133,18 +126,20 @@ RUN if [ "$(uname -m)" = "aarch64" ]; then \
     fi
 RUN poetry install --no-cache
 RUN python -m spacy download en_core_web_lg
-ENTRYPOINT ["poetry", "run", "python", "src/worker/main.py"]
+COPY --from=viewer /tmp/dist /tmp/dist
+RUN pip install /tmp/dist/libviewer-*.whl
+CMD ["poetry", "run", "python", "src/worker/main.py"]
 
 # Cache maintenance job
-FROM common AS cache_maintenance
+FROM libcommon AS cache_maintenance
 COPY jobs/cache_maintenance /src/jobs/cache_maintenance
 WORKDIR /src/jobs/cache_maintenance
 RUN poetry install --no-cache
-ENTRYPOINT ["poetry", "run", "python", "src/cache_maintenance/main.py"]
+CMD ["poetry", "run", "python", "src/cache_maintenance/main.py"]
 
 # MongoDB migration job
-FROM common AS mongodb_migration
+FROM libcommon AS mongodb_migration
 COPY jobs/mongodb_migration /src/jobs/mongodb_migration
 WORKDIR /src/jobs/mongodb_migration
 RUN poetry install --no-cache
-ENTRYPOINT ["poetry", "run", "python", "src/mongodb_migration/main.py"]
+CMD ["poetry", "run", "python", "src/mongodb_migration/main.py"]
