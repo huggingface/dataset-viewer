@@ -8,12 +8,10 @@ from pathlib import Path
 from typing import Any, Optional
 from unittest.mock import patch
 
-import pyarrow.parquet as pq
 import pytest
 from datasets import Dataset
 from datasets.packaged_modules import csv
 from fsspec import AbstractFileSystem
-from libcommon.config import LibviewerConfig
 from libcommon.dtos import Priority
 from libcommon.exceptions import CustomError, TooLongColumnNameError
 from libcommon.resources import CacheMongoResource, QueueMongoResource
@@ -21,6 +19,7 @@ from libcommon.simple_cache import upsert_response
 from libcommon.storage import StrPath
 from libcommon.storage_client import StorageClient
 from libcommon.utils import get_json_size
+from libviewer import Dataset as OriginalDataset  # type: ignore
 
 from worker.config import AppConfig
 from worker.job_runners.split.first_rows import SplitFirstRowsJobRunner
@@ -115,129 +114,6 @@ def get_job_runner(
         (1_000, 10, False, "InfoError"),
     ],
 )
-def test_compute_from_parquet(
-    ds: Dataset,
-    ds_fs: AbstractFileSystem,
-    parquet_metadata_directory: StrPath,
-    get_job_runner: GetJobRunner,
-    app_config: AppConfig,
-    rows_max_bytes: int,
-    columns_max_number: int,
-    has_parquet_files: bool,
-    error_code: str,
-) -> None:
-    dataset, config, split = "dataset", "config", "train"
-    parquet_file = ds_fs.open("config/train/0000.parquet")
-    fake_url = (
-        f"https://fake.huggingface.co/datasets/dataset/resolve/refs%2Fconvert%2Fparquet/{config}/{split}/0000.parquet"
-    )
-    fake_metadata_subpath = f"fake-parquet-metadata/dataset/{config}/{split}/0000.parquet"
-
-    config_parquet_metadata_content = {
-        "parquet_files_metadata": [
-            {
-                "dataset": dataset,
-                "config": config,
-                "split": split,
-                "url": fake_url,  # noqa: E501
-                "filename": "0000.parquet",
-                "size": parquet_file.size,
-                "num_rows": len(ds),
-                "parquet_metadata_subpath": fake_metadata_subpath,
-            }
-        ]
-        if has_parquet_files
-        else []
-    }
-
-    upsert_response(
-        kind="config-parquet-metadata",
-        dataset=dataset,
-        dataset_git_revision=REVISION_NAME,
-        config=config,
-        content=config_parquet_metadata_content,
-        http_status=HTTPStatus.OK,
-    )
-    parquet_metadata = pq.read_metadata(ds_fs.open(f"{config}/{split}/0000.parquet"))
-
-    with (
-        patch("libcommon.parquet_utils.HTTPFile", return_value=parquet_file) as mock_http_file,
-        patch("pyarrow.parquet.read_metadata", return_value=parquet_metadata) as mock_read_metadata,
-        patch("pyarrow.parquet.read_schema", return_value=ds.data.schema) as mock_read_schema,
-        patch("libcommon.parquet_utils.libviewer_config", LibviewerConfig(enable_for_datasets=False)),
-    ):
-        job_runner = get_job_runner(
-            dataset,
-            config,
-            split,
-            replace(
-                app_config,
-                common=replace(app_config.common, hf_token=None),
-                first_rows=replace(
-                    app_config.first_rows,
-                    min_number=10,
-                    max_bytes=rows_max_bytes,
-                    min_cell_bytes=10,
-                    columns_max_number=columns_max_number,
-                ),
-            ),
-        )
-
-        job_runner.pre_compute()
-        if error_code:
-            with pytest.raises(CustomError) as error_info:
-                job_runner.compute()
-            assert error_info.value.code == error_code
-        else:
-            response = job_runner.compute().content
-            assert get_json_size(response) <= rows_max_bytes
-            assert response
-            assert response["rows"]
-            assert response["features"]
-            assert len(response["rows"]) == 3  # testing file has 3 rows see config/train/0000.parquet file
-            assert len(response["features"]) == 2  # testing file has 2 columns see config/train/0000.parquet file
-            assert response["features"][0]["feature_idx"] == 0
-            assert response["features"][0]["name"] == "col1"
-            assert response["features"][0]["type"]["_type"] == "Value"
-            assert response["features"][0]["type"]["dtype"] == "int64"
-            assert response["features"][1]["feature_idx"] == 1
-            assert response["features"][1]["name"] == "col2"
-            assert response["features"][1]["type"]["_type"] == "Value"
-            assert response["features"][1]["type"]["dtype"] == "string"
-            assert response["rows"][0]["row_idx"] == 0
-            assert response["rows"][0]["truncated_cells"] == []
-            assert response["rows"][0]["row"] == {"col1": 1, "col2": "a"}
-            assert response["rows"][1]["row_idx"] == 1
-            assert response["rows"][1]["truncated_cells"] == []
-            assert response["rows"][1]["row"] == {"col1": 2, "col2": "b"}
-            assert response["rows"][2]["row_idx"] == 2
-            assert response["rows"][2]["truncated_cells"] == []
-            assert response["rows"][2]["row"] == {"col1": 3, "col2": "c"}
-
-            assert len(mock_http_file.call_args_list) == 1
-            assert mock_http_file.call_args_list[0][0][1] == fake_url
-            assert len(mock_read_metadata.call_args_list) == 1
-
-            metadata_path = Path(parquet_metadata_directory) / fake_metadata_subpath
-            assert mock_read_metadata.call_args_list[0][0][0] == metadata_path
-            assert len(mock_read_schema.call_args_list) == 1
-            assert mock_read_schema.call_args_list[0][0][0] == metadata_path
-
-        job_runner.post_compute()
-
-
-# TODO(kszucs): remove duplication once libcommon.parquet_utils.RowsIndex uses libviewer only
-@pytest.mark.parametrize(
-    "rows_max_bytes,columns_max_number,has_parquet_files,error_code",
-    [
-        (0, 10, True, "TooBigContentError"),  # too small limit, even with truncation
-        (1_000, 1, True, "TooManyColumnsError"),  # too small columns limit
-        (1_000, 10, True, None),
-        # "ParquetResponseEmptyError" -> triggers first-rows from streaming which fails with a
-        # different error ("InfoError")
-        (1_000, 10, False, "InfoError"),
-    ],
-)
 def test_compute_from_parquet_libviewer(
     ds: Dataset,
     ds_fs: AbstractFileSystem,
@@ -282,8 +158,6 @@ def test_compute_from_parquet_libviewer(
         content=config_parquet_metadata_content,
         http_status=HTTPStatus.OK,
     )
-
-    from libviewer import Dataset as OriginalDataset  # type: ignore
 
     def LocalDataset(*args: Any, data_store: Optional[str] = None, **kwargs: Any) -> OriginalDataset:
         data_store = f"file://{ds_fs.local_root_dir}"

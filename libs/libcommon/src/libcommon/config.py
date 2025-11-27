@@ -4,8 +4,7 @@
 
 import logging
 from dataclasses import dataclass, field
-from functools import partial
-from typing import Literal, Optional, TypeGuard, Union
+from typing import Literal, Optional, TypeGuard
 
 from environs import Env
 from marshmallow.validate import OneOf
@@ -250,30 +249,3 @@ class CommitterConfig:
             return cls(
                 hf_token=env.str(name="HF_TOKEN", default=COMMITTER_HF_TOKEN),
             )
-
-
-LIBVIEWER_ENABLE_FOR_DATASETS: str = "1"
-
-
-def _enable_for_datasets_factory(enable_for_datasets_raw: str) -> Union[set[str], bool]:
-    if enable_for_datasets_raw == "1":
-        return True
-    elif enable_for_datasets_raw == "0":
-        return False
-    else:
-        return set(ds.strip() for ds in enable_for_datasets_raw.split(",") if ds.strip())
-
-
-@dataclass(frozen=True)
-class LibviewerConfig:
-    enable_for_datasets: Union[set[str], bool] = field(
-        default_factory=partial(_enable_for_datasets_factory, LIBVIEWER_ENABLE_FOR_DATASETS)
-    )
-
-    @classmethod
-    def from_env(cls) -> "LibviewerConfig":
-        env = Env(expand_vars=True)
-        with env.prefixed("LIBVIEWER_"):
-            enable_for_datasets_raw = env.str(name="ENABLE_FOR_DATASETS", default=LIBVIEWER_ENABLE_FOR_DATASETS)
-            enable_for_datasets = _enable_for_datasets_factory(enable_for_datasets_raw)
-            return cls(enable_for_datasets=enable_for_datasets)

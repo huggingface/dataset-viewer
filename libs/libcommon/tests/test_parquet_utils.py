@@ -7,25 +7,21 @@ from collections.abc import Generator
 from http import HTTPStatus
 from pathlib import Path
 from typing import Any
-from unittest.mock import patch
 
+import libviewer as lv
 import pyarrow.parquet as pq
 import pytest
 from datasets import Dataset, Image, concatenate_datasets
 from datasets.table import embed_table_storage
 from fsspec import AbstractFileSystem
-from fsspec.implementations.http import HTTPFileSystem
 
-from libcommon.config import LibviewerConfig
 from libcommon.parquet_utils import (
-    ParquetIndexWithMetadata,
     RowsIndex,
     SchemaMismatchError,
     TooBigRows,
     extract_split_directory_from_parquet_url,
     get_num_parquet_files_to_process,
     parquet_export_is_partial,
-    should_use_libviewer,
 )
 from libcommon.resources import CacheMongoResource
 from libcommon.simple_cache import upsert_response
@@ -350,43 +346,6 @@ def dataset_image_with_config_parquet() -> dict[str, Any]:
     return config_parquet_content
 
 
-# TODO(kszucs): this fixture is used in a single test case, but the tests starts
-# to fail if I move the index creation there.
-@pytest.fixture
-def rows_index_with_parquet_metadata(
-    ds_sharded: Dataset,
-    ds_sharded_fs: AbstractFileSystem,
-    dataset_sharded_with_config_parquet_metadata: dict[str, Any],
-    parquet_metadata_directory: StrPath,
-) -> Generator[RowsIndex, None, None]:
-    with patch("libcommon.parquet_utils.libviewer_config", LibviewerConfig(enable_for_datasets=False)):
-        with ds_sharded_fs.open("default/train/0003.parquet") as f:
-            with patch("libcommon.parquet_utils.HTTPFile", return_value=f):
-                yield RowsIndex(
-                    dataset="ds_sharded",
-                    config="default",
-                    split="train",
-                    parquet_metadata_directory=parquet_metadata_directory,
-                    httpfs=HTTPFileSystem(),
-                    max_arrow_data_in_memory=9999999999,
-                )
-
-
-def test_should_use_libviewer() -> None:
-    # default is True
-    assert should_use_libviewer("anything") is True
-
-    with patch("libcommon.parquet_utils.libviewer_config", LibviewerConfig(enable_for_datasets=False)):
-        assert should_use_libviewer("anything") is False
-
-    with patch(
-        "libcommon.parquet_utils.libviewer_config", LibviewerConfig(enable_for_datasets={"dataset1", "dataset2"})
-    ):
-        assert should_use_libviewer("dataset1") is True
-        assert should_use_libviewer("dataset2") is True
-        assert should_use_libviewer("dataset3") is False
-
-
 def test_parquet_export_is_partial() -> None:
     assert parquet_export_is_partial(
         "https://hf.co/datasets/canonical/resolve/refs%2Fconvert%2Fparquet/en/partial-train/0000.parquet"
@@ -405,36 +364,26 @@ def test_indexer_get_rows_index_with_parquet_metadata(
     parquet_metadata_directory: StrPath,
     dataset_with_config_parquet_metadata: dict[str, Any],
 ) -> None:
-    with ds_fs.open("default/train/0000.parquet") as f:
-        with patch("libcommon.parquet_utils.HTTPFile", return_value=f):
-            index = RowsIndex(
-                dataset="ds",
-                config="default",
-                split="train",
-                parquet_metadata_directory=parquet_metadata_directory,
-                httpfs=HTTPFileSystem(),
-                max_arrow_data_in_memory=9999999999,
-            )
+    index = RowsIndex(
+        dataset="ds",
+        config="default",
+        split="train",
+        parquet_metadata_directory=parquet_metadata_directory,
+        max_scan_size=9999999999,
+    )
 
     assert index.features == ds.features
     assert index.num_rows_total == 2
-
-    if index._use_libviewer:
-        import libviewer as lv
-
-        assert isinstance(index.viewer_index, lv.Dataset)
-        assert index.viewer_index.files == [
-            {
-                "path": "/".join(parquet_file_metadata["url"].split("/")[-3:]),
-                "metadata_path": parquet_file_metadata["parquet_metadata_subpath"],
-                "num_rows": parquet_file_metadata["num_rows"],
-                "size": parquet_file_metadata["size"],
-            }
-            for parquet_file_metadata in dataset_with_config_parquet_metadata["parquet_files_metadata"]
-        ]
-    else:
-        assert isinstance(index.viewer_index, ParquetIndexWithMetadata)
-        assert index.parquet_index.files == dataset_with_config_parquet_metadata["parquet_files_metadata"]
+    assert isinstance(index.viewer_index, lv.Dataset)
+    assert index.viewer_index.files == [
+        {
+            "path": "/".join(parquet_file_metadata["url"].split("/")[-3:]),
+            "metadata_path": parquet_file_metadata["parquet_metadata_subpath"],
+            "num_rows": parquet_file_metadata["num_rows"],
+            "size": parquet_file_metadata["size"],
+        }
+        for parquet_file_metadata in dataset_with_config_parquet_metadata["parquet_files_metadata"]
+    ]
 
 
 def test_indexer_get_rows_index_sharded_with_parquet_metadata(
@@ -444,70 +393,27 @@ def test_indexer_get_rows_index_sharded_with_parquet_metadata(
     parquet_metadata_directory: StrPath,
     dataset_sharded_with_config_parquet_metadata: dict[str, Any],
 ) -> None:
-    with ds_sharded_fs.open("default/train/0003.parquet") as f:
-        with patch("libcommon.parquet_utils.HTTPFile", return_value=f):
-            index = RowsIndex(
-                dataset="ds_sharded",
-                config="default",
-                split="train",
-                parquet_metadata_directory=parquet_metadata_directory,
-                httpfs=HTTPFileSystem(),
-                max_arrow_data_in_memory=9999999999,
-            )
+    index = RowsIndex(
+        dataset="ds_sharded",
+        config="default",
+        split="train",
+        parquet_metadata_directory=parquet_metadata_directory,
+        max_scan_size=9999999999,
+    )
 
-    if index._use_libviewer:
-        import libviewer as lv
-
-        assert isinstance(index.viewer_index, lv.Dataset)
-        assert index.viewer_index.files == [
-            {
-                "path": "/".join(parquet_file_metadata["url"].split("/")[-3:]),
-                "metadata_path": parquet_file_metadata["parquet_metadata_subpath"],
-                "num_rows": parquet_file_metadata["num_rows"],
-                "size": parquet_file_metadata["size"],
-            }
-            for parquet_file_metadata in dataset_sharded_with_config_parquet_metadata["parquet_files_metadata"]
-        ]
-        num_rows = [f["num_rows"] for f in index.viewer_index.files]
-    else:
-        assert isinstance(index.parquet_index, ParquetIndexWithMetadata)
-        assert index.parquet_index.features == ds_sharded.features
-        assert index.parquet_index.files == dataset_sharded_with_config_parquet_metadata["parquet_files_metadata"]
-        num_rows = [f["num_rows"] for f in index.parquet_index.files]
-
+    assert isinstance(index.viewer_index, lv.Dataset)
+    assert index.viewer_index.files == [
+        {
+            "path": "/".join(parquet_file_metadata["url"].split("/")[-3:]),
+            "metadata_path": parquet_file_metadata["parquet_metadata_subpath"],
+            "num_rows": parquet_file_metadata["num_rows"],
+            "size": parquet_file_metadata["size"],
+        }
+        for parquet_file_metadata in dataset_sharded_with_config_parquet_metadata["parquet_files_metadata"]
+    ]
+    num_rows = [f["num_rows"] for f in index.viewer_index.files]
     assert num_rows == [len(ds)] * 4
     assert index.num_rows_total == 8
-
-
-@pytest.mark.anyio
-async def test_rows_index_query_with_parquet_metadata(
-    rows_index_with_parquet_metadata: RowsIndex, ds_sharded: Dataset
-) -> None:
-    assert isinstance(rows_index_with_parquet_metadata.parquet_index, ParquetIndexWithMetadata)
-    assert not hasattr(rows_index_with_parquet_metadata, "viewer_index")
-    result, _ = await rows_index_with_parquet_metadata.query_parquet_index(offset=1, length=3)
-    assert result.to_pydict() == ds_sharded[1:4]
-
-    result, _ = await rows_index_with_parquet_metadata.query_parquet_index(offset=1, length=-1)
-    assert result.to_pydict() == ds_sharded[:0]
-
-    result, _ = await rows_index_with_parquet_metadata.query_parquet_index(offset=1, length=0)
-    assert result.to_pydict() == ds_sharded[:0]
-
-    result, _ = await rows_index_with_parquet_metadata.query_parquet_index(offset=999999, length=1)
-    assert result.to_pydict() == ds_sharded[:0]
-
-    result, _ = await rows_index_with_parquet_metadata.query_parquet_index(offset=1, length=99999999)
-    assert result.to_pydict() == ds_sharded[1:]
-
-    with pytest.raises(IndexError):
-        await rows_index_with_parquet_metadata.query_parquet_index(offset=-1, length=2)
-
-    # test that the other query() calls query_parquet_index() rather than query_libviewer_index()
-    result, _ = await rows_index_with_parquet_metadata.query(offset=1, length=3)
-    assert result.to_pydict() == ds_sharded[1:4]
-    with pytest.raises(AttributeError):
-        await rows_index_with_parquet_metadata.query_libviewer_index(offset=1, length=3)
 
 
 @pytest.mark.anyio
@@ -517,18 +423,13 @@ async def test_rows_index_query_with_parquet_metadata_libviewer(
     dataset_sharded_with_config_parquet_metadata: dict[str, Any],
     parquet_metadata_directory: StrPath,
 ) -> None:
-    # test the same with page pruning API
-    import libviewer as lv
-
     rows_index_with_parquet_metadata = RowsIndex(
         dataset="ds_sharded",
         config="default",
         split="train",
         parquet_metadata_directory=parquet_metadata_directory,
-        httpfs=HTTPFileSystem(),
         hf_token="token",
         max_scan_size=9999999999,
-        max_arrow_data_in_memory=9999999999,
         data_store=f"file://{ds_sharded_fs.local_root_dir}",
     )
 
@@ -547,12 +448,6 @@ async def test_rows_index_query_with_parquet_metadata_libviewer(
     with pytest.raises(IndexError):
         await rows_index_with_parquet_metadata.query_libviewer_index(offset=-1, length=2)
 
-    # test that the other query() calls query_libviewer_index() rather than query_parquet_index()
-    result, _ = await rows_index_with_parquet_metadata.query(offset=1, length=3)
-    assert result.to_pydict() == ds_sharded[1:4]
-    with pytest.raises(AttributeError):
-        await rows_index_with_parquet_metadata.query_parquet_index(offset=1, length=3)
-
 
 @pytest.mark.anyio
 async def test_rows_index_query_with_too_big_rows(
@@ -561,32 +456,13 @@ async def test_rows_index_query_with_too_big_rows(
     ds_sharded_fs: AbstractFileSystem,
     dataset_sharded_with_config_parquet_metadata: dict[str, Any],
 ) -> None:
-    await HTTPFileSystem().set_session()
-
-    with patch("libcommon.parquet_utils.libviewer_config", LibviewerConfig(enable_for_datasets=False)):
-        with ds_sharded_fs.open("default/train/0003.parquet") as f:
-            with patch("libcommon.parquet_utils.HTTPFile", return_value=f):
-                index = RowsIndex(
-                    dataset="ds_sharded",
-                    config="default",
-                    split="train",
-                    parquet_metadata_directory=parquet_metadata_directory,
-                    httpfs=HTTPFileSystem(),
-                    max_arrow_data_in_memory=1,
-                )
-
-    with pytest.raises(TooBigRows):
-        await index.query_parquet_index(offset=0, length=3)
-
     index = RowsIndex(
         dataset="ds_sharded",
         config="default",
         split="train",
         parquet_metadata_directory=parquet_metadata_directory,
-        httpfs=HTTPFileSystem(),
         hf_token="token",
         max_scan_size=1,
-        max_arrow_data_in_memory=1,
         data_store=f"file://{ds_sharded_fs.local_root_dir}",
     )
 
@@ -602,39 +478,13 @@ async def test_rows_index_query_with_empty_dataset(
     dataset_empty_with_config_parquet_metadata: dict[str, Any],
     parquet_metadata_directory: StrPath,
 ) -> None:
-    await HTTPFileSystem().set_session()
-
-    with patch("libcommon.parquet_utils.libviewer_config", LibviewerConfig(enable_for_datasets=False)):
-        with ds_empty_fs.open("default/train/0000.parquet") as f:
-            with patch("libcommon.parquet_utils.HTTPFile", return_value=f):
-                index = RowsIndex(
-                    dataset="ds_empty",
-                    config="default",
-                    split="train",
-                    parquet_metadata_directory=parquet_metadata_directory,
-                    httpfs=HTTPFileSystem(),
-                    max_arrow_data_in_memory=9999999999,
-                )
-
-    assert isinstance(index.parquet_index, ParquetIndexWithMetadata)
-    assert not hasattr(index, "viewer_index")
-    result, _ = await index.query_parquet_index(offset=0, length=1)
-    assert result.to_pydict() == ds_empty[:0]
-    with pytest.raises(IndexError):
-        await index.query_parquet_index(offset=-1, length=2)
-
-    # test the same with page pruning API
-    import libviewer as lv
-
     index = RowsIndex(
         dataset="ds_empty",
         config="default",
         split="train",
         parquet_metadata_directory=parquet_metadata_directory,
-        httpfs=HTTPFileSystem(),
         hf_token="token",
         max_scan_size=9999999999,
-        max_arrow_data_in_memory=9999999999,
         data_store=f"file://{ds_empty_fs.local_root_dir}",
     )
 
@@ -647,28 +497,23 @@ async def test_rows_index_query_with_empty_dataset(
 
 
 @pytest.mark.anyio
-async def test_indexer_schema_mistmatch_error(
+async def test_indexer_schema_mismatch_error_libviewer(
     ds_sharded_fs: AbstractFileSystem,
     ds_sharded_fs_with_different_schema: AbstractFileSystem,
     dataset_sharded_with_config_parquet_metadata: dict[str, Any],
     parquet_metadata_directory: StrPath,
 ) -> None:
-    await HTTPFileSystem().set_session()
-
-    with patch("libcommon.parquet_utils.libviewer_config", LibviewerConfig(enable_for_datasets=False)):
-        with ds_sharded_fs_with_different_schema.open("default/train/0000.parquet") as first_parquet:
-            with ds_sharded_fs_with_different_schema.open("default/train/0001.parquet") as second_parquet:
-                with patch("libcommon.parquet_utils.HTTPFile", side_effect=[first_parquet, second_parquet]):
-                    index = RowsIndex(
-                        dataset="ds_sharded",
-                        config="default",
-                        split="train",
-                        parquet_metadata_directory=parquet_metadata_directory,
-                        httpfs=HTTPFileSystem(),
-                        max_arrow_data_in_memory=9999999999,
-                    )
-                    with pytest.raises(SchemaMismatchError):
-                        await index.query_parquet_index(offset=0, length=3)
+    index = RowsIndex(
+        dataset="ds_sharded",
+        config="default",
+        split="train",
+        parquet_metadata_directory=parquet_metadata_directory,
+        hf_token="token",
+        max_scan_size=9999999999,
+        data_store=f"file://{ds_sharded_fs_with_different_schema.local_root_dir}",
+    )
+    with pytest.raises(SchemaMismatchError):
+        await index.query_libviewer_index(offset=0, length=3)
 
 
 @pytest.mark.parametrize(

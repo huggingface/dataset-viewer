@@ -1,7 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-import functools
 import logging
 from typing import Optional
 
@@ -12,12 +11,11 @@ from libcommon.exceptions import (
     ParquetResponseEmptyError,
     PreviousStepFormatError,
 )
-from libcommon.parquet_utils import extract_split_directory_from_parquet_url, should_use_libviewer
+from libcommon.parquet_utils import extract_split_directory_from_parquet_url
 from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.storage import StrPath
 from libcommon.viewer_utils.parquet_metadata import create_parquet_metadata_dir, create_parquet_metadata_file
 from pyarrow.parquet import ParquetFile
-from tqdm.contrib.concurrent import thread_map
 
 from worker.config import AppConfig
 from worker.dtos import (
@@ -136,80 +134,62 @@ def compute_parquet_metadata_response(
     except Exception as e:
         raise PreviousStepFormatError("Previous step did not return the expected content.") from e
 
-    parquet_files_metadata: list[ParquetFileMetadataItem]
-    if should_use_libviewer(dataset):
-        logging.info(f"Using libviewer to create parquet metadata for {dataset=} {config=}")
+    # get the split name from the first parquet url
+    first_parquet_file_item = parquet_file_items[0]
+    split = first_parquet_file_item["url"].split("/")[-2]
 
-        # get the split name from the first parquet url
-        first_parquet_file_item = parquet_file_items[0]
-        split = first_parquet_file_item["url"].split("/")[-2]
+    # create the parquet metadata directory and subpath
+    _dir_path, _parquet_metadata_dir_subpath = create_parquet_metadata_dir(
+        dataset=dataset,
+        config=config,
+        split=split,
+        parquet_metadata_directory=parquet_metadata_directory,
+    )
 
-        # create the parquet metadata directory and subpath
-        _dir_path, _parquet_metadata_dir_subpath = create_parquet_metadata_dir(
-            dataset=dataset,
-            config=config,
-            split=split,
-            parquet_metadata_directory=parquet_metadata_directory,
-        )
+    # construct the required parquet_files list for libviewer.Dataset
+    files = []
+    for parquet_file_item in parquet_file_items:
+        split = parquet_file_item["url"].split("/")[-2]
+        parquet_metadata_dir_subpath = f"{dataset}/{DATASET_SEPARATOR}/{config}/{split}"
 
-        # construct the required parquet_files list for libviewer.Dataset
-        files = []
-        for parquet_file_item in parquet_file_items:
-            split = parquet_file_item["url"].split("/")[-2]
-            parquet_metadata_dir_subpath = f"{dataset}/{DATASET_SEPARATOR}/{config}/{split}"
-
-            # ^ https://github.com/huggingface/dataset-viewer/issues/2768
-            # to support more than 10k parquet files, in which case, instead of "train" for example,
-            # the subdirectories are "train-part0", "train-part1", "train-part2", etc.
-            files.append(
-                {
-                    "path": f"{parquet_file_item['config']}/{split}/{parquet_file_item['filename']}",
-                    "size": parquet_file_item["size"],
-                    "num_rows": None,
-                    "metadata_path": f"{parquet_metadata_dir_subpath}/{parquet_file_item['filename']}",
-                }
-            )
-
-        # instantiate libviewer.Dataset and sync index to create parquet metadata files
-        viewer = lv.Dataset(
-            name=dataset,
-            files=files,
-            revision="refs/convert/parquet",
-            hf_token=hf_token,
-            hf_endpoint=hf_endpoint,
-            data_store=data_store,
-            metadata_store=f"file://{parquet_metadata_directory}",
-        )
-        result = viewer.sync_index()
-
-        # construct the expected response format with num_rows from the result
-        parquet_files_metadata = [
+        # ^ https://github.com/huggingface/dataset-viewer/issues/2768
+        # to support more than 10k parquet files, in which case, instead of "train" for example,
+        # the subdirectories are "train-part0", "train-part1", "train-part2", etc.
+        files.append(
             {
-                "dataset": item["dataset"],
-                "config": item["config"],
-                "split": item["split"],
-                "url": item["url"],
-                "filename": item["filename"],
-                "size": item["size"],
-                "num_rows": res["num_rows"],
-                "parquet_metadata_subpath": res["metadata_path"],
+                "path": f"{parquet_file_item['config']}/{split}/{parquet_file_item['filename']}",
+                "size": parquet_file_item["size"],
+                "num_rows": None,
+                "metadata_path": f"{parquet_metadata_dir_subpath}/{parquet_file_item['filename']}",
             }
-            for item, res in zip(parquet_file_items, result)
-        ]
-    else:
-        desc = f"{dataset}/{config}"
-        parquet_files_metadata = thread_map(
-            functools.partial(
-                create_parquet_metadata_file_from_remote_parquet,
-                hf_endpoint=hf_endpoint,
-                hf_token=hf_token,
-                parquet_metadata_directory=parquet_metadata_directory,
-            ),
-            parquet_file_items,
-            desc=desc,
-            unit="pq",
-            disable=True,
         )
+
+    # instantiate libviewer.Dataset and sync index to create parquet metadata files
+    viewer = lv.Dataset(
+        name=dataset,
+        files=files,
+        revision="refs/convert/parquet",
+        hf_token=hf_token,
+        hf_endpoint=hf_endpoint,
+        data_store=data_store,
+        metadata_store=f"file://{parquet_metadata_directory}",
+    )
+    result = viewer.sync_index()
+
+    # construct the expected response format with num_rows from the result
+    parquet_files_metadata: list[ParquetFileMetadataItem] = [
+        {
+            "dataset": item["dataset"],
+            "config": item["config"],
+            "split": item["split"],
+            "url": item["url"],
+            "filename": item["filename"],
+            "size": item["size"],
+            "num_rows": res["num_rows"],
+            "parquet_metadata_subpath": res["metadata_path"],
+        }
+        for item, res in zip(parquet_file_items, result)
+    ]
 
     return ConfigParquetMetadataResponse(
         parquet_files_metadata=parquet_files_metadata, features=features, partial=partial

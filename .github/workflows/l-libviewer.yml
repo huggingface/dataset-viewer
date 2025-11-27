@@ -1,0 +1,75 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2022 The HuggingFace Authors.
+
+name: libs/libviewer
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - "libs/libviewer/**"
+  pull_request:
+    paths:
+      - "libs/libviewer/**"
+
+env:
+  # required to get access to use a cached poetry venv in "/home/runner/.cache/pypoetry/virtualenvs"
+  POETRY_VIRTUALENVS_IN_PROJECT: false
+  python-version: "3.12.11"
+  poetry-version: "2.1.4"
+
+jobs:
+  quality-libviewer:
+    runs-on: "ubuntu-latest"
+    defaults:
+      run:
+        shell: bash
+        working-directory: libs/libviewer
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install poetry
+        run: pipx install poetry==${{ env.poetry-version }}
+      - name: Use Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.python-version }}
+      - name: Install dependencies
+        # "poetry env use" is required: https://github.com/actions/setup-python/issues/374#issuecomment-1088938718
+        run: |
+          poetry env use "${{ env.python-version }}"
+          poetry install --with dev
+      - name: Cargo Format
+        run: cargo fmt --all -- --check
+      - name: Cargo Check
+        run: cargo check --all --all-targets
+      - name: Cargo Clippy
+        run: cargo clippy --all --all-targets -- -D warnings
+      - name: Ruff Check
+        run: poetry run ruff check .
+      - name: Ruff Format
+        run: poetry run ruff format --check .
+
+  unit-tests-libviewer:
+    runs-on: "ubuntu-latest"
+    defaults:
+      run:
+        shell: bash
+        working-directory: libs/libviewer
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install poetry
+        run: pipx install poetry==${{ env.poetry-version }} maturin
+      - name: Use Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.python-version }}
+      - name: Install dependencies
+        # "poetry env use" is required: https://github.com/actions/setup-python/issues/374#issuecomment-1088938718
+        run: |
+          poetry env use "${{ env.python-version }}"
+          poetry install --with dev
+      - name: Build libviewer
+        run: poetry run maturin develop
+      - name: Run unit tests
+        run: poetry run python -m pytest -sv libviewer/tests

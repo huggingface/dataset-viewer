@@ -5,6 +5,9 @@ name = "libviewer"
 version = "0.1.0"
 license = "Apache-2.0"
 
+[tool.poetry.scripts]
+dv = "libviewer.cli:cli"
+
 [tool.poetry.dependencies]
 anyio = ">=3.4.0,<5"
 python = "3.12.11"
@@ -14,26 +17,11 @@ huggingface-hub = {version = "^0.31.0", extras = ["hf-transfer"]}
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.0.0"
-
-[tool.poetry.build]
-script = "build.py"
+ruff = "^0.14.6"
 
 [build-system]
-requires = ["poetry-core", "maturin>=1.0,<2.0"]
-build-backend = "poetry.core.masonry.api"
-
-[project]
-name = "libviewer"
-requires-python = ">=3.9.18"
-classifiers = [
-    "Programming Language :: Rust",
-    "Programming Language :: Python :: Implementation :: CPython",
-    "Programming Language :: Python :: Implementation :: PyPy",
-]
-dynamic = ["version"]
-
-[project.scripts]
-dv = "libviewer.cli:cli"
+requires = ["maturin>=1.4,<2.0"]
+build-backend = "maturin"
 
 [tool.maturin]
 # bindings = "pyo3"

@@ -17,12 +17,16 @@ from tqdm.contrib.concurrent import thread_map
 matplotlib.use("SVG")
 
 DEV = os.environ.get("DEV", False)
-HF_ENDPOINT = os.environ.get("HF_ENDPOINT", "https://hub-ci.huggingface.co" if DEV else "https://huggingface.co")
+HF_ENDPOINT = os.environ.get(
+    "HF_ENDPOINT", "https://hub-ci.huggingface.co" if DEV else "https://huggingface.co"
+)
 PROD_DV_ENDPOINT = os.environ.get(
     "PROD_DV_ENDPOINT", "https://datasets-server.huggingface.co"
 )
 DEV_DV_ENDPOINT = os.environ.get("DEV_DV_ENDPOINT", "http://localhost:8100")
-ADMIN_HF_ORGANIZATION = os.environ.get("ADMIN_HF_ORGANIZATION", "valid_org" if DEV else "datasets-maintainers")
+ADMIN_HF_ORGANIZATION = os.environ.get(
+    "ADMIN_HF_ORGANIZATION", "valid_org" if DEV else "datasets-maintainers"
+)
 HF_TOKEN = os.environ.get("HF_TOKEN")
 
 DV_ENDPOINT = DEV_DV_ENDPOINT if DEV else PROD_DV_ENDPOINT
@@ -219,9 +223,9 @@ with gr.Blocks() as demo:
                                 unauthorized_datasets.append(dataset)
 
                         def fill_empty_cells(datasets, sign):
-                            trending_datasets_coverage[
-                                "All trending datasets"
-                            ] += datasets
+                            trending_datasets_coverage["All trending datasets"] += (
+                                datasets
+                            )
                             for pretty_field in trending_datasets_coverage:
                                 trending_datasets_coverage[pretty_field] += [sign] * (
                                     len(
@@ -235,10 +239,11 @@ with gr.Blocks() as demo:
                         fill_empty_cells(error_datasets, "❌")
                         fill_empty_cells(unauthorized_datasets, "🚫")
 
-                        out[
-                            home_dashboard_trending_datasets_coverage_table
-                        ] = gr.DataFrame(
-                            visible=True, value=pd.DataFrame(trending_datasets_coverage)
+                        out[home_dashboard_trending_datasets_coverage_table] = (
+                            gr.DataFrame(
+                                visible=True,
+                                value=pd.DataFrame(trending_datasets_coverage),
+                            )
                         )
                         trending_datasets_coverage_stats = {
                             "Num trending datasets": [len(trending_datasets)],
@@ -250,24 +255,24 @@ with gr.Blocks() as demo:
                                 if is_valid_field != "All trending datasets"
                             },
                         }
-                        out[
-                            home_dashboard_trending_datasets_coverage_stats_table
-                        ] = gr.DataFrame(
-                            visible=True,
-                            value=pd.DataFrame(trending_datasets_coverage_stats),
+                        out[home_dashboard_trending_datasets_coverage_stats_table] = (
+                            gr.DataFrame(
+                                visible=True,
+                                value=pd.DataFrame(trending_datasets_coverage_stats),
+                            )
                         )
                     else:
-                        out[
-                            home_dashboard_trending_datasets_coverage_table
-                        ] = gr.DataFrame(
-                            visible=True,
-                            value=pd.DataFrame(
-                                {
-                                    "Error": [
-                                        f"❌ Failed to fetch trending datasets from {HF_ENDPOINT} (error {response.status_code})"
-                                    ]
-                                }
-                            ),
+                        out[home_dashboard_trending_datasets_coverage_table] = (
+                            gr.DataFrame(
+                                visible=True,
+                                value=pd.DataFrame(
+                                    {
+                                        "Error": [
+                                            f"❌ Failed to fetch trending datasets from {HF_ENDPOINT} (error {response.status_code})"
+                                        ]
+                                    }
+                                ),
+                            )
                         )
                     return out
 
