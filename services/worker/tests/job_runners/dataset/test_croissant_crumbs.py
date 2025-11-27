@@ -65,6 +65,7 @@ v1_context = {
     "citeAs": "cr:citeAs",
     "column": "cr:column",
     "conformsTo": "dct:conformsTo",
+    "containedIn": "cr:containedIn",
     "cr": "http://mlcommons.org/croissant/",
     "data": {"@id": "cr:data", "@type": "@json"},
     "dataBiases": "cr:dataBiases",
