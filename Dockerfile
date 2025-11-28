@@ -149,4 +149,7 @@ FROM libcommon AS mongodb_migration
 COPY jobs/mongodb_migration /src/jobs/mongodb_migration
 WORKDIR /src/jobs/mongodb_migration
 RUN poetry install --no-cache
+# Install libviewer wheel built in the viewer stage
+COPY --from=viewer /tmp/dist /tmp/dist
+RUN pip install /tmp/dist/libviewer-*.whl
 CMD ["poetry", "run", "python", "src/mongodb_migration/main.py"]
