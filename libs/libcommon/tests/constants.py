@@ -67,6 +67,7 @@ DATASETS_NAMES = [
     "sequence_of_dicts",
     "none_value",
     "pdf",
+    "nifti",
 ]
 
 TEN_CHARS_TEXT = "a" * 10

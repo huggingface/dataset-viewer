@@ -6,7 +6,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Any, Callable, Literal, Optional, Union
 
-from datasets import Audio, Features, Image, Pdf, Video
+from datasets import Audio, Features, Image, Nifti, Pdf, Video
 from datasets.features.features import FeatureType, LargeList, List
 
 from libcommon.cloudfront import CloudFrontSigner
@@ -23,7 +23,7 @@ VisitPath = list[Union[str, Literal[0]]]
 
 @dataclass
 class AssetUrlPath:
-    feature_type: Literal["Audio", "Image", "Video", "Pdf"]
+    feature_type: Literal["Audio", "Image", "Video", "Pdf", "Nifti"]
     path: VisitPath
 
     def enter(self) -> "AssetUrlPath":
@@ -75,6 +75,8 @@ def get_asset_url_paths(features: Features) -> list[AssetUrlPath]:
                 asset_url_paths.append(AssetUrlPath(feature_type="Video", path=visit_path))
             elif isinstance(feature, Pdf):
                 asset_url_paths.append(AssetUrlPath(feature_type="Pdf", path=visit_path))
+            elif isinstance(feature, Nifti):
+                asset_url_paths.append(AssetUrlPath(feature_type="Nifti", path=visit_path))
 
         _visit(feature, classify, [column])
     return asset_url_paths

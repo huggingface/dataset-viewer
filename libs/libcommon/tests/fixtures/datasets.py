@@ -20,6 +20,7 @@ from datasets import (
     Features,
     Image,
     List,
+    Nifti,
     Pdf,
     Translation,
     TranslationVariableLanguages,
@@ -639,5 +640,24 @@ def datasets_fixtures() -> Mapping[str, DatasetFixture]:
                 ),
             ],
             2,  # One for the pdf file and one for the thumbnail
+        ),
+        "nifti": DatasetFixture(
+            other(
+                str(Path(__file__).resolve().parent / "data" / "test_brain.nii.gz"),
+                Nifti(),
+            ),
+            {"_type": "Nifti"},
+            {
+                "src": f"{ASSETS_BASE_URL}/nifti/--/{DEFAULT_REVISION}/--/{DEFAULT_CONFIG}/{DEFAULT_SPLIT}/{DEFAULT_ROW_IDX}/col/nifti.nii.gz",
+            },
+            [
+                AssetUrlPath(
+                    feature_type="Nifti",
+                    path=[
+                        DEFAULT_COLUMN_NAME,
+                    ],
+                ),
+            ],
+            1,
         ),
     }

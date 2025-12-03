@@ -23,6 +23,7 @@ from datasets import (
     Image,
     LargeList,
     List,
+    Nifti,
     Pdf,
     Translation,
     TranslationVariableLanguages,
@@ -37,6 +38,7 @@ from libcommon.viewer_utils.asset import (
     SUPPORTED_AUDIO_EXTENSIONS,
     create_audio_file,
     create_image_file,
+    create_nifti_file,
     create_pdf_file,
     create_video_file,
 )
@@ -351,6 +353,55 @@ def pdf(
     )
 
 
+def nifti(
+    dataset: str,
+    revision: str,
+    config: str,
+    split: str,
+    row_idx: int,
+    value: Any,
+    featureName: str,
+    storage_client: StorageClient,
+    json_path: Optional[list[Union[str, int]]] = None,
+) -> Any:
+    import nibabel as nib
+
+    if value is None:
+        return None
+
+    # Extract bytes from various input formats
+    if isinstance(value, dict):
+        if value.get("bytes"):
+            nifti_bytes = value["bytes"]
+        elif value.get("path") and isinstance(value["path"], str) and os.path.exists(value["path"]):
+            with open(value["path"], "rb") as f:
+                nifti_bytes = f.read()
+        else:
+            raise ValueError(f"Nifti value must have 'bytes' or valid 'path': {value}")
+    elif isinstance(value, bytes):
+        nifti_bytes = value
+    elif isinstance(value, nib.nifti1.Nifti1Image):
+        # Handle decoded nibabel image - convert back to bytes
+        nifti_bytes = value.to_bytes()
+    else:
+        raise TypeError(
+            "Nifti cell must be bytes, an encoded dict of a Nifti file, or a nibabel Nifti1Image, "
+            f"but got {str(value)[:300]}{'...' if len(str(value)) > 300 else ''}"
+        )
+
+    return create_nifti_file(
+        dataset=dataset,
+        revision=revision,
+        config=config,
+        split=split,
+        row_idx=row_idx,
+        column=featureName,
+        filename=f"{append_hash_suffix('nifti', json_path)}.nii.gz",
+        nifti_file_bytes=nifti_bytes,
+        storage_client=storage_client,
+    )
+
+
 def get_cell_value(
     dataset: str,
     revision: str,
@@ -404,6 +455,18 @@ def get_cell_value(
         )
     elif isinstance(fieldType, Pdf):
         return pdf(
+            dataset=dataset,
+            revision=revision,
+            config=config,
+            split=split,
+            row_idx=row_idx,
+            value=cell,
+            featureName=featureName,
+            storage_client=storage_client,
+            json_path=json_path,
+        )
+    elif isinstance(fieldType, Nifti):
+        return nifti(
             dataset=dataset,
             revision=revision,
             config=config,

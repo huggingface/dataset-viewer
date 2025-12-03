@@ -42,6 +42,10 @@ class PDFSource(TypedDict):
     thumbnail: ImageSource
 
 
+class NiftiSource(TypedDict):
+    src: str
+
+
 def create_image_file(
     dataset: str,
     revision: str,
@@ -257,3 +261,36 @@ def create_video_file(
         raise ValueError("The video cell doesn't contain a valid path or bytes")
     src = storage_client.get_url(object_path, revision=revision)
     return VideoSource(src=src)
+
+
+def create_nifti_file(
+    dataset: str,
+    revision: str,
+    config: str,
+    split: str,
+    row_idx: int,
+    column: str,
+    filename: str,
+    nifti_file_bytes: bytes,
+    storage_client: "StorageClient",
+) -> NiftiSource:
+    # We use a placeholder revision in the JSON stored in the database,
+    # while the path of the file stored on the disk/s3 contains the revision.
+    # The placeholder will be replaced later by the
+    # dataset_git_revision of cache responses when the data will be accessed.
+    # This is useful to allow moving files to a newer revision without having
+    # to modify the cached rows content.
+    object_path = storage_client.generate_object_path(
+        dataset=dataset,
+        revision=DATASET_GIT_REVISION_PLACEHOLDER,
+        config=config,
+        split=split,
+        row_idx=row_idx,
+        column=column,
+        filename=filename,
+    )
+    path = replace_dataset_git_revision_placeholder(object_path, revision=revision)
+    if storage_client.overwrite or not storage_client.exists(path):
+        with storage_client._fs.open(storage_client.get_full_path(path), "wb") as f:
+            f.write(nifti_file_bytes)
+    return NiftiSource(src=storage_client.get_url(object_path, revision=revision))
