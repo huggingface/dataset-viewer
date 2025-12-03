@@ -364,10 +364,17 @@ def nifti(
     storage_client: StorageClient,
     json_path: Optional[list[Union[str, int]]] = None,
 ) -> Any:
-    import nibabel as nib
-
     if value is None:
         return None
+
+    # Determine file extension (preserve .nii vs .nii.gz)
+    file_ext = ".nii.gz"  # default
+    if isinstance(value, dict) and "path" in value and isinstance(value["path"], str):
+        path = value["path"]
+        if path.endswith(".nii.gz"):
+            file_ext = ".nii.gz"
+        elif path.endswith(".nii"):
+            file_ext = ".nii"
 
     # Extract bytes from various input formats
     if isinstance(value, dict):
@@ -380,12 +387,12 @@ def nifti(
             raise ValueError(f"Nifti value must have 'bytes' or valid 'path': {value}")
     elif isinstance(value, bytes):
         nifti_bytes = value
-    elif isinstance(value, nib.nifti1.Nifti1Image):
-        # Handle decoded nibabel image - convert back to bytes
+    elif hasattr(value, "to_bytes"):
+        # Handle any nibabel image type (Nifti1Image, Nifti2Image, etc.)
         nifti_bytes = value.to_bytes()
     else:
         raise TypeError(
-            "Nifti cell must be bytes, an encoded dict of a Nifti file, or a nibabel Nifti1Image, "
+            "Nifti cell must be bytes, an encoded dict of a Nifti file, or a nibabel image, "
             f"but got {str(value)[:300]}{'...' if len(str(value)) > 300 else ''}"
         )
 
@@ -396,7 +403,7 @@ def nifti(
         split=split,
         row_idx=row_idx,
         column=featureName,
-        filename=f"{append_hash_suffix('nifti', json_path)}.nii.gz",
+        filename=f"{append_hash_suffix('nifti', json_path)}{file_ext}",
         nifti_file_bytes=nifti_bytes,
         storage_client=storage_client,
     )
