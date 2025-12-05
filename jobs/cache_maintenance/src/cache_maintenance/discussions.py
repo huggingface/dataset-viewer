@@ -24,7 +24,7 @@ Apache Parquet is a popular columnar storage format known for:
 - fast data retrieval and filtering,
 - efficient storage.
 
-**This is what powers the [Data Studio](https://huggingface.co/docs/hub/data-studio)** to explore and run SQL queries on each dataset page. Thanks to Parquet, every dataset on the Hub can be accessed with the same code (you can use HF Datasets, ClickHouse, DuckDB, Pandas, PostgreSQL, pyspark, cuDF or Polars, [up to you](https://huggingface.co/docs/dataset-viewer/parquet_process)).
+**This is what powers the dataset viewer** on each dataset page and every dataset on the Hub can be accessed with the same code (you can use HF Datasets, ClickHouse, DuckDB, Pandas, PostgreSQL, or Polars, [up to you](https://huggingface.co/docs/dataset-viewer/parquet_process)).
 
 You can learn more about the advantages associated with Parquet in the [documentation](https://huggingface.co/docs/dataset-viewer/parquet).
 
