@@ -34,7 +34,7 @@ You can access the Parquet version of the dataset by following this link: {parqu
 
 ## What if my dataset was already in Parquet?
 
-When the dataset is already in Parquet format, the data are not converted and the files in `refs/convert/parquet` are links to the original files. This rule has an exception to ensure the dataset viewer API to stay fast: if the row group size of the original Parquet files is too big, new Parquet files are generated.
+When the dataset is already in Parquet format, the data are not converted and the files in `refs/convert/parquet` are links to the original files.
 
 ## What should I do?
 
