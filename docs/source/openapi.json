@@ -1985,6 +1985,14 @@
           },
           "400": {
             "description": "Row index out of bounds.",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/Cache-Control"
+              },
+              "Access-Control-Allow-Origin": {
+                "$ref": "#/components/headers/Access-Control-Allow-Origin"
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -2001,6 +2009,27 @@
           },
           "422": {
             "$ref": "#/components/responses/DatasetConfigSplit422"
+          },
+          "500": {
+            "description": "The server crashed, the response still hasn't been generated (the process is asynchronous), or the response couldn't be generated successfully due to corrupted metadata. The client can retry after a time, in particular in the case of the response still being processed.",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/Cache-Control"
+              },
+              "Access-Control-Allow-Origin": {
+                "$ref": "#/components/headers/Access-Control-Allow-Origin"
+              },
+              "X-Error-Code": {
+                "$ref": "#/components/headers/X-Error-Code-500-common"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                }
+              }
+            }
           }
         }
       }

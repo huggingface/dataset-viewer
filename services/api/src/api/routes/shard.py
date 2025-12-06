@@ -9,6 +9,8 @@ from libapi.authentication import auth_check
 from libapi.exceptions import (
     InvalidParameterError,
     MissingRequiredParameterError,
+    ResponseNotFoundError,
+    ResponseNotReadyError,
     UnexpectedApiError,
 )
 from libapi.request import get_request_parameter
@@ -166,6 +168,8 @@ def create_shard_endpoint(
                             InvalidParameterError,
                             MissingRequiredParameterError,
                             NotSupportedError,
+                            ResponseNotFoundError,
+                            ResponseNotReadyError,
                         ),
                     )
                     else UnexpectedApiError("Unexpected error.", e)

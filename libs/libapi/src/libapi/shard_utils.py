@@ -95,6 +95,11 @@ def get_shard_info(
 
     # Always compute parquet shard (from shard_lengths)
     shard_lengths = split_info.get("shard_lengths")
+
+    # Validate shard_lengths integrity if present (catches corrupted parquet metadata)
+    if shard_lengths and sum(shard_lengths) != num_examples:
+        raise ValueError(f"Corrupted metadata: sum(shard_lengths)={sum(shard_lengths)} != num_examples={num_examples}")
+
     parquet_info = get_parquet_shard_for_row(row_index, shard_lengths, parquet_files, split)
 
     # Check for original_shard_lengths - KEY EXISTENCE, not nullity!
@@ -111,10 +116,10 @@ def get_shard_info(
     original_shard_lengths = split_info["original_shard_lengths"]
 
     # Sanity check: validate metadata integrity
-    if sum(original_shard_lengths) != num_examples:
+    total_original = sum(original_shard_lengths)
+    if total_original != num_examples:
         raise ValueError(
-            f"Corrupted metadata: sum(original_shard_lengths)={sum(original_shard_lengths)} "
-            f"!= num_examples={num_examples}"
+            f"Corrupted metadata: sum(original_shard_lengths)={total_original} != num_examples={num_examples}"
         )
 
     original_info = get_original_shard_for_row(row_index, original_shard_lengths)

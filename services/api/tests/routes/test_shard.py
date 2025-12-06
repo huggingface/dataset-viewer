@@ -132,7 +132,7 @@ def test_shard_endpoint_row_out_of_bounds(client: TestClient, mock_cache_respons
     with patch("api.routes.shard.get_cache_entry_from_step", return_value=mock_cache_response):
         response = client.get("/shard?dataset=test&config=default&split=train&row=500")
         assert response.status_code == 400
-        assert "X-Error-Code" in response.headers
+        assert response.headers.get("X-Error-Code") == "RowOutOfBounds"
 
 
 def test_shard_endpoint_missing_params(client: TestClient):
