@@ -54,28 +54,18 @@ def create_shard_endpoint(
                     row_str = get_request_parameter(request, "row")
 
                     if not dataset:
-                        raise MissingRequiredParameterError(
-                            "Parameter 'dataset' is required"
-                        )
+                        raise MissingRequiredParameterError("Parameter 'dataset' is required")
                     if not config:
-                        raise MissingRequiredParameterError(
-                            "Parameter 'config' is required"
-                        )
+                        raise MissingRequiredParameterError("Parameter 'config' is required")
                     if not split:
-                        raise MissingRequiredParameterError(
-                            "Parameter 'split' is required"
-                        )
+                        raise MissingRequiredParameterError("Parameter 'split' is required")
                     if not row_str:
-                        raise MissingRequiredParameterError(
-                            "Parameter 'row' is required"
-                        )
+                        raise MissingRequiredParameterError("Parameter 'row' is required")
 
                     try:
                         row = int(row_str)
                     except ValueError:
-                        raise InvalidParameterError(
-                            "Invalid 'row' parameter - must be integer"
-                        )
+                        raise InvalidParameterError("Invalid 'row' parameter - must be integer")
 
                     logging.debug(f"/shard {dataset=} {config=} {split=} {row=}")
 
@@ -123,9 +113,7 @@ def create_shard_endpoint(
 
                     if split not in splits:
                         return get_json_error_response(
-                            content={
-                                "error": f"Split '{split}' not found in config '{config}'"
-                            },
+                            content={"error": f"Split '{split}' not found in config '{config}'"},
                             status_code=HTTPStatus.NOT_FOUND,
                             max_age=max_age_short,
                             error_code="SplitNotFound",
@@ -183,8 +171,6 @@ def create_shard_endpoint(
                     else UnexpectedApiError("Unexpected error.", e)
                 )
                 with StepProfiler(method=method, step="generate API error response"):
-                    return get_json_api_error_response(
-                        error=error, max_age=max_age_short, revision=revision
-                    )
+                    return get_json_api_error_response(error=error, max_age=max_age_short, revision=revision)
 
     return shard_endpoint

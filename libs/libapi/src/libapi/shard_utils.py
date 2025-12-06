@@ -25,9 +25,7 @@ class ShardInfoResponse(TypedDict):
     parquet_shard_file: str
 
 
-def get_original_shard_for_row(
-    row_index: int, original_shard_lengths: list[int]
-) -> OriginalShardInfo:
+def get_original_shard_for_row(row_index: int, original_shard_lengths: list[int]) -> OriginalShardInfo:
     """Cumulative sum to find which original shard contains row."""
     cumulative = 0
     for shard_idx, length in enumerate(original_shard_lengths):
@@ -97,9 +95,7 @@ def get_shard_info(
 
     # Always compute parquet shard (from shard_lengths)
     shard_lengths = split_info.get("shard_lengths")
-    parquet_info = get_parquet_shard_for_row(
-        row_index, shard_lengths, parquet_files, split
-    )
+    parquet_info = get_parquet_shard_for_row(row_index, shard_lengths, parquet_files, split)
 
     # Check for original_shard_lengths - KEY EXISTENCE, not nullity!
     if "original_shard_lengths" not in split_info:

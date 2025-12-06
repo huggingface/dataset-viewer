@@ -1,11 +1,13 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2025 The HuggingFace Authors.
 
-import pytest
 from unittest.mock import patch
-from starlette.testclient import TestClient
+
+import pytest
 from starlette.applications import Starlette
 from starlette.routing import Route
+from starlette.testclient import TestClient
+
 from api.routes.shard import create_shard_endpoint
 
 
@@ -30,15 +32,29 @@ def mock_cache_response():
                     "train": {
                         "num_examples": 400,
                         "shard_lengths": [200, 200],
-                        "original_shard_lengths": [100, 100, 100, 100]
+                        "original_shard_lengths": [100, 100, 100, 100],
                     }
                 }
             },
             "parquet_files": [
-                {"filename": "train-00000-of-00002.parquet", "split": "train", "dataset": "test", "config": "default", "url": "...", "size": 1000},
-                {"filename": "train-00001-of-00002.parquet", "split": "train", "dataset": "test", "config": "default", "url": "...", "size": 1000},
+                {
+                    "filename": "train-00000-of-00002.parquet",
+                    "split": "train",
+                    "dataset": "test",
+                    "config": "default",
+                    "url": "...",
+                    "size": 1000,
+                },
+                {
+                    "filename": "train-00001-of-00002.parquet",
+                    "split": "train",
+                    "dataset": "test",
+                    "config": "default",
+                    "url": "...",
+                    "size": 1000,
+                },
             ],
-            "partial": False
+            "partial": False,
         },
         "http_status": 200,
         "error_code": None,
@@ -63,10 +79,24 @@ def mock_legacy_cache_response():
                 }
             },
             "parquet_files": [
-                {"filename": "train-00000-of-00002.parquet", "split": "train", "dataset": "test", "config": "default", "url": "...", "size": 1000},
-                {"filename": "train-00001-of-00002.parquet", "split": "train", "dataset": "test", "config": "default", "url": "...", "size": 1000},
+                {
+                    "filename": "train-00000-of-00002.parquet",
+                    "split": "train",
+                    "dataset": "test",
+                    "config": "default",
+                    "url": "...",
+                    "size": 1000,
+                },
+                {
+                    "filename": "train-00001-of-00002.parquet",
+                    "split": "train",
+                    "dataset": "test",
+                    "config": "default",
+                    "url": "...",
+                    "size": 1000,
+                },
             ],
-            "partial": False
+            "partial": False,
         },
         "http_status": 200,
         "error_code": None,
