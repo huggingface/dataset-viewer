@@ -89,3 +89,19 @@ def test_row_out_of_bounds() -> None:
     parquet_files = [{"filename": "train.parquet", "split": "train"}]
     with pytest.raises(IndexError):
         get_shard_info(500, split_info, parquet_files, "train")
+
+
+def test_no_parquet_files_for_split() -> None:
+    """No parquet files for split -> ValueError (not silent fallback)"""
+    parquet_files: list[dict[str, str]] = []  # Empty!
+    with pytest.raises(ValueError, match="No parquet files found"):
+        get_parquet_shard_for_row(0, [100], parquet_files, "train")
+
+
+def test_metadata_inconsistency_more_shards_than_files() -> None:
+    """More shards in shard_lengths than parquet files -> ValueError"""
+    parquet_files = [{"filename": "train-00000.parquet", "split": "train"}]  # Only 1 file
+    shard_lengths = [100, 100, 100]  # But 3 shards
+    # Row 150 would be in shard index 1, but only 1 file exists
+    with pytest.raises(ValueError, match="Metadata inconsistency"):
+        get_parquet_shard_for_row(150, shard_lengths, parquet_files, "train")

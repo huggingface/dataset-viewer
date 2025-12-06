@@ -53,7 +53,8 @@ def get_parquet_shard_for_row(
     )
 
     if not split_files:
-        return {"parquet_shard_index": 0, "parquet_shard_file": f"{split}.parquet"}
+        # Following codebase pattern (duckdb.py:97-98): raise error, don't fabricate
+        raise ValueError(f"No parquet files found for split '{split}'")
 
     if not shard_lengths or len(shard_lengths) <= 1:
         # Single shard
@@ -65,11 +66,15 @@ def get_parquet_shard_for_row(
     cumulative = 0
     for shard_idx, length in enumerate(shard_lengths):
         if cumulative + length > row_index:
+            if shard_idx >= len(split_files):
+                # Metadata inconsistency: more shards than parquet files
+                raise ValueError(
+                    f"Metadata inconsistency: shard_lengths has {len(shard_lengths)} shards "
+                    f"but only {len(split_files)} parquet files for split '{split}'"
+                )
             return {
                 "parquet_shard_index": shard_idx,
-                "parquet_shard_file": split_files[shard_idx]["filename"]
-                if shard_idx < len(split_files)
-                else f"{split}-{shard_idx:05d}.parquet",
+                "parquet_shard_file": split_files[shard_idx]["filename"],
             }
         cumulative += length
     raise IndexError(f"row_index {row_index} out of bounds")
