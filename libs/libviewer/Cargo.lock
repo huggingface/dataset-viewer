@@ -1256,7 +1256,7 @@ checksum = "f9fbbcab51052fe104eb5e5d351cf728d30a5be1fe14d9be8a3b097481fb97de"
 
 [[package]]
 name = "libviewer"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "arrow",
  "bytes",
@@ -1449,8 +1449,7 @@ dependencies = [
 [[package]]
 name = "object_store_opendal"
 version = "0.54.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c0b88fc0e0c4890c1d99e2b8c519c5db40f7d9b69a0f562ff1ad4967a4c8bbc6"
+source = "git+https://github.com/kszucs/opendal?branch=hf-unconditional-stat-fix#2c6a5a61196ecfa37821546ba7919ab4e89f65e7"
 dependencies = [
  "async-trait",
  "bytes",
@@ -1476,7 +1475,7 @@ checksum = "384b8ab6d37215f3c5301a95a4accb5d64aa607f1fcb26a11b5303878451b4fe"
 [[package]]
 name = "opendal"
 version = "0.54.1"
-source = "git+https://github.com/kszucs/opendal?branch=hf-endpoint#8051d0990bcf849424d418022e4c80a8a3d8973c"
+source = "git+https://github.com/kszucs/opendal?branch=hf-unconditional-stat-fix#2c6a5a61196ecfa37821546ba7919ab4e89f65e7"
 dependencies = [
  "anyhow",
  "backon",
