@@ -22,7 +22,7 @@ pub struct IndexedFile {
     #[pyo3(item)]
     pub path: String,
     #[pyo3(item)]
-    pub size: Option<u64>,
+    pub size: u64,
     #[pyo3(item)]
     pub num_rows: Option<u64>,
     #[pyo3(item)]

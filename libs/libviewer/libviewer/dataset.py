@@ -1,10 +1,11 @@
-import os
 import functools
+import os
 
 import anyio
-from huggingface_hub import hf_hub_download, list_repo_files
+from huggingface_hub import HfApi, hf_hub_download, list_repo_files
 
-from ._internal import PyDataset, PyDatasetError as DatasetError  # noqa: F401
+from ._internal import PyDataset  # noqa: F401
+from ._internal import PyDatasetError as DatasetError  # noqa: F401
 
 
 class Dataset(PyDataset):
@@ -50,17 +51,22 @@ class Dataset(PyDataset):
 
     def from_hub(repo, metadata_store, revision, hf_token):
         """Create a Dataset from Hugging Face Hub."""
-        repo_files = list_repo_files(repo, repo_type="dataset", revision=revision)
+        api = HfApi(token=hf_token)
+        repo_info = api.list_repo_tree(
+            repo, repo_type="dataset", revision=revision, recursive=True
+        )
 
         parquet_files = []
-        for filename in repo_files:
-            if filename.endswith(".parquet"):
+        for file_info in repo_info:
+            if hasattr(file_info, "path") and file_info.path.endswith(".parquet"):
+                if not hasattr(file_info, "size") or file_info.size is None:
+                    raise ValueError(f"File size is not available for {file_info.path}")
                 parquet_files.append(
                     {
-                        "path": filename,
-                        "size": None,
+                        "path": file_info.path,
+                        "size": file_info.size,
                         "num_rows": None,
-                        "metadata_path": filename,
+                        "metadata_path": file_info.path,
                     }
                 )
         if not parquet_files:

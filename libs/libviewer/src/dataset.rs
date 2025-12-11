@@ -66,6 +66,7 @@ impl ParquetScan {
             self.offset,
             self.limit,
             scan_size_limit,
+            self.file.size,
         )?;
         Ok(stream.try_collect::<Vec<_>>().await?)
     }

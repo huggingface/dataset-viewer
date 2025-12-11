@@ -2,7 +2,7 @@
 authors = ["Krisztián Szűcs <krisztian@huggingface.co>"]
 description = "Library for utils common to all the services"
 name = "libviewer"
-version = "0.1.0"
+version = "0.2.0"
 license = "Apache-2.0"
 
 [tool.poetry.scripts]

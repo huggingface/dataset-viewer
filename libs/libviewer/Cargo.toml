@@ -1,6 +1,6 @@
 [package]
 name = "libviewer"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 
 [lib]
@@ -28,4 +28,7 @@ tokio = "1.45"
 url = "2.5.4"
 
 [patch.crates-io]
-opendal = { git = "https://github.com/kszucs/opendal", branch = "hf-endpoint" }
+# opendal = { path = "../../../opendal/core" }
+# object_store_opendal = { path = "../../../opendal/integrations/object_store" }
+opendal = { git = "https://github.com/kszucs/opendal", branch = "hf-unconditional-stat-fix" }
+object_store_opendal = { git = "https://github.com/kszucs/opendal", branch = "hf-unconditional-stat-fix" }

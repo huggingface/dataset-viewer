@@ -1655,7 +1655,7 @@ url = "../../libs/libcommon"
 
 [[package]]
 name = "libviewer"
-version = "0.1.0"
+version = "0.2.0"
 description = "Library for utils common to all the services"
 optional = false
 python-versions = "3.12.11"

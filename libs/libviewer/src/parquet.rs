@@ -130,11 +130,15 @@ pub fn read_batch_stream(
     offset: u64,
     limit: u64,
     scan_size_limit: u64,
+    file_size: u64,
 ) -> Result<impl Stream<Item = Result<RecordBatch>>> {
     let path = path.into();
-    let reader = ParquetObjectReader::new(store, path.clone())
+    let mut reader = ParquetObjectReader::new(store, path.clone())
         .with_preload_offset_index(false)
         .with_preload_column_index(false);
+
+    // use file_size to ensure that only bounded range requests are used
+    reader = reader.with_file_size(file_size);
     let limited_reader = LimitedAsyncReader::new(reader, scan_size_limit);
     // the page index configuration here shouldn't matter since the metadata is already
     // read and stored in the ParquetFile struct
