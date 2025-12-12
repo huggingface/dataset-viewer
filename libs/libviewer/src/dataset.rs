@@ -2,7 +2,8 @@ use std::sync::Arc;
 
 use arrow::array::RecordBatch;
 use futures::future;
-use futures::TryStreamExt;
+use futures::stream;
+use futures::stream::{StreamExt, TryStreamExt};
 use object_store::prefix::PrefixStore;
 use object_store::ObjectStore;
 use object_store_opendal::OpendalStore;
@@ -203,15 +204,17 @@ impl Dataset {
         Ok(scans)
     }
 
-    pub async fn index(&self, files: Option<&[IndexedFile]>) -> Result<Vec<IndexedFile>> {
-        let files_to_index = files.unwrap_or(&self.files);
+    pub async fn index(
+        &self,
+        files: Option<&[IndexedFile]>,
+        max_parallelism: usize,
+    ) -> Result<Vec<IndexedFile>> {
+        let files_to_index = files.unwrap_or(&self.files).to_vec();
 
-        let futures = files_to_index
-            .iter()
+        let indexed_files = stream::iter(files_to_index)
             .map(|file| {
                 let data_store = self.data_store.clone();
                 let metadata_store = self.metadata_store.clone();
-                let file = file.clone();
 
                 async move {
                     log::info!("Indexing file: {:?}", file.path);
@@ -225,9 +228,10 @@ impl Dataset {
                     Ok::<IndexedFile, DatasetError>(indexed_file)
                 }
             })
-            .collect::<Vec<_>>();
+            .buffered(max_parallelism)
+            .try_collect::<Vec<_>>()
+            .await?;
 
-        let indexed_files = future::try_join_all(futures).await?;
         log::info!(
             "Indexing completed for dataset {} with {} files",
             self.name,

@@ -118,6 +118,6 @@ class Dataset(PyDataset):
         )
         return anyio.run(fn)
 
-    def sync_index(self, files=None):
-        fn = functools.partial(self.index, files=files)
+    def sync_index(self, files=None, max_parallelism=16):
+        fn = functools.partial(self.index, files=files, max_parallelism=max_parallelism)
         return anyio.run(fn)
