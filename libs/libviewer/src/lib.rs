@@ -96,15 +96,19 @@ impl PyDataset {
         })
     }
 
-    #[pyo3(signature = (files=None))]
+    #[pyo3(signature = (files=None, max_parallelism=16))]
     fn index<'py>(
         &self,
         py: Python<'py>,
         files: Option<Vec<IndexedFile>>,
+        max_parallelism: usize,
     ) -> PyResult<Bound<'py, PyAny>> {
         let this = self.clone();
         pyo3_async_runtimes::tokio::future_into_py(py, async move {
-            let indexed_files = this.dataset.index(files.as_deref()).await?;
+            let indexed_files = this
+                .dataset
+                .index(files.as_deref(), max_parallelism)
+                .await?;
             Ok(indexed_files)
         })
     }

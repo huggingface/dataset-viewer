@@ -81,6 +81,7 @@ def compute_parquet_metadata_response(
     hf_token: Optional[str],
     data_store: Optional[str],
     parquet_metadata_directory: StrPath,
+    max_parallelism: int = 4,
 ) -> ConfigParquetMetadataResponse:
     """
     Get the response of 'config-parquet-metadata' for one specific dataset and config on huggingface.co.
@@ -100,6 +101,8 @@ def compute_parquet_metadata_response(
             The data store to use to access the parquet files.
         parquet_metadata_directory (`str` or `pathlib.Path`):
             The directory where the parquet metadata files are stored.
+        max_parallelism (`int`):
+            Maximum number of concurrent indexing tasks for HF Hub requests.
 
     Raises:
         [~`libcommon.simple_cache.CachedArtifactError`]:
@@ -174,7 +177,7 @@ def compute_parquet_metadata_response(
         data_store=data_store,
         metadata_store=f"file://{parquet_metadata_directory}",
     )
-    result = viewer.sync_index()
+    result = viewer.sync_index(max_parallelism=max_parallelism)
 
     # construct the expected response format with num_rows from the result
     parquet_files_metadata: list[ParquetFileMetadataItem] = [
@@ -227,5 +230,6 @@ class ConfigParquetMetadataJobRunner(ConfigJobRunner):
                 hf_token=self.app_config.common.hf_token,
                 data_store=self.data_store,
                 parquet_metadata_directory=self.parquet_metadata_directory,
+                max_parallelism=self.app_config.parquet_metadata.max_parallelism,
             )
         )

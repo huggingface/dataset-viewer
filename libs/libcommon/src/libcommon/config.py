@@ -126,11 +126,13 @@ class CloudFrontConfig:
 
 
 PARQUET_METADATA_STORAGE_DIRECTORY = None
+PARQUET_METADATA_MAX_PARALLELISM = 16
 
 
 @dataclass(frozen=True)
 class ParquetMetadataConfig:
     storage_directory: Optional[str] = PARQUET_METADATA_STORAGE_DIRECTORY
+    max_parallelism: int = PARQUET_METADATA_MAX_PARALLELISM
 
     @classmethod
     def from_env(cls) -> "ParquetMetadataConfig":
@@ -138,6 +140,7 @@ class ParquetMetadataConfig:
         with env.prefixed("PARQUET_METADATA_"):
             return cls(
                 storage_directory=env.str(name="STORAGE_DIRECTORY", default=PARQUET_METADATA_STORAGE_DIRECTORY),
+                max_parallelism=env.int(name="MAX_PARALLELISM", default=PARQUET_METADATA_MAX_PARALLELISM),
             )
 
 
