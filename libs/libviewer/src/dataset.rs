@@ -228,7 +228,7 @@ impl Dataset {
                     Ok::<IndexedFile, DatasetError>(indexed_file)
                 }
             })
-            .buffer_unordered(max_parallelism)
+            .buffered(max_parallelism)
             .try_collect::<Vec<_>>()
             .await?;
 
