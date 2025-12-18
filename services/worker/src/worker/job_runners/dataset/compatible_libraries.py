@@ -361,6 +361,17 @@ splits = {splits}
 df = {function}("hf://datasets/{dataset}/" + splits["{first_split}"])"""
 
 
+POLARS_CODE = """import polars as pl
+{comment}
+df = {function}("hf://datasets/{dataset}/{pattern}"{args})"""
+
+
+POLARS_CODE_SPLITS = """import polars as pl
+{comment}
+splits = {splits}
+df = {function}("hf://datasets/{dataset}/" + splits["{first_split}"]{args})"""
+
+
 WEBDATASET_CODE = """import webdataset as wds
 from huggingface_hub import HfFileSystem, get_token, hf_hub_url
 {comment}
@@ -385,17 +396,8 @@ urls = f"pipe: curl -s -L -H 'Authorization:Bearer {{get_token()}}' {{'::'.join(
 ds = {function}(urls).decode()"""
 
 
-def get_compatible_libraries_for_json(
-    dataset: str, hf_token: Optional[str], login_required: bool
-) -> CompatibleLibrary:
-    library: DatasetLibrary
-    builder_configs = get_builder_configs_with_simplified_data_files(dataset, module_name="json", hf_token=hf_token)
-    for config in builder_configs:
-        if any(len(data_files) != 1 for data_files in config.data_files.values()):
-            raise DatasetWithTooComplexDataFilesPatternsError(
-                f"Failed to simplify json data files pattern: {config.data_files}"
-            )
-    loading_codes: list[LoadingCode] = [
+def _init_empty_loading_codes(builder_configs: list[BuilderConfig]) -> list[LoadingCode]:
+    return [
         {
             "config_name": config.name,
             "arguments": {"splits": {str(split): data_files[0] for split, data_files in config.data_files.items()}},
@@ -403,6 +405,22 @@ def get_compatible_libraries_for_json(
         }
         for config in builder_configs
     ]
+
+
+def get_compatible_libraries_for_json(
+    dataset: str, hf_token: Optional[str], login_required: bool
+) -> list[CompatibleLibrary]:
+    library: DatasetLibrary
+    compatible_libraries: list[CompatibleLibrary] = []
+    builder_configs = get_builder_configs_with_simplified_data_files(dataset, module_name="json", hf_token=hf_token)
+    for config in builder_configs:
+        if any(len(data_files) != 1 for data_files in config.data_files.values()):
+            raise DatasetWithTooComplexDataFilesPatternsError(
+                f"Failed to simplify json data files pattern: {config.data_files}"
+            )
+
+    # Pandas or Dask
+    loading_codes = _init_empty_loading_codes(builder_configs)
     is_single_file = all(
         "*" not in data_file and "[" not in data_file
         for loading_code in loading_codes
@@ -414,7 +432,10 @@ def get_compatible_libraries_for_json(
         function = "pd.read_json"
         for loading_code in loading_codes:
             first_file = f"datasets/{dataset}/" + next(iter(loading_code["arguments"]["splits"].values()))
-            if ".jsonl" in first_file or HfFileSystem(token=hf_token).open(first_file, "r").read(1) != "[":
+            # TODO: resolve file if it has wildcard characters
+            if not first_file.endswith("*") and (
+                ".jsonl" in first_file or HfFileSystem(token=hf_token).open(first_file, "r").read(1) != "["
+            ):
                 args = ", lines=True"
                 loading_code["arguments"]["lines"] = True
             else:
@@ -450,25 +471,60 @@ def get_compatible_libraries_for_json(
                     first_split=next(iter(loading_code["arguments"]["splits"])),
                     comment=comment,
                 )
-    return {"language": "python", "library": library, "function": function, "loading_codes": loading_codes}
+    compatible_libraries.append(
+        {"language": "python", "library": library, "function": function, "loading_codes": loading_codes}
+    )
+
+    # Polars
+    loading_codes = _init_empty_loading_codes(builder_configs)
+    library = "polars"
+    function = "pl.read_json"
+    for loading_code in loading_codes:
+        first_file = f"datasets/{dataset}/" + next(iter(loading_code["arguments"]["splits"].values()))
+        # TODO: resolve file if it has wildcard characters
+        if not first_file.endswith("*") and (
+            ".jsonl" in first_file or HfFileSystem(token=hf_token).open(first_file, "r").read(1) != "["
+        ):
+            function = "pl.read_ndjson"
+        if len(loading_code["arguments"]["splits"]) == 1:
+            pattern = next(iter(loading_code["arguments"]["splits"].values()))
+            loading_code["code"] = DASK_CODE.format(
+                function=function,
+                dataset=dataset,
+                pattern=pattern,
+                args="",
+                comment=comment,
+            )
+        else:
+            loading_code["code"] = DASK_CODE_SPLITS.format(
+                function=function,
+                dataset=dataset,
+                splits=loading_code["arguments"]["splits"],
+                first_split=next(iter(loading_code["arguments"]["splits"])),
+                args="",
+                comment=comment,
+            )
+    compatible_libraries.append(
+        {"language": "python", "library": library, "function": function, "loading_codes": loading_codes}
+    )
+
+    return compatible_libraries
 
 
-def get_compatible_libraries_for_csv(dataset: str, hf_token: Optional[str], login_required: bool) -> CompatibleLibrary:
+def get_compatible_libraries_for_csv(
+    dataset: str, hf_token: Optional[str], login_required: bool
+) -> list[CompatibleLibrary]:
     library: DatasetLibrary
+    compatible_libraries: list[CompatibleLibrary] = []
     builder_configs = get_builder_configs_with_simplified_data_files(dataset, module_name="csv", hf_token=hf_token)
     for config in builder_configs:
         if any(len(data_files) != 1 for data_files in config.data_files.values()):
             raise DatasetWithTooComplexDataFilesPatternsError(
                 f"Failed to simplify csv data files pattern: {config.data_files}"
             )
-    loading_codes: list[LoadingCode] = [
-        {
-            "config_name": config.name,
-            "arguments": {"splits": {str(split): data_files[0] for split, data_files in config.data_files.items()}},
-            "code": "",
-        }
-        for config in builder_configs
-    ]
+
+    # Pandas or Dask
+    loading_codes = _init_empty_loading_codes(builder_configs)
     is_single_file = all(
         "*" not in data_file and "[" not in data_file
         for loading_code in loading_codes
@@ -515,27 +571,59 @@ def get_compatible_libraries_for_csv(dataset: str, hf_token: Optional[str], logi
                     first_split=next(iter(loading_code["arguments"]["splits"])),
                     comment=comment,
                 )
-    return {"language": "python", "library": library, "function": function, "loading_codes": loading_codes}
+    compatible_libraries.append(
+        {"language": "python", "library": library, "function": function, "loading_codes": loading_codes}
+    )
+
+    # Polars
+    loading_codes = _init_empty_loading_codes(builder_configs)
+    library = "polars"
+    function = "pl.read_csv"
+    for loading_code in loading_codes:
+        first_file = next(iter(loading_code["arguments"]["splits"].values()))
+        if ".tsv" in first_file:
+            args = ', separator="\\t"'
+        else:
+            args = ""
+        if len(loading_code["arguments"]["splits"]) == 1:
+            pattern = next(iter(loading_code["arguments"]["splits"].values()))
+            loading_code["code"] = POLARS_CODE.format(
+                function=function,
+                dataset=dataset,
+                pattern=pattern,
+                args=args,
+                comment=comment,
+            )
+        else:
+            loading_code["code"] = POLARS_CODE_SPLITS.format(
+                function=function,
+                dataset=dataset,
+                splits=loading_code["arguments"]["splits"],
+                first_split=next(iter(loading_code["arguments"]["splits"])),
+                args=args,
+                comment=comment,
+            )
+    compatible_libraries.append(
+        {"language": "python", "library": library, "function": function, "loading_codes": loading_codes}
+    )
+
+    return compatible_libraries
 
 
 def get_compatible_libraries_for_parquet(
     dataset: str, hf_token: Optional[str], login_required: bool
-) -> CompatibleLibrary:
+) -> list[CompatibleLibrary]:
     library: DatasetLibrary
+    compatible_libraries: list[CompatibleLibrary] = []
     builder_configs = get_builder_configs_with_simplified_data_files(dataset, module_name="parquet", hf_token=hf_token)
     for config in builder_configs:
         if any(len(data_files) != 1 for data_files in config.data_files.values()):
             raise DatasetWithTooComplexDataFilesPatternsError(
                 f"Failed to simplify parquet data files pattern: {config.data_files}"
             )
-    loading_codes: list[LoadingCode] = [
-        {
-            "config_name": config.name,
-            "arguments": {"splits": {str(split): data_files[0] for split, data_files in config.data_files.items()}},
-            "code": "",
-        }
-        for config in builder_configs
-    ]
+
+    # Pandas or Dask
+    loading_codes = _init_empty_loading_codes(builder_configs)
     is_single_file = all(
         "*" not in data_file and "[" not in data_file
         for loading_code in loading_codes
@@ -577,13 +665,45 @@ def get_compatible_libraries_for_parquet(
                     first_split=next(iter(loading_code["arguments"]["splits"])),
                     comment=comment,
                 )
-    return {"language": "python", "library": library, "function": function, "loading_codes": loading_codes}
+    compatible_libraries.append(
+        {"language": "python", "library": library, "function": function, "loading_codes": loading_codes}
+    )
+
+    # Polars
+    loading_codes = _init_empty_loading_codes(builder_configs)
+    library = "polars"
+    function = "pl.read_parquet"
+    for loading_code in loading_codes:
+        if len(loading_code["arguments"]["splits"]) == 1:
+            pattern = next(iter(loading_code["arguments"]["splits"].values()))
+            loading_code["code"] = POLARS_CODE.format(
+                function=function,
+                dataset=dataset,
+                pattern=pattern,
+                args="",
+                comment=comment,
+            )
+        else:
+            loading_code["code"] = POLARS_CODE_SPLITS.format(
+                function=function,
+                dataset=dataset,
+                splits=loading_code["arguments"]["splits"],
+                first_split=next(iter(loading_code["arguments"]["splits"])),
+                args="",
+                comment=comment,
+            )
+    compatible_libraries.append(
+        {"language": "python", "library": library, "function": function, "loading_codes": loading_codes}
+    )
+
+    return compatible_libraries
 
 
 def get_compatible_libraries_for_webdataset(
     dataset: str, hf_token: Optional[str], login_required: bool
-) -> CompatibleLibrary:
+) -> list[CompatibleLibrary]:
     library: DatasetLibrary
+    compatible_libraries: list[CompatibleLibrary] = []
     builder_configs = get_builder_configs_with_simplified_data_files(
         dataset, module_name="webdataset", hf_token=hf_token
     )
@@ -592,14 +712,7 @@ def get_compatible_libraries_for_webdataset(
             raise DatasetWithTooComplexDataFilesPatternsError(
                 f"Failed to simplify webdataset data files pattern: {config.data_files}"
             )
-    loading_codes: list[LoadingCode] = [
-        {
-            "config_name": config.name,
-            "arguments": {"splits": {str(split): data_files[0] for split, data_files in config.data_files.items()}},
-            "code": "",
-        }
-        for config in builder_configs
-    ]
+    loading_codes: list[LoadingCode] = _init_empty_loading_codes(builder_configs)
     library = "webdataset"
     function = "wds.WebDataset"
     comment = LOGIN_COMMENT if login_required else ""
@@ -617,111 +730,14 @@ def get_compatible_libraries_for_webdataset(
                 first_split=next(iter(loading_code["arguments"]["splits"])),
                 comment=comment,
             )
-    return {"language": "python", "library": library, "function": function, "loading_codes": loading_codes}
+    compatible_libraries.append(
+        {"language": "python", "library": library, "function": function, "loading_codes": loading_codes}
+    )
+
+    return compatible_libraries
 
 
-def get_polars_compatible_library(
-    builder_name: str, dataset: str, hf_token: Optional[str], login_required: bool
-) -> Optional[CompatibleLibrary]:
-    if builder_name in ["parquet", "csv", "json"]:
-        builder_configs = get_builder_configs_with_simplified_data_files(
-            dataset, module_name=builder_name, hf_token=hf_token
-        )
-
-        for config in builder_configs:
-            if any(len(data_files) != 1 for data_files in config.data_files.values()):
-                raise DatasetWithTooComplexDataFilesPatternsError(
-                    f"Failed to simplify parquet data files pattern: {config.data_files}"
-                )
-
-        loading_codes: list[LoadingCode] = [
-            {
-                "config_name": config.name,
-                "arguments": {
-                    "splits": {str(split): data_files[0] for split, data_files in config.data_files.items()}
-                },
-                "code": "",
-            }
-            for config in builder_configs
-        ]
-
-    compatible_library: CompatibleLibrary = {
-        "language": "python",
-        "library": "polars",
-        "function": "",
-        "loading_codes": [],
-    }
-
-    def fmt_code(
-        *,
-        read_func: str,
-        splits: dict[str, str],
-        args: str,
-        dataset: str = dataset,
-        login_required: bool = login_required,
-    ) -> str:
-        if not (args.startswith(", ") or args == ""):
-            msg = f"incorrect args format: {args = !s}"
-            raise ValueError(msg)
-
-        login_comment = LOGIN_COMMENT if login_required else ""
-
-        if len(splits) == 1:
-            path = next(iter(splits.values()))
-            return f"""\
-import polars as pl
-{login_comment}
-df = pl.{read_func}('hf://datasets/{dataset}/{path}'{args})
-"""
-        else:
-            first_split = next(iter(splits))
-            return f"""\
-import polars as pl
-{login_comment}
-splits = {splits}
-df = pl.{read_func}('hf://datasets/{dataset}/' + splits['{first_split}']{args})
-"""
-
-    args = ""
-
-    if builder_name == "parquet":
-        read_func = "read_parquet"
-        compatible_library["function"] = f"pl.{read_func}"
-    elif builder_name == "csv":
-        read_func = "read_csv"
-        compatible_library["function"] = f"pl.{read_func}"
-
-        first_file = next(iter(loading_codes[0]["arguments"]["splits"].values()))
-
-        if ".tsv" in first_file:
-            args = f"{args}, separator='\\t'"
-
-    elif builder_name == "json":
-        first_file = f"datasets/{dataset}/" + next(iter(loading_codes[0]["arguments"]["splits"].values()))
-        if "*" in first_file:
-            # The pattern 'datasets/[dataset]/**/*' is not supported yet
-            return None
-        is_json_lines = ".jsonl" in first_file or HfFileSystem(token=hf_token).open(first_file, "r").read(1) != "["
-
-        if is_json_lines:
-            read_func = "read_ndjson"
-        else:
-            read_func = "read_json"
-
-        compatible_library["function"] = f"pl.{read_func}"
-    else:
-        return None
-
-    for loading_code in loading_codes:
-        splits = loading_code["arguments"]["splits"]
-        loading_code["code"] = fmt_code(read_func=read_func, splits=splits, args=args)
-
-    compatible_library["loading_codes"] = loading_codes
-
-    return compatible_library
-
-
-get_compatible_library_for_builder: dict[str, Callable[[str, Optional[str], bool], CompatibleLibrary]] = {
+get_compatible_library_for_builder: dict[str, Callable[[str, Optional[str], bool], list[CompatibleLibrary]]] = {
     "webdataset": get_compatible_libraries_for_webdataset,
     "json": get_compatible_libraries_for_json,
     "csv": get_compatible_libraries_for_csv,
@@ -793,27 +809,13 @@ def compute_compatible_libraries_response(
             formats.append(get_format_for_builder[builder_name])
         if builder_name in get_compatible_library_for_builder:
             try:
-                compatible_library = get_compatible_library_for_builder[builder_name](
-                    dataset, hf_token, login_required
-                )
-                libraries.append(compatible_library)
+                libraries += get_compatible_library_for_builder[builder_name](dataset, hf_token, login_required)
             except NotImplementedError:
                 pass
         # mlcroissant library
         libraries.append(
             get_mlcroissant_compatible_library(dataset, infos, login_required=login_required, partial=partial)
         )
-        # polars
-        if (
-            isinstance(builder_name, str)
-            and (
-                v := get_polars_compatible_library(
-                    builder_name, dataset, hf_token=hf_token, login_required=login_required
-                )
-            )
-            is not None
-        ):
-            libraries.append(v)
 
     return DatasetCompatibleLibrariesResponse(libraries=libraries, formats=formats)
 
