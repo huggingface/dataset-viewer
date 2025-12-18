@@ -255,7 +255,9 @@ class IsValidResponse(TypedDict):
 
 
 DatasetLibrary = Literal["mlcroissant", "webdataset", "datasets", "pandas", "dask", "polars"]
-DatasetFormat = Literal["json", "csv", "parquet", "imagefolder", "audiofolder", "webdataset", "text", "arrow"]
+DatasetFormat = Literal[
+    "json", "csv", "parquet", "imagefolder", "audiofolder", "webdataset", "text", "arrow", "optimized-parquet"
+]
 ProgrammingLanguage = Literal["python"]
 
 
