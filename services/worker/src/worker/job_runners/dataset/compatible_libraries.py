@@ -430,12 +430,13 @@ def get_compatible_libraries_for_json(
     if is_single_file:
         library = "pandas"
         function = "pd.read_json"
-        for loading_code in loading_codes:
+        for loading_code in list(loading_codes):
             first_file = f"datasets/{dataset}/" + next(iter(loading_code["arguments"]["splits"].values()))
             # TODO: resolve file if it has wildcard characters
-            if not first_file.endswith("*") and (
-                ".jsonl" in first_file or HfFileSystem(token=hf_token).open(first_file, "r").read(1) != "["
-            ):
+            if first_file.endswith("*"):
+                loading_codes.remove(loading_code)
+                continue
+            if ".jsonl" in first_file or HfFileSystem(token=hf_token).open(first_file, "r").read(1) != "[":
                 args = ", lines=True"
                 loading_code["arguments"]["lines"] = True
             else:
@@ -471,20 +472,22 @@ def get_compatible_libraries_for_json(
                     first_split=next(iter(loading_code["arguments"]["splits"])),
                     comment=comment,
                 )
-    compatible_libraries.append(
-        {"language": "python", "library": library, "function": function, "loading_codes": loading_codes}
-    )
+    if loading_codes:
+        compatible_libraries.append(
+            {"language": "python", "library": library, "function": function, "loading_codes": loading_codes}
+        )
 
     # Polars
     loading_codes = _init_empty_loading_codes(builder_configs)
     library = "polars"
     function = "pl.read_json"
-    for loading_code in loading_codes:
+    for loading_code in list(loading_codes):
         first_file = f"datasets/{dataset}/" + next(iter(loading_code["arguments"]["splits"].values()))
         # TODO: resolve file if it has wildcard characters
-        if not first_file.endswith("*") and (
-            ".jsonl" in first_file or HfFileSystem(token=hf_token).open(first_file, "r").read(1) != "["
-        ):
+        if first_file.endswith("*"):
+            loading_codes.remove(loading_code)
+            continue
+        if ".jsonl" in first_file or HfFileSystem(token=hf_token).open(first_file, "r").read(1) != "[":
             function = "pl.read_ndjson"
         if len(loading_code["arguments"]["splits"]) == 1:
             pattern = next(iter(loading_code["arguments"]["splits"].values()))
@@ -504,9 +507,10 @@ def get_compatible_libraries_for_json(
                 args="",
                 comment=comment,
             )
-    compatible_libraries.append(
-        {"language": "python", "library": library, "function": function, "loading_codes": loading_codes}
-    )
+    if loading_codes:
+        compatible_libraries.append(
+            {"language": "python", "library": library, "function": function, "loading_codes": loading_codes}
+        )
 
     return compatible_libraries
 
