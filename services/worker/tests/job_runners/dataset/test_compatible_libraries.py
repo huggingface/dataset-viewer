@@ -19,8 +19,8 @@ from worker.job_runners.dataset.compatible_libraries import (
     LOGIN_COMMENT,
     DatasetCompatibleLibrariesJobRunner,
     get_builder_configs_with_simplified_data_files,
+    get_compatible_libraries_for_json,
     get_compatible_library_for_builder,
-    get_polars_compatible_library,
 )
 from worker.resources import LibrariesResource
 
@@ -111,6 +111,24 @@ EXPECTED_PARQUET = (
                 ],
             },
             {
+                "function": "pl.read_parquet",
+                "language": "python",
+                "library": "polars",
+                "loading_codes": [
+                    {
+                        "arguments": {"splits": {"test": "test.parquet", "train": "train.parquet"}},
+                        "code": "import polars as pl\n"
+                        "\n"
+                        "splits = {'train': 'train.parquet', 'test': "
+                        "'test.parquet'}\n"
+                        "df = "
+                        'pl.read_parquet("hf://datasets/parquet-dataset/" '
+                        '+ splits["train"])',
+                        "config_name": "default",
+                    }
+                ],
+            },
+            {
                 "function": "Dataset",
                 "language": "python",
                 "library": "mlcroissant",
@@ -125,24 +143,6 @@ EXPECTED_PARQUET = (
                             'ds = Dataset(jsonld="https://huggingface.co/api/datasets/parquet-dataset/croissant")\n'
                             'records = ds.records("default")'
                         ),
-                    }
-                ],
-            },
-            {
-                "function": "pl.read_parquet",
-                "language": "python",
-                "library": "polars",
-                "loading_codes": [
-                    {
-                        "arguments": {"splits": {"test": "test.parquet", "train": "train.parquet"}},
-                        "code": "import polars as pl\n"
-                        "\n"
-                        "splits = {'train': 'train.parquet', 'test': "
-                        "'test.parquet'}\n"
-                        "df = "
-                        "pl.read_parquet('hf://datasets/parquet-dataset/' "
-                        "+ splits['train'])\n",
-                        "config_name": "default",
                     }
                 ],
             },
@@ -192,6 +192,26 @@ EXPECTED_PARQUET_LOGIN_REQUIRED = (
                 ],
             },
             {
+                "function": "pl.read_parquet",
+                "language": "python",
+                "library": "polars",
+                "loading_codes": [
+                    {
+                        "arguments": {"splits": {"test": "test.parquet", "train": "train.parquet"}},
+                        "code": "import polars as pl\n"
+                        "\n"
+                        "# Login using e.g. `huggingface-cli login` to "
+                        "access this dataset\n"
+                        "splits = {'train': 'train.parquet', 'test': "
+                        "'test.parquet'}\n"
+                        "df = "
+                        'pl.read_parquet("hf://datasets/parquet-dataset-login_required/" '
+                        '+ splits["train"])',
+                        "config_name": "default",
+                    }
+                ],
+            },
+            {
                 "function": "Dataset",
                 "language": "python",
                 "library": "mlcroissant",
@@ -209,26 +229,6 @@ EXPECTED_PARQUET_LOGIN_REQUIRED = (
                             "ds = Dataset(jsonld=jsonld)\n"
                             'records = ds.records("default")'
                         ),
-                    }
-                ],
-            },
-            {
-                "function": "pl.read_parquet",
-                "language": "python",
-                "library": "polars",
-                "loading_codes": [
-                    {
-                        "arguments": {"splits": {"test": "test.parquet", "train": "train.parquet"}},
-                        "code": "import polars as pl\n"
-                        "\n"
-                        "# Login using e.g. `huggingface-cli login` to "
-                        "access this dataset\n"
-                        "splits = {'train': 'train.parquet', 'test': "
-                        "'test.parquet'}\n"
-                        "df = "
-                        "pl.read_parquet('hf://datasets/parquet-dataset-login_required/' "
-                        "+ splits['train'])\n",
-                        "config_name": "default",
                     }
                 ],
             },
@@ -550,22 +550,25 @@ def test_get_builder_configs_with_simplified_data_files(
     config = configs[0]
     assert config.data_files == expected_data_files
     assert module_name in get_compatible_library_for_builder
-    compatible_library = get_compatible_library_for_builder[module_name](dataset, hf_token, login_required)
+    compatible_libraries = get_compatible_library_for_builder[module_name](dataset, hf_token, login_required)
+    compatible_library = compatible_libraries[0]
     assert compatible_library["library"] == expected_library
 
 
 @pytest.mark.real_dataset
 @pytest.mark.integration
 @pytest.mark.parametrize(
-    "dataset,builder_name",
+    "dataset, expected_libraries",
     [
-        ("tcor0005/langchain-docs-400-chunksize", "json"),
+        ("tcor0005/langchain-docs-400-chunksize", ["dask"]),
+        ("Anthropic/hh-rlhf", ["dask", "polars"]),
     ],
 )
-def test_get_polars_compatible_library(
+def test_get_compatible_libraries_for_json(
     use_hub_prod_endpoint: pytest.MonkeyPatch,
     dataset: str,
-    builder_name: str,
+    expected_libraries: list[str],
 ) -> None:
-    v = get_polars_compatible_library(builder_name=builder_name, dataset=dataset, hf_token=None, login_required=False)
-    assert v is None
+    compatible_libraries = get_compatible_libraries_for_json(dataset=dataset, hf_token=None, login_required=False)
+    libraries = [compatible_library["library"] for compatible_library in compatible_libraries]
+    assert libraries == expected_libraries
