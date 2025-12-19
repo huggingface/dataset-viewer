@@ -10,6 +10,7 @@ from typing import Any, Callable, Optional
 
 import datasets.config
 import datasets.data_files
+import pyarrow.parquet as pq
 import yaml
 from datasets import BuilderConfig, DownloadConfig
 from datasets.data_files import (
@@ -86,7 +87,7 @@ def get_builder_configs_with_simplified_data_files(
     """
     builder_configs: list[BuilderConfig]
     base_path = f"hf://datasets/{dataset}"
-    if HfFileSystem().exists(base_path + "/" + dataset.split("/")[-1] + ".py"):
+    if HfFileSystem(token=hf_token).exists(base_path + "/" + dataset.split("/")[-1] + ".py"):
         raise NotImplementedError("datasets with a script are not supported")
     download_config = DownloadConfig(token=hf_token)
     try:
@@ -821,7 +822,44 @@ def compute_compatible_libraries_response(
             get_mlcroissant_compatible_library(dataset, infos, login_required=login_required, partial=partial)
         )
 
+    # Optimized Parquet
+    if "parquet" in formats:
+        polars_libraries = [library for library in libraries if library["library"] == "polars"]
+        if (
+            polars_libraries
+            and polars_libraries[0]["loading_codes"]
+            and is_optimized_parquet_from_first_polars_loading_code(
+                dataset, polars_libraries[0]["loading_codes"][0], hf_token
+            )
+        ):
+            formats.append("optimized-parquet")
+
     return DatasetCompatibleLibrariesResponse(libraries=libraries, formats=formats)
+
+
+def is_optimized_parquet_from_first_polars_loading_code(
+    dataset: str, loading_code: LoadingCode, hf_token: Optional[str]
+) -> bool:
+    if (
+        "splits" not in loading_code["arguments"]
+        or not isinstance(loading_code["arguments"]["splits"], dict)
+        or not loading_code["arguments"]["splits"]
+    ):
+        return False
+    first_split_pattern = next(iter(loading_code["arguments"]["splits"].values()))
+    if isinstance(first_split_pattern, str):
+        fs = HfFileSystem(token=hf_token)
+        parquet_files = fs.glob(f"datasets/{dataset}/{first_split_pattern}")
+        if parquet_files:
+            first_parquet_file = parquet_files[0]
+            with fs.open(first_parquet_file, "rb") as f:
+                with pq.ParquetFile(f) as pf:
+                    if b"content_defined_chunking" in pf.metadata.metadata:
+                        # TODO: also check that the page index is available
+                        # in the Parquet metadata viewer it corresponds
+                        # e.g. to "row_groups.0.columns.0.offset_index_offset"
+                        return True
+    return False
 
 
 class DatasetCompatibleLibrariesJobRunner(DatasetJobRunnerWithDatasetsCache):

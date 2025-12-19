@@ -8,6 +8,7 @@ from unittest.mock import patch
 
 import fsspec
 import pytest
+from datasets import Dataset
 from fsspec.implementations.dirfs import DirFileSystem
 from libcommon.dtos import Priority
 from libcommon.resources import CacheMongoResource, QueueMongoResource
@@ -74,7 +75,7 @@ UPSTREAM_RESPONSE_INFO_ERROR: UpstreamResponse = UpstreamResponse(
 )
 EXPECTED_PARQUET = (
     {
-        "formats": ["parquet"],
+        "formats": ["parquet", "optimized-parquet"],
         "libraries": [
             {
                 "function": "load_dataset",
@@ -153,7 +154,7 @@ EXPECTED_PARQUET = (
 
 EXPECTED_PARQUET_LOGIN_REQUIRED = (
     {
-        "formats": ["parquet"],
+        "formats": ["parquet", "optimized-parquet"],
         "libraries": [
             {
                 "function": "load_dataset",
@@ -300,14 +301,15 @@ EXPECTED_WEBDATASET = (
 @pytest.fixture()
 def mock_hffs(tmp_path_factory: TempPathFactory) -> Iterator[fsspec.AbstractFileSystem]:
     hf = tmp_path_factory.mktemp("hf")
+    ds = Dataset.from_dict({"a": range(10)})
 
     (hf / "datasets" / PARQUET_DATASET).mkdir(parents=True)
-    (hf / "datasets" / PARQUET_DATASET / "train.parquet").touch()
-    (hf / "datasets" / PARQUET_DATASET / "test.parquet").touch()
+    ds.to_parquet(hf / "datasets" / PARQUET_DATASET / "train.parquet")
+    ds.to_parquet(hf / "datasets" / PARQUET_DATASET / "test.parquet")
 
     (hf / "datasets" / PARQUET_DATASET_LOGIN_REQUIRED).mkdir(parents=True)
-    (hf / "datasets" / PARQUET_DATASET_LOGIN_REQUIRED / "train.parquet").touch()
-    (hf / "datasets" / PARQUET_DATASET_LOGIN_REQUIRED / "test.parquet").touch()
+    ds.to_parquet(hf / "datasets" / PARQUET_DATASET_LOGIN_REQUIRED / "train.parquet")
+    ds.to_parquet(hf / "datasets" / PARQUET_DATASET_LOGIN_REQUIRED / "test.parquet")
 
     (hf / "datasets" / WEBDATASET_DATASET).mkdir(parents=True)
     (hf / "datasets" / WEBDATASET_DATASET / "0000.tar").touch()
