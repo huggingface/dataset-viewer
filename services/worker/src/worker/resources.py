@@ -38,6 +38,11 @@ class LibrariesResource(Resource):
         self.previous_verbosity = get_verbosity()
         set_verbosity(log_levels["critical"])
 
+        # Save original shard lengths in the dataset info when converting to Parquet.
+        # This is useful to retrieve the original file containing a certain row index.
+        self.previous_save_
+        datasets.config.SAVE_ORIGINAL_SHARD_LENGTHS = True
+
         # Note: self.hf_endpoint is ignored by the huggingface_hub library for now (see
         # the discussion at https://github.com/huggingface/datasets/pull/5196), and this breaks
         # various of the datasets functions. The fix, for now, is to set the HF_ENDPOINT
@@ -47,4 +52,5 @@ class LibrariesResource(Resource):
     def release(self) -> None:
         datasets.config.HF_ENDPOINT = self.previous_hf_endpoint
         datasets.config.HF_UPDATE_DOWNLOAD_COUNTS = self.previous_hf_update_download_counts
+        datasets.config.SAVE_ORIGINAL_SHARD_LENGTHS = True
         set_verbosity(self.previous_verbosity)

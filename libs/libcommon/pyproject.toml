@@ -9,16 +9,20 @@ license = "Apache-2.0"
 python = "3.12.11"
 anyio = ">=3.4.0,<5"
 appdirs = "^1.4.4"
+async-lru = "^2.0.5"
 cryptography = "^43.0.1"
-datasets = {version = "4.1.1", extras = ["vision"]}
+datasets = {version = "4.4.2", extras = ["vision"]}
 duckdb = "^1.2.2"
 environs = "^14.3.0"
 filelock = "^3.18.0"
 fsspec = {version = "2024.3.1", extras = ["s3"]}
+h5py = "^3.15.1"
 huggingface-hub = {version = "^0.31.0", extras = ["hf-transfer"]}
+libviewer = { path = "../libviewer", develop = true }
 mongo-types = "0.15.1"
 mongoengine = "^0.29.1"
 networkx = "^3.0"
+nibabel = "^5.3.1"
 numpy = "^2.3.3"
 orjson = "^3.9.15"
 pandas = "^2.2.0"
@@ -47,8 +51,6 @@ torch = [
 # that platform
 torchcodec = { version = "0.7.0", markers = "sys_platform != 'linux' or platform_machine != 'aarch64'" }
 tqdm = "^4.66.3"
-async-lru = "^2.0.5"
-libviewer = { path = "../libviewer", develop = true }
 
 [tool.poetry.group.dev.dependencies]
 aiobotocore = "2.13.0"

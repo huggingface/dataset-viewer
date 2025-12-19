@@ -4,7 +4,7 @@
 import logging
 from http import HTTPStatus
 
-from datasets import Audio, Features, Image, LargeList, List, Pdf, Translation, TranslationVariableLanguages, Value
+from datasets import Audio, Features, Image, LargeList, List, Nifti, Pdf, Translation, TranslationVariableLanguages, Value
 from datasets.features.features import FeatureType, _visit
 from libcommon.exceptions import PreviousStepFormatError
 from libcommon.simple_cache import (
@@ -46,6 +46,8 @@ def detect_features_modalities(features: Features) -> set[DatasetModality]:
             modalities.add("text")
         elif isinstance(feature, Pdf):
             modalities.add("document")
+        elif isinstance(feature, Nifti):
+            modalities.add("image")
 
     _visit(features, classify_modality)
 
@@ -173,6 +175,9 @@ IMAGE_EXTENSIONS = {
     ".cur",
     ".tif",
     ".tiff",
+    # medical imaging
+    ".nii",
+    ".nii.gz"
 }
 # from https://developer.mozilla.org/en-US/docs/Web/Media/Formats/Containers#browser_compatibility + others
 AUDIO_EXTENSIONS = {
@@ -252,10 +257,11 @@ _3D_EXTENSIONS = {
 }
 TEXT_EXTENSIONS = {
     ".txt",
+    ".eval",
 }
 DOCUMENT_EXTENSIONS = {".pdf"}
 
-MULTI_ROWS_EXTENSIONS = {".parquet", ".csv", ".json", ".jsonl", ".arrow"}
+MULTI_ROWS_EXTENSIONS = {".parquet", ".csv", ".json", ".jsonl", ".arrow", ".hdf5", ".eval"}
 ALL_EXTENSIONS = (
     IMAGE_EXTENSIONS
     | AUDIO_EXTENSIONS

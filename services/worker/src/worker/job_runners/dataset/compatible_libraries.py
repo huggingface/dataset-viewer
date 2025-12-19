@@ -756,8 +756,12 @@ get_format_for_builder: dict[str, DatasetFormat] = {
     "parquet": "parquet",
     "imagefolder": "imagefolder",
     "audiofolder": "audiofolder",
+    "pdffolder": "pdffolder",
+    "niftifolder": "niftifolder",
     "text": "text",
     "arrow": "arrow",
+    "hdf5": "hdf5",
+    "eval": "eval",
 }
 
 

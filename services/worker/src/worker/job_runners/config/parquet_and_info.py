@@ -488,6 +488,7 @@ def fill_builder_info(
     for split, urls in data_files.items():
         num_examples = 0
         num_bytes = 0
+        shard_lengths = []
         split = str(split)  # in case it's a NamedSplit
         first_url = urls[0]
         try:
@@ -507,6 +508,7 @@ def fill_builder_info(
             builder.info.download_size += first_size
             num_examples += first_num_examples
             num_bytes += first_num_bytes
+            shard_lengths.append(first_num_examples)
         except Exception as e:
             raise FileSystemError(f"Could not read the parquet files: {e}") from e
 
@@ -527,12 +529,13 @@ def fill_builder_info(
                 num_examples_list, sizes_list, num_bytes_list = zip(*num_examples_sizes_and_num_bytes)
                 num_examples += sum(num_examples_list)
                 num_bytes += sum(num_bytes_list)
+                shard_lengths += num_examples_list
                 builder.info.download_size += sum(sizes_list)
             except Exception as e:
                 raise FileSystemError(f"Could not read the parquet files: {e}") from e
 
         if num_examples > 0:
-            builder.info.splits.add(SplitInfo(split, num_bytes=num_bytes, num_examples=num_examples))
+            builder.info.splits.add(SplitInfo(split, num_bytes=num_bytes, num_examples=num_examples, original_shard_lengths=shard_lengths))
             builder.info.dataset_size += num_bytes
         else:
             builder.info.splits.add(SplitInfo(split, num_bytes=0, num_examples=0))

@@ -4,7 +4,7 @@
 import logging
 from collections.abc import Mapping
 from http import HTTPStatus
-from typing import Optional, TypedDict
+from typing import Any, Optional, TypedDict
 
 from libapi.authentication import auth_check
 from libapi.exceptions import (
@@ -90,6 +90,18 @@ def get_input_types_by_priority(step_by_input_type: StepByInputType) -> list[Inp
     return [input_type for input_type in input_type_order if input_type in step_by_input_type]
 
 
+def keep_minimum_datasets_info_for_backward_compatibility(content: Any) -> None:
+    # old versions of `datasets` can't read 'original_shard_lengths'
+    if isinstance(content, dict) and "dataset_info" in content:
+        config_infos = content["dataset_info"]
+        if isinstance(config_infos, dict):
+            for config_info in config_infos.values():
+                if isinstance(config_info, dict) and "splits" in config_info and isinstance(config_info["splits"], dict):
+                    for split_info in config_info["splits"].values():
+                        if isinstance(split_info, dict):
+                            split_info.pop("original_shard_lengths", None)
+
+
 def create_endpoint(
     endpoint_name: str,
     step_by_input_type: StepByInputType,
@@ -122,7 +134,7 @@ def create_endpoint(
                         dataset, config, split, step_by_input_type
                     )
                     processing_step = step_by_input_type[input_type]
-                    # full: only used in /croissant-crumbs endpoint
+                    # full: only used in /croissant-crumbs and /info endpoint
                     full = get_request_parameter(request, "full", default="true").lower() != "false"
                 # if auth_check fails, it will raise an exception that will be caught below
                 with StepProfiler(method=method, step="check authentication"):
@@ -167,6 +179,8 @@ def create_endpoint(
                             assets_storage_client.url_preparator.prepare_urls_in_first_rows_in_place(
                                 content, revision=revision
                             )
+                    elif endpoint_name == "/info" and not full:
+                        keep_minimum_datasets_info_for_backward_compatibility(content)
                     elif endpoint_name == "/croissant-crumbs" and not full:
                         with StepProfiler(
                             method=method,
