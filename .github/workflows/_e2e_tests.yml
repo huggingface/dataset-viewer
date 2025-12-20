@@ -21,7 +21,7 @@ jobs:
     runs-on: "ubuntu-latest"
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: Build and launch the services (no cache)
         env:
           ADMIN_UVICORN_NUM_WORKERS: "2"
@@ -71,7 +71,7 @@ jobs:
       - name: Install poetry
         run: pipx install poetry==${{ env.poetry-version }}
       - name: Use Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ env.python-version }}
           cache: "poetry"
