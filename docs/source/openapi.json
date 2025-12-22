@@ -957,6 +957,41 @@
           }
         }
       },
+      "ShardInfoResponse": {
+        "type": "object",
+        "required": [
+          "row_index",
+          "parquet_shard_index",
+          "parquet_shard_file"
+        ],
+        "properties": {
+          "row_index": {
+            "type": "integer"
+          },
+          "original_shard_index": {
+            "type": "integer",
+            "nullable": true
+          },
+          "original_shard_start_row": {
+            "type": "integer",
+            "nullable": true
+          },
+          "original_shard_end_row": {
+            "type": "integer",
+            "nullable": true
+          },
+          "original_shard_info": {
+            "type": "string",
+            "nullable": true
+          },
+          "parquet_shard_index": {
+            "type": "integer"
+          },
+          "parquet_shard_file": {
+            "type": "string"
+          }
+        }
+      },
       "InfoResponse": {
         "type": "object",
         "required": ["dataset_info", "partial"],
@@ -1893,6 +1928,112 @@
     }
   },
   "paths": {
+    "/shard": {
+      "get": {
+        "summary": "Get shard info for a row",
+        "description": "Get the original and parquet shard information for a specific row in a dataset split.",
+        "operationId": "getShard",
+        "security": [
+          {},
+          {
+            "AuthorizationHuggingFaceApiToken": []
+          },
+          {
+            "AuthorizationHuggingFaceJWT": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequiredDataset"
+          },
+          {
+            "$ref": "#/components/parameters/RequiredConfig"
+          },
+          {
+            "$ref": "#/components/parameters/RequiredSplit"
+          },
+          {
+            "name": "row",
+            "in": "query",
+            "description": "The row index (0-based).",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "example": 0
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The shard information.",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/Cache-Control"
+              },
+              "Access-Control-Allow-Origin": {
+                "$ref": "#/components/headers/Access-Control-Allow-Origin"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShardInfoResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Row index out of bounds.",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/Cache-Control"
+              },
+              "Access-Control-Allow-Origin": {
+                "$ref": "#/components/headers/Access-Control-Allow-Origin"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Common401"
+          },
+          "404": {
+            "$ref": "#/components/responses/DatasetConfigSplit404"
+          },
+          "422": {
+            "$ref": "#/components/responses/DatasetConfigSplit422"
+          },
+          "500": {
+            "description": "The server crashed, the response still hasn't been generated (the process is asynchronous), or the response couldn't be generated successfully due to corrupted metadata. The client can retry after a time, in particular in the case of the response still being processed.",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/Cache-Control"
+              },
+              "Access-Control-Allow-Origin": {
+                "$ref": "#/components/headers/Access-Control-Allow-Origin"
+              },
+              "X-Error-Code": {
+                "$ref": "#/components/headers/X-Error-Code-500-common"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/splits": {
       "get": {
         "summary": "List of splits",
