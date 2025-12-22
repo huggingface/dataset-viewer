@@ -10,7 +10,8 @@ python = "3.12.11"
 anyio = ">=3.4.0,<5"
 appdirs = "^1.4.4"
 cryptography = "^43.0.1"
-datasets = {version = "4.1.1", extras = ["vision"]}
+datasets = {version = "^4.4.1", extras = ["vision"]}
+nibabel = "^5.0.0"
 duckdb = "^1.2.2"
 environs = "^14.3.0"
 filelock = "^3.18.0"
