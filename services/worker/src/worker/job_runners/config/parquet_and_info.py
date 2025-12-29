@@ -26,6 +26,7 @@ from datasets import DownloadConfig, Features, load_dataset_builder
 from datasets.builder import DatasetBuilder
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
 from datasets.download import StreamingDownloadManager
+from datasets.packaged_modules.audiofolder.audiofolder import AudioFolder as AudioFolderBuilder
 from datasets.packaged_modules.imagefolder.imagefolder import ImageFolder as ImageFolderBuilder
 from datasets.packaged_modules.parquet.parquet import Parquet as ParquetBuilder
 from datasets.packaged_modules.videofolder.videofolder import VideoFolder as VideoFolderBuilder
@@ -216,6 +217,15 @@ def is_parquet_builder_with_hub_files(builder: DatasetBuilder) -> bool:
 
 def is_video_builder(builder: DatasetBuilder) -> bool:
     return isinstance(builder, VideoFolderBuilder) or "Video(" in str(builder.info.features)
+
+
+def is_folder_based_builder(builder: DatasetBuilder) -> bool:
+    """Check if the builder is a folder-based builder (audiofolder/imagefolder).
+
+    These builders may incorrectly infer a 'label' column from directory structure
+    when directories are used for splits (train/test) rather than class labels.
+    """
+    return isinstance(builder, (AudioFolderBuilder, ImageFolderBuilder))
 
 
 def _is_too_big_from_hub(
@@ -1292,6 +1302,19 @@ def compute_config_parquet_and_info_response(
             token=hf_token,
             download_config=download_config,
         )
+        # For folder-based builders (audiofolder/imagefolder), reload with drop_labels=True
+        # to prevent spurious 'label' column when directories are used for splits (train/test)
+        # rather than class labels. See: https://github.com/huggingface/dataset-viewer/issues/3014
+        if is_folder_based_builder(builder):
+            logging.info(f"{dataset=} {config=} is a folder-based dataset, reloading with drop_labels=True")
+            builder = retry_load_dataset_builder(
+                path=dataset,
+                name=config,
+                revision=source_revision,
+                token=hf_token,
+                download_config=download_config,
+                drop_labels=True,
+            )
     except _EmptyDatasetError as err:
         raise EmptyDatasetError(f"{dataset=} is empty.", cause=err) from err
     except ValueError as err:
