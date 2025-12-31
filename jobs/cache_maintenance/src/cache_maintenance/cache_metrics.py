@@ -31,9 +31,13 @@ def collect_cache_metrics() -> None:
         logging.info(f"{kind=} {http_status=} {error_code=} has been deleted")
 
     for (kind, http_status, error_code), total in new_metric_by_id.items():
+        if total < 0:
+            logging.warning(f"Corrected negative total for {kind=} {http_status=} {error_code=}: was {total}")
+        total = max(total, 0)
         CacheTotalMetricDocument.objects(kind=kind, http_status=http_status, error_code=error_code).upsert_one(
             total=total
         )
         logging.info(f"{kind=} {http_status=} {error_code=}: {total=} has been inserted")
+
 
     logging.info("cache metrics have been updated")
