@@ -69,8 +69,8 @@ if (
     )
 
 
-def get_builder_configs_with_simplified_data_files(
-    dataset: str, module_name: str, hf_token: Optional[str] = None
+def get_builder_configs(
+    dataset: str, module_name: str, hf_token: Optional[str] = None, with_simplified_data_files: bool = False
 ) -> list[BuilderConfig]:
     """
     Get the list of builder configs to get their (possibly simplified) data_files
@@ -121,21 +121,22 @@ def get_builder_configs_with_simplified_data_files(
         # No need for default_builder_kwargs since we just need the builder config for the data files
         # default_builder_kwargs=default_builder_kwargs,
     )
-    for config in builder_configs:
-        data_files = config.data_files.resolve(base_path=base_path, download_config=download_config)
-        config.data_files = DataFilesPatternsDict(
-            {
-                str(split): (
-                    simplify_data_files_patterns(
-                        data_files_patterns=config.data_files[split],
-                        base_path=base_path,
-                        download_config=download_config,
-                        allowed_extensions=_MODULE_TO_EXTENSIONS[module_name],
+    if with_simplified_data_files:
+        for config in builder_configs:
+            data_files = config.data_files.resolve(base_path=base_path, download_config=download_config)
+            config.data_files = DataFilesPatternsDict(
+                {
+                    str(split): (
+                        simplify_data_files_patterns(
+                            data_files_patterns=config.data_files[split],
+                            base_path=base_path,
+                            download_config=download_config,
+                            allowed_extensions=_MODULE_TO_EXTENSIONS[module_name],
+                        )
                     )
-                )
-                for split in data_files
-            }
-        )
+                    for split in data_files
+                }
+            )
     return builder_configs
 
 
@@ -397,6 +398,11 @@ urls = f"pipe: curl -s -L -H 'Authorization:Bearer {{get_token()}}' {{'::'.join(
 ds = {function}(urls).decode()"""
 
 
+LANCE_CODE = """import lance
+{comment}
+df = {function}("hf://datasets/{dataset}/{pattern}")"""
+
+
 def _init_empty_loading_codes(builder_configs: list[BuilderConfig]) -> list[LoadingCode]:
     return [
         {
@@ -413,7 +419,7 @@ def get_compatible_libraries_for_json(
 ) -> list[CompatibleLibrary]:
     library: DatasetLibrary
     compatible_libraries: list[CompatibleLibrary] = []
-    builder_configs = get_builder_configs_with_simplified_data_files(dataset, module_name="json", hf_token=hf_token)
+    builder_configs = get_builder_configs(dataset, module_name="json", hf_token=hf_token, with_simplified_data_files=True)
     for config in builder_configs:
         if any(len(data_files) != 1 for data_files in config.data_files.values()):
             raise DatasetWithTooComplexDataFilesPatternsError(
@@ -521,7 +527,7 @@ def get_compatible_libraries_for_csv(
 ) -> list[CompatibleLibrary]:
     library: DatasetLibrary
     compatible_libraries: list[CompatibleLibrary] = []
-    builder_configs = get_builder_configs_with_simplified_data_files(dataset, module_name="csv", hf_token=hf_token)
+    builder_configs = get_builder_configs(dataset, module_name="csv", hf_token=hf_token, with_simplified_data_files=True)
     for config in builder_configs:
         if any(len(data_files) != 1 for data_files in config.data_files.values()):
             raise DatasetWithTooComplexDataFilesPatternsError(
@@ -620,7 +626,7 @@ def get_compatible_libraries_for_parquet(
 ) -> list[CompatibleLibrary]:
     library: DatasetLibrary
     compatible_libraries: list[CompatibleLibrary] = []
-    builder_configs = get_builder_configs_with_simplified_data_files(dataset, module_name="parquet", hf_token=hf_token)
+    builder_configs = get_builder_configs(dataset, module_name="parquet", hf_token=hf_token, with_simplified_data_files=True)
     for config in builder_configs:
         if any(len(data_files) != 1 for data_files in config.data_files.values()):
             raise DatasetWithTooComplexDataFilesPatternsError(
@@ -709,8 +715,8 @@ def get_compatible_libraries_for_webdataset(
 ) -> list[CompatibleLibrary]:
     library: DatasetLibrary
     compatible_libraries: list[CompatibleLibrary] = []
-    builder_configs = get_builder_configs_with_simplified_data_files(
-        dataset, module_name="webdataset", hf_token=hf_token
+    builder_configs = get_builder_configs(
+        dataset, module_name="webdataset", hf_token=hf_token, with_simplified_data_files=True
     )
     for config in builder_configs:
         if any(len(data_files) != 1 for data_files in config.data_files.values()):
@@ -742,11 +748,43 @@ def get_compatible_libraries_for_webdataset(
     return compatible_libraries
 
 
+def get_compatible_libraries_for_lance(
+    dataset: str, hf_token: Optional[str], login_required: bool
+) -> list[CompatibleLibrary]:
+    library: DatasetLibrary
+    compatible_libraries: list[CompatibleLibrary] = []
+    builder_configs = get_builder_configs(
+        dataset, module_name="lance", hf_token=hf_token
+    )
+    loading_codes: list[LoadingCode] = _init_empty_loading_codes(builder_configs)
+    library = "lance"
+    function = "lance.dataset"
+    comment = LOGIN_COMMENT if login_required else ""
+    for loading_code in loading_codes:
+        data_files = next(iter(loading_code["arguments"]["splits"].values()))
+        for data_file in data_files:
+            if "/_versions/" in data_file:
+                pattern = data_file.rsplit("/_versions/", 1)[0]
+                break
+        else:
+            comment = "\n# load any lance file, e.g."
+            pattern = [data_file for data_file in data_files if data_file.endswith(".lance")][0]
+        loading_code["code"] = LANCE_CODE.format(
+            function=function, dataset=dataset, pattern=pattern, comment=comment
+        )
+    compatible_libraries.append(
+        {"language": "python", "library": library, "function": function, "loading_codes": loading_codes}
+    )
+
+    return compatible_libraries
+
+
 get_compatible_library_for_builder: dict[str, Callable[[str, Optional[str], bool], list[CompatibleLibrary]]] = {
     "webdataset": get_compatible_libraries_for_webdataset,
     "json": get_compatible_libraries_for_json,
     "csv": get_compatible_libraries_for_csv,
     "parquet": get_compatible_libraries_for_parquet,
+    "lance": get_compatible_libraries_for_lance,
 }
 
 
@@ -759,6 +797,7 @@ get_format_for_builder: dict[str, DatasetFormat] = {
     "audiofolder": "audiofolder",
     "text": "text",
     "arrow": "arrow",
+    "lance": "lance",
 }
 
 
