@@ -719,8 +719,8 @@ vision = ["Pillow (>=9.4.0)"]
 [package.source]
 type = "git"
 url = "https://github.com/huggingface/datasets.git"
-reference = "0fcfcf3ea3208528b5a0e6a9e8f10f50dbf418e6"
-resolved_reference = "0fcfcf3ea3208528b5a0e6a9e8f10f50dbf418e6"
+reference = "37902aadda90f1202eca824017c403cc32693258"
+resolved_reference = "37902aadda90f1202eca824017c403cc32693258"
 
 [[package]]
 name = "defusedxml"
@@ -2924,18 +2924,17 @@ windows-terminal = ["colorama (>=0.4.6)"]
 
 [[package]]
 name = "pylance"
-version = "1.0.3"
+version = "1.0.4"
 description = "python wrapper for Lance columnar format"
 optional = false
 python-versions = ">=3.9"
 groups = ["main"]
 files = [
-    {file = "pylance-1.0.3-cp39-abi3-macosx_11_0_arm64.whl", hash = "sha256:6b58e17bd1a3c3f0bdef9ce1733cbeed55f85196238239355d53cdf4f0801e68"},
-    {file = "pylance-1.0.3-cp39-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:c6605951914f48d0a5979fcc48e3385eac444fcc2e0ae672798531a0e0646541"},
-    {file = "pylance-1.0.3-cp39-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:a09e486d96027af90dd35165fecff60e77db12267a9d88afcab9a54769617f77"},
-    {file = "pylance-1.0.3-cp39-abi3-manylinux_2_28_aarch64.whl", hash = "sha256:87ab5b079b4cc4909e5c3271c4cbe7950f1e66acca88587ddf6b976870767e40"},
-    {file = "pylance-1.0.3-cp39-abi3-manylinux_2_28_x86_64.whl", hash = "sha256:ee20507fdb426ede1f6c122c6f131bc30ddf20962b8ff7657ec040d6e1f9cd23"},
-    {file = "pylance-1.0.3-cp39-abi3-win_amd64.whl", hash = "sha256:f1eff23b4063a38d99c30a0ea060645d23d2d2819719e9f573e3b65fcf13366a"},
+    {file = "pylance-1.0.4-cp39-abi3-macosx_11_0_arm64.whl", hash = "sha256:00f0dd1677e7eaec625626a054ddd340dbbcdaf915638c5aae6b2c950a571855"},
+    {file = "pylance-1.0.4-cp39-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:7341a96b6a3952aad399581818d2e2f8ad426d6248498dbb7fb12f235eded8af"},
+    {file = "pylance-1.0.4-cp39-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:7b42f72ce1cf8158adaa7b444d98328b8009683641dd7be58678c7236edbd8be"},
+    {file = "pylance-1.0.4-cp39-abi3-manylinux_2_28_aarch64.whl", hash = "sha256:8f9512087f0fd024f18a4500e62fc27f05b02d92740faed5b9cd140ffadaff82"},
+    {file = "pylance-1.0.4-cp39-abi3-manylinux_2_28_x86_64.whl", hash = "sha256:3f208682b476a0eacb20a44b6fa5c4e67a32ab76cf3199a7bf5f95fecad32020"},
 ]
 
 [package.dependencies]
@@ -4686,4 +4685,4 @@ propcache = ">=0.2.1"
 [metadata]
 lock-version = "2.1"
 python-versions = "3.12.11"
-content-hash = "ceaa6fad0f9728b5f82f8de0b0d11a9af40c1e97147ee03b1d80435765d9745f"
+content-hash = "1bf04642edb0a487dbe6131b85c9ef7d91425254ac1c1014fdba8e0b270c77ab"
