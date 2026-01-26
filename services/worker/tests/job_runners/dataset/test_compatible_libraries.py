@@ -19,7 +19,7 @@ from worker.config import AppConfig
 from worker.job_runners.dataset.compatible_libraries import (
     LOGIN_COMMENT,
     DatasetCompatibleLibrariesJobRunner,
-    get_builder_configs_with_simplified_data_files,
+    get_builder_configs,
     get_compatible_libraries_for_json,
     get_compatible_library_for_builder,
 )
@@ -508,7 +508,7 @@ def test_simplify_data_files_patterns(
     module_name: str,
     expected_simplified_data_files: dict[str, dict[str, list[str]]],
 ) -> None:
-    configs = get_builder_configs_with_simplified_data_files(dataset, module_name=module_name)
+    configs = get_builder_configs(dataset, module_name=module_name, with_simplified_data_files=True)
     simplified_data_files: dict[str, dict[str, list[str]]] = {config.name: config.data_files for config in configs}
     assert simplified_data_files == expected_simplified_data_files
 
@@ -547,7 +547,7 @@ def test_get_builder_configs_with_simplified_data_files(
 ) -> None:
     hf_token = None
     login_required = False
-    configs = get_builder_configs_with_simplified_data_files(dataset, module_name=module_name, hf_token=hf_token)
+    configs = get_builder_configs(dataset, module_name=module_name, hf_token=hf_token, with_simplified_data_files=True)
     assert len(configs) == 1
     config = configs[0]
     assert config.data_files == expected_data_files

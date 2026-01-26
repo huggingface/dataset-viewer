@@ -65,7 +65,7 @@ if (
         f"and therefore it replaces the ugly {NON_WORD_GLOB_SEPARATOR} separator with actual characters, for example\n"
         "**/*[-._ 0-9/]train[-._ 0-9/]**    =>    **/*_train_*.jsonl\n\n"
         "To fix this error, please update the simplify_data_files_patterns() to make it support `datasets` new separator and patterns. "
-        "After the fix the get_builder_configs_with_simplified_data_files() should return proper simplified data files on most datasets."
+        "After the fix the get_builder_configs() should return proper simplified data files on most datasets."
     )
 
 
@@ -78,7 +78,7 @@ def get_builder_configs(
     Example:
 
     ```python
-    >>> configs = get_builder_configs_with_simplified_data_files("Anthropic/hh-rlhf", "json")
+    >>> configs = get_builder_configs("Anthropic/hh-rlhf", "json", with_simplified_data_files=True)
     >>> configs[0].data_files
     {'train': ['**/*/train.jsonl.gz'], 'test': ['**/*/test.jsonl.gz']}
     ```
@@ -419,7 +419,9 @@ def get_compatible_libraries_for_json(
 ) -> list[CompatibleLibrary]:
     library: DatasetLibrary
     compatible_libraries: list[CompatibleLibrary] = []
-    builder_configs = get_builder_configs(dataset, module_name="json", hf_token=hf_token, with_simplified_data_files=True)
+    builder_configs = get_builder_configs(
+        dataset, module_name="json", hf_token=hf_token, with_simplified_data_files=True
+    )
     for config in builder_configs:
         if any(len(data_files) != 1 for data_files in config.data_files.values()):
             raise DatasetWithTooComplexDataFilesPatternsError(
@@ -527,7 +529,9 @@ def get_compatible_libraries_for_csv(
 ) -> list[CompatibleLibrary]:
     library: DatasetLibrary
     compatible_libraries: list[CompatibleLibrary] = []
-    builder_configs = get_builder_configs(dataset, module_name="csv", hf_token=hf_token, with_simplified_data_files=True)
+    builder_configs = get_builder_configs(
+        dataset, module_name="csv", hf_token=hf_token, with_simplified_data_files=True
+    )
     for config in builder_configs:
         if any(len(data_files) != 1 for data_files in config.data_files.values()):
             raise DatasetWithTooComplexDataFilesPatternsError(
@@ -626,7 +630,9 @@ def get_compatible_libraries_for_parquet(
 ) -> list[CompatibleLibrary]:
     library: DatasetLibrary
     compatible_libraries: list[CompatibleLibrary] = []
-    builder_configs = get_builder_configs(dataset, module_name="parquet", hf_token=hf_token, with_simplified_data_files=True)
+    builder_configs = get_builder_configs(
+        dataset, module_name="parquet", hf_token=hf_token, with_simplified_data_files=True
+    )
     for config in builder_configs:
         if any(len(data_files) != 1 for data_files in config.data_files.values()):
             raise DatasetWithTooComplexDataFilesPatternsError(
@@ -753,9 +759,7 @@ def get_compatible_libraries_for_lance(
 ) -> list[CompatibleLibrary]:
     library: DatasetLibrary
     compatible_libraries: list[CompatibleLibrary] = []
-    builder_configs = get_builder_configs(
-        dataset, module_name="lance", hf_token=hf_token
-    )
+    builder_configs = get_builder_configs(dataset, module_name="lance", hf_token=hf_token)
     loading_codes: list[LoadingCode] = _init_empty_loading_codes(builder_configs)
     library = "lance"
     function = "lance.dataset"
@@ -769,9 +773,7 @@ def get_compatible_libraries_for_lance(
         else:
             comment = "\n# load any lance file, e.g."
             pattern = [data_file for data_file in data_files if data_file.endswith(".lance")][0]
-        loading_code["code"] = LANCE_CODE.format(
-            function=function, dataset=dataset, pattern=pattern, comment=comment
-        )
+        loading_code["code"] = LANCE_CODE.format(function=function, dataset=dataset, pattern=pattern, comment=comment)
     compatible_libraries.append(
         {"language": "python", "library": library, "function": function, "loading_codes": loading_codes}
     )
