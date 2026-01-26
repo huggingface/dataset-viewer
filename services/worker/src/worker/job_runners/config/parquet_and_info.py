@@ -890,9 +890,7 @@ def stream_convert_to_parquet(
     os.makedirs(builder.cache_dir, exist_ok=True)
     split_dict = SplitDict(dataset_name=builder.dataset_name)
     splits_generators: dict[str, SplitGenerator] = {sg.name: sg for sg in builder._split_generators(dl_manager)}
-    prepare_split_kwargs: dict[str, Any] = (
-        {"check_duplicate_keys": True} if isinstance(builder, datasets.builder.GeneratorBasedBuilder) else {}
-    )
+
     partial = False
     estimated_splits_info: dict[str, dict[str, Any]] = {}
     estimated_info: dict[str, Any] = {"download_size": 0}
@@ -900,17 +898,13 @@ def stream_convert_to_parquet(
         split_info = splits_generators[split].split_info
         split_dict.add(split_info)
         if max_dataset_size_bytes is None:
-            builder._prepare_split(
-                split_generator=splits_generators[split], file_format="parquet", **prepare_split_kwargs
-            )
+            builder._prepare_split(split_generator=splits_generators[split], file_format="parquet")
         else:
             with (
                 limit_parquet_writes(builder, max_dataset_size_bytes=max_dataset_size_bytes) as limiter,
                 track_reads() as reads_tracker,
             ):
-                builder._prepare_split(
-                    split_generator=splits_generators[split], file_format="parquet", **prepare_split_kwargs
-                )
+                builder._prepare_split(split_generator=splits_generators[split], file_format="parquet")
                 partial = partial or limiter.total_bytes >= max_dataset_size_bytes
                 # estimate num_examples if partial conversion
                 urlpaths = get_urlpaths_in_gen_kwargs(splits_generators[split].gen_kwargs)
