@@ -5,7 +5,6 @@ import logging
 import re
 from http import HTTPStatus
 from itertools import islice
-from pathlib import Path
 from typing import Any, Callable, Optional
 
 import datasets.config
@@ -15,6 +14,7 @@ import yaml
 from datasets import BuilderConfig, DownloadConfig
 from datasets.data_files import (
     NON_WORDS_CHARS,
+    DataFilesDict,
     DataFilesPatternsDict,
     DataFilesPatternsList,
     resolve_pattern,
@@ -22,10 +22,15 @@ from datasets.data_files import (
 from datasets.load import (
     create_builder_configs_from_metadata_configs,
 )
-from datasets.packaged_modules import _MODULE_TO_EXTENSIONS, _PACKAGED_DATASETS_MODULES
-from datasets.utils.file_utils import cached_path
+from datasets.packaged_modules import (
+    _ALL_ALLOWED_EXTENSIONS,
+    _MODULE_TO_EXTENSIONS,
+    _MODULE_TO_METADATA_EXTENSIONS,
+    _MODULE_TO_METADATA_FILE_NAMES,
+    _PACKAGED_DATASETS_MODULES,
+)
 from datasets.utils.metadata import MetadataConfigs
-from huggingface_hub import DatasetCard, DatasetCardData, HfFileSystem, hf_hub_url
+from huggingface_hub import DatasetCard, DatasetCardData, HfFileSystem
 from libcommon.constants import LOADING_METHODS_MAX_CONFIGS
 from libcommon.croissant_utils import get_record_set
 from libcommon.exceptions import DatasetWithTooComplexDataFilesPatternsError, PreviousStepFormatError
@@ -87,28 +92,22 @@ def get_builder_configs(
     """
     builder_configs: list[BuilderConfig]
     base_path = f"hf://datasets/{dataset}"
-    if HfFileSystem(token=hf_token).exists(base_path + "/" + dataset.split("/")[-1] + ".py"):
+    fs = HfFileSystem(token=hf_token)
+    if fs.exists(base_path + "/" + dataset.split("/")[-1] + ".py"):
         raise NotImplementedError("datasets with a script are not supported")
     download_config = DownloadConfig(token=hf_token)
     try:
-        dataset_readme_path = cached_path(
-            hf_hub_url(dataset, datasets.config.REPOCARD_FILENAME, repo_type="dataset"),
-            download_config=download_config,
-        )
-        dataset_card_data = DatasetCard.load(Path(dataset_readme_path)).data
+        dataset_readme_content = fs.read_text(f"{base_path}/{datasets.config.REPOCARD_FILENAME}")
+        dataset_card_data = DatasetCard(dataset_readme_content).data
     except FileNotFoundError:
         dataset_card_data = DatasetCardData()
     try:
-        standalone_yaml_path = cached_path(
-            hf_hub_url(dataset, datasets.config.REPOYAML_FILENAME, repo_type="dataset"),
-            download_config=download_config,
-        )
-        with open(standalone_yaml_path, "r", encoding="utf-8") as f:
-            standalone_yaml_data = yaml.safe_load(f.read())
-            if standalone_yaml_data:
-                _dataset_card_data_dict = dataset_card_data.to_dict()
-                _dataset_card_data_dict.update(standalone_yaml_data)
-                dataset_card_data = DatasetCardData(**_dataset_card_data_dict)
+        standalone_yaml_content = fs.read_text(f"{base_path}/{datasets.config.REPOYAML_FILENAME}")
+        standalone_yaml_data = yaml.safe_load(standalone_yaml_content)
+        if standalone_yaml_data:
+            _dataset_card_data_dict = dataset_card_data.to_dict()
+            _dataset_card_data_dict.update(standalone_yaml_data)
+            dataset_card_data = DatasetCardData(**_dataset_card_data_dict)
     except FileNotFoundError:
         pass
     metadata_configs = MetadataConfigs.from_dataset_card_data(dataset_card_data)
@@ -121,9 +120,9 @@ def get_builder_configs(
         # No need for default_builder_kwargs since we just need the builder config for the data files
         # default_builder_kwargs=default_builder_kwargs,
     )
-    if with_simplified_data_files:
-        for config in builder_configs:
-            data_files = config.data_files.resolve(base_path=base_path, download_config=download_config)
+    for config in builder_configs:
+        data_files = config.data_files.resolve(base_path=base_path, download_config=download_config)
+        if with_simplified_data_files:
             config.data_files = DataFilesPatternsDict(
                 {
                     str(split): (
@@ -136,6 +135,17 @@ def get_builder_configs(
                     )
                     for split in data_files
                 }
+            )
+        else:
+            config.data_files = DataFilesDict.from_patterns(
+                config.data_files,
+                base_path=base_path,
+                download_config=download_config,
+                allowed_extensions=_ALL_ALLOWED_EXTENSIONS,
+            )
+            config.data_files = data_files.filter(
+                extensions=_MODULE_TO_EXTENSIONS[module_name] + _MODULE_TO_METADATA_EXTENSIONS[module_name],
+                file_names=_MODULE_TO_METADATA_FILE_NAMES[module_name],
             )
     return builder_configs
 
@@ -400,14 +410,18 @@ ds = {function}(urls).decode()"""
 
 LANCE_CODE = """import lance
 {comment}
-df = {function}("hf://datasets/{dataset}/{pattern}")"""
+ds = {function}("{uri}")"""
 
 
-def _init_empty_loading_codes(builder_configs: list[BuilderConfig]) -> list[LoadingCode]:
+def _init_empty_loading_codes(
+    builder_configs: list[BuilderConfig], with_simplified_data_files: bool = False
+) -> list[LoadingCode]:
     return [
         {
             "config_name": config.name,
-            "arguments": {"splits": {str(split): data_files[0] for split, data_files in config.data_files.items()}},
+            "arguments": {"splits": {str(split): data_files[0] for split, data_files in config.data_files.items()}}
+            if with_simplified_data_files
+            else {},
             "code": "",
         }
         for config in builder_configs
@@ -429,7 +443,7 @@ def get_compatible_libraries_for_json(
             )
 
     # Pandas or Dask
-    loading_codes = _init_empty_loading_codes(builder_configs)
+    loading_codes = _init_empty_loading_codes(builder_configs, with_simplified_data_files=True)
     is_single_file = all(
         "*" not in data_file and "[" not in data_file
         for loading_code in loading_codes
@@ -487,7 +501,7 @@ def get_compatible_libraries_for_json(
         )
 
     # Polars
-    loading_codes = _init_empty_loading_codes(builder_configs)
+    loading_codes = _init_empty_loading_codes(builder_configs, with_simplified_data_files=True)
     library = "polars"
     function = "pl.read_json"
     for loading_code in list(loading_codes):
@@ -539,7 +553,7 @@ def get_compatible_libraries_for_csv(
             )
 
     # Pandas or Dask
-    loading_codes = _init_empty_loading_codes(builder_configs)
+    loading_codes = _init_empty_loading_codes(builder_configs, with_simplified_data_files=True)
     is_single_file = all(
         "*" not in data_file and "[" not in data_file
         for loading_code in loading_codes
@@ -591,7 +605,7 @@ def get_compatible_libraries_for_csv(
     )
 
     # Polars
-    loading_codes = _init_empty_loading_codes(builder_configs)
+    loading_codes = _init_empty_loading_codes(builder_configs, with_simplified_data_files=True)
     library = "polars"
     function = "pl.read_csv"
     for loading_code in loading_codes:
@@ -640,7 +654,7 @@ def get_compatible_libraries_for_parquet(
             )
 
     # Pandas or Dask
-    loading_codes = _init_empty_loading_codes(builder_configs)
+    loading_codes = _init_empty_loading_codes(builder_configs, with_simplified_data_files=True)
     is_single_file = all(
         "*" not in data_file and "[" not in data_file
         for loading_code in loading_codes
@@ -687,7 +701,7 @@ def get_compatible_libraries_for_parquet(
     )
 
     # Polars
-    loading_codes = _init_empty_loading_codes(builder_configs)
+    loading_codes = _init_empty_loading_codes(builder_configs, with_simplified_data_files=True)
     library = "polars"
     function = "pl.read_parquet"
     for loading_code in loading_codes:
@@ -729,7 +743,7 @@ def get_compatible_libraries_for_webdataset(
             raise DatasetWithTooComplexDataFilesPatternsError(
                 f"Failed to simplify webdataset data files pattern: {config.data_files}"
             )
-    loading_codes: list[LoadingCode] = _init_empty_loading_codes(builder_configs)
+    loading_codes: list[LoadingCode] = _init_empty_loading_codes(builder_configs, with_simplified_data_files=True)
     library = "webdataset"
     function = "wds.WebDataset"
     comment = LOGIN_COMMENT if login_required else ""
@@ -764,16 +778,16 @@ def get_compatible_libraries_for_lance(
     library = "lance"
     function = "lance.dataset"
     comment = LOGIN_COMMENT if login_required else ""
-    for loading_code in loading_codes:
-        data_files = next(iter(loading_code["arguments"]["splits"].values()))
+    for loading_code, builder_config in zip(loading_codes, builder_configs):
+        data_files = next(iter(builder_config.data_files.values()))
         for data_file in data_files:
             if "/_versions/" in data_file:
-                pattern = data_file.rsplit("/_versions/", 1)[0]
+                uri = data_file.rsplit("/_versions/", 1)[0]
                 break
         else:
             comment = "\n# load any lance file, e.g."
-            pattern = [data_file for data_file in data_files if data_file.endswith(".lance")][0]
-        loading_code["code"] = LANCE_CODE.format(function=function, dataset=dataset, pattern=pattern, comment=comment)
+            uri = [data_file for data_file in data_files if data_file.endswith(".lance")][0]
+        loading_code["code"] = LANCE_CODE.format(function=function, uri=uri, comment=comment)
     compatible_libraries.append(
         {"language": "python", "library": library, "function": function, "loading_codes": loading_codes}
     )
