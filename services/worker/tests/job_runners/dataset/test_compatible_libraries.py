@@ -19,7 +19,7 @@ from worker.config import AppConfig
 from worker.job_runners.dataset.compatible_libraries import (
     LOGIN_COMMENT,
     DatasetCompatibleLibrariesJobRunner,
-    get_builder_configs_with_simplified_data_files,
+    get_builder_configs,
     get_compatible_libraries_for_json,
     get_compatible_library_for_builder,
 )
@@ -39,6 +39,7 @@ GetJobRunner = Callable[[str, AppConfig], DatasetCompatibleLibrariesJobRunner]
 PARQUET_DATASET = "parquet-dataset"
 PARQUET_DATASET_LOGIN_REQUIRED = "parquet-dataset-login_required"
 WEBDATASET_DATASET = "webdataset-dataset"
+LANCE_DATASET = "lance-dataset"
 ERROR_DATASET = "error-dataset"
 
 UPSTREAM_RESPONSE_INFO_PARQUET: UpstreamResponse = UpstreamResponse(
@@ -63,6 +64,14 @@ UPSTREAM_RESPONSE_INFO_WEBDATASET: UpstreamResponse = UpstreamResponse(
     dataset_git_revision=REVISION_NAME,
     http_status=HTTPStatus.OK,
     content={"dataset_info": {"default": {"config_name": "default", "builder_name": "webdataset"}}, "partial": False},
+    progress=1.0,
+)
+UPSTREAM_RESPONSE_INFO_LANCE: UpstreamResponse = UpstreamResponse(
+    kind="dataset-info",
+    dataset=LANCE_DATASET,
+    dataset_git_revision=REVISION_NAME,
+    http_status=HTTPStatus.OK,
+    content={"dataset_info": {"default": {"config_name": "default", "builder_name": "lance"}}, "partial": False},
     progress=1.0,
 )
 UPSTREAM_RESPONSE_INFO_ERROR: UpstreamResponse = UpstreamResponse(
@@ -237,6 +246,56 @@ EXPECTED_PARQUET_LOGIN_REQUIRED = (
     },
     1.0,
 )
+EXPECTED_LANCE = (
+    {
+        "formats": ["lance"],
+        "libraries": [
+            {
+                "function": "load_dataset",
+                "language": "python",
+                "library": "datasets",
+                "loading_codes": [
+                    {
+                        "config_name": "default",
+                        "arguments": {},
+                        "code": ('from datasets import load_dataset\n\nds = load_dataset("lance-dataset")'),
+                    }
+                ],
+            },
+            {
+                "function": "lance.dataset",
+                "language": "python",
+                "library": "lance",
+                "loading_codes": [
+                    {
+                        "config_name": "default",
+                        "arguments": {},
+                        "code": ('import lance\n\nds = lance.dataset("hf://datasets/lance-dataset")'),
+                    }
+                ],
+            },
+            {
+                "function": "Dataset",
+                "language": "python",
+                "library": "mlcroissant",
+                "loading_codes": [
+                    {
+                        "config_name": "default",
+                        "arguments": {"record_set": "default", "partial": False},
+                        "code": (
+                            "from mlcroissant import Dataset\n"
+                            "\n"
+                            'ds = Dataset(jsonld="https://huggingface.co/api/datasets/lance-dataset/croissant")\n'
+                            'records = ds.records("default")'
+                        ),
+                    }
+                ],
+            },
+        ],
+    },
+    1.0,
+)
+
 EXPECTED_WEBDATASET = (
     {
         "formats": ["webdataset"],
@@ -317,6 +376,12 @@ def mock_hffs(tmp_path_factory: TempPathFactory) -> Iterator[fsspec.AbstractFile
     (hf / "datasets" / WEBDATASET_DATASET / "0002.tar").touch()
     (hf / "datasets" / WEBDATASET_DATASET / "0003.tar").touch()
 
+    (hf / "datasets" / LANCE_DATASET).mkdir(parents=True)
+    (hf / "datasets" / LANCE_DATASET / "_versions").mkdir(parents=True)
+    (hf / "datasets" / LANCE_DATASET / "data").mkdir(parents=True)
+    (hf / "datasets" / LANCE_DATASET / "data" / "0000.lance").touch()
+    (hf / "datasets" / LANCE_DATASET / "_versions" / "1.manifest").touch()
+
     class MockHfFileSystem(DirFileSystem):  # type: ignore[misc]
         protocol = "hf"
 
@@ -390,6 +455,13 @@ def get_job_runner(
                 UPSTREAM_RESPONSE_INFO_WEBDATASET,
             ],
             EXPECTED_WEBDATASET,
+        ),
+        (
+            LANCE_DATASET,
+            [
+                UPSTREAM_RESPONSE_INFO_LANCE,
+            ],
+            EXPECTED_LANCE,
         ),
     ],
 )
@@ -508,7 +580,7 @@ def test_simplify_data_files_patterns(
     module_name: str,
     expected_simplified_data_files: dict[str, dict[str, list[str]]],
 ) -> None:
-    configs = get_builder_configs_with_simplified_data_files(dataset, module_name=module_name)
+    configs = get_builder_configs(dataset, module_name=module_name, with_simplified_data_files=True)
     simplified_data_files: dict[str, dict[str, list[str]]] = {config.name: config.data_files for config in configs}
     assert simplified_data_files == expected_simplified_data_files
 
@@ -547,7 +619,7 @@ def test_get_builder_configs_with_simplified_data_files(
 ) -> None:
     hf_token = None
     login_required = False
-    configs = get_builder_configs_with_simplified_data_files(dataset, module_name=module_name, hf_token=hf_token)
+    configs = get_builder_configs(dataset, module_name=module_name, hf_token=hf_token, with_simplified_data_files=True)
     assert len(configs) == 1
     config = configs[0]
     assert config.data_files == expected_data_files
