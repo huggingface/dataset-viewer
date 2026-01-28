@@ -909,7 +909,7 @@ def stream_convert_to_parquet(
         if max_dataset_size_bytes and partial:
             if isinstance(builder, datasets.builder._CountableBuilderMixin):
                 num_examples = builder._count_examples(splits_generators[split])
-                estimated_num_bytes = (int(num_examples / split_info.num_examples * split_info.num_bytes))
+                estimated_num_bytes = int(num_examples / split_info.num_examples * split_info.num_bytes)
                 estimated_splits_info[split] = asdict(
                     SplitInfo(
                         name=split_info.name,
