@@ -906,6 +906,20 @@ def stream_convert_to_parquet(
             ):
                 builder._prepare_split(split_generator=splits_generators[split], file_format="parquet")
                 partial = partial or limiter.total_bytes >= max_dataset_size_bytes
+        if max_dataset_size_bytes and partial:
+            if isinstance(builder, datasets.builder._CountableBuilderMixin):
+                num_examples = builder._count_examples(splits_generators[split])
+                estimated_num_bytes = (int(num_examples / split_info.num_examples * split_info.num_bytes),)
+                estimated_splits_info[split] = asdict(
+                    SplitInfo(
+                        name=split_info.name,
+                        num_examples=num_examples,
+                        num_bytes=estimated_num_bytes,
+                        dataset_name=split_info.dataset_name,
+                    )
+                )
+                estimated_info["download_size"] += estimated_num_bytes
+            else:
                 # estimate num_examples if partial conversion
                 urlpaths = get_urlpaths_in_gen_kwargs(splits_generators[split].gen_kwargs)
                 if limiter.total_bytes >= max_dataset_size_bytes and not urlpaths:
