@@ -56,7 +56,7 @@ class EntityInfo:
 
     def __init__(self, **kwargs) -> None:  # type: ignore
         self.is_pro = kwargs.pop("isPro", None)
-        self.is_enterprise = kwargs.pop("isEnterprise", None)
+        self.is_enterprise = True if kwargs.pop("plan", None) is not None else False
 
 
 class CustomHfApi(HfApi):
