@@ -42,9 +42,19 @@ from libcommon.viewer_utils.asset import (
 )
 
 AUDIO_FILE_MAGIC_NUMBERS: dict[str, Any] = {
-    ".wav": [(b"\x52\x49\x46\x46", 0), (b"\x57\x41\x56\x45", 8)],  # AND: (magic_number, start)
-    ".mp3": (b"\xff\xfb", b"\xff\xf3", b"\xff\xf2", b"\x49\x44\x33"),  # OR
+    ".wav": [[(b"\x52\x49\x46\x46", 0), (b"\x57\x41\x56\x45", 8)], [(b"RIFF", 0), (b"WAVE", 8)]],  # AND: (magic_number, start)
+    ".mp3": [b"\xff\xfb", b"\xff\xf3", b"\xff\xf2", b"\x49\x44\x33", b"ID3"],  # OR
+    ".flac": [b"fLaC"],
 }
+
+VIDEO_FILE_MAGIC_NUMBERS: dict[str, Any] = {
+    ".mkv": [b"\x1aE\xdf\xa3"],
+    ".mp4": [b"ftypisom", (b"ftypisom", 4), b"ftypMSNV" (b"ftypMSNV", 4)],
+    ".avi": [[(b"RIFF", 0), (b"AVI ", 8)]],
+    ".mpeg": [b"\x00\x00\x01\xba"],
+    ".mov": [b"\x00\x00\x01\xb3"],
+}
+
 
 logging.getLogger("pdfminer").setLevel(logging.ERROR)
 
@@ -133,6 +143,19 @@ def audio(
 
     if value is None:
         return None
+    if (
+        isinstance(value, AudioDecoder)
+        and hasattr(value, "_hf_encoded")
+        and isinstance(value._hf_encoded, dict)
+    ):
+        value = value._hf_encoded  # `datasets` patches `torchcodec` to store the encoded data here
+    elif isinstance(value, dict):
+        value = {"path": value.get("path"), "bytes": value["bytes"]}
+    elif isinstance(value, bytes):
+        value = {"path": None, "bytes": value}
+    elif isinstance(value, str):
+        value = {"path": value, "bytes": None}
+
     if not isinstance(value, (dict, AudioDecoder)):
         raise TypeError(
             "Audio cell must be an encoded dict of an audio sample or a torchcodec AudioDecoder, "
@@ -175,20 +198,12 @@ def get_audio_file_bytes(value: Any) -> bytes:
         with open(value["path"], "rb") as f:
             audio_file_bytes = f.read()
     elif isinstance(value, AudioDecoder):
-        if (
-            hasattr(value, "_hf_encoded")
-            and isinstance(value._hf_encoded, dict)
-            and "bytes" in value._hf_encoded
-            and isinstance(value._hf_encoded["bytes"], bytes)
-        ):
-            audio_file_bytes = value._hf_encoded["bytes"]
-        else:
-            _array = value["array"]
-            _sampling_rate = value["sampling_rate"]
-            if isinstance(_array, np.ndarray) and isinstance(_sampling_rate, int):
-                buffer = BytesIO()
-                soundfile.write(buffer, _array, _sampling_rate, format="wav")
-                audio_file_bytes = buffer.getvalue()
+        _array = value["array"]
+        _sampling_rate = value["sampling_rate"]
+        if isinstance(_array, np.ndarray) and isinstance(_sampling_rate, int):
+            buffer = BytesIO()
+            soundfile.write(buffer, _array, _sampling_rate, format="wav")
+            audio_file_bytes = buffer.getvalue()
     else:
         raise ValueError(
             "An audio sample should have 'path' and 'bytes' (or 'array' and 'sampling_rate') but got"
@@ -210,17 +225,7 @@ def get_audio_file_extension(value: Any) -> Optional[str]:
     elif isinstance(value, dict) and "bytes" in value and isinstance(value["bytes"], bytes):
         audio_file_extension = None
     elif isinstance(value, AudioDecoder):
-        if (
-            hasattr(value, "_hf_encoded")
-            and isinstance(value._hf_encoded, dict)
-            and "path" in value._hf_encoded
-            and isinstance(value._hf_encoded["path"], str)
-        ):
-            # .split("::")[0] for chained URLs like zip://audio.wav::https://foo.bar/data.zip
-            # It might be "" for audio files downloaded from the Hub: make it None
-            audio_file_extension = os.path.splitext(value._hf_encoded["path"].split("::")[0])[1] or None
-        else:
-            audio_file_extension = None
+        audio_file_extension = None
     else:
         raise ValueError(
             f"An audio sample should have 'path' and 'bytes' (or be an AudioDecoder) but got {', '.join(value)}."
@@ -228,15 +233,22 @@ def get_audio_file_extension(value: Any) -> Optional[str]:
     return audio_file_extension
 
 
-def infer_audio_file_extension(audio_file_bytes: bytes) -> Optional[str]:
-    for audio_file_extension, magic_numbers in AUDIO_FILE_MAGIC_NUMBERS.items():
-        if isinstance(magic_numbers, list):
-            if all(audio_file_bytes.startswith(magic_number, start) for magic_number, start in magic_numbers):
-                return audio_file_extension
-        else:
-            if audio_file_bytes.startswith(magic_numbers):
+def _infer_file_extension(file_bytes: bytes, magic_number_collection: dict[str, list[Union[bytes, list[tuple[bytes, int]]]]]) -> Optional[str]:
+    for audio_file_extension, magic_numbers in magic_number_collection.items():
+        for magic_number in magic_numbers:
+            if not isinstance(magic_number, list):
+                magic_number = [magic_number]
+            if all(file_bytes.startswith(*mn if isinstance(mn, tuple) else mn) for mn in magic_number):
                 return audio_file_extension
     return None
+
+
+def infer_audio_file_extension(audio_file_bytes: bytes) -> Optional[str]:
+    return _infer_file_extension(audio_file_bytes, AUDIO_FILE_MAGIC_NUMBERS)
+
+
+def infer_video_file_extension(video_file_bytes: bytes) -> Optional[str]:
+    return _infer_file_extension(video_file_bytes, VIDEO_FILE_MAGIC_NUMBERS)
 
 
 def video(
@@ -250,21 +262,21 @@ def video(
     storage_client: StorageClient,
     json_path: Optional[list[Union[str, int]]] = None,
 ) -> Any:
-    if datasets.config.TORCHVISION_AVAILABLE:
-        from torchvision.io import VideoReader  # type: ignore
+    if datasets.config.TORCHCODEC_AVAILABLE:
+        from torchcodec.decoders import VideoDecoder  # type: ignore
 
     else:
-        VideoReader = None
+        VideoDecoder = None
 
     if value is None:
         return None
     if (
-        VideoReader
-        and isinstance(value, VideoReader)
+        VideoDecoder
+        and isinstance(value, VideoDecoder)
         and hasattr(value, "_hf_encoded")
         and isinstance(value._hf_encoded, dict)
     ):
-        value = value._hf_encoded  # `datasets` patches `torchvision` to store the encoded data here
+        value = value._hf_encoded  # `datasets` patches `torchcodec` to store the encoded data here
     elif isinstance(value, dict):
         value = {"path": value.get("path"), "bytes": value["bytes"]}
     elif isinstance(value, bytes):
@@ -279,6 +291,9 @@ def video(
         )
 
     video_file_extension = get_video_file_extension(value)
+    video_file_bytes = get_video_file_bytes(value)
+    if not video_file_extension:
+        video_file_extension = infer_audio_file_extension(video_file_bytes) or ".unknown"
     return create_video_file(
         dataset=dataset,
         revision=revision,
@@ -292,15 +307,33 @@ def video(
     )
 
 
-def get_video_file_extension(value: Any) -> str:
-    if "path" in value and isinstance(value["path"], str):
+def get_video_file_bytes(value: Any) -> bytes:
+
+    if isinstance(value, dict) and "bytes" in value and isinstance(value["bytes"], bytes):
+        video_file_bytes = value["bytes"]
+    elif (
+        isinstance(value, dict)
+        and "path" in value
+        and isinstance(value["path"], str)
+        and os.path.exists(value["path"])
+    ):
+        with open(value["path"], "rb") as f:
+            video_file_bytes = f.read()
+    else:
+        raise ValueError(
+            "A video sample should have 'path' and 'bytes' but got"
+            f" {', '.join(value)}."
+        )
+    return video_file_bytes
+
+
+def get_video_file_extension(value: Any) -> Optional[str]:
+    if isinstance(value, dict) and "path" in value and isinstance(value["path"], str):
         # .split("::")[0] for chained URLs like zip://audio.wav::https://foo.bar/data.zip
-        video_file_extension = os.path.splitext(value["path"].split("::")[0])[1]
-        if not video_file_extension:
-            raise ValueError(
-                "A video sample should have a 'path' with a valid file name nd extension, but got"
-                f" {', '.join(value['path'])}."
-            )
+        # It might be "" for audio files downloaded from the Hub: make it None
+        video_file_extension = os.path.splitext(value["path"].split("::")[0])[1] or None
+    elif isinstance(value, dict) and "bytes" in value and isinstance(value["bytes"], bytes):
+        audio_file_extension = None
     else:
         raise ValueError(f"A video sample should have 'path' and 'bytes' but got {', '.join(value)}.")
     return video_file_extension
