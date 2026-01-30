@@ -172,6 +172,7 @@ class JobDocument(Document):
             ("priority", "status", "created_at", "dataset", "difficulty", "namespace"),
             ("priority", "status", "type", "namespace", "unicity_id", "created_at", "-difficulty"),
             ("status", "type"),
+            ("type", "status"),  # optimize aggregate $sort on {type: 1, status: 1}
             ("unicity_id", "status", "-created_at"),
         ],
     }
