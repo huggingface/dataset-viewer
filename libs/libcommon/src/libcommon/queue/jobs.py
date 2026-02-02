@@ -823,7 +823,7 @@ class Queue:
             (metric["job_type"], metric["status"], metric["dataset_status"]): metric["total"]
             for metric in JobDocument.objects().aggregate(
                 [
-                    {"$sort": {"type": 1, "status": 1}},
+                    # NOTE: Removed unnecessary $sort before $group - was causing COLLSCAN
                     {
                         # TODO(SL): optimize this part?
                         "$addFields": {
