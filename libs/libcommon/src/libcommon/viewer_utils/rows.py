@@ -10,7 +10,6 @@ from libcommon.dtos import Row, RowsContent, SplitFirstRowsResponse
 from libcommon.exceptions import (
     RowsPostProcessingError,
     TooBigContentError,
-    TooManyColumnsError,
 )
 from libcommon.storage_client import StorageClient
 from libcommon.utils import get_json_size
@@ -107,12 +106,12 @@ def create_first_rows_response(
     Returns:
         `SplitFirstRowsResponse`: the response for the first rows of the split.
     """
+    columns_were_truncated = False
     if features and len(features) > columns_max_number:
-        raise TooManyColumnsError(
-            f"The number of columns ({len(features)}) exceeds the maximum supported number of columns"
-            f" ({columns_max_number}). This is a current limitation of the datasets viewer. You can reduce the number"
-            " of columns if you want the viewer to work."
-        )
+        original_columns = list(features.keys())
+        kept_columns = original_columns[:columns_max_number]
+        features = Features({k: features[k] for k in kept_columns})
+        columns_were_truncated = True
 
     # validate size of response without the rows
     features_list = to_features_list(features=features)
@@ -189,6 +188,8 @@ def create_first_rows_response(
     response = response_features_only
     response["rows"] = row_items
     response["truncated"] = (not rows_content.all_fetched) or truncated
+    response["truncated_rows"] = (not rows_content.all_fetched) or truncated
+    response["truncated_columns"] = columns_were_truncated
 
     # return the response
     return response
