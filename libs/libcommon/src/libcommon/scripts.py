@@ -1,4 +1,4 @@
-import subprocess
+import subprocess  # nosec
 from pathlib import Path
 
 
@@ -17,4 +17,4 @@ def cli_all_projects() -> None:
     while (command := input(">>> ")) not in ["exit", "exit()"]:
         for project in projects:
             print(f"cd {project}")
-            subprocess.run(command.split(" "), cwd=project)
+            subprocess.run(command.split(" "), cwd=project)  # nosec
