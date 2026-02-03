@@ -4,7 +4,9 @@
 
 from typing import Protocol
 
-from datasets import Audio, Features, Image, Pdf, Value
+import PIL
+from datasets import Features, Value
+from datasets.features.features import require_decoding
 
 from libcommon.dtos import Row, RowsContent, SplitFirstRowsResponse
 from libcommon.exceptions import (
@@ -29,23 +31,35 @@ def transform_rows(
     features: Features,
     storage_client: StorageClient,
 ) -> list[Row]:
-    return [
-        {
-            featureName: get_cell_value(
-                dataset=dataset,
-                revision=revision,
-                config=config,
-                split=split,
-                row_idx=row_idx,
-                cell=row[featureName] if featureName in row else None,
-                featureName=featureName,
-                fieldType=fieldType,
-                storage_client=storage_client,
+    transformed_rows: list[Row] = []
+    for row_idx, row in enumerate(rows):
+        try:
+            transformed_rows.append(
+                {
+                    featureName: get_cell_value(
+                        dataset=dataset,
+                        revision=revision,
+                        config=config,
+                        split=split,
+                        row_idx=row_idx,
+                        cell=row[featureName] if featureName in row else None,
+                        featureName=featureName,
+                        fieldType=fieldType,
+                        storage_client=storage_client,
+                    )
+                    for (featureName, fieldType) in features.items()
+                }
             )
-            for (featureName, fieldType) in features.items()
-        }
-        for row_idx, row in enumerate(rows)
-    ]
+        except Exception as err:
+            suggestion_messages: dict[type[Exception], str] = {
+                PIL.UnidentifiedImageError: " It seems the image can't be loaded with PIL.Image and could be corrupted."
+            }
+            suggestion_msg = suggestion_messages.get(type(err), " Please report the issue.")
+            location_msg = "" if row_idx == 0 else f" This occured on row {row_idx}."
+            raise RowsPostProcessingError(
+                "Server error while post-processing the rows." + location_msg + suggestion_msg, cause=err
+            ) from err
+    return transformed_rows
 
 
 class GetRowsContent(Protocol):
@@ -140,27 +154,21 @@ def create_first_rows_response(
         )
 
     # transform the rows, if needed (e.g. save the images or audio to the assets, and return their URL)
-    try:
-        transformed_rows = transform_rows(
-            dataset=dataset,
-            revision=revision,
-            config=config,
-            split=split,
-            rows=rows_content.rows,
-            features=features,
-            storage_client=storage_client,
-        )
-    except Exception as err:
-        raise RowsPostProcessingError(
-            "Server error while post-processing the split rows. Please report the issue.",
-            cause=err,
-        ) from err
+    transformed_rows = transform_rows(
+        dataset=dataset,
+        revision=revision,
+        config=config,
+        split=split,
+        rows=rows_content.rows,
+        features=features,
+        storage_client=storage_client,
+    )
 
     # truncate the rows to fit within the restrictions, and prepare them as RowItems
     columns_to_keep_untruncated = [
         col
         for col, feature in features.items()
-        if isinstance(feature, (Image, Audio, Pdf))
+        if require_decoding(feature)  # image/audio/video/pdf/etc.
         or (  # column of URLs
             isinstance(feature, Value)
             and feature.dtype == "string"

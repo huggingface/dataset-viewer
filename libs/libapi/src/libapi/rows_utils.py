@@ -6,11 +6,15 @@ from functools import partial
 from typing import Any, Optional
 
 import anyio
+import PIL
 from datasets import Features
+from datasets.features.features import require_storage_embed
 from libcommon.dtos import Row
 from libcommon.storage_client import StorageClient
 from libcommon.viewer_utils.features import get_cell_value
 from tqdm.contrib.concurrent import thread_map
+
+from libapi.exceptions import TransformRowsProcessingError
 
 
 def _transform_row(
@@ -25,20 +29,29 @@ def _transform_row(
     row_idx_column: Optional[str],
 ) -> Row:
     row_idx, row = row_idx_and_row
-    transformed_row = {
-        featureName: get_cell_value(
-            dataset=dataset,
-            revision=revision,
-            config=config,
-            split=split,
-            row_idx=offset + row_idx if row_idx_column is None else row[row_idx_column],
-            cell=row[featureName] if featureName in row else None,
-            featureName=featureName,
-            fieldType=fieldType,
-            storage_client=storage_client,
-        )
-        for (featureName, fieldType) in features.items()
-    }
+    transformed_row = {}
+    for featureName, fieldType in features.items():
+        try:
+            transformed_row[featureName] = get_cell_value(
+                dataset=dataset,
+                revision=revision,
+                config=config,
+                split=split,
+                row_idx=offset + row_idx if row_idx_column is None else row[row_idx_column],
+                cell=row[featureName] if featureName in row else None,
+                featureName=featureName,
+                fieldType=fieldType,
+                storage_client=storage_client,
+            )
+        except Exception as err:
+            suggestion_messages: dict[type[Exception], str] = {
+                PIL.UnidentifiedImageError: " It seems the image can't be loaded with PIL.Image and could be corrupted."
+            }
+            suggestion_msg = suggestion_messages.get(type(err), " Please report the issue.")
+            location_msg = "" if row_idx == 0 else f" This occured on row {offset + row_idx}."
+            raise TransformRowsProcessingError(
+                "Server error while post-processing the rows." + location_msg + suggestion_msg, cause=err
+            ) from err
     if row_idx_column and row_idx_column not in transformed_row:
         transformed_row |= {row_idx_column: row[row_idx_column]}
     return transformed_row
@@ -66,8 +79,8 @@ async def transform_rows(
         offset=offset,
         row_idx_column=row_idx_column,
     )
-    if "Audio(" in str(features) or "Image(" in str(features) or "Pdf(" in str(features):
-        # Use multithreading to parallelize image/audio files uploads.
+    if require_storage_embed(features):
+        # Use multithreading to parallelize image/audio/video files uploads.
         # Also multithreading is ok to convert audio data
         # (we use pydub which might spawn one ffmpeg process per conversion, which releases the GIL)
         desc = f"_transform_row for {dataset}"
