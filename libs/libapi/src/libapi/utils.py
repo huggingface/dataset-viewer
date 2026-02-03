@@ -28,7 +28,6 @@ from starlette.responses import JSONResponse, Response
 from libapi.exceptions import (
     ResponseNotFoundError,
     ResponseNotReadyError,
-    TransformRowsProcessingError,
 )
 from libapi.rows_utils import transform_rows
 
@@ -210,22 +209,17 @@ async def to_rows_list(
     truncated_columns: Optional[list[str]] = None,
 ) -> list[RowItem]:
     # transform the rows, if needed (e.g. save the images or audio to the assets, and return their URL)
-    try:
-        transformed_rows = await transform_rows(
-            dataset=dataset,
-            revision=revision,
-            config=config,
-            split=split,
-            rows=pa_table.to_pylist(),
-            features=features,
-            storage_client=storage_client,
-            offset=offset,
-            row_idx_column=row_idx_column,
-        )
-    except Exception as err:
-        raise TransformRowsProcessingError(
-            "Server error while post-processing the split rows. Please report the issue."
-        ) from err
+    transformed_rows = await transform_rows(
+        dataset=dataset,
+        revision=revision,
+        config=config,
+        split=split,
+        rows=pa_table.to_pylist(),
+        features=features,
+        storage_client=storage_client,
+        offset=offset,
+        row_idx_column=row_idx_column,
+    )
     return [
         {
             "row_idx": idx + offset if row_idx_column is None else row.pop(row_idx_column),
