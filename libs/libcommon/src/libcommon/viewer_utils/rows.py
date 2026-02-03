@@ -5,8 +5,7 @@
 from typing import Protocol
 
 import PIL
-from datasets import Features, Value
-from datasets.features.features import require_decoding
+from datasets import Audio, Features, Image, Pdf, Value, Video
 
 from libcommon.dtos import Row, RowsContent, SplitFirstRowsResponse
 from libcommon.exceptions import (
@@ -168,7 +167,7 @@ def create_first_rows_response(
     columns_to_keep_untruncated = [
         col
         for col, feature in features.items()
-        if require_decoding(feature)  # image/audio/video/pdf/etc.
+        if isinstance(feature, (Image, Audio, Pdf, Video))
         or (  # column of URLs
             isinstance(feature, Value)
             and feature.dtype == "string"
