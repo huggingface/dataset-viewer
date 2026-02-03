@@ -10,7 +10,7 @@ python = "3.12.11"
 anyio = ">=3.4.0,<5"
 appdirs = "^1.4.4"
 cryptography = "^43.0.1"
-datasets = {git="https://github.com/huggingface/datasets.git", rev="f15c59970fef04e277a93b9c262ccdc7bd8038a4", extras = ["vision"]}
+datasets = {git="https://github.com/huggingface/datasets.git", rev="6db5f805a444a767726d58d5dd1cfaa25fc852c0", extras = ["vision"]}
 duckdb = "^1.2.2"
 environs = "^14.3.0"
 filelock = "^3.18.0"
@@ -72,6 +72,9 @@ validators = "^0.22.0"
 [build-system]
 build-backend = "poetry.core.masonry.api"
 requires = ["poetry-core>=1.0.0"]
+
+[tool.poetry.scripts]
+cli_all_projects = 'libcommon.scripts:cli_all_projects'
 
 [tool.pytest.ini_options]
 filterwarnings = ["ignore::DeprecationWarning"]

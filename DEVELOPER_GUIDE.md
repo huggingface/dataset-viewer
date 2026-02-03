@@ -305,6 +305,25 @@ We don't use the package versions (in pyproject.toml files), no need to update t
 
 All the contributions should go through a pull request. The pull requests must be "squashed" (ie: one commit per pull request).
 
+## Update common dependencies
+
+1. Go to `libs/libcommon`
+
+2. Update dependencies in `pyproject.toml`.
+
+3. Run a CLI on all projects that depend on libcommon:
+
+```bash
+>>> poetry run cli_all_projects
+Multi CLI for projects: ...
+```
+
+4. Then you can update all dependencies using
+
+```bash
+>>> poetry lock
+```
+
 ## GitHub Actions
 
 You can use [act](https://github.com/nektos/act) to test the GitHub Actions (see [.github/workflows/](.github/workflows/)) locally. It reduces the retroaction loop when working on the GitHub Actions, avoid polluting the branches with empty pushes only meant to trigger the CI, and allows to only run specific actions.
