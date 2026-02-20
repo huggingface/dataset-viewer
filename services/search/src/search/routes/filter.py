@@ -5,7 +5,7 @@ import logging
 import random
 import re
 from http import HTTPStatus
-from typing import Optional
+from typing import Literal, Optional
 
 import anyio
 import duckdb
@@ -53,6 +53,24 @@ FILTER_COUNT_QUERY = """\
 
 SQL_INVALID_SYMBOLS = "|".join([";", "--", r"/\*", r"\*/"])
 SQL_INVALID_SYMBOLS_PATTERN = re.compile(rf"(?:{SQL_INVALID_SYMBOLS})", flags=re.IGNORECASE)
+
+SQL_MATCH_KEY = r'"([^"]|"")+"'  # " is escaped with ""
+SQL_MATCH_OP = r"[=<>!(like)(ilike)(is)(LIKE)(ILIKE)(IS)]+"
+SQL_MATCH_NUMBER = r"[0-9\.]+"
+SQL_MATCH_VARCHAR = r"'([^']|'')*'"  # ' is escaped with ''
+SQL_MATCH_BOOL_OR_NULL = r"(true|false|null|not null|NULL|NOT NULL)"
+SQL_MATCH_VAL = f"({SQL_MATCH_NUMBER}|{SQL_MATCH_VARCHAR}|{SQL_MATCH_BOOL_OR_NULL})"
+SQL_MATCH_COND = r"(and|or|AND|OR)"
+SQL_MATCH_EXPR = r"\(?" + f"{SQL_MATCH_KEY} ?{SQL_MATCH_OP} ?{SQL_MATCH_VAL}" + r"\)?"
+SQL_MATCH_DIRECTION = r"(arc|desc|ASC|DESC)"
+
+SQL_MATCH_WHERE = f"^{SQL_MATCH_EXPR}( {SQL_MATCH_COND} {SQL_MATCH_EXPR})*$"
+SQL_MATCH_ORDERBY = f"^{SQL_MATCH_KEY} {SQL_MATCH_DIRECTION}$"
+
+SQL_PARAMETER_PATTERNS: dict[Literal["where", "orderby"], re.Pattern] = {
+    "where": re.compile(SQL_MATCH_WHERE),
+    "orderby": re.compile(SQL_MATCH_ORDERBY)
+}
 
 logger = logging.getLogger(__name__)
 
@@ -217,6 +235,6 @@ def execute_filter_query(
     return num_rows_total, pa_table
 
 
-def validate_query_parameter(parameter_value: str, parameter_name: str) -> None:
-    if SQL_INVALID_SYMBOLS_PATTERN.search(parameter_value):
-        raise InvalidParameterError(message=f"Parameter '{parameter_name}' contains invalid symbols")
+def validate_query_parameter(parameter_value: str, parameter_name: Literal["where", "orderby"]) -> None:
+    if SQL_INVALID_SYMBOLS_PATTERN.search(parameter_value) or not SQL_PARAMETER_PATTERNS[parameter_name].match(parameter_value):
+        raise InvalidParameterError(message=f"Parameter '{parameter_name}' contains errors or invalid symbols")
