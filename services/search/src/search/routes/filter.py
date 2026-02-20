@@ -65,11 +65,11 @@ SQL_MATCH_EXPR = r"\(?" + f"{SQL_MATCH_KEY} ?{SQL_MATCH_OP} ?{SQL_MATCH_VAL}" + 
 SQL_MATCH_DIRECTION = r"(arc|desc|ASC|DESC)"
 
 SQL_MATCH_WHERE = f"^{SQL_MATCH_EXPR}( {SQL_MATCH_COND} {SQL_MATCH_EXPR})*$"
-SQL_MATCH_ORDERBY = f"^{SQL_MATCH_KEY} {SQL_MATCH_DIRECTION}$"
+SQL_MATCH_ORDERBY = f"^{SQL_MATCH_KEY}( {SQL_MATCH_DIRECTION})?$"
 
-SQL_PARAMETER_PATTERNS: dict[Literal["where", "orderby"], re.Pattern] = {
+SQL_PARAMETER_PATTERNS: dict[Literal["where", "orderby"], re.Pattern[str]] = {
     "where": re.compile(SQL_MATCH_WHERE),
-    "orderby": re.compile(SQL_MATCH_ORDERBY)
+    "orderby": re.compile(SQL_MATCH_ORDERBY),
 }
 
 logger = logging.getLogger(__name__)
@@ -236,5 +236,7 @@ def execute_filter_query(
 
 
 def validate_query_parameter(parameter_value: str, parameter_name: Literal["where", "orderby"]) -> None:
-    if SQL_INVALID_SYMBOLS_PATTERN.search(parameter_value) or not SQL_PARAMETER_PATTERNS[parameter_name].match(parameter_value):
+    if SQL_INVALID_SYMBOLS_PATTERN.search(parameter_value) or not SQL_PARAMETER_PATTERNS[parameter_name].match(
+        parameter_value
+    ):
         raise InvalidParameterError(message=f"Parameter '{parameter_name}' contains errors or invalid symbols")
