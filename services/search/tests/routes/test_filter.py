@@ -66,7 +66,20 @@ def index_file_location(ds: Dataset) -> Generator[str, None, None]:
 
 
 @pytest.mark.parametrize(
-    "parameter_name, parameter_value", [("where", "\"col\"='A'"), ("orderby", '"A"'), ("orderby", '"A" DESC')]
+    "parameter_name, parameter_value",
+    [
+        ("where", "\"col\"='A'"),
+        ("where", '"col" > 2'),
+        ("where", "\"col\"='A' and \"col2\" != 'B'"),
+        ("where", '"col"=\'A\' and ("col2" != \'B\' or "col3" < 0)'),
+        ("where", "(\"col\" LIKE '%A')"),
+        ("where", '"col"."subcol" = \'A\''),
+        ("where", "\"col\".upper() = 'A'"),
+        ("where", '("col"."subcol").upper() = \'A\''),
+        ("where", "\"col\".replace('a', 'A') = 'A'"),
+        ("orderby", '"A"'),
+        ("orderby", '"A" DESC'),
+    ],
 )
 def test_validate_query_parameter(parameter_name: Literal["where", "orderby"], parameter_value: str) -> None:
     validate_query_parameter(parameter_value, parameter_name)
@@ -77,11 +90,28 @@ def test_validate_query_parameter(parameter_name: Literal["where", "orderby"], p
     "parameter_name, parameter_value",
     [("where", "\"col\"='A'"), ("orderby", '"A"'), ("orderby", '"A" DESC')],
 )
-def test_validate_query_parameter_raises(
+def test_validate_query_parameter_raises_on_sql_injection(
     parameter_name: Literal["where", "orderby"], parameter_value: str, sql_injection: str
 ) -> None:
     with pytest.raises(InvalidParameterError):
         validate_query_parameter(parameter_value + sql_injection, parameter_name)
+
+
+@pytest.mark.parametrize(
+    "parameter_name, parameter_value",
+    [
+        ("where", "getenv('FOO') = 'bar'"),
+        ("where", "\"getenv\"('FOO') = 'bar'"),
+        ("where", '"col" = version()'),
+        ("where", '"col" = "version"()'),
+        ("orderby", "getenv('FOO') = 'bar'"),
+    ],
+)
+def test_validate_query_parameter_raises_on_system_functions(
+    parameter_name: Literal["where", "orderby"], parameter_value: str
+) -> None:
+    with pytest.raises(InvalidParameterError):
+        validate_query_parameter(parameter_value, parameter_name)
 
 
 @pytest.mark.parametrize("orderby", ["", '"age"', '"age" DESC'])
