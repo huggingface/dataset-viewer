@@ -68,14 +68,14 @@ def test_filter_endpoint(normal_user_public_dataset: str) -> None:
     "where,expected_num_rows",
     [
         ("", 4),
-        ("\"col_2\"=3", 1),
-        ("\"col_2\"<3", 3),
-        ("\"col_2\">3", 0),
+        ('"col_2"=3', 1),
+        ('"col_2"<3', 3),
+        ('"col_2">3', 0),
         ("\"col_4\"='B'", 3),
         ("\"col_4\"<'B'", 1),
         ("\"col_4\">='A'", 4),
-        ("\"col_2\"<3 AND \"col_4\"='B'", 2),
-        ("\"col_2\"<3 OR \"col_4\"='B'", 4),
+        ('"col_2"<3 AND "col_4"=\'B\'', 2),
+        ('"col_2"<3 OR "col_4"=\'B\'', 4),
     ],
 )
 def test_filter_endpoint_parameter_where(where: str, expected_num_rows: int, normal_user_public_dataset: str) -> None:
