@@ -242,7 +242,7 @@ def execute_filter_query(
 
 
 def validate_query_parameter(parameter_value: str, parameter_name: Literal["where", "orderby"]) -> None:
-    if SQL_INVALID_SYMBOLS_PATTERN.search(parameter_value) or not SQL_PARAMETER_PATTERNS[parameter_name].match(
-        parameter_value
+    if SQL_INVALID_SYMBOLS_PATTERN.search(parameter_value) or (
+        parameter_value and not SQL_PARAMETER_PATTERNS[parameter_name].match(parameter_value)
     ):
         raise InvalidParameterError(message=f"Parameter '{parameter_name}' contains errors or invalid symbols")

@@ -68,6 +68,7 @@ def index_file_location(ds: Dataset) -> Generator[str, None, None]:
 @pytest.mark.parametrize(
     "parameter_name, parameter_value",
     [
+        ("where", ""),
         ("where", "\"col\"='A'"),
         ("where", '"col" > 2'),
         ("where", "\"col\"='A' and \"col2\" != 'B'"),
@@ -77,6 +78,7 @@ def index_file_location(ds: Dataset) -> Generator[str, None, None]:
         ("where", "\"col\".upper() = 'A'"),
         ("where", '("col"."subcol").upper() = \'A\''),
         ("where", "\"col\".replace('a', 'A') = 'A'"),
+        ("orderby", ""),
         ("orderby", '"A"'),
         ("orderby", '"A" DESC'),
     ],
