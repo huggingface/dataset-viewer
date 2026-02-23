@@ -68,14 +68,14 @@ def test_filter_endpoint(normal_user_public_dataset: str) -> None:
     "where,expected_num_rows",
     [
         ("", 4),
-        ("col_2=3", 1),
-        ("col_2<3", 3),
-        ("col_2>3", 0),
-        ("col_4='B'", 3),
-        ("col_4<'B'", 1),
-        ("col_4>='A'", 4),
-        ("col_2<3 AND col_4='B'", 2),
-        ("col_2<3 OR col_4='B'", 4),
+        ('"col_2"=3', 1),
+        ('"col_2"<3', 3),
+        ('"col_2">3', 0),
+        ("\"col_4\"='B'", 3),
+        ("\"col_4\"<'B'", 1),
+        ("\"col_4\">='A'", 4),
+        ('"col_2"<3 AND "col_4"=\'B\'', 2),
+        ('"col_2"<3 OR "col_4"=\'B\'', 4),
     ],
 )
 def test_filter_endpoint_parameter_where(where: str, expected_num_rows: int, normal_user_public_dataset: str) -> None:
@@ -98,8 +98,8 @@ def test_filter_endpoint_parameter_where(where: str, expected_num_rows: int, nor
     "orderby, expected_first_row_idx",
     [
         ("", 1),
-        ("col_4", 2),
-        ("col_3 DESC", 3),
+        ('"col_4"', 2),
+        ('"col_3" DESC', 3),
     ],
 )
 def test_filter_endpoint_parameter_orderby(
@@ -107,7 +107,7 @@ def test_filter_endpoint_parameter_orderby(
 ) -> None:
     dataset = normal_user_public_dataset
     config, split = get_default_config_split()
-    where = "col_2>0"
+    where = '"col_2">0'
     relative_url = f"/filter?dataset={dataset}&config={config}&split={split}&where={where}"
     if orderby:
         relative_url += f"&orderby={orderby}"
@@ -125,7 +125,7 @@ def test_filter_endpoint_parameter_orderby(
 def test_filter_images_endpoint(normal_user_images_public_dataset: str) -> None:
     dataset = normal_user_images_public_dataset
     config, split = get_default_config_split()
-    where = "rating=3"
+    where = '"rating"=3'
     rows_response = poll_until_ready_and_assert(
         relative_url=f"/filter?dataset={dataset}&config={config}&split={split}&where={where}",
         dataset=dataset,
@@ -146,7 +146,7 @@ def test_filter_images_endpoint(normal_user_images_public_dataset: str) -> None:
 def test_filter_audios_endpoint(normal_user_audios_public_dataset: str) -> None:
     dataset = normal_user_audios_public_dataset
     config, split = get_default_config_split()
-    where = "age=3"
+    where = '"age"=3'
     rows_response = poll_until_ready_and_assert(
         relative_url=f"/filter?dataset={dataset}&config={config}&split={split}&where={where}",
         dataset=dataset,
@@ -167,7 +167,7 @@ def test_filter_audios_endpoint(normal_user_audios_public_dataset: str) -> None:
 def test_filter_pdfs_endpoint(normal_user_pdfs_public_dataset: str) -> None:
     dataset = normal_user_pdfs_public_dataset
     config, split = get_default_config_split()
-    where = "has_images=1"
+    where = '"has_images"=1'
     rows_response = poll_until_ready_and_assert(
         relative_url=f"/filter?dataset={dataset}&config={config}&split={split}&where={where}",
         dataset=dataset,
