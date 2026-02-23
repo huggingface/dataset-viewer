@@ -107,7 +107,7 @@ def test_filter_endpoint_parameter_orderby(
 ) -> None:
     dataset = normal_user_public_dataset
     config, split = get_default_config_split()
-    where ='"col_2">0'
+    where = '"col_2">0'
     relative_url = f"/filter?dataset={dataset}&config={config}&split={split}&where={where}"
     if orderby:
         relative_url += f"&orderby={orderby}"
