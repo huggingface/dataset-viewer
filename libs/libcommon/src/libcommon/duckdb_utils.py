@@ -5,7 +5,15 @@ from typing import Any, Literal, Optional
 
 import duckdb
 import polars as pl
-from datasets.features.features import Features, FeatureType, Translation, TranslationVariableLanguages, Value, _visit
+from datasets.features.features import (
+    Features,
+    FeatureType,
+    Json,
+    Translation,
+    TranslationVariableLanguages,
+    Value,
+    _visit,
+)
 from huggingface_hub.repocard_data import DatasetCardData
 from tqdm.contrib.concurrent import thread_map
 
@@ -88,7 +96,7 @@ def get_indexable_columns(features: Features) -> list[str]:
             nonlocal indexable
             if isinstance(feature, Value) and feature.dtype in STRING_DTYPES:
                 indexable = True
-            elif isinstance(feature, (Translation, TranslationVariableLanguages)):
+            elif isinstance(feature, (Translation, TranslationVariableLanguages, Json)):
                 indexable = True
 
         _visit(feature, check_indexable)
