@@ -21,6 +21,7 @@ from datasets import (
     ClassLabel,
     Features,
     Image,
+    Json,
     LargeList,
     List,
     Pdf,
@@ -534,6 +535,7 @@ def get_cell_value(
             Array5D,
             Translation,
             TranslationVariableLanguages,
+            Json,
         ),
     ):
         return cell
