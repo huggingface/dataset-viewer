@@ -445,6 +445,8 @@ def get_cell_value(
             storage_client=storage_client,
             json_path=json_path,
         )
+    elif isinstance(fieldType, Json):
+        return fieldType.decode_example(cell) if fieldType.decode else cell
     elif isinstance(fieldType, list):
         if not isinstance(cell, list):
             raise TypeError("list cell must be a list.")
@@ -535,7 +537,6 @@ def get_cell_value(
             Array5D,
             Translation,
             TranslationVariableLanguages,
-            Json,
         ),
     ):
         return cell
