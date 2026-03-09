@@ -373,6 +373,9 @@
             "$ref": "#/components/schemas/TranslationVariableLanguagesFeature"
           },
           {
+            "$ref": "#/components/schemas/JsonFeature"
+          },
+          {
             "$ref": "#/components/schemas/SequenceFeature"
           },
           {
@@ -507,6 +510,19 @@
             "items": {
               "type": "string"
             }
+          }
+        }
+      },
+      "JsonFeature": {
+        "type": "object",
+        "required": ["_type"],
+        "properties": {
+          "_type": {
+            "type": "string",
+            "enum": ["Json"]
+          },
+          "decode": {
+            "type": "boolean"
           }
         }
       },
@@ -670,6 +686,9 @@
             "$ref": "#/components/schemas/TranslationVariableLanguagesCell"
           },
           {
+            "$ref": "#/components/schemas/JsonCell"
+          },
+          {
             "$ref": "#/components/schemas/SequenceCell"
           },
           {
@@ -765,6 +784,19 @@
             }
           }
         }
+      },
+      "JsonCell": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/ValueCell"
+          },
+          {
+            "$ref": "#/components/schemas/ListCell"
+          },
+          {
+            "$ref": "#/components/schemas/DictCell"
+          }
+        ]
       },
       "SequenceCell": {
         "oneOf": [
