@@ -446,7 +446,10 @@ def get_cell_value(
             json_path=json_path,
         )
     elif isinstance(fieldType, Json):
-        return fieldType.decode_example(cell) if fieldType.decode else cell
+        try:
+            return fieldType.decode_example(cell)
+        except (ValueError, TypeError):
+            return cell
     elif isinstance(fieldType, list):
         if not isinstance(cell, list):
             raise TypeError("list cell must be a list.")
