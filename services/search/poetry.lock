@@ -640,14 +640,14 @@ xml-validation = ["lxml (>=4,<6)"]
 
 [[package]]
 name = "datasets"
-version = "4.8.1"
+version = "4.8.2"
 description = "HuggingFace community-driven open-source library of datasets"
 optional = false
 python-versions = ">=3.10.0"
 groups = ["main"]
 files = [
-    {file = "datasets-4.8.1-py3-none-any.whl", hash = "sha256:ece935bc2d75ccfe9b93913ab14622c0affbac36017738dd9b22be4681c78c6f"},
-    {file = "datasets-4.8.1.tar.gz", hash = "sha256:05d92c6cfd8406983e3baab3e12779d001fdb10d2fa9f6b10c74ca8b7d77c56d"},
+    {file = "datasets-4.8.2-py3-none-any.whl", hash = "sha256:433a07acb2e5c7e413e54a579cf2fb161397eecb36bc1a99439f0df103f15ae5"},
+    {file = "datasets-4.8.2.tar.gz", hash = "sha256:c6ad7e6c28c7436a9c6c23f817d1a450d395c771df881252dfe63697297cbcdf"},
 ]
 
 [package.dependencies]
@@ -1259,7 +1259,7 @@ anyio = ">=3.4.0,<5"
 appdirs = "^1.4.4"
 async-lru = "^2.0.5"
 cryptography = "^43.0.1"
-datasets = "^4.8.1"
+datasets = "^4.8.2"
 duckdb = "^1.2.2"
 environs = "^14.3.0"
 filelock = "^3.18.0"
