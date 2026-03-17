@@ -170,7 +170,7 @@ class CachedResponseDocument(Document):
             ("error_code", "kind", "details.copied_from_artifact"),  # < recommended by Atlas
             ("http_status", "error_code", "kind", "updated_at"),  # < recommended by Atlas
             ("kind", "http_status", "updated_at"),  # optimize updated_at range queries
-            ("kind", "updated_at", "dataset"),  # optimize updated_at range with dataset
+            {"fields": ["kind", "updated_at", "dataset"], "name": "kind_updated"},
         ],
     }
     objects = QuerySetManager["CachedResponseDocument"]()
