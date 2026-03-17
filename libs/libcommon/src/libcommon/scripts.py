@@ -15,6 +15,7 @@ def cli_all_projects() -> None:
 
     print(f"Multi CLI for projects: {', '.join(str(project) for project in projects)}")
     while (command := input(">>> ")) not in ["exit", "exit()"]:
-        for project in projects:
-            print(f"cd {project}")
-            subprocess.run(command.split(" "), cwd=project)  # nosec
+        if command.strip():
+            for project in projects:
+                print(f"cd {project}")
+                subprocess.run(command.split(" "), cwd=project)  # nosec

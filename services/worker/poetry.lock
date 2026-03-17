@@ -983,23 +983,23 @@ files = [
 
 [[package]]
 name = "datasets"
-version = "4.7.0"
+version = "4.8.1"
 description = "HuggingFace community-driven open-source library of datasets"
 optional = false
 python-versions = ">=3.10.0"
 groups = ["main"]
 files = [
-    {file = "datasets-4.7.0-py3-none-any.whl", hash = "sha256:d5fe3025ec6acc3b5649f10d5576dff5e054134927604e6913c1467a04adc3c2"},
-    {file = "datasets-4.7.0.tar.gz", hash = "sha256:4984cdfc65d04464da7f95205a55cb50515fd94ae3176caacb50a1b7273792e2"},
+    {file = "datasets-4.8.1-py3-none-any.whl", hash = "sha256:ece935bc2d75ccfe9b93913ab14622c0affbac36017738dd9b22be4681c78c6f"},
+    {file = "datasets-4.8.1.tar.gz", hash = "sha256:05d92c6cfd8406983e3baab3e12779d001fdb10d2fa9f6b10c74ca8b7d77c56d"},
 ]
 
 [package.dependencies]
-dill = ">=0.3.0,<0.4.1"
+dill = ">=0.3.0,<0.4.2"
 filelock = "*"
 fsspec = {version = ">=2023.1.0,<=2026.2.0", extras = ["http"]}
 httpx = "<1.0.0"
 huggingface-hub = ">=0.25.0,<2.0"
-multiprocess = "<0.70.19"
+multiprocess = "<0.70.20"
 numpy = ">=1.17"
 packaging = "*"
 pandas = "*"
@@ -1696,7 +1696,7 @@ anyio = ">=3.4.0,<5"
 appdirs = "^1.4.4"
 async-lru = "^2.0.5"
 cryptography = "^43.0.1"
-datasets = "^4.7.0"
+datasets = "^4.8.1"
 duckdb = "^1.2.2"
 environs = "^14.3.0"
 filelock = "^3.18.0"
