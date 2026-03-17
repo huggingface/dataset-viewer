@@ -675,14 +675,14 @@ xml-validation = ["lxml (>=4,<6)"]
 
 [[package]]
 name = "datasets"
-version = "4.8.0"
+version = "4.8.1"
 description = "HuggingFace community-driven open-source library of datasets"
 optional = false
 python-versions = ">=3.10.0"
 groups = ["main"]
 files = [
-    {file = "datasets-4.8.0-py3-none-any.whl", hash = "sha256:3d1e79657f588baf42cfb4a51dd030ca7467e02222e7e88a5f31011884f4f355"},
-    {file = "datasets-4.8.0.tar.gz", hash = "sha256:e3fe0199939c6d7d59cb60f5819521ec75b8e670ed752396be2bf7881c9417f7"},
+    {file = "datasets-4.8.1-py3-none-any.whl", hash = "sha256:ece935bc2d75ccfe9b93913ab14622c0affbac36017738dd9b22be4681c78c6f"},
+    {file = "datasets-4.8.1.tar.gz", hash = "sha256:05d92c6cfd8406983e3baab3e12779d001fdb10d2fa9f6b10c74ca8b7d77c56d"},
 ]
 
 [package.dependencies]
@@ -4680,4 +4680,4 @@ propcache = ">=0.2.1"
 [metadata]
 lock-version = "2.1"
 python-versions = "3.12.11"
-content-hash = "ebfa65d9cf7d9154298243434a635524cc322913637fefa27f6cbbe9bed747e1"
+content-hash = "24a5e0c990780a6ba842c3ec55e56ed383397045911598f090d10030ddea0a21"
