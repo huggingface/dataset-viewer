@@ -34,6 +34,14 @@ DATASET_TYPE = "dataset"
 DEFAULT_STEMMER = "none"  # Exact word matches
 DUCKDB_DEFAULT_INDEX_FILENAME = "index.duckdb"
 DUCKDB_DEFAULT_PARTIAL_INDEX_FILENAME = "partial-index.duckdb"
+
+ATTACH_DATABASE = "ATTACH '{database}' as db; USE db;"
+ATTACH_READ_ONLY_DATABASE = "ATTACH '{database}' as db (READ_ONLY); USE db;"
+LOAD_FTS_COMMAND = "INSTALL 'fts'; LOAD 'fts';"
+DISABLE_EXTERNAL_ACCESS_COMMAND = "SET enable_external_access=false;"
+LOCK_CONFIG_COMMAND = "SET lock_configuration=true;"
+SET_EXTENSIONS_DIRECTORY_COMMAND = "SET extension_directory='{directory}';"
+
 CREATE_INDEX_COMMAND = (
     f"PRAGMA create_fts_index('data', '{ROW_IDX_COLUMN}', {{columns}}, stemmer='{{stemmer}}', overwrite=1);"
 )
@@ -216,16 +224,7 @@ def create_index(
         return out
 
     with tempfile.TemporaryDirectory(suffix=".duckdb") as tmp_dir:
-        with duckdb.connect(":memory:") as con:
-            # configure duckdb extensions
-            if extensions_directory is not None:
-                con.execute(SET_EXTENSIONS_DIRECTORY_COMMAND.format(directory=extensions_directory))
-            con.execute(INSTALL_AND_LOAD_EXTENSION_COMMAND)
-
-            # init
-            _sql(con, "ATTACH '%database%' as db;")
-            _sql(con, "USE db;")
-
+        with duckdb_connect(database=database, extensions_directory=extensions_directory) as con:
             # check input_table and get number of rows
             _count = _sql(con, "SELECT count(*) FROM %input_table%;").fetchone()
             if _count and isinstance(_count[0], int):
@@ -255,7 +254,8 @@ def create_index(
             )
 
             # create fields table
-            field_values = ", ".join(f"({i}, '{field}')" for i, field in enumerate(columns))
+
+            field_values = ", ".join(f"({i}, {varchar_sql(field)})" for i, field in enumerate(columns))
             _sql(
                 con,
                 """
@@ -278,17 +278,8 @@ def create_index(
         batch_size = 1 + count // num_jobs
         commands = [
             (
-                (
-                    SET_EXTENSIONS_DIRECTORY_COMMAND.format(directory=extensions_directory)
-                    if extensions_directory is not None
-                    else ""
-                )
-                + INSTALL_AND_LOAD_EXTENSION_COMMAND
-                + (
-                    "ATTACH IF NOT EXISTS '%database%' as db (READ_ONLY);"  # nosec - tmp_dir, batch_size, rank and i are safe
-                    "USE db;"
-                    f"ATTACH '{tmp_dir}/tmp_{rank}_{i}.duckdb' as tmp_{rank}_{i};"
-                    f"""
+                f"ATTACH '{tmp_dir}/tmp_{rank}_{i}.duckdb' as tmp_{rank}_{i};"  # nosec - tmp_dir, batch_size, rank and i are safe
+                f"""
                     CREATE TABLE tmp_{rank}_{i}.tokenized AS (
                         SELECT unnest(%fts_schema%.tokenize(fts_ii."{column}")) AS w,
                             {rank * batch_size} + row_number() OVER () - 1 AS docid,
@@ -299,14 +290,13 @@ def create_index(
                     );
                     CHECKPOINT;
                     """
-                )
             )
             for rank in range(num_jobs)
             for i, column in enumerate(columns)
         ]
 
         def _parallel_sql(command: str) -> None:
-            with duckdb.connect(":memory:") as rank_con:
+            with duckdb_connect(database=database, extensions_directory=extensions_directory) as rank_con:
                 _sql(rank_con, command)
 
         thread_map(_parallel_sql, commands, desc="Tokenize")
@@ -324,16 +314,9 @@ def create_index(
         #     """)
         # union_fields_query = " UNION ALL ".join(f"SELECT * FROM tmp.tokenized_{i}" for i in range(len(columns)))
 
-        with duckdb.connect(":memory:") as con:
-            # configure duckdb extensions
-            if extensions_directory is not None:
-                con.execute(SET_EXTENSIONS_DIRECTORY_COMMAND.format(directory=extensions_directory))
-            con.execute(INSTALL_AND_LOAD_EXTENSION_COMMAND)
-
+        with duckdb_connect(database=database, extensions_directory=extensions_directory) as con:
             # init
             _sql(con, f"ATTACH '{tmp_dir}/tmp.duckdb' as tmp;")  # nosec - tmp_dir is safe
-            _sql(con, "ATTACH '%database%' as db;")
-            _sql(con, "USE db;")
             _sql(
                 con,
                 ";".join(
@@ -526,3 +509,32 @@ def create_index(
             """,
             )
             _sql(con, "CHECKPOINT;")
+
+
+def varchar_sql(value: str) -> str:
+    """escape the value and return the varchar `'{value}'`"""
+    return "'" + value.replace("'", "''") + "'"
+
+
+def key_sql(value: str) -> str:
+    """escape the value and return the key `"{value}"`"""
+    return '"' + value.replace('"', '""') + '"'
+
+
+def duckdb_connect(
+    index_file_location: Optional[str] = None,
+    database: Optional[str] = None,
+    extensions_directory: Optional[str] = None,
+    read_only: bool = False,
+    **kwargs: Any,
+) -> duckdb.DuckDBPyConnection:
+    """In-memory session with the current database attached with read-only and fts extension"""
+    con = duckdb.connect(":memory:" if index_file_location is None else index_file_location, **kwargs)
+    if database is not None:
+        con.execute((ATTACH_READ_ONLY_DATABASE if read_only else ATTACH_DATABASE).format(database=database))
+    if extensions_directory is not None:
+        con.execute(SET_EXTENSIONS_DIRECTORY_COMMAND.format(directory=extensions_directory))
+    con.sql(LOAD_FTS_COMMAND)
+    con.sql(DISABLE_EXTERNAL_ACCESS_COMMAND)
+    con.sql(LOCK_CONFIG_COMMAND)
+    return con

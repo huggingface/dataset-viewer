@@ -32,14 +32,13 @@ from libapi.utils import (
 )
 from libcommon.constants import HF_FTS_SCORE, MAX_NUM_ROWS_PER_PAGE, ROW_IDX_COLUMN
 from libcommon.dtos import PaginatedResponse
+from libcommon.duckdb_utils import duckdb_connect, key_sql
 from libcommon.prometheus import StepProfiler
 from libcommon.storage import StrPath, clean_dir
 from libcommon.storage_client import StorageClient
 from libcommon.viewer_utils.features import to_features_list
 from starlette.requests import Request
 from starlette.responses import Response
-
-from search.duckdb_connection import duckdb_connect_readonly
 
 logger = logging.getLogger(__name__)
 
@@ -57,13 +56,15 @@ def full_text_search(
     length: int,
     extensions_directory: Optional[str] = None,
 ) -> tuple[int, pa.Table]:
-    with duckdb_connect_readonly(extensions_directory=extensions_directory, database=index_file_location) as con:
+    with duckdb_connect(
+        extensions_directory=extensions_directory, database=index_file_location, read_only=True
+    ) as con:
         fts_stage_table = con.execute(query=FTS_STAGE_TABLE_COMMAND, parameters=[query]).arrow().read_all()
         num_rows_total = fts_stage_table.num_rows
         logging.info(f"got {num_rows_total=} results for {query=} using {offset=} {length=}")
         fts_stage_table = fts_stage_table.sort_by([(HF_FTS_SCORE, "descending")]).slice(offset, length)
         join_stage_and_data_query = JOIN_STAGE_AND_DATA_COMMAND.format(
-            columns=",".join([f'"{column}"' for column in columns]),
+            columns=",".join([key_sql(column) for column in columns]),
             row_idx_column=ROW_IDX_COLUMN,
             hf_fts_score=HF_FTS_SCORE,
         )
