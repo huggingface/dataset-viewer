@@ -213,8 +213,8 @@ def create_index(
     fts_schema: str,
     extensions_directory: Optional[str] = None,
 ) -> None:
+    # the sql commands comes from the fts extension that uses placeholders
     placeholders: dict[str, str] = {
-        "database": database,
         "input_table": input_table,
         "stemmer": stemmer,
         "input_id": input_id,
@@ -343,9 +343,9 @@ def create_index(
         ) as con:
             # merge tokenizations
             union_fields_query = " UNION ALL ".join(
-                f"SELECT * FROM tmp_{rank}_{i}.tokenized"  # nosec - rank and i are safe
+                f"SELECT * FROM tmp_{rank}_{field_id}.tokenized"  # nosec - rank and i are safe
                 for rank in range(num_jobs)
-                for i in range(len(columns))
+                for field_id in range(len(columns))
             )
             _sql(con, f"CREATE TABLE tmp.tokenized AS {union_fields_query}")
 
