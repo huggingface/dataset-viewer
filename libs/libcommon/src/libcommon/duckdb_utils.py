@@ -293,16 +293,16 @@ def create_index(
                     ) AS fts_ii
                 );
                 CHECKPOINT;
-                """
+                """  # nosec - rank, batch_size and field_id are safe
             )
             for rank in range(num_jobs)
             for field_id, column in enumerate(columns)
         ]
         job_databases = [
-            f"{tmp_dir}/tmp_{rank}_{field_id}.duckdb"
+            f"{tmp_dir}/tmp_{rank}_{field_id}.duckdb"  # nosec - usage of tmp_dir is safe
             for rank in range(num_jobs)
             for field_id, column in enumerate(columns)
-        ]
+        ]  # nosec - tmp_dir usage is safe
         ranks = [rank for rank in range(num_jobs) for field_id, column in enumerate(columns)]
         field_ids = [field_id for rank in range(num_jobs) for field_id, column in enumerate(columns)]
 
@@ -335,7 +335,7 @@ def create_index(
         with duckdb_connect(
             database=database,
             extensions_directory=extensions_directory,
-            tmp_job_aggregation_database=f"{tmp_dir}/tmp.duckdb",
+            tmp_job_aggregation_database=f"{tmp_dir}/tmp.duckdb",  # nosec - tmp_dir usage is safe
             tmp_subprocess_job_databases=job_databases,
             tmp_subprocess_job_database_ranks=ranks,
             tmp_subprocess_job_database_field_ids=field_ids,

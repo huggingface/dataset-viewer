@@ -16,7 +16,11 @@ async def auth_check(
     organization: Optional[str] = None,
     hf_timeout_seconds: Optional[float] = None,
     require_fine_grained_permissions: Sequence[str] = ("repo.write",),
-    require_token_and_org_permissions: Sequence[tuple[str, str]] = (("write", "read"), ("write", "write"), ("write", "admin")),
+    require_token_and_org_permissions: Sequence[tuple[str, str]] = (
+        ("write", "read"),
+        ("write", "write"),
+        ("write", "admin"),
+    ),
 ) -> Literal[True]:
     """check if the user is member of the organization
 
