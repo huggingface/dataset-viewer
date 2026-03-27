@@ -30,13 +30,12 @@ from libapi.utils import (
     get_json_ok_response,
 )
 from libcommon.constants import ROW_IDX_COLUMN
+from libcommon.duckdb_utils import duckdb_connect, key_sql
 from libcommon.prometheus import StepProfiler
 from libcommon.storage import StrPath, clean_dir
 from libcommon.storage_client import StorageClient
 from starlette.requests import Request
 from starlette.responses import Response
-
-from search.duckdb_connection import duckdb_connect_readonly
 
 FILTER_QUERY = """\
     SELECT {columns}
@@ -224,9 +223,11 @@ def execute_filter_query(
     offset: int,
     extensions_directory: Optional[str] = None,
 ) -> tuple[int, pa.Table]:
-    with duckdb_connect_readonly(extensions_directory=extensions_directory, database=index_file_location) as con:
+    with duckdb_connect(
+        database=index_file_location, extensions_directory=extensions_directory, read_only=True
+    ) as con:
         filter_query = FILTER_QUERY.format(
-            columns=",".join([f'"{column}"' for column in columns]),
+            columns=",".join([key_sql(column) for column in columns]),
             where=f"WHERE {where}" if where else "",
             orderby=f"ORDER BY {orderby}" if orderby else "",
             limit=limit,

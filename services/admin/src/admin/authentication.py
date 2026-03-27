@@ -16,7 +16,11 @@ async def auth_check(
     organization: Optional[str] = None,
     hf_timeout_seconds: Optional[float] = None,
     require_fine_grained_permissions: Sequence[str] = ("repo.write",),
-    require_token_and_org_permissions: Sequence[tuple[str, str]] = (("write", "write"), ("write", "admin")),
+    require_token_and_org_permissions: Sequence[tuple[str, str]] = (
+        ("write", "read"),
+        ("write", "write"),
+        ("write", "admin"),
+    ),
 ) -> Literal[True]:
     """check if the user is member of the organization
 
@@ -31,7 +35,7 @@ async def auth_check(
         require_fine_grained_permissions (`Sequence[str]`): require a fine-grained token with certain permissions
           for the organization, if organization is provided. Defaults to ("repo.write",).
         require_org_role_permissions (`str`): alternatively, require a token with certain permissions
-          for the organization and a certain role, if organization is provided. Defaults to (("write", "write"), ("write", "admin")).
+          for the organization and a certain role, if organization is provided. Defaults to (("write", "read"), ("write", "write"), ("write", "admin")).
 
     Returns:
         `Literal[True]`: the user is authorized

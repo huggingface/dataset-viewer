@@ -25,7 +25,7 @@ PROD_DV_ENDPOINT = os.environ.get(
 )
 DEV_DV_ENDPOINT = os.environ.get("DEV_DV_ENDPOINT", "http://localhost:8100")
 ADMIN_HF_ORGANIZATION = os.environ.get(
-    "ADMIN_HF_ORGANIZATION", "valid_org" if DEV else "datasets-maintainers"
+    "ADMIN_HF_ORGANIZATION", "DVAdminsOrg" if DEV else "datasets-maintainers"
 )
 HF_TOKEN = os.environ.get("HF_TOKEN")
 

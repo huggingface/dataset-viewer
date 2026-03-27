@@ -13,7 +13,6 @@ from pathlib import Path
 from typing import Any, Optional, TypeVar
 
 import anyio
-import duckdb
 import filelock
 from datasets import Features
 from filelock import AsyncFileLock
@@ -27,8 +26,11 @@ from libcommon.duckdb_utils import (
     DUCKDB_DEFAULT_PARTIAL_INDEX_FILENAME,
     compute_transformed_data,
     create_index,
+    duckdb_connect,
     get_indexable_columns,
     get_monolingual_stemmer,
+    key_sql,
+    varchar_sql,
 )
 from libcommon.parquet_utils import (
     ParquetFileMetadataItem,
@@ -110,7 +112,7 @@ def build_index_file(
     split_parquet_files = split_parquet_files[:num_parquet_files_to_index]
     parquet_file_names = [parquet_file["filename"] for parquet_file in split_parquet_files]
 
-    column_names_sql = ",".join(f'"{column}"' for column in features)
+    column_names_sql = ",".join(key_sql(column) for column in features)
 
     # look for indexable columns (= possibly nested columns containing string data)
     indexable_columns = get_indexable_columns(Features.from_dict(features))
@@ -142,18 +144,25 @@ def build_index_file(
     Path(index_file_location).parent.mkdir(exist_ok=True, parents=True)
 
     try:
-        with duckdb.connect(index_file_location) as con:
+        with duckdb_connect(
+            database=index_file_location,
+            extensions_directory=extensions_directory,
+            allowed_paths=all_split_parquets,
+            transformed_df=transformed_df,
+        ) as con:
             if transformed_df is not None:
                 logging.debug(transformed_df.head())
                 # update original data with results of transformations (string lengths, audio durations, etc.):
                 logging.info(f"Updating data with {transformed_df.columns}")
                 create_command_sql = CREATE_TABLE_JOIN_WITH_TRANSFORMED_DATA_COMMAND_FROM_LIST_OF_PARQUET_FILES.format(
-                    columns=column_names_sql, source=[str(p) for p in all_split_parquets]
+                    columns=column_names_sql,
+                    source="[" + ",".join(varchar_sql(str(p)) for p in all_split_parquets) + "]",
                 )
 
             else:
                 create_command_sql = CREATE_TABLE_COMMAND_FROM_LIST_OF_PARQUET_FILES.format(
-                    columns=column_names_sql, source=[str(p) for p in all_split_parquets]
+                    columns=column_names_sql,
+                    source="[" + ",".join(varchar_sql(str(p)) for p in all_split_parquets) + "]",
                 )
 
             logging.info(create_command_sql)
