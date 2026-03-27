@@ -39,7 +39,8 @@ dev-start:
 	docker compose --env-file .env --env-file .env.debug up -d --build --force-recreate --remove-orphans --renew-anon-volumes --wait --wait-timeout 20
 
 .PHONY: dev-stop
-dev-stop: stop
+dev-stop:
+	docker compose down --remove-orphans --volumes
 
 .PHONY: e2e
 e2e:

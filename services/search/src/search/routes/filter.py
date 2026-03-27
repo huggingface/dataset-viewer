@@ -224,7 +224,7 @@ def execute_filter_query(
     extensions_directory: Optional[str] = None,
 ) -> tuple[int, pa.Table]:
     with duckdb_connect(
-        index_file_location=index_file_location, extensions_directory=extensions_directory, read_only=True
+        database=index_file_location, extensions_directory=extensions_directory, read_only=True
     ) as con:
         filter_query = FILTER_QUERY.format(
             columns=",".join([key_sql(column) for column in columns]),

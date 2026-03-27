@@ -35,12 +35,17 @@ DEFAULT_STEMMER = "none"  # Exact word matches
 DUCKDB_DEFAULT_INDEX_FILENAME = "index.duckdb"
 DUCKDB_DEFAULT_PARTIAL_INDEX_FILENAME = "partial-index.duckdb"
 
-ATTACH_DATABASE = "ATTACH '{database}' as db; USE db;"
-ATTACH_READ_ONLY_DATABASE = "ATTACH '{database}' as db (READ_ONLY); USE db;"
+ATTACH_DATABASE = "ATTACH {database} as db; USE db;"
+ATTACH_READ_ONLY_DATABASE = "ATTACH IF NOT EXISTS {database} as db (READ_ONLY); USE db;"
+ATTACH_JOB_AGGREGATION_DATABASE = "ATTACH {database} as tmp;"
+ATTACH_READ_ONLY_JOB_AGGREGATION_DATABASE = "ATTACH IF NOT EXISTS {database} as tmp (READ_ONLY);"
+ATTACH_SUBPROCESS_JOB_DATABASE = "ATTACH {database} as tmp_{rank}_{field_id};"
+ATTACH_READ_ONLY_SUBPROCESS_JOB_DATABASE = "ATTACH IF NOT EXISTS {database} as tmp_{rank}_{field_id} (READ_ONLY);"
 LOAD_FTS_COMMAND = "INSTALL 'fts'; LOAD 'fts';"
 DISABLE_EXTERNAL_ACCESS_COMMAND = "SET enable_external_access=false;"
+SET_ALLOWED_PATHS_COMMAND = "SET allowed_paths={allowed_paths};"
 LOCK_CONFIG_COMMAND = "SET lock_configuration=true;"
-SET_EXTENSIONS_DIRECTORY_COMMAND = "SET extension_directory='{directory}';"
+SET_EXTENSIONS_DIRECTORY_COMMAND = "SET extension_directory={directory};"
 
 CREATE_INDEX_COMMAND = (
     f"PRAGMA create_fts_index('data', '{ROW_IDX_COLUMN}', {{columns}}, stemmer='{{stemmer}}', overwrite=1);"
@@ -48,10 +53,11 @@ CREATE_INDEX_COMMAND = (
 CREATE_TABLE_COMMAND_FROM_LIST_OF_PARQUET_FILES = (
     "CREATE OR REPLACE TABLE data AS SELECT {columns} FROM read_parquet({source});"
 )
+CREATE_TRANSFORMED_DF_TABLE_COMMAND = "CREATE TABLE transformed_df_table AS (SELECT * FROM transformed_df);"
 CREATE_TABLE_JOIN_WITH_TRANSFORMED_DATA_COMMAND_FROM_LIST_OF_PARQUET_FILES = """
     CREATE OR REPLACE TABLE data AS
-    SELECT {columns}, transformed_df.* FROM read_parquet({source})
-    POSITIONAL JOIN transformed_df;
+    SELECT {columns}, transformed_df_table.* FROM read_parquet({source})
+    POSITIONAL JOIN transformed_df_table;
 """
 CREATE_SEQUENCE_COMMAND = "CREATE OR REPLACE SEQUENCE serial START 0 MINVALUE 0;"
 ALTER_TABLE_BY_ADDING_SEQUENCE_COLUMN = (
@@ -59,7 +65,6 @@ ALTER_TABLE_BY_ADDING_SEQUENCE_COLUMN = (
 )
 CREATE_INDEX_ID_COLUMN_COMMANDS = CREATE_SEQUENCE_COMMAND + ALTER_TABLE_BY_ADDING_SEQUENCE_COLUMN
 INSTALL_AND_LOAD_EXTENSION_COMMAND = "INSTALL 'fts'; LOAD 'fts';"
-SET_EXTENSIONS_DIRECTORY_COMMAND = "SET extension_directory='{directory}';"
 REPO_TYPE = "dataset"
 # Only some languages are supported, see: https://duckdb.org/docs/extensions/full_text_search.html#pragma-create_fts_index
 STEMMER_MAPPING = {
@@ -278,28 +283,41 @@ def create_index(
         batch_size = 1 + count // num_jobs
         commands = [
             (
-                f"ATTACH '{tmp_dir}/tmp_{rank}_{i}.duckdb' as tmp_{rank}_{i};"  # nosec - tmp_dir, batch_size, rank and i are safe
                 f"""
-                    CREATE TABLE tmp_{rank}_{i}.tokenized AS (
-                        SELECT unnest(%fts_schema%.tokenize(fts_ii."{column}")) AS w,
-                            {rank * batch_size} + row_number() OVER () - 1 AS docid,
-                            {i} AS fieldid
-                        FROM (
-                            SELECT * FROM %input_table% LIMIT {batch_size} OFFSET {rank * batch_size}
-                        ) AS fts_ii
-                    );
-                    CHECKPOINT;
-                    """
+                CREATE TABLE tmp_{rank}_{field_id}.tokenized AS (
+                    SELECT unnest(%fts_schema%.tokenize(fts_ii.{key_sql(column)})) AS w,
+                        {rank * batch_size} + row_number() OVER () - 1 AS docid,
+                        {field_id} AS fieldid
+                    FROM (
+                        SELECT * FROM %input_table% LIMIT {batch_size} OFFSET {rank * batch_size}
+                    ) AS fts_ii
+                );
+                CHECKPOINT;
+                """
             )
             for rank in range(num_jobs)
-            for i, column in enumerate(columns)
+            for field_id, column in enumerate(columns)
         ]
+        job_databases = [
+            f"{tmp_dir}/tmp_{rank}_{field_id}.duckdb"
+            for rank in range(num_jobs)
+            for field_id, column in enumerate(columns)
+        ]
+        ranks = [rank for rank in range(num_jobs) for field_id, column in enumerate(columns)]
+        field_ids = [field_id for rank in range(num_jobs) for field_id, column in enumerate(columns)]
 
-        def _parallel_sql(command: str) -> None:
-            with duckdb_connect(database=database, extensions_directory=extensions_directory) as rank_con:
+        def _parallel_sql(command: str, job_database: str, rank: int, field_id: int) -> None:
+            with duckdb_connect(
+                database=database,
+                extensions_directory=extensions_directory,
+                read_only=True,
+                tmp_subprocess_job_databases=[job_database],
+                tmp_subprocess_job_database_ranks=[rank],
+                tmp_subprocess_job_database_field_ids=[field_id],
+            ) as rank_con:
                 _sql(rank_con, command)
 
-        thread_map(_parallel_sql, commands, desc="Tokenize")
+        thread_map(_parallel_sql, commands, job_databases, ranks, field_ids, desc="Tokenize")
 
         # # NON-PARALEL VERSION HERE FOR DOCUMENTATION:
         #
@@ -314,18 +332,15 @@ def create_index(
         #     """)
         # union_fields_query = " UNION ALL ".join(f"SELECT * FROM tmp.tokenized_{i}" for i in range(len(columns)))
 
-        with duckdb_connect(database=database, extensions_directory=extensions_directory) as con:
-            # init
-            _sql(con, f"ATTACH '{tmp_dir}/tmp.duckdb' as tmp;")  # nosec - tmp_dir is safe
-            _sql(
-                con,
-                ";".join(
-                    f"ATTACH '{tmp_dir}/tmp_{rank}_{i}.duckdb' as tmp_{rank}_{i} (READ_ONLY);"  # nosec - tmp_dir, rank and i are safe
-                    for rank in range(num_jobs)
-                    for i in range(len(columns))
-                ),
-            )
-
+        with duckdb_connect(
+            database=database,
+            extensions_directory=extensions_directory,
+            tmp_job_aggregation_database=f"{tmp_dir}/tmp.duckdb",
+            tmp_subprocess_job_databases=job_databases,
+            tmp_subprocess_job_database_ranks=ranks,
+            tmp_subprocess_job_database_field_ids=field_ids,
+            tmp_subprocess_job_databases_read_only=True,
+        ) as con:
             # merge tokenizations
             union_fields_query = " UNION ALL ".join(
                 f"SELECT * FROM tmp_{rank}_{i}.tokenized"  # nosec - rank and i are safe
@@ -522,18 +537,65 @@ def key_sql(value: str) -> str:
 
 
 def duckdb_connect(
-    index_file_location: Optional[str] = None,
     database: Optional[str] = None,
     extensions_directory: Optional[str] = None,
     read_only: bool = False,
+    allowed_paths: Optional[list[Path]] = None,
+    transformed_df: Optional[pl.DataFrame] = None,  # used for search and filter
+    tmp_job_aggregation_database: Optional[str] = None,  # used for parallel sql for tokenization
+    tmp_job_aggregation_database_read_only: bool = False,
+    tmp_subprocess_job_databases: Optional[list[str]] = None,
+    tmp_subprocess_job_databases_read_only: bool = False,
+    tmp_subprocess_job_database_ranks: Optional[list[int]] = None,
+    tmp_subprocess_job_database_field_ids: Optional[list[int]] = None,
     **kwargs: Any,
 ) -> duckdb.DuckDBPyConnection:
     """In-memory session with the current database attached with read-only and fts extension"""
-    con = duckdb.connect(":memory:" if index_file_location is None else index_file_location, **kwargs)
+    con = duckdb.connect(":memory:", **kwargs)
     if database is not None:
-        con.execute((ATTACH_READ_ONLY_DATABASE if read_only else ATTACH_DATABASE).format(database=database))
+        con.execute(
+            (ATTACH_READ_ONLY_DATABASE if read_only else ATTACH_DATABASE).format(database=varchar_sql(database))
+        )
+        allowed_paths = [Path(database), *(allowed_paths or [])]
+    if tmp_job_aggregation_database is not None:
+        con.execute(
+            (
+                ATTACH_READ_ONLY_JOB_AGGREGATION_DATABASE
+                if tmp_job_aggregation_database_read_only
+                else ATTACH_JOB_AGGREGATION_DATABASE
+            ).format(database=varchar_sql(tmp_job_aggregation_database))
+        )
+        allowed_paths = [Path(tmp_job_aggregation_database), *(allowed_paths or [])]
+    if tmp_subprocess_job_databases is not None:
+        if tmp_subprocess_job_database_ranks is None or tmp_subprocess_job_database_field_ids is None:
+            raise ValueError(
+                "tmp_subprocess_job_database_field_ids and tmp_subprocess_job_database_field_ids should not be None when tmp_subprocess_job_databases are specified"
+            )
+        for tmp_subprocess_job_database, tmp_subprocess_job_database_rank, tmp_subprocess_job_database_field_id in zip(
+            tmp_subprocess_job_databases, tmp_subprocess_job_database_ranks, tmp_subprocess_job_database_field_ids
+        ):
+            con.execute(
+                (
+                    ATTACH_READ_ONLY_SUBPROCESS_JOB_DATABASE
+                    if tmp_subprocess_job_databases_read_only
+                    else ATTACH_SUBPROCESS_JOB_DATABASE
+                ).format(
+                    database=varchar_sql(tmp_subprocess_job_database),
+                    rank=tmp_subprocess_job_database_rank,
+                    field_id=tmp_subprocess_job_database_field_id,
+                )
+            )
+            allowed_paths = [Path(tmp_subprocess_job_database), *(allowed_paths or [])]
     if extensions_directory is not None:
-        con.execute(SET_EXTENSIONS_DIRECTORY_COMMAND.format(directory=extensions_directory))
+        con.execute(SET_EXTENSIONS_DIRECTORY_COMMAND.format(directory=varchar_sql(extensions_directory)))
+    if allowed_paths:
+        con.execute(
+            SET_ALLOWED_PATHS_COMMAND.format(
+                allowed_paths="[" + ",".join(varchar_sql(str(p)) for p in allowed_paths) + "]"
+            )
+        )
+    if transformed_df is not None:
+        con.sql(CREATE_TRANSFORMED_DF_TABLE_COMMAND)
     con.sql(LOAD_FTS_COMMAND)
     con.sql(DISABLE_EXTERNAL_ACCESS_COMMAND)
     con.sql(LOCK_CONFIG_COMMAND)

@@ -144,7 +144,12 @@ def build_index_file(
     Path(index_file_location).parent.mkdir(exist_ok=True, parents=True)
 
     try:
-        with duckdb_connect(index_file_location=index_file_location, extensions_directory=extensions_directory) as con:
+        with duckdb_connect(
+            database=index_file_location,
+            extensions_directory=extensions_directory,
+            allowed_paths=all_split_parquets,
+            transformed_df=transformed_df,
+        ) as con:
             if transformed_df is not None:
                 logging.debug(transformed_df.head())
                 # update original data with results of transformations (string lengths, audio durations, etc.):
