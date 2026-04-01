@@ -11,7 +11,7 @@ import datasets.config
 import datasets.data_files
 import pyarrow.parquet as pq
 import yaml
-from datasets import BuilderConfig, DownloadConfig
+from datasets import BuilderConfig, DownloadConfig, Features
 from datasets.data_files import (
     NON_WORDS_CHARS,
     DataFilesDict,
@@ -29,6 +29,7 @@ from datasets.packaged_modules import (
     _MODULE_TO_METADATA_FILE_NAMES,
     _PACKAGED_DATASETS_MODULES,
 )
+from datasets.packaged_modules.json.json import AGENT_TRACES_FEATURES
 from datasets.utils.metadata import MetadataConfigs
 from huggingface_hub import DatasetCard, DatasetCardData, HfFileSystem
 from libcommon.constants import LOADING_METHODS_MAX_CONFIGS
@@ -888,6 +889,15 @@ def compute_compatible_libraries_response(
             )
         ):
             formats.append("optimized-parquet")
+
+    # Agent Traces
+    if "json" in formats:
+        if infos:
+            for info in infos:
+                if "features" in info and isinstance(info["features"], dict):
+                    if Features.from_dict(info["features"]) == AGENT_TRACES_FEATURES:
+                        formats.append("agent-traces")
+                        break
 
     return DatasetCompatibleLibrariesResponse(libraries=libraries, formats=formats)
 

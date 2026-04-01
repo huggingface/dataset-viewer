@@ -12,6 +12,7 @@
 # local configurations
 .idea
 .vscode/*.log
+settings.json
 
 # tests coverage
 .coverage
