@@ -806,7 +806,7 @@ class DatetimeColumn(Column):
             try:
                 original_timezone = get_timezone(data[column_name][0])
                 data = data.with_columns(pl.col(column_name).str.to_datetime())
-            except pl.ComputeError:
+            except pl.ComputeError:  # type: ignore[attr-defined]
                 datetime_format = cls.get_format(data, column_name)
                 data = data.with_columns(pl.col(column_name).str.to_datetime(format=datetime_format))
                 original_timezone = None
