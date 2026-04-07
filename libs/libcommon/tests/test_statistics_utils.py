@@ -12,6 +12,7 @@ import pyarrow.parquet as pq
 import pytest
 from datasets import ClassLabel, Dataset
 from datasets.table import embed_table_storage
+
 from libcommon.statistics_utils import (
     DECIMALS,
     MAX_NUM_STRING_LABELS,
@@ -104,9 +105,9 @@ def count_expected_statistics_for_numerical_column(
     if dtype is ColumnType.FLOAT:
         minimum = minimum.astype(float).round(DECIMALS).item()
         maximum = maximum.astype(float).round(DECIMALS).item()
-        mean = mean.astype(float).round(DECIMALS).item()
-        median = median.astype(float).round(DECIMALS).item()
-        std = std.astype(float).round(DECIMALS).item()
+        mean = mean.astype(float).round(DECIMALS).item()  # type: ignore[attr-defined]
+        median = median.astype(float).round(DECIMALS).item()  # type: ignore[attr-defined]
+        std = std.astype(float).round(DECIMALS).item()  # type: ignore[attr-defined]
     else:
         mean, median, std = list(np.round([mean, median, std], DECIMALS))
     return {

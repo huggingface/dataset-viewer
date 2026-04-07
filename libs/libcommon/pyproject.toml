@@ -24,7 +24,7 @@ orjson = "^3.9.15"
 pandas = "^2.2.0"
 pdfplumber = ">=0.11.4"
 pillow = "^10.3.0"
-polars = "1.31.0"  # 1.33.1 has issues with datetimes
+polars = "1.39.3"
 psutil = "^7.1.0"
 pyarrow = "^21.0.0"
 pylance = "^1.0.4"
