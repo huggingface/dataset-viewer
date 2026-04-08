@@ -715,8 +715,8 @@ vision = ["Pillow (>=9.4.0)"]
 [package.source]
 type = "git"
 url = "https://github.com/huggingface/datasets"
-reference = "1d92c7deddae7b28eeaca67de07327176ed7bb1e"
-resolved_reference = "1d92c7deddae7b28eeaca67de07327176ed7bb1e"
+reference = "5743a3ee99004cbcd26d8941e88b70f40d154514"
+resolved_reference = "5743a3ee99004cbcd26d8941e88b70f40d154514"
 
 [[package]]
 name = "dill"
@@ -1523,7 +1523,7 @@ anyio = ">=3.4.0,<5"
 appdirs = "^1.4.4"
 async-lru = "^2.0.5"
 cryptography = "^43.0.1"
-datasets = {git = "https://github.com/huggingface/datasets", rev = "1d92c7deddae7b28eeaca67de07327176ed7bb1e"}
+datasets = {git = "https://github.com/huggingface/datasets", rev = "5743a3ee99004cbcd26d8941e88b70f40d154514"}
 duckdb = "^1.2.2"
 environs = "^14.3.0"
 filelock = "^3.18.0"
