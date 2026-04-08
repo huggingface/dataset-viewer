@@ -779,7 +779,9 @@ class DatetimeColumn(Column):
         else:
             raise StatisticsComputationError(f"Multiple datetime formats detected: {set(formats)}. ")
 
-        return datetime_format
+        return datetime_format.replace(
+            "%z", "%#z"
+        )  # %#z to support polars, see https://github.com/pola-rs/polars/issues/6386
 
     @classmethod
     def _compute_statistics(
@@ -802,14 +804,9 @@ class DatetimeColumn(Column):
             )
         original_timezone = None
         if isinstance(data[column_name].dtype, pl.String):
-            # let polars identify format itself. provide manually in case of error
-            try:
-                original_timezone = get_timezone(data[column_name][0])
-                data = data.with_columns(pl.col(column_name).str.to_datetime())
-            except pl.ComputeError:
-                datetime_format = cls.get_format(data, column_name)
-                data = data.with_columns(pl.col(column_name).str.to_datetime(format=datetime_format))
-                original_timezone = None
+            original_timezone = get_timezone(data[column_name][0])
+            datetime_format = cls.get_format(data, column_name)
+            data = data.with_columns(pl.col(column_name).str.to_datetime(format=datetime_format))
 
         min_date: datetime.datetime = data[column_name].min()  # type: ignore   # mypy infers type of datetime column .min() incorrectly
         timedelta_column_name = f"{column_name}_timedelta"
