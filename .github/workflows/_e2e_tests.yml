@@ -54,7 +54,7 @@ jobs:
           MONGO_REPLICASET: ${{ env.replicaset }}
           COMMON_BLOCKED_DATASETS: "DVUser/blocked-*"
           ADMIN_HF_ORGANIZATION: "valid_org"
-          E2E_ADMIN_USER_TOKEN: "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"
+          E2E_ADMIN_USER_TOKEN: ${{ secrets.E2E_ADMIN_USER_TOKEN }}
           # the containers need to access S3 and Cloudfront
           ASSETS_BASE_URL: "https://datasets-server-test.us.dev.moon.huggingface.tech/assets"
           ASSETS_STORAGE_PROTOCOL: "s3"
@@ -111,6 +111,6 @@ jobs:
           WORKER_SLEEP_SECONDS: "1"
           COMMON_BLOCKED_DATASETS: "DVUser/blocked-*"
           ADMIN_HF_ORGANIZATION: "valid_org"
-          E2E_ADMIN_USER_TOKEN: "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"
+          E2E_ADMIN_USER_TOKEN: ${{ secrets.E2E_ADMIN_USER_TOKEN }}
         run: |
           poetry run python -m pytest -vv -s tests
