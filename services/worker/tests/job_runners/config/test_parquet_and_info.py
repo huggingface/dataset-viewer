@@ -42,6 +42,7 @@ from worker.job_runners.config.parquet_and_info import (
     get_delete_operations,
     get_urlpaths_in_gen_kwargs,
     get_writer_batch_size_from_info,
+    is_folder_based_builder,
     limit_parquet_writes,
     list_generated_parquet_files,
     parse_repo_filename,
@@ -197,6 +198,31 @@ def test__is_too_big_from_datasets(
         )
         == expected
     )
+
+
+def test_is_folder_based_builder() -> None:
+    """Test is_folder_based_builder returns True for audiofolder/imagefolder builders."""
+    from datasets.packaged_modules.audiofolder.audiofolder import AudioFolder as AudioFolderBuilder
+    from datasets.packaged_modules.imagefolder.imagefolder import ImageFolder as ImageFolderBuilder
+    from datasets.packaged_modules.csv.csv import Csv as CsvBuilder
+    from unittest.mock import MagicMock
+
+    # Create mock builders
+    audio_builder = MagicMock(spec=AudioFolderBuilder)
+    audio_builder.__class__ = AudioFolderBuilder
+
+    image_builder = MagicMock(spec=ImageFolderBuilder)
+    image_builder.__class__ = ImageFolderBuilder
+
+    csv_builder = MagicMock(spec=CsvBuilder)
+    csv_builder.__class__ = CsvBuilder
+
+    # Test folder-based builders return True
+    assert is_folder_based_builder(audio_builder) is True
+    assert is_folder_based_builder(image_builder) is True
+
+    # Test non-folder-based builder returns False
+    assert is_folder_based_builder(csv_builder) is False
 
 
 def test_supported_if_big_parquet(
