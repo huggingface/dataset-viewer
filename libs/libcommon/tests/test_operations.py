@@ -74,7 +74,7 @@ def test_get_revision_timeout() -> None:
     [
         (NORMAL_USER, False, None),
         (PRO_USER, True, None),
-        (NORMAL_ORG, None, False),
+        (NORMAL_ORG, None, None),
         (ENTERPRISE_ORG, None, True),
     ],
 )

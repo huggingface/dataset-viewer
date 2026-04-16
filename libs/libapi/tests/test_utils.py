@@ -229,7 +229,7 @@ def test_get_cache_entry_from_step_no_cache_private_enterprise(hf_endpoint: str)
                 id=dataset, sha=revision, private=True, downloads=0, likes=0, tags=[], author=author
             ),
         ),
-        patch("libcommon.operations.get_entity_info", return_value=EntityInfo(isPro=False, isEnterprise=True)),
+        patch("libcommon.operations.get_entity_info", return_value=EntityInfo(isPro=False, plan="enterprise")),
     ):
         # ^ the dataset and the author do not exist on the Hub, we don't want to raise an issue here
         with raises(ResponseNotReadyError):
