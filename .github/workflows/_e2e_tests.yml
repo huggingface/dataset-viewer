@@ -53,7 +53,7 @@ jobs:
           MONGO_PORT: ${{ env.mongo-port }}
           MONGO_REPLICASET: ${{ env.replicaset }}
           COMMON_BLOCKED_DATASETS: "DVUser/blocked-*"
-          ADMIN_HF_ORGANIZATION: "valid_org"
+          ADMIN_HF_ORGANIZATION: "DVAdminsOrg"
           E2E_ADMIN_USER_TOKEN: "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"
           # the containers need to access S3 and Cloudfront
           ASSETS_BASE_URL: "https://datasets-server-test.us.dev.moon.huggingface.tech/assets"
@@ -110,7 +110,7 @@ jobs:
           PROMETHEUS_MULTIPROC_DIR: "/tmp"
           WORKER_SLEEP_SECONDS: "1"
           COMMON_BLOCKED_DATASETS: "DVUser/blocked-*"
-          ADMIN_HF_ORGANIZATION: "valid_org"
+          ADMIN_HF_ORGANIZATION: "DVAdminsOrg"
           E2E_ADMIN_USER_TOKEN: "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"
         run: |
           poetry run python -m pytest -vv -s tests
