@@ -477,12 +477,6 @@ def create_dataset_info_response_for_csv(dataset: str, config: str) -> Any:
         "dataset_name": dataset_name,
         "version": {"version_str": "0.0.0", "major": 0, "minor": 0, "patch": 0},
         "splits": {"train": {"name": "train", "num_bytes": 96, "num_examples": 4, "dataset_name": dataset_name}},
-        "download_checksums": {
-            f"https://hub-ci.huggingface.co/datasets/{dataset}/resolve/__COMMIT__/dataset.csv": {
-                "num_bytes": 55,
-                "checksum": None,
-            }
-        },
         "download_size": 55,
         "dataset_size": 96,
         "size_in_bytes": 151,
