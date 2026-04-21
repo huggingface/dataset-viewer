@@ -304,6 +304,12 @@
           },
           "truncated": {
             "type": "boolean"
+          },
+          "truncated_rows": {
+            "type": "boolean"
+          },
+          "truncated_columns": {
+            "type": "boolean"
           }
         }
       },
