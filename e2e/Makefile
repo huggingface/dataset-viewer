@@ -29,7 +29,7 @@ export WORKER_UVICORN_PORT := 9086
 
 # see https://github.com/huggingface/moon-landing/blob/main/server/scripts/staging-seed-db.ts
 export ADMIN_HF_ORGANIZATION := DVAdminsOrg
-export E2E_ADMIN_USER_TOKEN := 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
+export E2E_ADMIN_USER_TOKEN := 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
 
 export COMPOSE_PROJECT_NAME := e2e
 

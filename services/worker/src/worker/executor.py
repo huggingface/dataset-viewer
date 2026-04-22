@@ -7,6 +7,7 @@ import signal
 import sys
 from collections.abc import Callable
 from datetime import datetime, timedelta
+from functools import partial
 from random import random
 from typing import Any, Optional, Union
 
@@ -82,6 +83,8 @@ class WorkerExecutor:
         return TCPExecutor(start_web_app_command, host=uvicorn_config.hostname, port=uvicorn_config.port, timeout=10)
 
     def start(self) -> None:
+        if self.executors:
+            raise RuntimeError("WorkerExecutor has already started")
         worker_loop_executor = self._create_worker_loop_executor()
         worker_loop_executor.start()  # blocking until the banner is printed
         self.executors.append(worker_loop_executor)
@@ -91,7 +94,7 @@ class WorkerExecutor:
         self.executors.append(web_app_executor)
 
         loop = asyncio.get_event_loop()
-        loop.add_signal_handler(signal.SIGTERM, self.sigterm_stop)
+        loop.add_signal_handler(signal.SIGTERM, partial(self.sigterm_stop, web_app_executor=web_app_executor))
 
         logging.info("Starting heartbeat.")
         loop.create_task(every(self.heartbeat, seconds=self.heartbeat_interval_seconds))
@@ -114,13 +117,21 @@ class WorkerExecutor:
                 ),
             )
         )
+        loop.create_task(
+            every(
+                self.ensure_webapp,
+                web_app_executor=web_app_executor,
+                seconds=10.0,
+            )
+        )
         loop.run_until_complete(
             every(self.is_worker_alive, worker_loop_executor=worker_loop_executor, seconds=1.0, stop_on=False)
         )
         logging.info("Executor loop finished.")
 
-    def sigterm_stop(self) -> None:
+    def sigterm_stop(self, web_app_executor: TCPExecutor) -> None:
         logging.error("Executor received SIGTERM")
+        logging.error("Web app was not running" if not self.is_webapp_alive(web_app_executor) else "Reason unknown")
         self.stop()
 
     def stop(self) -> None:
@@ -184,39 +195,51 @@ class WorkerExecutor:
                     message = "Job manager was killed while running this job (job exceeded maximum duration)."
                     job_manager.set_exceeded_maximum_duration(message=message)
 
-    def is_worker_alive(self, worker_loop_executor: OutputExecutor) -> bool:
-        if worker_loop_executor.running():
-            return True
-        try:
-            worker_loop_executor.stop()  # raises an error if the worker returned unexpected exit code
-        except ProcessExitedWithError as err:
-            explanation = f"exit code {err.exit_code}"
-            if err.exit_code == -9:
-                explanation += " SIGKILL - surely an OOM"
-            error_msg = f"Worker crashed ({explanation})"
+    def _is_executor_alive(self, executor: Union[OutputExecutor, TCPExecutor], name: str) -> bool:
+        """raise an error if the executor crashed"""
+
+        def add_additional_info(error_msg: str) -> str:
             state = self.get_state()
             if state and state["current_job_info"]:
                 error_msg += f" when running job_id={state['current_job_info']['job_id']}"
+            return error_msg
+
+        if executor.running():
+            return True
+        try:
+            executor.stop()  # raises an error if the worker returned unexpected exit code
+        except ProcessExitedWithError as err:
+            explanation = f"exit code {err.exit_code}{' SIGKILL - surely an OOM' if err.exit_code == -9 else ''}"
+            error_msg = add_additional_info(f"{name.capitalize()} crashed ({explanation})")
             logging.error(error_msg)
             raise
         except BaseException as err:
             explanation = f"{type(err).__name__}: {err}"
-            error_msg = f"Worker crashed ({explanation})"
-            state = self.get_state()
-            if state and state["current_job_info"]:
-                error_msg += f" when running job_id={state['current_job_info']['job_id']}"
+            error_msg = add_additional_info(f"{name.capitalize()} crashed ({explanation})")
             logging.error(error_msg)
             raise
-        if worker_loop_executor.process:
-            return_code = worker_loop_executor.process.returncode
-            if return_code is not None and return_code != 0:
-                explanation = f"return code {return_code}"
-                if return_code == -9:
-                    explanation += " SIGKILL - surely an OOM"
-                error_msg = f"Worker crashed ({explanation})"
-                state = self.get_state()
-                if state and state["current_job_info"]:
-                    error_msg += f" when running job_id={state['current_job_info']['job_id']}"
+        if executor.process:
+            exit_code = executor.process.returncode
+            if exit_code is not None and exit_code != 0:
+                explanation = f"exit code {exit_code}{' SIGKILL - surely an OOM' if exit_code == -9 else ''}"
+                error_msg = add_additional_info(f"{name.capitalize()} crashed ({explanation})")
                 logging.error(error_msg)
-                raise
+                raise RuntimeError(error_msg)
         return False
+
+    def is_worker_alive(self, worker_loop_executor: OutputExecutor) -> bool:
+        """raise an error if the worker crashed, otherwise a bool if it's running or if it ended correctly"""
+        return self._is_executor_alive(worker_loop_executor, name="worker")
+
+    def is_webapp_alive(self, web_app_executor: TCPExecutor) -> bool:
+        """raise an error if the web app crashed, otherwise a bool if it's running or if it ended correctly"""
+        return self._is_executor_alive(web_app_executor, name="web app")
+
+    def ensure_webapp(self, web_app_executor: TCPExecutor) -> None:
+        """restart web app if it crashed"""
+        try:
+            is_alive = self.is_webapp_alive(web_app_executor)
+        except Exception:
+            is_alive = False
+        if not is_alive:
+            web_app_executor.start()  # blocking until socket connection is established
