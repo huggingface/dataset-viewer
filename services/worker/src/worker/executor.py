@@ -7,6 +7,7 @@ import signal
 import sys
 from collections.abc import Callable
 from datetime import datetime, timedelta
+from functools import partial
 from random import random
 from typing import Any, Optional, Union
 
@@ -82,6 +83,8 @@ class WorkerExecutor:
         return TCPExecutor(start_web_app_command, host=uvicorn_config.hostname, port=uvicorn_config.port, timeout=10)
 
     def start(self) -> None:
+        if self.executors:
+            raise RuntimeError("WorkerExecutor has already started")
         worker_loop_executor = self._create_worker_loop_executor()
         worker_loop_executor.start()  # blocking until the banner is printed
         self.executors.append(worker_loop_executor)
@@ -91,7 +94,7 @@ class WorkerExecutor:
         self.executors.append(web_app_executor)
 
         loop = asyncio.get_event_loop()
-        loop.add_signal_handler(signal.SIGTERM, self.sigterm_stop)
+        loop.add_signal_handler(signal.SIGTERM, partial(self.sigterm_stop, web_app_executor=web_app_executor))
 
         logging.info("Starting heartbeat.")
         loop.create_task(every(self.heartbeat, seconds=self.heartbeat_interval_seconds))
@@ -126,9 +129,9 @@ class WorkerExecutor:
         )
         logging.info("Executor loop finished.")
 
-    def sigterm_stop(self) -> None:
-        explanation = "web app is not running" if not self.is_webapp_alive() else "reason unknown"
-        logging.error(f"Executor received SIGTERM {explanation}")
+    def sigterm_stop(self, web_app_executor: TCPExecutor) -> None:
+        logging.error("Executor received SIGTERM")
+        logging.error("Web app was not running" if not self.is_webapp_alive(web_app_executor) else "Reason unknown")
         self.stop()
 
     def stop(self) -> None:
