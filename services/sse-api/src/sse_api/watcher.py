@@ -3,6 +3,7 @@
 
 import asyncio
 import contextlib
+import logging
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from http import HTTPStatus
@@ -200,6 +201,13 @@ class HubCacheWatcher:
                                 else None
                             ),
                         )
-            except PyMongoError:
+            except PyMongoError as exc:
+                logging.warning(
+                    "hub-cache change stream PyMongoError (resume_token_set=%s): %s",
+                    resume_token is not None,
+                    exc,
+                    exc_info=True,
+                )
                 if resume_token is None:
-                    raise ChangeStreamInitError()
+                    raise ChangeStreamInitError() from exc
+                await asyncio.sleep(2.0)
