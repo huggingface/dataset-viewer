@@ -4,6 +4,7 @@
 import dataclasses
 import json
 import logging
+import time
 from asyncio import CancelledError
 from collections.abc import AsyncGenerator, AsyncIterable
 
@@ -22,27 +23,40 @@ from sse_api.watcher import HubCacheWatcher
 
 # Also: how do we manage multiple SSE servers / uvicorn workers / load-balancing?
 
+SSE_EVENTS_COUNTER_LOG_INTERVAL_SECONDS = 300
+
 
 def create_hub_cache_endpoint(hub_cache_watcher: HubCacheWatcher) -> Endpoint:
     async def hub_cache_endpoint(request: Request) -> Response:
-        logging.info("/hub-cache")
-
         all = get_request_parameter(request, "all", default="false").lower() == "true"
         # ^ the values that trigger the initialization are "true", "True" and any other case-insensitive variant
 
         uuid, event = hub_cache_watcher.subscribe()
+        logging.info(f"/hub-cache {all=} {uuid=}")
         if all:
             init_task = hub_cache_watcher.run_initialization(uuid)
 
         async def event_generator() -> AsyncGenerator[ServerSentEvent, None]:
+            _last_time = time.time()
+            _count_since_last_time = 0
             try:
                 while True:
+                    if time.time() - _last_time > SSE_EVENTS_COUNTER_LOG_INTERVAL_SECONDS:
+                        logging.info(
+                            f"SSE events sent in the last {SSE_EVENTS_COUNTER_LOG_INTERVAL_SECONDS}s: {_count_since_last_time} ({uuid=})"
+                        )
+                        _last_time = time.time()
+                        _count_since_last_time = 0
                     new_value = await event.wait_value()
                     event.clear()
                     if new_value is not None:
                         logging.debug(f"Sending new value: {new_value}")
+                        _count_since_last_time += 1
                         yield ServerSentEvent(data=json.dumps(dataclasses.asdict(new_value)), event="message")
             finally:
+                logging.info(
+                    f"SSE events sent in the last {int(time.time() - _last_time)}s: {_count_since_last_time} ({uuid=})"
+                )
                 hub_cache_watcher.unsubscribe(uuid)
                 if all:
                     await init_task
