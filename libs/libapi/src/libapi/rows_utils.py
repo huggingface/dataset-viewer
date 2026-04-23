@@ -48,7 +48,7 @@ def _transform_row(
                 PIL.UnidentifiedImageError: " It seems the image can't be loaded with PIL.Image and could be corrupted."
             }
             suggestion_msg = suggestion_messages.get(type(err), " Please report the issue.")
-            location_msg = "" if row_idx == 0 else f" This occured on row {offset + row_idx}."
+            location_msg = "" if row_idx == 0 else f" This occurred on row {offset + row_idx}."
             raise TransformRowsProcessingError(
                 "Server error while post-processing the rows." + location_msg + suggestion_msg, cause=err
             ) from err
