@@ -200,9 +200,7 @@ class HubCacheWatcher:
                         if change["fullDocument"]["kind"] != HUB_CACHE_KIND:
                             continue
 
-                        updated_fields = (
-                            change.get("updateDescription") or {}
-                        ).get("updatedFields") or {}
+                        updated_fields = (change.get("updateDescription") or {}).get("updatedFields") or {}
                         if operation == "update" and not any(
                             field in updated_fields for field in ["content", "http_status"]
                         ):
