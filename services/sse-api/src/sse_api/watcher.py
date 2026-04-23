@@ -93,6 +93,15 @@ class HubCacheWatcher:
     def start_watching(self) -> None:
         self._watch_task = asyncio.create_task(self._watch_loop())
 
+        def _log_watch_task_result(task: asyncio.Task[None]) -> None:
+            if task.cancelled():
+                return
+            exc = task.exception()
+            if exc is not None:
+                logging.error("hub-cache watch task ended unexpectedly", exc_info=exc)
+
+        self._watch_task.add_done_callback(_log_watch_task_result)
+
     async def stop_watching(self) -> None:
         self._watch_task.cancel()
         with contextlib.suppress(asyncio.CancelledError):
@@ -170,6 +179,7 @@ class HubCacheWatcher:
                     resume_after=resume_token,
                     full_document="updateLookup",
                     full_document_before_change="whenAvailable",
+                    max_await_time_ms=30_000,
                 ) as stream:
                     async for change in stream:
                         resume_token = stream.resume_token
@@ -186,9 +196,11 @@ class HubCacheWatcher:
                         if change["fullDocument"]["kind"] != HUB_CACHE_KIND:
                             continue
 
+                        updated_fields = (
+                            change.get("updateDescription") or {}
+                        ).get("updatedFields") or {}
                         if operation == "update" and not any(
-                            field in change["updateDescription"]["updatedFields"]
-                            for field in ["content", "http_status"]
+                            field in updated_fields for field in ["content", "http_status"]
                         ):
                             # ^ no change, skip
                             continue
