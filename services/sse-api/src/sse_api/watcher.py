@@ -12,6 +12,7 @@ from uuid import uuid4
 
 from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo.errors import PyMongoError
+from pymongo.read_preferences import ReadPreference
 
 from sse_api.constants import HUB_CACHE_KIND
 
@@ -84,7 +85,10 @@ class HubCacheWatcher:
 
     def __init__(self, client: AsyncIOMotorClient, db_name: str, collection_name: str) -> None:
         self._client = client
-        self._collection = self._client[db_name][collection_name]
+        # Offload change stream + initial scan from primary (hot collection; write conflicts).
+        self._collection = self._client[db_name][collection_name].with_options(
+            read_preference=ReadPreference.SECONDARY_PREFERRED,
+        )
         self._publisher = HubCachePublisher(_watchers={})
 
     def run_initialization(self, suscriber: str) -> asyncio.Task[Any]:
