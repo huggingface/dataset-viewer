@@ -10,7 +10,7 @@ python = "3.12.11"
 anyio = ">=3.4.0,<5"
 appdirs = "^1.4.4"
 cryptography = "^43.0.1"
-datasets = { git = "https://github.com/huggingface/datasets", rev = "ff7dc9ee2e461a83d4251b0ff9dee8348bea347c" }
+datasets = { git = "https://github.com/huggingface/datasets", rev = "7fe94d10f8a5dacc6e1638866017b13261682c28" }
 duckdb = "^1.2.2"
 environs = "^14.3.0"
 filelock = "^3.18.0"
