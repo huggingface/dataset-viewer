@@ -4,13 +4,16 @@ import datetime
 import enum
 import io
 import logging
+from contextlib import nullcontext
+from functools import partial
 from pathlib import Path
 from typing import Any, Callable, Optional, TypedDict, Union
 
 import numpy as np
 import polars as pl
 import pyarrow.parquet as pq
-from datasets import Features
+from datasets import DownloadConfig, Features
+from datasets.streaming import xopen
 from PIL import Image
 from tqdm.contrib.concurrent import thread_map
 
@@ -632,8 +635,12 @@ class ListColumn(Column):
 class MediaColumn(Column):
     transform_column: type[Column]
 
+    def __init__(self, feature_name: str, n_samples: int, hf_token: Optional[str]):
+        super().__init__(feature_name, n_samples)
+        self.hf_token = hf_token
+
     @classmethod
-    def transform(cls, example: Optional[Union[bytes, dict[str, Any]]]) -> Any:
+    def transform(cls, example: Optional[Union[bytes, dict[str, Any]]], hf_token: Optional[str]) -> Any:
         """
         Function to use to transform the original values to further pass these transformed values to statistics
         computation. Used inside ._compute_statistics() method.
@@ -662,8 +669,11 @@ class MediaColumn(Column):
         parquet_paths: list[Path],
         column_name: str,
         n_samples: int,
+        hf_token: Optional[str],
     ) -> SupportedStatistics:
-        transformed_values = cls.compute_transformed_data(parquet_paths, column_name, cls.transform)
+        transformed_values = cls.compute_transformed_data(
+            parquet_paths, column_name, partial(cls.transform, hf_token=hf_token)
+        )
         nan_count = sum(value is None for value in transformed_values)
         if nan_count == n_samples:
             return all_nan_statistics_item(n_samples)
@@ -692,9 +702,7 @@ class MediaColumn(Column):
 
     def compute_and_prepare_response(self, parquet_paths: list[Path]) -> StatisticsPerColumnItem:
         stats = self.compute_statistics(
-            parquet_paths=parquet_paths,
-            column_name=self.name,
-            n_samples=self.n_samples,
+            parquet_paths=parquet_paths, column_name=self.name, n_samples=self.n_samples, hf_token=self.hf_token
         )
         return StatisticsPerColumnItem(
             column_name=self.name,
@@ -702,51 +710,89 @@ class MediaColumn(Column):
             column_statistics=stats,
         )
 
+    @classmethod
+    def open(cls, example: Optional[Union[bytes, dict[str, Any]]], hf_token: Optional[str]) -> Union[io.BytesIO, nullcontext[None]]:
+        if isinstance(example, dict):
+            if example["bytes"] is not None:
+                return io.BytesIO(example["bytes"])
+            else:
+                return xopen(example["path"], download_config=DownloadConfig(token=hf_token))  # type: ignore
+        elif isinstance(example, bytes):
+            return io.BytesIO(example)
+        else:
+            return nullcontext()
+
 
 class AudioColumn(MediaColumn):
     transform_column = FloatColumn
 
     @staticmethod
-    def get_duration(example: Optional[Union[bytes, dict[str, Any]]]) -> Optional[float]:
+    def get_duration(example: Optional[Union[bytes, dict[str, Any]]], hf_token: Optional[str]) -> Optional[float]:
         """Get audio durations"""
         if example is None:
             return None
 
         from torchcodec.decoders import AudioDecoder
 
-        example_bytes = example["bytes"] if isinstance(example, dict) else example
-        duration = AudioDecoder(example_bytes).metadata.duration_seconds_from_header
+        with MediaColumn.open(example, hf_token=hf_token) as f:
+            duration = AudioDecoder(f).metadata.duration_seconds_from_header if f else None
         if not isinstance(duration, float):
             raise StatisticsComputationError("Failed to get the audio duration for the header.")
         return duration
 
     @classmethod
-    def transform(cls, example: Optional[Union[bytes, dict[str, Any]]]) -> Optional[float]:
-        return cls.get_duration(example)
+    def transform(cls, example: Optional[Union[bytes, dict[str, Any]]], hf_token: Optional[str]) -> Optional[float]:
+        return cls.get_duration(example, hf_token=hf_token)
+
+
+class VideoColumn(MediaColumn):
+    transform_column = FloatColumn
+
+    @staticmethod
+    def get_duration(example: Optional[Union[bytes, dict[str, Any]]], hf_token: Optional[str]) -> Optional[float]:
+        """Get video durations"""
+        if example is None:
+            return None
+
+        from torchcodec.decoders import VideoDecoder
+
+        with MediaColumn.open(example, hf_token=hf_token) as f:
+            duration = VideoDecoder(f).metadata.duration_seconds_from_header if f else None
+        if not isinstance(duration, float):
+            raise StatisticsComputationError("Failed to get the video duration for the header.")
+        return duration
+
+    @classmethod
+    def transform(cls, example: Optional[Union[bytes, dict[str, Any]]], hf_token: Optional[str]) -> Optional[float]:
+        return cls.get_duration(example, hf_token=hf_token)
 
 
 class ImageColumn(MediaColumn):
     transform_column = IntColumn
 
     @staticmethod
-    def get_width(example: Optional[Union[bytes, dict[str, Any]]]) -> Optional[int]:
+    def get_width(example: Optional[Union[bytes, dict[str, Any]]], hf_token: Optional[str]) -> Optional[int]:
         """Get image widths."""
-        image_shape = ImageColumn.get_shape(example)
+        image_shape = ImageColumn.get_shape(example, hf_token=hf_token)
         return image_shape[0]
 
     @staticmethod
-    def get_shape(example: Optional[Union[bytes, dict[str, Any]]]) -> Union[tuple[None, None], tuple[int, int]]:
+    def get_shape(
+        example: Optional[Union[bytes, dict[str, Any]]], hf_token: Optional[str]
+    ) -> Union[tuple[None, None], tuple[int, int]]:
         """Get image widths and heights."""
         if example is None:
             return None, None
-        example_bytes = example["bytes"] if isinstance(example, dict) else example
-        with io.BytesIO(example_bytes) as f:
-            image = Image.open(f)
-            return image.size
+        with MediaColumn.open(example, hf_token=hf_token) as f:
+            if f:
+                image = Image.open(f)
+                return image.size
+            else:
+                return None, None
 
     @classmethod
-    def transform(cls, example: Optional[Union[bytes, dict[str, Any]]]) -> Optional[int]:
-        return cls.get_width(example)
+    def transform(cls, example: Optional[Union[bytes, dict[str, Any]]], hf_token: Optional[str]) -> Optional[int]:
+        return cls.get_width(example, hf_token=hf_token)
 
 
 class DatetimeColumn(Column):

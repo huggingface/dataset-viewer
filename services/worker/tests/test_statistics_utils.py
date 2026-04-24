@@ -28,6 +28,7 @@ from libcommon.statistics_utils import (
     IntColumn,
     ListColumn,
     StringColumn,
+    VideoColumn,
     generate_bins,
 )
 
@@ -425,6 +426,49 @@ def test_audio_statistics(
     )
     pq.write_table(pa_table_bytes, parquet_filename)
     computed = AudioColumn.compute_statistics(
+        parquet_paths=[parquet_filename],
+        column_name=column_name,
+        n_samples=4,
+    )
+    assert computed == expected
+
+
+@pytest.mark.parametrize(
+    "column_name,video_durations",
+    [
+        ("video", [1.0, 2.0, 3.0, 4.0]),  # datasets consists of 4 video files of 1, 2, 3, 4 seconds lengths
+        ("video_null", [1.0, None, 3.0, None]),  # take first and third audio file for this testcase
+        ("video_all_null", [None, None, None, None]),
+    ],
+)
+def test_video_statistics(
+    column_name: str,
+    video_durations: Optional[list[Optional[float]]],
+    datasets: Mapping[str, Dataset],
+    tmp_path_factory: pytest.TempPathFactory,
+) -> None:
+    expected = count_expected_statistics_for_numerical_column(
+        column=pd.Series(video_durations), dtype=ColumnType.FLOAT
+    )
+    parquet_directory = tmp_path_factory.mktemp("data")
+    parquet_filename = parquet_directory / "data.parquet"
+    dataset_table = datasets["video_statistics"].data
+    dataset_table_embedded = embed_table_storage(dataset_table)  # store audio as bytes instead of paths to files
+    pq.write_table(dataset_table_embedded, parquet_filename)
+    computed = VideoColumn.compute_statistics(
+        parquet_paths=[parquet_filename],
+        column_name=column_name,
+        n_samples=4,
+    )
+    assert computed == expected
+
+    # write samples as just bytes, not as struct {"bytes": b"", "path": ""}, to check that this format works too
+    videos = datasets["video_statistics"][column_name][:]
+    pa_table_bytes = pa.Table.from_pydict(
+        {column_name: [open(video["path"], "rb").read() if video else None for video in videos]}
+    )
+    pq.write_table(pa_table_bytes, parquet_filename)
+    computed = VideoColumn.compute_statistics(
         parquet_paths=[parquet_filename],
         column_name=column_name,
         n_samples=4,

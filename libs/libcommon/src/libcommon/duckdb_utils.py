@@ -1,4 +1,5 @@
 import tempfile
+from functools import partial
 from pathlib import Path
 from textwrap import dedent
 from typing import Any, Literal, Optional
@@ -25,6 +26,7 @@ from libcommon.statistics_utils import (
     ImageColumn,
     ListColumn,
     StringColumn,
+    VideoColumn,
 )
 
 DISABLED_DUCKDB_REF_BRANCH_DATASET_NAME_PATTERNS = ["*"]  # all datasets
@@ -155,9 +157,29 @@ def compute_audio_duration_column(
     parquet_paths: list[Path],
     column_name: str,
     target_df: Optional[pl.DataFrame],
+    hf_token: Optional[str],
 ) -> pl.DataFrame:
     duration_column_name = f"{column_name}.duration"
-    durations = AudioColumn.compute_transformed_data(parquet_paths, column_name, AudioColumn.get_duration)
+    durations = AudioColumn.compute_transformed_data(
+        parquet_paths, column_name, partial(AudioColumn.get_duration, hf_token=hf_token)
+    )
+    duration_df = pl.from_dict({duration_column_name: durations})
+    if target_df is None:
+        return duration_df
+    target_df.insert_column(target_df.shape[1], duration_df[duration_column_name])
+    return target_df
+
+
+def compute_video_duration_column(
+    parquet_paths: list[Path],
+    column_name: str,
+    target_df: Optional[pl.DataFrame],
+    hf_token: Optional[str],
+) -> pl.DataFrame:
+    duration_column_name = f"{column_name}.duration"
+    durations = VideoColumn.compute_transformed_data(
+        parquet_paths, column_name, partial(VideoColumn.get_duration, hf_token=hf_token)
+    )
     duration_df = pl.from_dict({duration_column_name: durations})
     if target_df is None:
         return duration_df
@@ -169,8 +191,11 @@ def compute_image_width_height_column(
     parquet_paths: list[Path],
     column_name: str,
     target_df: Optional[pl.DataFrame],
+    hf_token: Optional[str],
 ) -> pl.DataFrame:
-    shapes = ImageColumn.compute_transformed_data(parquet_paths, column_name, ImageColumn.get_shape)
+    shapes = ImageColumn.compute_transformed_data(
+        parquet_paths, column_name, partial(ImageColumn.get_shape, hf_token=hf_token)
+    )
     widths, heights = list(zip(*shapes))
     width_column_name, height_column_name = f"{column_name}.width", f"{column_name}.height"
     shapes_df = pl.from_dict({width_column_name: widths, height_column_name: heights})
@@ -181,7 +206,9 @@ def compute_image_width_height_column(
     return target_df
 
 
-def compute_transformed_data(parquet_paths: list[Path], features: dict[str, Any]) -> Optional[pl.DataFrame]:
+def compute_transformed_data(
+    parquet_paths: list[Path], features: dict[str, Any], hf_token: Optional[str]
+) -> Optional[pl.DataFrame]:
     transformed_df = None
     for feature_name, feature in features.items():
         if isinstance(feature, list) or (
@@ -196,10 +223,19 @@ def compute_transformed_data(parquet_paths: list[Path], features: dict[str, Any]
                 transformed_df = compute_length_column(parquet_paths, feature_name, transformed_df, dtype="string")
 
             elif feature.get("_type") == "Audio":
-                transformed_df = compute_audio_duration_column(parquet_paths, feature_name, transformed_df)
+                transformed_df = compute_audio_duration_column(
+                    parquet_paths, feature_name, transformed_df, hf_token=hf_token
+                )
+
+            elif feature.get("_type") == "Video":
+                transformed_df = compute_video_duration_column(
+                    parquet_paths, feature_name, transformed_df, hf_token=hf_token
+                )
 
             elif feature.get("_type") == "Image":
-                transformed_df = compute_image_width_height_column(parquet_paths, feature_name, transformed_df)
+                transformed_df = compute_image_width_height_column(
+                    parquet_paths, feature_name, transformed_df, hf_token=hf_token
+                )
 
     return transformed_df
 

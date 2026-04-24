@@ -5,7 +5,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
-from datasets import Array2D, Audio, ClassLabel, Dataset, Features, Image, List, Value
+from datasets import Array2D, Audio, ClassLabel, Dataset, Features, Image, List, Value, Video
 
 # from GLUE dataset, "ax" subset
 LONG_TEXTS = """The cat sat on the mat.
@@ -1517,6 +1517,32 @@ audio_dataset = Dataset.from_dict(
             "audio": Audio(sampling_rate=1600, decode=False),
             "audio_null": Audio(sampling_rate=1600, decode=False),
             "audio_all_null": Audio(sampling_rate=1600, decode=False),
+        }
+    ),
+)
+
+
+video_dataset = Dataset.from_dict(
+    {
+        "video": [
+            str(Path(__file__).resolve().parent / "data" / "video" / "video_1.mp4"),
+            str(Path(__file__).resolve().parent / "data" / "video" / "video_2.mp4"),
+            str(Path(__file__).resolve().parent / "data" / "video" / "video_3.mp4"),
+            str(Path(__file__).resolve().parent / "data" / "video" / "video_4.mp4"),
+        ],
+        "video_null": [
+            str(Path(__file__).resolve().parent / "data" / "video" / "video_1.mp4"),
+            None,
+            str(Path(__file__).resolve().parent / "data" / "video" / "video_3.mp4"),
+            None,
+        ],
+        "video_all_null": [None, None, None, None],
+    },
+    features=Features(
+        {
+            "video": Video(decode=False),
+            "video_null": Video(decode=False),
+            "video_all_null": Video(decode=False),
         }
     ),
 )
