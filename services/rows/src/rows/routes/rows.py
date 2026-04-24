@@ -80,7 +80,7 @@ def create_rows_endpoint(
                     logging.info(f"/rows, {dataset=}, {config=}, {split=}, {offset=}, {length=}")
                 if dataset == "HuggingFaceFW/fineweb-edu-score-2" and offset > 1_000_000:
                     return get_json_error_response(
-                        content="too many requests",
+                        content='{"error": "too many requests"}',
                         status_code=HTTPStatus.TOO_MANY_REQUESTS,
                         max_age=max_age_short,
                     )
