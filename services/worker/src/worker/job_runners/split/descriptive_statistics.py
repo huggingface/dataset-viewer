@@ -40,6 +40,7 @@ from libcommon.statistics_utils import (
     ListColumn,
     StatisticsPerColumnItem,
     StringColumn,
+    VideoColumn,
 )
 from libcommon.storage import StrPath
 from libcommon.utils import download_file_from_hub
@@ -67,6 +68,7 @@ SupportedColumns = Union[
     AudioColumn,
     ImageColumn,
     DatetimeColumn,
+    VideoColumn,
 ]
 
 
@@ -229,10 +231,13 @@ def compute_descriptive_statistics_response(
                 )
 
             if _type == "Audio":
-                return AudioColumn(feature_name=dataset_feature_name, n_samples=num_examples)
+                return AudioColumn(feature_name=dataset_feature_name, n_samples=num_examples, hf_token=hf_token)
+
+            if _type == "Video":
+                return VideoColumn(feature_name=dataset_feature_name, n_samples=num_examples, hf_token=hf_token)
 
             if _type == "Image":
-                return ImageColumn(feature_name=dataset_feature_name, n_samples=num_examples)
+                return ImageColumn(feature_name=dataset_feature_name, n_samples=num_examples, hf_token=hf_token)
 
             if _type == "Value":
                 dtype = dataset_feature.get("dtype", "")
@@ -272,7 +277,7 @@ def compute_descriptive_statistics_response(
 
     local_parquet_paths = list(local_parquet_split_directory.glob("*.parquet"))
     for column in columns:
-        if isinstance(column, AudioColumn) or isinstance(column, ImageColumn):
+        if isinstance(column, (AudioColumn, VideoColumn, ImageColumn)):
             column_stats = column.compute_and_prepare_response(local_parquet_paths)
         else:
             try:

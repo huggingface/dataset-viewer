@@ -23,6 +23,7 @@ from datasets import (
     Translation,
     TranslationVariableLanguages,
     Value,
+    Video,
 )
 from datasets.features.features import FeatureType
 
@@ -34,6 +35,7 @@ from .statistics_dataset import (
     statistics_dataset,
     statistics_not_supported_dataset,
     statistics_string_text_dataset,
+    video_dataset,
 )
 
 SEARCH_TEXT_CONTENT = [
@@ -217,6 +219,8 @@ def datasets() -> Mapping[str, Dataset]:
                 ],
                 "audio": list(audio_dataset["audio"]) + [None],
                 "audio_all_null": null_column(5),
+                "video": list(video_dataset["video"]) + [None],
+                "video_all_null": null_column(5),
                 "image": list(image_dataset["image"]) + [None],
                 "image_all_null": null_column(5),
             },
@@ -230,6 +234,8 @@ def datasets() -> Mapping[str, Dataset]:
                     "list_struct": List({"author": Value("string"), "likes": Value("int32")}),
                     "audio": Audio(sampling_rate=1600, decode=False),
                     "audio_all_null": Audio(sampling_rate=1600, decode=False),
+                    "video": Video(decode=False),
+                    "video_all_null": Video(decode=False),
                     "image": Image(decode=False),
                     "image_all_null": Image(decode=False),
                 }
@@ -239,6 +245,7 @@ def datasets() -> Mapping[str, Dataset]:
         "descriptive_statistics_string_text": statistics_string_text_dataset,
         "descriptive_statistics_not_supported": statistics_not_supported_dataset,
         "audio_statistics": audio_dataset,
+        "video_statistics": video_dataset,
         "image_statistics": image_dataset,
         "datetime_statistics": datetime_dataset,
     }
