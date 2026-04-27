@@ -12,6 +12,7 @@ from uuid import uuid4
 
 from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo.errors import PyMongoError
+from pymongo.read_preferences import ReadPreference
 
 from sse_api.constants import HUB_CACHE_KIND
 
@@ -84,7 +85,10 @@ class HubCacheWatcher:
 
     def __init__(self, client: AsyncIOMotorClient, db_name: str, collection_name: str) -> None:
         self._client = client
-        self._collection = self._client[db_name][collection_name]
+        # Offload change stream + initial scan from primary (hot collection; write conflicts).
+        self._collection = self._client[db_name][collection_name].with_options(
+            read_preference=ReadPreference.SECONDARY_PREFERRED,
+        )
         self._publisher = HubCachePublisher(_watchers={})
 
     def run_initialization(self, suscriber: str) -> asyncio.Task[Any]:
@@ -92,6 +96,15 @@ class HubCacheWatcher:
 
     def start_watching(self) -> None:
         self._watch_task = asyncio.create_task(self._watch_loop())
+
+        def _log_watch_task_result(task: asyncio.Task[None]) -> None:
+            if task.cancelled():
+                return
+            exc = task.exception()
+            if exc is not None:
+                logging.error("hub-cache watch task ended unexpectedly", exc_info=exc)
+
+        self._watch_task.add_done_callback(_log_watch_task_result)
 
     async def stop_watching(self) -> None:
         self._watch_task.cancel()
@@ -170,6 +183,7 @@ class HubCacheWatcher:
                     resume_after=resume_token,
                     full_document="updateLookup",
                     full_document_before_change="whenAvailable",
+                    max_await_time_ms=30_000,
                 ) as stream:
                     async for change in stream:
                         resume_token = stream.resume_token
@@ -186,9 +200,9 @@ class HubCacheWatcher:
                         if change["fullDocument"]["kind"] != HUB_CACHE_KIND:
                             continue
 
+                        updated_fields = (change.get("updateDescription") or {}).get("updatedFields") or {}
                         if operation == "update" and not any(
-                            field in change["updateDescription"]["updatedFields"]
-                            for field in ["content", "http_status"]
+                            field in updated_fields for field in ["content", "http_status"]
                         ):
                             # ^ no change, skip
                             continue
