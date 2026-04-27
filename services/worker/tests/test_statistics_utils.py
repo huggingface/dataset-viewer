@@ -416,6 +416,7 @@ def test_audio_statistics(
         parquet_paths=[parquet_filename],
         column_name=column_name,
         n_samples=4,
+        hf_token=None,
     )
     assert computed == expected
 
@@ -429,6 +430,7 @@ def test_audio_statistics(
         parquet_paths=[parquet_filename],
         column_name=column_name,
         n_samples=4,
+        hf_token=None,
     )
     assert computed == expected
 
@@ -459,6 +461,7 @@ def test_video_statistics(
         parquet_paths=[parquet_filename],
         column_name=column_name,
         n_samples=4,
+        hf_token=None,
     )
     assert computed == expected
 
@@ -472,6 +475,7 @@ def test_video_statistics(
         parquet_paths=[parquet_filename],
         column_name=column_name,
         n_samples=4,
+        hf_token=None,
     )
     assert computed == expected
 
@@ -500,6 +504,7 @@ def test_image_statistics(
         parquet_paths=[parquet_filename],
         column_name=column_name,
         n_samples=4,
+        hf_token=None,
     )
     assert computed == expected
 
@@ -513,6 +518,7 @@ def test_image_statistics(
         parquet_paths=[parquet_filename],
         column_name=column_name,
         n_samples=4,
+        hf_token=None,
     )
     assert computed == expected
 
