@@ -711,7 +711,9 @@ class MediaColumn(Column):
         )
 
     @classmethod
-    def open(cls, example: Optional[Union[bytes, dict[str, Any]]], hf_token: Optional[str]) -> Union[io.BytesIO, nullcontext[None]]:
+    def open(
+        cls, example: Optional[Union[bytes, dict[str, Any]]], hf_token: Optional[str]
+    ) -> Union[io.BytesIO, nullcontext[None]]:
         if isinstance(example, dict):
             if example["bytes"] is not None:
                 return io.BytesIO(example["bytes"])
