@@ -718,7 +718,7 @@ class MediaColumn(Column):
             if example["bytes"] is not None:
                 return io.BytesIO(example["bytes"])
             else:
-                return xopen(example["path"], download_config=DownloadConfig(token=hf_token))  # type: ignore
+                return xopen(example["path"], "rb", download_config=DownloadConfig(token=hf_token))  # type: ignore
         elif isinstance(example, bytes):
             return io.BytesIO(example)
         else:
