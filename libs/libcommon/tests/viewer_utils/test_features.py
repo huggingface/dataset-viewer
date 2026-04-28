@@ -77,6 +77,8 @@ def test_get_cell_value_value(
         featureName=DEFAULT_COLUMN_NAME,
         fieldType=feature,
         storage_client=storage_client_with_url_preparator,
+        hf_endpoint=CI_HUB_ENDPOINT,
+        hf_token=None,
     )
     assert value == expected_cell
     assert_output_has_valid_files(expected_cell, storage_client=storage_client_with_url_preparator)
@@ -166,6 +168,8 @@ def test_ogg_audio_with_s3(
                 featureName=DEFAULT_COLUMN_NAME,
                 fieldType=feature,
                 storage_client=storage_client,
+                hf_endpoint=CI_HUB_ENDPOINT,
+                hf_token=None,
             )
             assert value == dataset_fixture.expected_cell
 

@@ -30,12 +30,17 @@ from datasets import (
     Value,
     Video,
 )
+from huggingface_hub import HfFileSystem
 from PIL import Image as PILImage
 
 from libcommon.dtos import FeatureItem
 from libcommon.storage_client import StorageClient
 from libcommon.viewer_utils.asset import (
+    SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE,
     SUPPORTED_AUDIO_EXTENSIONS,
+    AudioSource,
+    ImageSource,
+    VideoSource,
     create_audio_file,
     create_image_file,
     create_pdf_file,
@@ -89,6 +94,8 @@ def image(
     value: Any,
     featureName: str,
     storage_client: StorageClient,
+    hf_endpoint: str,
+    hf_token: Optional[str],
     json_path: Optional[list[Union[str, int]]] = None,
 ) -> Any:
     if value is None:
@@ -97,13 +104,15 @@ def image(
         value = PILImage.open(BytesIO(value["bytes"]))
     elif isinstance(value, bytes):
         value = PILImage.open(BytesIO(value))
-    elif (
-        isinstance(value, dict)
-        and "path" in value
-        and isinstance(value["path"], str)
-        and os.path.exists(value["path"])
-    ):
-        value = PILImage.open(value["path"])
+    elif isinstance(value, dict) and "path" in value and isinstance(value["path"], str):
+        if os.path.exists(value["path"]):
+            value = PILImage.open(value["path"])
+        elif value["path"].startswith(f"hf://datasets/{dataset}@"):
+            with HfFileSystem(endpoint=hf_endpoint, token=hf_token).open(value["path"], "rb") as f:
+                src = value["path"].replace("hf://", hf_endpoint, 1).replace("@", "/resolve/", 1)
+                image = PILImage.open(f)
+                return ImageSource(src=src, height=image.height, width=image.width)
+
     if not isinstance(value, PILImage.Image):
         raise TypeError(
             "Image cell must be a PIL image or an encoded dict of an image, "
@@ -141,6 +150,7 @@ def audio(
     value: Any,
     featureName: str,
     storage_client: StorageClient,
+    hf_endpoint: str,
     json_path: Optional[list[Union[str, int]]] = None,
 ) -> Any:
     from datasets.features._torchcodec import AudioDecoder
@@ -161,7 +171,14 @@ def audio(
             "Audio cell must be an encoded dict of an audio sample or a torchcodec AudioDecoder, "
             f"but got {str(value)[:300]}{'...' if len(str(value)) > 300 else ''}"
         )
+
     audio_file_extension = get_audio_file_extension(value)
+    if "path" in value and isinstance(value["path"], str) and value.get("bytes") is None:
+        if audio_file_extension in SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE:
+            if value["path"].startswith(f"hf://datasets/{dataset}@"):
+                src = value["path"].replace("hf://", hf_endpoint, 1).replace("@", "/resolve/", 1)
+                return AudioSource(src=src, type=SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE[audio_file_extension])
+
     audio_file_bytes = get_audio_file_bytes(value)
     if not audio_file_extension:
         audio_file_extension = infer_audio_file_extension(audio_file_bytes)
@@ -262,6 +279,7 @@ def video(
     value: Any,
     featureName: str,
     storage_client: StorageClient,
+    hf_endpoint: str,
     json_path: Optional[list[Union[str, int]]] = None,
 ) -> Any:
     if datasets.config.TORCHCODEC_AVAILABLE:
@@ -291,6 +309,11 @@ def video(
             "Video cell must be an encoded dict of a video, "
             f"but got {str(value)[:300]}{'...' if len(str(value)) > 300 else ''}"
         )
+
+    if "path" in value and isinstance(value["path"], str) and value.get("bytes") is None:
+        if value["path"].startswith(f"hf://datasets/{dataset}@"):
+            src = value["path"].replace("hf://", hf_endpoint, 1).replace("@", "/resolve/", 1)
+            return VideoSource(src=src)
 
     video_file_extension = get_video_file_extension(value)
     video_file_bytes = get_video_file_bytes(value)
@@ -346,6 +369,8 @@ def pdf(
     value: Any,
     featureName: str,
     storage_client: StorageClient,
+    hf_endpoint: str,
+    hf_token: Optional[str],
     json_path: Optional[list[Union[str, int]]] = None,
 ) -> Any:
     if value is None:
@@ -354,13 +379,12 @@ def pdf(
         value = pdfplumber.open(BytesIO(value["bytes"]))
     elif isinstance(value, bytes):
         value = pdfplumber.open(BytesIO(value))
-    elif (
-        isinstance(value, dict)
-        and "path" in value
-        and isinstance(value["path"], str)
-        and os.path.exists(value["path"])
-    ):
-        value = pdfplumber.open(value["path"])
+    elif isinstance(value, dict) and "path" in value and isinstance(value["path"], str):
+        if os.path.exists(value["path"]):
+            value = pdfplumber.open(value["path"])
+        elif value["path"].startswith(f"hf://datasets/{dataset}@"):
+            f = HfFileSystem(endpoint=hf_endpoint, token=hf_token).open(value["path"], "rb")
+            value = pdfplumber.open(f)
 
     if not isinstance(value, pdfplumber.pdf.PDF):
         raise TypeError(
@@ -392,6 +416,8 @@ def get_cell_value(
     featureName: str,
     fieldType: Any,
     storage_client: StorageClient,
+    hf_endpoint: str,
+    hf_token: Optional[str],
     json_path: Optional[list[Union[str, int]]] = None,
 ) -> Any:
     # always allow None values in the cells
@@ -407,6 +433,8 @@ def get_cell_value(
             value=cell,
             featureName=featureName,
             storage_client=storage_client,
+            hf_endpoint=hf_endpoint,
+            hf_token=hf_token,
             json_path=json_path,
         )
     elif isinstance(fieldType, Audio):
@@ -419,6 +447,7 @@ def get_cell_value(
             value=cell,
             featureName=featureName,
             storage_client=storage_client,
+            hf_endpoint=hf_endpoint,
             json_path=json_path,
         )
     elif isinstance(fieldType, Video):
@@ -431,6 +460,7 @@ def get_cell_value(
             value=cell,
             featureName=featureName,
             storage_client=storage_client,
+            hf_endpoint=hf_endpoint,
             json_path=json_path,
         )
     elif isinstance(fieldType, Pdf):
@@ -443,6 +473,8 @@ def get_cell_value(
             value=cell,
             featureName=featureName,
             storage_client=storage_client,
+            hf_endpoint=hf_endpoint,
+            hf_token=hf_token,
             json_path=json_path,
         )
     elif isinstance(fieldType, Json):
@@ -467,6 +499,8 @@ def get_cell_value(
                 featureName=featureName,
                 fieldType=subFieldType,
                 storage_client=storage_client,
+                hf_endpoint=hf_endpoint,
+                hf_token=hf_token,
                 json_path=json_path + [idx] if json_path else [idx],
             )
             for (idx, subCell) in enumerate(cell)
@@ -486,6 +520,8 @@ def get_cell_value(
                 featureName=featureName,
                 fieldType=subFieldType,
                 storage_client=storage_client,
+                hf_endpoint=hf_endpoint,
+                hf_token=hf_token,
                 json_path=json_path + [idx] if json_path else [idx],
             )
             for (idx, subCell) in enumerate(cell)
@@ -506,6 +542,8 @@ def get_cell_value(
                 featureName=featureName,
                 fieldType=fieldType.feature,
                 storage_client=storage_client,
+                hf_endpoint=hf_endpoint,
+                hf_token=hf_token,
                 json_path=json_path + [idx] if json_path else [idx],
             )
             for (idx, subCell) in enumerate(cell)
@@ -525,6 +563,8 @@ def get_cell_value(
                 featureName=featureName,
                 fieldType=fieldType[key],
                 storage_client=storage_client,
+                hf_endpoint=hf_endpoint,
+                hf_token=hf_token,
                 json_path=json_path + [key] if json_path else [key],
             )
             for (key, subCell) in cell.items()

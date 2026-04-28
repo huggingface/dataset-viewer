@@ -111,6 +111,8 @@ def create_rows_endpoint(
                             config=config,
                             split=split,
                             storage_client=cached_assets_storage_client,
+                            hf_endpoint=hf_endpoint,
+                            hf_token=hf_token,
                             pa_table=pa_table,
                             offset=offset,
                             features=rows_index.features,
