@@ -51,6 +51,12 @@
     httpGet:
       path: /healthcheck
       port: {{ .workerValues.uvicornPort }}
+  startupProbe:
+    failureThreshold: 30
+    periodSeconds: 5
+    httpGet:
+      path: /healthcheck
+      port: {{ .workerValues.uvicornPort }}
   ports:
   - containerPort: {{ .workerValues.uvicornPort }}
     name: http
