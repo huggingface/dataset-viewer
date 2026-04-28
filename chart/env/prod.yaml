@@ -466,19 +466,6 @@ workers:
     uvicornPort: 8080
     workerDifficultyMax: 100
     workerDifficultyMin: 70
-    # Default probe settings for heavy workers
-    startupProbe:
-      failureThreshold: 30
-      periodSeconds: 5
-      timeoutSeconds: 1
-    livenessProbe:
-      failureThreshold: 30
-      periodSeconds: 5
-      timeoutSeconds: 1
-    readinessProbe:
-      failureThreshold: 30
-      periodSeconds: 5
-      timeoutSeconds: 1
     nodeSelector:
       role-datasets-server-worker: "true"
     tolerations:
@@ -508,19 +495,6 @@ workers:
     uvicornPort: 8080
     workerDifficultyMax: 70
     workerDifficultyMin: 40
-    # Default probe settings for medium workers
-    startupProbe:
-      failureThreshold: 30
-      periodSeconds: 5
-      timeoutSeconds: 1
-    livenessProbe:
-      failureThreshold: 30
-      periodSeconds: 5
-      timeoutSeconds: 1
-    readinessProbe:
-      failureThreshold: 30
-      periodSeconds: 5
-      timeoutSeconds: 1
     nodeSelector:
       role-datasets-server-worker: "true"
     tolerations:

@@ -40,23 +40,23 @@
     allowPrivilegeEscalation: false
   resources: {{ toYaml .workerValues.resources | nindent 4 }}
   readinessProbe:
-    failureThreshold: {{ .workerValues.readinessProbe.failureThreshold | default 30 }}
-    periodSeconds: {{ .workerValues.readinessProbe.periodSeconds | default 5 }}
-    timeoutSeconds: {{ .workerValues.readinessProbe.timeoutSeconds | default 1 }}
+    failureThreshold: {{ if .workerValues.readinessProbe }}{{ .workerValues.readinessProbe.failureThreshold | default 30 }}{{ else }}30{{ end }}
+    periodSeconds: {{ if .workerValues.readinessProbe }}{{ .workerValues.readinessProbe.periodSeconds | default 5 }}{{ else }}5{{ end }}
+    timeoutSeconds: {{ if .workerValues.readinessProbe }}{{ .workerValues.readinessProbe.timeoutSeconds | default 1 }}{{ else }}1{{ end }}
     httpGet:
       path: /healthcheck
       port: {{ .workerValues.uvicornPort }}
   livenessProbe:
-    failureThreshold: {{ .workerValues.livenessProbe.failureThreshold | default 30 }}
-    periodSeconds: {{ .workerValues.livenessProbe.periodSeconds | default 5 }}
-    timeoutSeconds: {{ .workerValues.livenessProbe.timeoutSeconds | default 1 }}
+    failureThreshold: {{ if .workerValues.livenessProbe }}{{ .workerValues.livenessProbe.failureThreshold | default 30 }}{{ else }}30{{ end }}
+    periodSeconds: {{ if .workerValues.livenessProbe }}{{ .workerValues.livenessProbe.periodSeconds | default 5 }}{{ else }}5{{ end }}
+    timeoutSeconds: {{ if .workerValues.livenessProbe }}{{ .workerValues.livenessProbe.timeoutSeconds | default 1 }}{{ else }}1{{ end }}
     httpGet:
       path: /healthcheck
       port: {{ .workerValues.uvicornPort }}
   startupProbe:
-    failureThreshold: {{ .workerValues.startupProbe.failureThreshold | default 30 }}
-    periodSeconds: {{ .workerValues.startupProbe.periodSeconds | default 5 }}
-    timeoutSeconds: {{ .workerValues.startupProbe.timeoutSeconds | default 1 }}
+    failureThreshold: {{ if .workerValues.startupProbe }}{{ .workerValues.startupProbe.failureThreshold | default 30 }}{{ else }}30{{ end }}
+    periodSeconds: {{ if .workerValues.startupProbe }}{{ .workerValues.startupProbe.periodSeconds | default 5 }}{{ else }}5{{ end }}
+    timeoutSeconds: {{ if .workerValues.startupProbe }}{{ .workerValues.startupProbe.timeoutSeconds | default 1 }}{{ else }}1{{ end }}
     httpGet:
       path: /healthcheck
       port: {{ .workerValues.uvicornPort }}
