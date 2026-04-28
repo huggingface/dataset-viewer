@@ -109,7 +109,7 @@ def image(
             value = PILImage.open(value["path"])
         elif value["path"].startswith(f"hf://datasets/{dataset}@"):
             with HfFileSystem(endpoint=hf_endpoint, token=hf_token).open(value["path"], "rb") as f:
-                src = value["path"].replace("hf://", hf_endpoint, 1).replace("@", "/resolve/", 1)
+                src = value["path"].replace("hf://", hf_endpoint + "/", 1).replace("@", "/resolve/", 1)
                 image = PILImage.open(f)
                 return ImageSource(src=src, height=image.height, width=image.width)
 
@@ -176,7 +176,7 @@ def audio(
     if "path" in value and isinstance(value["path"], str) and value.get("bytes") is None:
         if audio_file_extension in SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE:
             if value["path"].startswith(f"hf://datasets/{dataset}@"):
-                src = value["path"].replace("hf://", hf_endpoint, 1).replace("@", "/resolve/", 1)
+                src = value["path"].replace("hf://", hf_endpoint + "/", 1).replace("@", "/resolve/", 1)
                 return AudioSource(src=src, type=SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE[audio_file_extension])
 
     audio_file_bytes = get_audio_file_bytes(value)
@@ -312,7 +312,7 @@ def video(
 
     if "path" in value and isinstance(value["path"], str) and value.get("bytes") is None:
         if value["path"].startswith(f"hf://datasets/{dataset}@"):
-            src = value["path"].replace("hf://", hf_endpoint, 1).replace("@", "/resolve/", 1)
+            src = value["path"].replace("hf://", hf_endpoint + "/", 1).replace("@", "/resolve/", 1)
             return VideoSource(src=src)
 
     video_file_extension = get_video_file_extension(value)
