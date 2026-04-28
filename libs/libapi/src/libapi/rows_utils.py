@@ -25,6 +25,8 @@ def _transform_row(
     split: str,
     features: Features,
     storage_client: StorageClient,
+    hf_endpoint: str,
+    hf_token: Optional[str],
     offset: int,
     row_idx_column: Optional[str],
 ) -> Row:
@@ -42,6 +44,8 @@ def _transform_row(
                 featureName=featureName,
                 fieldType=fieldType,
                 storage_client=storage_client,
+                hf_endpoint=hf_endpoint,
+                hf_token=hf_token,
             )
         except Exception as err:
             suggestion_messages: dict[type[Exception], str] = {
@@ -65,6 +69,8 @@ async def transform_rows(
     rows: list[Row],
     features: Features,
     storage_client: StorageClient,
+    hf_endpoint: str,
+    hf_token: Optional[str],
     offset: int,
     row_idx_column: Optional[str],
 ) -> list[Row]:
@@ -76,6 +82,8 @@ async def transform_rows(
         split=split,
         features=features,
         storage_client=storage_client,
+        hf_endpoint=hf_endpoint,
+        hf_token=hf_token,
         offset=offset,
         row_idx_column=row_idx_column,
     )

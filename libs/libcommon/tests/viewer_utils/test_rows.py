@@ -14,6 +14,7 @@ from libcommon.storage_client import StorageClient
 from libcommon.viewer_utils.rows import create_first_rows_response
 
 from ..constants import (
+    CI_HUB_ENDPOINT,
     DATASETS_NAMES,
     DEFAULT_COLUMN_NAME,
     DEFAULT_COLUMNS_MAX_NUMBER,
@@ -45,6 +46,8 @@ def test_create_first_rows_response(
         config=DEFAULT_CONFIG,
         split=DEFAULT_SPLIT,
         storage_client=storage_client_with_url_preparator,
+        hf_endpoint=CI_HUB_ENDPOINT,
+        hf_token=None,
         features=dataset.features,
         get_rows_content=get_dataset_rows_content(dataset=dataset),
         min_cell_bytes=DEFAULT_MIN_CELL_BYTES,
@@ -90,6 +93,8 @@ def test_create_first_rows_response_truncated(
         config=DEFAULT_CONFIG,
         split=DEFAULT_SPLIT,
         storage_client=storage_client,
+        hf_endpoint=CI_HUB_ENDPOINT,
+        hf_token=None,
         features=dataset.features,
         get_rows_content=get_dataset_rows_content(dataset=dataset),
         min_cell_bytes=DEFAULT_MIN_CELL_BYTES,
@@ -157,6 +162,8 @@ def test_create_first_rows_response_truncation_on_audio_or_image(
                 config=DEFAULT_CONFIG,
                 split=DEFAULT_SPLIT,
                 storage_client=storage_client_with_url_preparator,
+                hf_endpoint=CI_HUB_ENDPOINT,
+                hf_token=None,
                 features=dataset.features,
                 get_rows_content=get_dataset_rows_content(dataset=dataset),
                 min_cell_bytes=DEFAULT_MIN_CELL_BYTES,
@@ -173,6 +180,8 @@ def test_create_first_rows_response_truncation_on_audio_or_image(
             config=DEFAULT_CONFIG,
             split=DEFAULT_SPLIT,
             storage_client=storage_client_with_url_preparator,
+            hf_endpoint=CI_HUB_ENDPOINT,
+            hf_token=None,
             features=dataset.features,
             get_rows_content=get_dataset_rows_content(dataset=dataset),
             min_cell_bytes=DEFAULT_MIN_CELL_BYTES,

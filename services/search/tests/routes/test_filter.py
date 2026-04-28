@@ -182,6 +182,8 @@ async def test_create_response(ds: Dataset, app_config: AppConfig, storage_clien
         config=config,
         split=split,
         storage_client=storage_client,
+        hf_endpoint="not-needed",
+        hf_token=None,
         pa_table=pa_table,
         offset=0,
         features=ds.features,

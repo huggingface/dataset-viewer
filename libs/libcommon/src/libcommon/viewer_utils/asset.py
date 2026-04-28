@@ -8,14 +8,19 @@ from typing import TYPE_CHECKING, Any, Optional, TypedDict, Union
 
 import fitz
 from pdfplumber.pdf import PDF
-from PIL import Image, ImageOps
+from PIL import Image
 from pydub import AudioSegment  # type:ignore
 
 if TYPE_CHECKING:
     from libcommon.storage_client import StorageClient
 
 
-SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE = {".wav": "audio/wav", ".mp3": "audio/mpeg", ".opus": "audio/ogg"}
+SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE = {
+    ".wav": "audio/wav",
+    ".mp3": "audio/mpeg",
+    ".opus": "audio/ogg",
+    ".flac": "audio/x-flac",
+}
 SUPPORTED_AUDIO_EXTENSIONS = SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE.keys()
 DATASET_GIT_REVISION_PLACEHOLDER = "{dataset_git_revision}"
 LOCK = threading.Lock()
@@ -71,7 +76,6 @@ def create_image_file(
     )
     path = replace_dataset_git_revision_placeholder(object_path, revision=revision)
     if storage_client.overwrite or not storage_client.exists(path):
-        image = ImageOps.exif_transpose(image)  # type: ignore[assignment]
         buffer = BytesIO()
         image.save(fp=buffer, format=format)
         buffer.seek(0)

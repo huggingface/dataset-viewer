@@ -2,7 +2,7 @@
 # Copyright 2022 The HuggingFace Authors.
 
 
-from typing import Protocol
+from typing import Optional, Protocol
 
 import PIL
 from datasets import Audio, Features, Image, Pdf, Value, Video
@@ -29,6 +29,8 @@ def transform_rows(
     rows: list[Row],
     features: Features,
     storage_client: StorageClient,
+    hf_endpoint: str,
+    hf_token: Optional[str],
 ) -> list[Row]:
     transformed_rows: list[Row] = []
     for row_idx, row in enumerate(rows):
@@ -45,6 +47,8 @@ def transform_rows(
                         featureName=featureName,
                         fieldType=fieldType,
                         storage_client=storage_client,
+                        hf_endpoint=hf_endpoint,
+                        hf_token=hf_token,
                     )
                     for (featureName, fieldType) in features.items()
                 }
@@ -71,6 +75,8 @@ def create_first_rows_response(
     config: str,
     split: str,
     storage_client: StorageClient,
+    hf_endpoint: str,
+    hf_token: Optional[str],
     features: Features,
     get_rows_content: GetRowsContent,
     min_cell_bytes: int,
@@ -161,6 +167,8 @@ def create_first_rows_response(
         rows=rows_content.rows,
         features=features,
         storage_client=storage_client,
+        hf_endpoint=hf_endpoint,
+        hf_token=hf_token,
     )
 
     # truncate the rows to fit within the restrictions, and prepare them as RowItems

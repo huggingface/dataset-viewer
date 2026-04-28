@@ -205,6 +205,8 @@ async def to_rows_list(
     offset: int,
     features: Features,
     storage_client: StorageClient,
+    hf_endpoint: str,
+    hf_token: Optional[str],
     row_idx_column: Optional[str] = None,
     truncated_columns: Optional[list[str]] = None,
 ) -> list[RowItem]:
@@ -217,6 +219,8 @@ async def to_rows_list(
         rows=pa_table.to_pylist(),
         features=features,
         storage_client=storage_client,
+        hf_endpoint=hf_endpoint,
+        hf_token=hf_token,
         offset=offset,
         row_idx_column=row_idx_column,
     )
