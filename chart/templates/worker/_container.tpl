@@ -40,20 +40,23 @@
     allowPrivilegeEscalation: false
   resources: {{ toYaml .workerValues.resources | nindent 4 }}
   readinessProbe:
-    failureThreshold: 30
-    periodSeconds: 5
+    failureThreshold: {{ .workerValues.readinessProbe.failureThreshold | default 30 }}
+    periodSeconds: {{ .workerValues.readinessProbe.periodSeconds | default 5 }}
+    timeoutSeconds: {{ .workerValues.readinessProbe.timeoutSeconds | default 1 }}
     httpGet:
       path: /healthcheck
       port: {{ .workerValues.uvicornPort }}
   livenessProbe:
-    failureThreshold: 30
-    periodSeconds: 5
+    failureThreshold: {{ .workerValues.livenessProbe.failureThreshold | default 30 }}
+    periodSeconds: {{ .workerValues.livenessProbe.periodSeconds | default 5 }}
+    timeoutSeconds: {{ .workerValues.livenessProbe.timeoutSeconds | default 1 }}
     httpGet:
       path: /healthcheck
       port: {{ .workerValues.uvicornPort }}
   startupProbe:
-    failureThreshold: 30
-    periodSeconds: 5
+    failureThreshold: {{ .workerValues.startupProbe.failureThreshold | default 30 }}
+    periodSeconds: {{ .workerValues.startupProbe.periodSeconds | default 5 }}
+    timeoutSeconds: {{ .workerValues.startupProbe.timeoutSeconds | default 1 }}
     httpGet:
       path: /healthcheck
       port: {{ .workerValues.uvicornPort }}
