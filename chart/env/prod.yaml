@@ -524,6 +524,19 @@ workers:
     uvicornPort: 8080
     workerDifficultyMax: 40
     workerDifficultyMin: 0
+    # Increased probe timeouts for light workers due to limited resources
+    startupProbe:
+      failureThreshold: 120
+      periodSeconds: 5
+      timeoutSeconds: 10
+    livenessProbe:
+      failureThreshold: 60
+      periodSeconds: 10
+      timeoutSeconds: 10
+    readinessProbe:
+      failureThreshold: 60
+      periodSeconds: 10
+      timeoutSeconds: 10
     nodeSelector:
       role-datasets-server-worker-light: "true"
     tolerations:
