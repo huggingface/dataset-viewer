@@ -55,6 +55,7 @@ class ColumnType(str, enum.Enum):
     STRING_TEXT = "string_text"
     AUDIO = "audio"
     IMAGE = "image"
+    VIDEO = "video"
     DATETIME = "datetime"
 
 
