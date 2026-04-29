@@ -15,7 +15,7 @@ from libcommon.url_preparator import URLPreparator
 from .constants import CI_HUB_ENDPOINT
 
 BUCKET = "hf-datasets-server-statics-test"
-CLOUDFRONT_KEY_PAIR_ID = "K3814DK2QUJ71H"
+CLOUDFRONT_KEY_PAIR_ID = "K1MTLUUQ6YN2UZ"
 
 
 def test_real_cloudfront(monkeypatch: pytest.MonkeyPatch) -> None:

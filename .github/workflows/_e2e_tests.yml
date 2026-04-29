@@ -65,7 +65,7 @@ jobs:
           S3_ACCESS_KEY_ID: ${{ secrets.S3_ACCESS_KEY_ID }}
           S3_SECRET_ACCESS_KEY: ${{ secrets.S3_SECRET_ACCESS_KEY }}
           S3_REGION_NAME: "us-east-1"
-          CLOUDFRONT_KEY_PAIR_ID: "K3814DK2QUJ71H"
+          CLOUDFRONT_KEY_PAIR_ID: "K1MTLUUQ6YN2UZ"
           CLOUDFRONT_PRIVATE_KEY: ${{ secrets.CLOUDFRONT_PRIVATE_KEY }}
         run: docker compose up -d --wait --wait-timeout 20
       - name: Install poetry
