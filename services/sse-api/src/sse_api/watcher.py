@@ -188,16 +188,15 @@ class HubCacheWatcher:
                     async for change in stream:
                         resume_token = stream.resume_token
                         operation = change["operationType"]
-                        if (
-                            operation == "delete"
-                            and "fullDocumentBeforeChange" in change
-                            and change["fullDocumentBeforeChange"]["kind"] == HUB_CACHE_KIND
-                        ):
-                            dataset = change["fullDocumentBeforeChange"]["dataset"]
-                            self._publisher._notify_change(dataset=dataset, hub_cache=None)
+                        if operation == "delete":
+                            before = change.get("fullDocumentBeforeChange")
+                            if before and before.get("kind") == HUB_CACHE_KIND:
+                                dataset = before["dataset"]
+                                self._publisher._notify_change(dataset=dataset, hub_cache=None)
                             continue
 
-                        if change["fullDocument"]["kind"] != HUB_CACHE_KIND:
+                        full_document = change.get("fullDocument")
+                        if not full_document or full_document.get("kind") != HUB_CACHE_KIND:
                             continue
 
                         updated_fields = (change.get("updateDescription") or {}).get("updatedFields") or {}
@@ -208,11 +207,9 @@ class HubCacheWatcher:
                             continue
 
                         self._publisher._notify_change(
-                            dataset=change["fullDocument"]["dataset"],
+                            dataset=full_document["dataset"],
                             hub_cache=(
-                                change["fullDocument"]["content"]
-                                if change["fullDocument"]["http_status"] == HTTPStatus.OK
-                                else None
+                                full_document["content"] if full_document["http_status"] == HTTPStatus.OK else None
                             ),
                         )
             except PyMongoError as exc:
