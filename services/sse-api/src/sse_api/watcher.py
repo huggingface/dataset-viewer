@@ -209,9 +209,7 @@ class HubCacheWatcher:
                         self._publisher._notify_change(
                             dataset=full_document["dataset"],
                             hub_cache=(
-                                full_document["content"]
-                                if full_document["http_status"] == HTTPStatus.OK
-                                else None
+                                full_document["content"] if full_document["http_status"] == HTTPStatus.OK else None
                             ),
                         )
             except PyMongoError as exc:
