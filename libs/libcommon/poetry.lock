@@ -675,7 +675,7 @@ xml-validation = ["lxml (>=4,<6)"]
 
 [[package]]
 name = "datasets"
-version = "4.8.5.dev0"
+version = "4.8.6.dev0"
 description = "HuggingFace community-driven open-source library of datasets"
 optional = false
 python-versions = ">=3.10.0"
@@ -718,8 +718,8 @@ vision = ["Pillow (>=9.4.0)"]
 [package.source]
 type = "git"
 url = "https://github.com/huggingface/datasets"
-reference = "7fe94d10f8a5dacc6e1638866017b13261682c28"
-resolved_reference = "7fe94d10f8a5dacc6e1638866017b13261682c28"
+reference = "aa24915bdebba451d04e886d33405c36b002ba99"
+resolved_reference = "aa24915bdebba451d04e886d33405c36b002ba99"
 
 [[package]]
 name = "defusedxml"
@@ -4703,4 +4703,4 @@ propcache = ">=0.2.1"
 [metadata]
 lock-version = "2.1"
 python-versions = "3.12.11"
-content-hash = "bb62991dd5e992b693f90edef6639f11f5fa336945cbb81235a3943079989718"
+content-hash = "7f906cdfecf718d45bb019fafbb3864a8a866333b56db2207def6ab2da4f898b"
