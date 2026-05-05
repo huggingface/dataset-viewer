@@ -51,6 +51,7 @@ WORKER_MAX_MEMORY_PCT = 80
 WORKER_MAX_MISSING_HEARTBEATS = 5
 WORKER_SLEEP_SECONDS = 15
 WORKER_STATE_FILE_PATH = None
+WORKER_NUM_JOBS_BETWEEN_HFFS_CACHE_CLEAR = 20
 
 
 @dataclass(frozen=True)
@@ -67,6 +68,7 @@ class WorkerConfig:
     max_missing_heartbeats: int = WORKER_MAX_MISSING_HEARTBEATS
     sleep_seconds: float = WORKER_SLEEP_SECONDS
     state_file_path: Optional[str] = WORKER_STATE_FILE_PATH
+    num_jobs_between_hffs_cache_clear: int = WORKER_NUM_JOBS_BETWEEN_HFFS_CACHE_CLEAR
 
     @classmethod
     def from_env(cls) -> "WorkerConfig":
@@ -99,6 +101,9 @@ class WorkerConfig:
                 state_file_path=env.str(
                     name="STATE_FILE_PATH", default=WORKER_STATE_FILE_PATH
                 ),  # this environment variable is not expected to be set explicitly, it's set by the worker executor
+                num_jobs_between_hffs_cache_clear=env.int(
+                    name="NUM_JOBS_BETWEEN_HFFS_CACHE_CLEAR", default=WORKER_NUM_JOBS_BETWEEN_HFFS_CACHE_CLEAR
+                ),
             )
 
 
