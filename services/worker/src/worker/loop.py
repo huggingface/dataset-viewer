@@ -112,7 +112,7 @@ class Loop:
             HfFileSystem.clear_instance_cache()
             self.num_jobs_since_last_hffs_cache_clear = 0
         else:
-            self.self.num_jobs_since_last_hffs_cache_clear += 1
+            self.num_jobs_since_last_hffs_cache_clear += 1
 
         logging.debug("try to process a job")
 
