@@ -10,6 +10,7 @@ from typing import Optional, TypedDict
 
 import orjson
 from filelock import FileLock
+from huggingface_hub import HfFileSystem
 from libcommon.dtos import JobInfo
 from libcommon.prometheus import LongStepProfiler, StepProfiler
 from libcommon.queue.jobs import (
@@ -56,6 +57,7 @@ class Loop:
 
     def __post_init__(self) -> None:
         self.queue = Queue()
+        self.num_jobs_since_last_hffs_cache_clear = 0
 
     def has_memory(self) -> bool:
         if self.app_config.worker.max_memory_pct <= 0:
@@ -106,6 +108,12 @@ class Loop:
             raise
 
     def process_next_job(self) -> bool:
+        if self.num_jobs_since_last_hffs_cache_clear >= self.app_config.worker.num_jobs_between_hffs_cache_clear:
+            HfFileSystem.clear_instance_cache()
+            self.num_jobs_since_last_hffs_cache_clear = 0
+        else:
+            self.num_jobs_since_last_hffs_cache_clear += 1
+
         logging.debug("try to process a job")
 
         with StepProfiler("loop", "start_job"):

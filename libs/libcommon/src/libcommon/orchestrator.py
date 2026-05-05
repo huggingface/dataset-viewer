@@ -1018,7 +1018,7 @@ class SmartDatasetUpdatePlan(Plan):
     def get_updated_yaml_fields_in_dataset_card(self) -> list[str]:
         if "README.md" not in self.files_impacted_by_commit:
             return []
-        fs = HfFileSystem(endpoint=self.hf_endpoint, token=self.hf_token)
+        fs = HfFileSystem(endpoint=self.hf_endpoint, token=self.hf_token, skip_instance_cache=True)
         try:
             with fs.open(
                 f"datasets/{self.dataset}/README.md",
