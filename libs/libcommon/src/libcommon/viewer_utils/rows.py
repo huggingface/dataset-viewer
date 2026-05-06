@@ -6,6 +6,7 @@ from typing import Optional, Protocol
 
 import PIL
 from datasets import Audio, Features, Image, Pdf, Value, Video
+from datasets.packaged_modules.json.json import AGENT_TRACES_FEATURES
 
 from libcommon.dtos import Row, RowsContent, SplitFirstRowsResponse
 from libcommon.exceptions import (
@@ -190,6 +191,10 @@ def create_first_rows_response(
             )
             / len(transformed_rows)
             > URL_COLUMN_RATIO
+        )
+        or ( # prompt column of agent traces
+            features == AGENT_TRACES_FEATURES
+            and col == "prompt"
         )
     ]
     row_items, truncated = create_truncated_row_items(
