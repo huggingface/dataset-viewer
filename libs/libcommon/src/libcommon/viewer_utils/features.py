@@ -40,6 +40,7 @@ from libcommon.viewer_utils.asset import (
     SUPPORTED_AUDIO_EXTENSIONS,
     AudioSource,
     ImageSource,
+    PDFSource,
     VideoSource,
     create_audio_file,
     create_image_file,
@@ -97,7 +98,7 @@ def image(
     hf_endpoint: str,
     hf_token: Optional[str],
     json_path: Optional[list[Union[str, int]]] = None,
-) -> Any:
+) -> ImageSource:
     if value is None:
         return None
     if isinstance(value, dict) and value.get("bytes"):
@@ -152,7 +153,7 @@ def audio(
     storage_client: StorageClient,
     hf_endpoint: str,
     json_path: Optional[list[Union[str, int]]] = None,
-) -> Any:
+) -> list[AudioSource]:
     from datasets.features._torchcodec import AudioDecoder
 
     if value is None:
@@ -177,7 +178,7 @@ def audio(
         if audio_file_extension in SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE:
             if value["path"].startswith(f"hf://datasets/{dataset}@"):
                 src = value["path"].replace("hf://", hf_endpoint + "/", 1).replace("@", "/resolve/", 1)
-                return AudioSource(src=src, type=SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE[audio_file_extension])
+                return [AudioSource(src=src, type=SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE[audio_file_extension])]
 
     audio_file_bytes = get_audio_file_bytes(value)
     if not audio_file_extension:
@@ -281,7 +282,7 @@ def video(
     storage_client: StorageClient,
     hf_endpoint: str,
     json_path: Optional[list[Union[str, int]]] = None,
-) -> Any:
+) -> VideoSource:
     if datasets.config.TORCHCODEC_AVAILABLE:
         from torchcodec.decoders import VideoDecoder
 
@@ -372,7 +373,7 @@ def pdf(
     hf_endpoint: str,
     hf_token: Optional[str],
     json_path: Optional[list[Union[str, int]]] = None,
-) -> Any:
+) -> PDFSource:
     if value is None:
         return None
     if isinstance(value, dict) and value.get("bytes"):
