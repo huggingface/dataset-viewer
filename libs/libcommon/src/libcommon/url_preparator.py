@@ -111,7 +111,7 @@ class URLPreparator(ABC):
             return cell
         elif len(asset_url_path.path) == 0:
             if not isinstance(cell, dict):
-                raise InvalidFirstRowsError("Expected the cell to be a dict")
+                raise InvalidFirstRowsError(f"Expected the cell at path {asset_url_path.path} to be a dict but it's a {type(cell)}")
             for key, value in cell.items():
                 if isinstance(value, dict):
                     # if the value is a dict, we have to prepare the URL in it for nested assets
@@ -119,7 +119,7 @@ class URLPreparator(ABC):
                 elif key == "src":
                     src = cell.get(key)
                     if not isinstance(src, str):
-                        raise InvalidFirstRowsError(f'Expected cell["{key}"] to be a string')
+                        raise InvalidFirstRowsError(f'Expected cell["{key}"] at path {asset_url_path.path} to be a string but it\'s a {type(cell)}')
                     cell[key] = self.prepare_url(src, revision=revision)
             # ^ prepare the url in place
         else:
@@ -127,7 +127,7 @@ class URLPreparator(ABC):
             if key == 0:
                 # it's a list, we have to prepare each element
                 if not isinstance(cell, list):
-                    raise InvalidFirstRowsError("Expected the cell to be a list")
+                    raise InvalidFirstRowsError(f"Expected the cell at path {asset_url_path.path} to be a list but it's a {type(cell)}")
                 for cell_item in cell:
                     self._prepare_asset_url_path_in_place(
                         cell=cell_item, asset_url_path=asset_url_path.enter(), revision=revision
@@ -135,7 +135,7 @@ class URLPreparator(ABC):
             else:
                 # it's a dict, we have to prepare the value of the key
                 if not isinstance(cell, dict):
-                    raise InvalidFirstRowsError("Expected the cell to be a dict")
+                    raise InvalidFirstRowsError(f"Expected the cell at path {asset_url_path.path} to be a dict but it's a {type(cell)}")
                 self._prepare_asset_url_path_in_place(
                     cell=cell[key], asset_url_path=asset_url_path.enter(), revision=revision
                 )
