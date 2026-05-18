@@ -43,11 +43,18 @@ class DatasetSplitNamesResponse(TypedDict):
     failed: list[FailedConfigItem]
 
 
-class PreviousJob(TypedDict):
+class Job(TypedDict):
     dataset: str
     config: Optional[str]
     split: Optional[Union[str, None]]
     kind: str
+
+
+@dataclass
+class ShortcutJobResult(JobResult):
+    job: Job
+    content: Mapping[str, Any]
+    progress: float = field(init=False, default=1.0)
 
 
 class OptUrl(TypedDict):
@@ -241,8 +248,8 @@ class DatasetConfigNamesResponse(TypedDict):
 
 class DatasetInfoResponse(TypedDict):
     dataset_info: dict[str, Any]
-    pending: list[PreviousJob]
-    failed: list[PreviousJob]
+    pending: list[Job]
+    failed: list[Job]
     partial: bool
 
 
@@ -322,8 +329,8 @@ class DatasetFiletypesResponse(TypedDict):
 
 class DatasetParquetResponse(TypedDict):
     parquet_files: list[SplitHubFile]
-    pending: list[PreviousJob]
-    failed: list[PreviousJob]
+    pending: list[Job]
+    failed: list[Job]
     partial: bool
 
 
@@ -344,6 +351,11 @@ class DatasetSizeContent(TypedDict):
 
 class DatasetSizeResponse(TypedDict):
     size: DatasetSizeContent
-    pending: list[PreviousJob]
-    failed: list[PreviousJob]
+    pending: list[Job]
+    failed: list[Job]
     partial: bool
+
+
+class DatasetInitResponse(TypedDict):
+    successes: list[Job]
+    failed: list[Job]

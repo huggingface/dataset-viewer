@@ -2,6 +2,7 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
+from collections.abc import Iterator
 from http import HTTPStatus
 
 from libcommon.exceptions import PreviousStepFormatError
@@ -75,6 +76,6 @@ class ConfigOptInOutUrlsCountJobRunner(ConfigJobRunner):
     def get_job_type() -> str:
         return "config-opt-in-out-urls-count"
 
-    def compute(self) -> JobResult:
+    def compute(self) -> Iterator[JobResult]:
         response_content, progress = compute_opt_in_out_urls_count_response(dataset=self.dataset, config=self.config)
-        return JobResult(response_content, progress=progress)
+        yield JobResult(response_content, progress=progress)

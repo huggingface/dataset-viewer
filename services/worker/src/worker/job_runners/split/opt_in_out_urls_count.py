@@ -2,6 +2,7 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
+from collections.abc import Iterator
 
 from libcommon.exceptions import PreviousStepFormatError
 from libcommon.simple_cache import get_previous_step_or_raise
@@ -43,8 +44,8 @@ class SplitOptInOutUrlsCountJobRunner(SplitJobRunner):
     def get_job_type() -> str:
         return "split-opt-in-out-urls-count"
 
-    def compute(self) -> CompleteJobResult:
-        return CompleteJobResult(
+    def compute(self) -> Iterator[CompleteJobResult]:
+        yield CompleteJobResult(
             compute_opt_in_out_urls_count_response(
                 dataset=self.dataset,
                 config=self.config,

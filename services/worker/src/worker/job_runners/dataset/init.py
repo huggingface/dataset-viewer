@@ -5,15 +5,12 @@ import logging
 from collections.abc import Iterator
 from typing import Optional
 
-from datasets import (
-    get_dataset_config_names,
-    get_dataset_default_config_name,
-)
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
 from datasets.exceptions import (
     DataFilesNotFoundError as _DataFilesNotFoundError,
 )
 from datasets.exceptions import DatasetNotFoundError
+from datasets.load import dataset_module_factory, get_dataset_builder_class
 from huggingface_hub.utils import HfHubHTTPError
 from libcommon.exceptions import (
     ConfigNamesError,
@@ -25,17 +22,18 @@ from libcommon.exceptions import (
     RetryableConfigNamesError,
 )
 
-from worker.dtos import CompleteJobResult, ConfigNameItem, DatasetConfigNamesResponse
+from worker.dtos import ConfigNameItem, DatasetConfigNamesResponse, DatasetInitResponse, Job, JobResult, ShortcutJobResult
+from worker.job_runners.dataset.config_names import DatasetConfigNamesJobRunner
 from worker.job_runners.dataset.dataset_job_runner import (
     DatasetJobRunnerWithDatasetsCache,
 )
 
 
-def compute_config_names_response(
+def compute_init_responses(
     dataset: str,
-    max_number: int,
+    max_num_configs: int,
     hf_token: Optional[str] = None,
-) -> DatasetConfigNamesResponse:
+) -> Iterator[JobResult]:
     """
     Get the response of 'dataset-config-names' for one specific dataset on huggingface.co.
     Dataset can be gated if you pass an acceptable token.
@@ -60,26 +58,10 @@ def compute_config_names_response(
     Returns:
         `DatasetConfigNamesResponse`: An object with the list of config names.
     """
-    logging.info(f"compute 'dataset-config-names' for {dataset=}")
-    # get the list of splits in streaming mode
+    logging.info(f"compute 'dataset-init' for {dataset=}")
+    dataset_init_response: DatasetInitResponse = {"successes": [], "failed": []}
     try:
-        default_config_name: Optional[str] = None
-        config_names = get_dataset_config_names(
-            path=dataset,
-            token=hf_token,
-        )
-        if len(config_names) > 1:
-            default_config_name = get_dataset_default_config_name(
-                path=dataset,
-                token=hf_token,
-            )
-        config_name_items: list[ConfigNameItem] = [
-            {"dataset": dataset, "config": str(config)}
-            for config in sorted(
-                config_names,
-                key=lambda config_name: (config_name != default_config_name, config_name),  # default config first
-            )
-        ]
+        dataset_module = dataset_module_factory(dataset, token=hf_token)
     except _EmptyDatasetError as err:
         raise EmptyDatasetError("The dataset is empty.", cause=err) from err
     except _DataFilesNotFoundError as err:
@@ -95,25 +77,51 @@ def compute_config_names_response(
     except Exception as err:
         raise ConfigNamesError("Cannot get the config names for the dataset.", cause=err) from err
 
+    default_config_name: Optional[str] = None
+    builder_cls = get_dataset_builder_class(dataset_module)
+    config_names = list(builder_cls.builder_configs.keys())
+    if "config_name" in dataset_module.builder_kwargs and isinstance(
+        dataset_module.builder_kwargs["config_name"], str
+    ):
+        default_config_name = dataset_module.builder_kwargs["config_name"]
+    elif builder_cls.DEFAULT_CONFIG_NAME:
+        default_config_name = builder_cls.DEFAULT_CONFIG_NAME
+    elif config_names:
+        default_config_name = config_names[0] if len(config_names) == 1 else None
+    else:
+        default_config_name = "default"
+
+    config_name_items: list[ConfigNameItem] = [
+        {"dataset": dataset, "config": str(config)}
+        for config in sorted(
+            config_names,
+            key=lambda config_name: (config_name != default_config_name, config_name),  # default config first
+        )
+    ]
+
     number_of_configs = len(config_name_items)
-    if number_of_configs > max_number:
+    if number_of_configs > max_num_configs:
         raise DatasetWithTooManyConfigsError(
-            f"The maximum number of configs allowed is {max_number}, dataset has {number_of_configs} configs."
+            f"The maximum number of configs allowed is {max_num_configs}, dataset has {number_of_configs} configs."
         )
 
-    return DatasetConfigNamesResponse(config_names=config_name_items)
+    job: Job = {"dataset": dataset, "kind": DatasetConfigNamesJobRunner.get_job_type(), "config": None, "split": None}
+    dataset_init_response["successes"].append(job)
+    yield ShortcutJobResult(
+        content=DatasetConfigNamesResponse(config_names=config_name_items),
+        job=job,
+    )
+    yield JobResult(dataset_init_response, progress=1.0)
 
 
-class DatasetConfigNamesJobRunner(DatasetJobRunnerWithDatasetsCache):
+class DatasetInitJobRunner(DatasetJobRunnerWithDatasetsCache):
     @staticmethod
     def get_job_type() -> str:
-        return "dataset-config-names"
+        return "dataset-init"
 
-    def compute(self) -> Iterator[CompleteJobResult]:
-        yield CompleteJobResult(
-            compute_config_names_response(
-                dataset=self.dataset,
-                hf_token=self.app_config.common.hf_token,
-                max_number=self.app_config.config_names.max_number,
-            )
+    def compute(self) -> Iterator[JobResult]:
+        yield from compute_init_responses(
+            dataset=self.dataset,
+            hf_token=self.app_config.common.hf_token,
+            max_num_configs=self.app_config.config_names.max_number_for_init,
         )

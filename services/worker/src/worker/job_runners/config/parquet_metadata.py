@@ -2,6 +2,7 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
+from collections.abc import Iterator
 from typing import Optional
 
 from libcommon.constants import DATASET_SEPARATOR, PARQUET_REVISION
@@ -221,8 +222,8 @@ class ConfigParquetMetadataJobRunner(ConfigJobRunner):
         self.data_store = data_store
         self.parquet_metadata_directory = parquet_metadata_directory
 
-    def compute(self) -> CompleteJobResult:
-        return CompleteJobResult(
+    def compute(self) -> Iterator[CompleteJobResult]:
+        yield CompleteJobResult(
             compute_parquet_metadata_response(
                 dataset=self.dataset,
                 config=self.config,

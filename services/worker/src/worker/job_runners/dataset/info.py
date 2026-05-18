@@ -2,6 +2,7 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
+from collections.abc import Iterator
 from http import HTTPStatus
 from typing import Any
 
@@ -12,7 +13,7 @@ from libcommon.simple_cache import (
     get_response,
 )
 
-from worker.dtos import DatasetInfoResponse, JobResult, PreviousJob
+from worker.dtos import DatasetInfoResponse, Job, JobResult
 from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
 
 
@@ -56,7 +57,7 @@ def compute_dataset_info_response(dataset: str) -> tuple[DatasetInfoResponse, fl
             except CachedArtifactNotFoundError:
                 logging.debug(f"No response found in previous step for {dataset=} {config=}: 'config-info'.")
                 pending.append(
-                    PreviousJob(
+                    Job(
                         kind="config-info",
                         dataset=dataset,
                         config=config,
@@ -67,7 +68,7 @@ def compute_dataset_info_response(dataset: str) -> tuple[DatasetInfoResponse, fl
             if config_response["http_status"] != HTTPStatus.OK:
                 logging.debug(f"Previous step gave an error: {config_response['http_status']}")
                 failed.append(
-                    PreviousJob(
+                    Job(
                         kind="config-info",
                         dataset=dataset,
                         config=config,
@@ -91,6 +92,6 @@ class DatasetInfoJobRunner(DatasetJobRunner):
     def get_job_type() -> str:
         return "dataset-info"
 
-    def compute(self) -> JobResult:
+    def compute(self) -> Iterator[JobResult]:
         response_content, progress = compute_dataset_info_response(dataset=self.dataset)
-        return JobResult(response_content, progress=progress)
+        yield JobResult(response_content, progress=progress)

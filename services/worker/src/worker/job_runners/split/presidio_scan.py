@@ -4,7 +4,7 @@
 import logging
 import re
 from collections import Counter
-from collections.abc import Iterable
+from collections.abc import Iterable, Iterator
 from itertools import count
 from pathlib import Path
 from typing import Any, Optional
@@ -444,8 +444,8 @@ class SplitPresidioEntitiesScanJobRunner(SplitJobRunnerWithDatasetsCache):
         )
         self.presidio_entities_scan_config = app_config.presidio_scan
 
-    def compute(self) -> CompleteJobResult:
-        return CompleteJobResult(
+    def compute(self) -> Iterator[CompleteJobResult]:
+        yield CompleteJobResult(
             compute_presidio_entities_scan_response(
                 dataset=self.dataset,
                 config=self.config,

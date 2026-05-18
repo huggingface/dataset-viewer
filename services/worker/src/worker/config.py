@@ -274,11 +274,13 @@ class NumbaConfig:
 
 
 CONFIG_NAMES_MAX_NUMBER = 4_000
+CONFIG_NAMES_MAX_NUMBER_FOR_INIT = 10
 
 
 @dataclass(frozen=True)
 class ConfigNamesConfig:
     max_number: int = CONFIG_NAMES_MAX_NUMBER
+    max_number_for_init: int = CONFIG_NAMES_MAX_NUMBER_FOR_INIT
 
     @classmethod
     def from_env(cls) -> "ConfigNamesConfig":
@@ -286,6 +288,7 @@ class ConfigNamesConfig:
         with env.prefixed("CONFIG_NAMES_"):
             return cls(
                 max_number=env.int(name="MAX_NUMBER", default=CONFIG_NAMES_MAX_NUMBER),
+                max_number_for_init=env.int(name="MAX_NUMBER_FOR_INIT", default=CONFIG_NAMES_MAX_NUMBER_FOR_INIT),
             )
 
 

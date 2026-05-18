@@ -2,6 +2,7 @@
 # Copyright 2023 The HuggingFace Authors.
 
 import logging
+from collections.abc import Iterator
 from http import HTTPStatus
 
 from libcommon.exceptions import PreviousStepFormatError
@@ -85,6 +86,6 @@ class DatasetIsValidJobRunner(DatasetJobRunner):
     def get_job_type() -> str:
         return "dataset-is-valid"
 
-    def compute(self) -> JobResult:
+    def compute(self) -> Iterator[JobResult]:
         response_content, progress = compute_is_valid_response(dataset=self.dataset)
-        return JobResult(response_content, progress=progress)
+        yield JobResult(response_content, progress=progress)

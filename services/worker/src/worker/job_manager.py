@@ -2,8 +2,10 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
+from collections.abc import Iterator
 from http import HTTPStatus
 from typing import Optional
+from uuid import uuid4
 
 from libcommon.config import CommonConfig
 from libcommon.dtos import JobInfo, JobParams, JobResult, Priority
@@ -16,8 +18,8 @@ from libcommon.exceptions import (
     TooBigContentError,
     UnexpectedError,
 )
-from libcommon.orchestrator import finish_job
-from libcommon.processing_graph import processing_graph
+from libcommon.orchestrator import finish_job, get_failed_runs, save_job_result
+from libcommon.processing_graph import ProcessingStepDoesNotExist, processing_graph
 from libcommon.simple_cache import (
     CachedArtifactError,
     CachedArtifactNotFoundError,
@@ -25,6 +27,7 @@ from libcommon.simple_cache import (
 from libcommon.utils import get_duration_or_none, orjson_dumps
 
 from worker.config import AppConfig, WorkerConfig
+from worker.dtos import ShortcutJobResult
 from worker.job_runner import JobRunner
 
 
@@ -65,6 +68,7 @@ class JobManager:
         self.worker_config = app_config.worker
         self.job_runner = job_runner
         self.job_runner_version = processing_graph.get_processing_step_by_job_type(self.job_type).job_runner_version
+        self._failed_runs: Optional[int] = None
         self.setup()
 
     def setup(self) -> None:
@@ -73,6 +77,12 @@ class JobManager:
             raise ValueError(
                 f"The submitted job type is {self.job_type}, but the job manager only processes {job_type}"
             )
+
+    @property
+    def failed_runs(self) -> int:
+        if self._failed_runs is None:
+            self._failed_runs = get_failed_runs(self.job_info)
+        return self._failed_runs
 
     def __str__(self) -> str:
         return f"JobManager(job_id={self.job_id} dataset={self.job_params['dataset']} job_info={self.job_info}"
@@ -95,42 +105,81 @@ class JobManager:
     def critical(self, msg: str) -> None:
         self.log(level=logging.CRITICAL, msg=msg)
 
-    def run_job(self) -> JobResult:
+    def run_job(self) -> Iterator[JobResult]:
+        job_result: Optional[JobResult] = None
         try:
             self.job_runner.validate()
-            job_result: JobResult = self.process()
+            for job_result in self.process():
+                yield job_result
         except Exception:
-            job_result = {
-                "job_info": self.job_info,
-                "job_runner_version": self.job_runner_version,
-                "is_success": False,
-                "output": None,
-                "duration": get_duration_or_none(self.job_info["started_at"]),
-            }
-        result_str = "SUCCESS" if job_result["is_success"] else "ERROR"
-        self.debug(f"job output with {result_str} - {self}")
-        return job_result
+            if job_result is None:
+                yield {
+                    "job_info": self.job_info,
+                    "job_runner_version": self.job_runner_version,
+                    "is_success": False,
+                    "output": None,
+                    "duration": get_duration_or_none(self.job_info["started_at"]),
+                }
+                self.debug(f"job output with ERROR - {self}")
 
-    def finish(self, job_result: JobResult) -> None:
-        finish_job(job_result=job_result)
+    def save_job_result(self, job_result: JobResult) -> None:
+        save_job_result(job_result=job_result, failed_runs=self.failed_runs)
+
+    def finish(self) -> None:
+        finish_job(job_info=self.job_info, failed_runs=self.failed_runs)
 
     def process(
         self,
-    ) -> JobResult:
+    ) -> Iterator[JobResult]:
         self.info(f"compute {self}")
         started_at = self.job_info["started_at"]
         try:
             try:
                 self.job_runner.pre_compute()
-                job_result = self.job_runner.compute()
-                content = job_result.content
+                for job_result in self.job_runner.compute():
+                    content = job_result.content
 
-                # Validate content size
-                if len(orjson_dumps(content)) > self.worker_config.content_max_bytes:
-                    raise TooBigContentError(
-                        "The computed response content exceeds the supported size in bytes"
-                        f" ({self.worker_config.content_max_bytes})."
-                    )
+                    # Validate content size
+                    if len(orjson_dumps(content)) > self.worker_config.content_max_bytes:
+                        raise TooBigContentError(
+                            "The computed response content exceeds the supported size in bytes"
+                            f" ({self.worker_config.content_max_bytes})."
+                        )
+                    if isinstance(job_result, ShortcutJobResult):
+                        job_info = JobInfo(
+                            job_id=self.job_id + "-shortcut-" + str(uuid4()),
+                            type=job_result.job["kind"],
+                            params={
+                                "dataset": job_result.job["dataset"],
+                                "revision": self.job_info["params"]["revision"],
+                                "config": job_result.job["config"],
+                                "split": job_result.job["split"],
+                            },
+                            priority=self.job_info["priority"],
+                            difficulty=self.job_info["difficulty"],
+                            started_at=self.job_info["started_at"],
+                        )
+                        try:
+                            processing_step = processing_graph.get_processing_step_by_job_type(job_result.job["kind"])
+                            processing_step.job_runner_version
+                        except ProcessingStepDoesNotExist as e:
+                            raise ValueError(f"Processing step for job type {job_info['type']} does not exist") from e
+                    else:
+                        job_info = self.job_info
+                        job_runner_version = self.job_runner_version
+                    yield {
+                        "job_info": job_info,
+                        "job_runner_version": job_runner_version,
+                        "is_success": True,
+                        "output": {
+                            "content": content,
+                            "http_status": HTTPStatus.OK,
+                            "error_code": None,
+                            "details": None,
+                            "progress": job_result.progress,
+                        },
+                        "duration": get_duration_or_none(started_at),
+                    }
             except CachedArtifactNotFoundError as err:
                 raise PreviousStepStillProcessingError(
                     message="The previous steps are still being processed", cause=err
@@ -142,23 +191,10 @@ class JobManager:
                 f"dataset={self.job_params['dataset']} revision={self.job_params['revision']} job_info={self.job_info}"
                 " is valid"
             )
-            return {
-                "job_info": self.job_info,
-                "job_runner_version": self.job_runner_version,
-                "is_success": True,
-                "output": {
-                    "content": content,
-                    "http_status": HTTPStatus.OK,
-                    "error_code": None,
-                    "details": None,
-                    "progress": job_result.progress,
-                },
-                "duration": get_duration_or_none(started_at),
-            }
         except DatasetNotFoundError:
             # To avoid filling the cache, we don't save this error. Otherwise, DoS is possible.
             self.debug(f"the dataset={self.job_params['dataset']} could not be found, don't update the cache")
-            return {
+            yield {
                 "job_info": self.job_info,
                 "job_runner_version": self.job_runner_version,
                 "is_success": False,
@@ -171,7 +207,7 @@ class JobManager:
             # We add an entry to details: "copied_from_artifact", with its identification details, to have a chance
             # to debug if needed.
             self.debug(f"response for job_info={self.job_info} had an error from a previous step")
-            return {
+            yield {
                 "job_info": self.job_info,
                 "job_runner_version": self.job_runner_version,
                 "is_success": False,
@@ -187,7 +223,7 @@ class JobManager:
         except Exception as err:
             e = err if isinstance(err, CustomError) else UnexpectedError(str(err), err)
             self.debug(f"response for job_info={self.job_info} had an error")
-            return {
+            yield {
                 "job_info": self.job_info,
                 "job_runner_version": self.job_runner_version,
                 "is_success": False,
@@ -208,7 +244,7 @@ class JobManager:
             " had an error (crashed)"
         )
         error = JobManagerCrashedError(message=message, cause=cause)
-        self.finish(
+        self.save_job_result(
             job_result={
                 "job_info": self.job_info,
                 "job_runner_version": self.job_runner_version,
@@ -223,6 +259,7 @@ class JobManager:
                 "duration": get_duration_or_none(self.job_info["started_at"]),
             }
         )
+        self.finish()
 
     def set_exceeded_maximum_duration(self, message: str, cause: Optional[BaseException] = None) -> None:
         self.info(
@@ -231,7 +268,7 @@ class JobManager:
             " had an error (exceeded maximum duration)"
         )
         error = JobManagerExceededMaximumDurationError(message=message, cause=cause)
-        self.finish(
+        self.save_job_result(
             job_result={
                 "job_info": self.job_info,
                 "job_runner_version": self.job_runner_version,
@@ -246,3 +283,4 @@ class JobManager:
                 "duration": get_duration_or_none(self.job_info["started_at"]),
             }
         )
+        self.finish()

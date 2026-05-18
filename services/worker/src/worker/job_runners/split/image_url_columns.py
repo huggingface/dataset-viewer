@@ -2,6 +2,7 @@
 # Copyright 2023 The HuggingFace Authors.
 
 import logging
+from collections.abc import Iterator
 
 from libcommon.dtos import SplitFirstRowsResponse
 from libcommon.exceptions import PreviousStepFormatError
@@ -103,8 +104,8 @@ class SplitImageUrlColumnsJobRunner(SplitJobRunner):
     def get_job_type() -> str:
         return "split-image-url-columns"
 
-    def compute(self) -> CompleteJobResult:
-        return CompleteJobResult(
+    def compute(self) -> Iterator[CompleteJobResult]:
+        yield CompleteJobResult(
             compute_image_url_columns(
                 dataset=self.dataset,
                 config=self.config,

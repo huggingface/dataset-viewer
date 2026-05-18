@@ -3,6 +3,7 @@
 
 import logging
 from collections import Counter
+from collections.abc import Iterator
 from typing import Optional
 
 from datasets import DownloadConfig, StreamingDownloadManager
@@ -116,8 +117,8 @@ class DatasetFiletypesJobRunner(DatasetJobRunnerWithDatasetsCache):
     def get_job_type() -> str:
         return "dataset-filetypes"
 
-    def compute(self) -> CompleteJobResult:
-        return CompleteJobResult(
+    def compute(self) -> Iterator[CompleteJobResult]:
+        yield CompleteJobResult(
             compute_filetypes_response(
                 dataset=self.dataset,
                 hf_endpoint=self.app_config.common.hf_endpoint,

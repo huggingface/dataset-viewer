@@ -1221,35 +1221,31 @@ def backfill(
     return plan.run()
 
 
-def finish_job(
-    job_result: JobResult,
-    processing_graph: ProcessingGraph = processing_graph,
-) -> TasksStatistics:
-    """
-    Finish a job.
+def get_failed_runs(job_info: JobInfo) -> int:
+    try:
+        processing_step = processing_graph.get_processing_step_by_job_type(job_info["type"])
+    except ProcessingStepDoesNotExist as e:
+        raise ValueError(f"Processing step for job type {job_info['type']} does not exist") from e
 
-    It will finish the job, store the result in the cache, and trigger the next steps.
+    params = job_info["params"]
+    try:
+        previous_response = get_response_metadata(
+            kind=processing_step.cache_kind,
+            dataset=params["dataset"],
+            config=params["config"],
+            split=params["split"],
+        )
+        return (
+            previous_response["failed_runs"]
+            if previous_response["dataset_git_revision"] == params["revision"]
+            else 0
+        )
+    except CachedArtifactNotFoundError:
+        return 0
 
-    Args:
-        job_result (`JobResult`): The result of the job.
-        processing_graph (`ProcessingGraph`, *optional*): The processing graph.
 
-    Raises:
-        [`ValueError`]: If the job is not found, or if the processing step is not found.
-
-    Returns:
-        `TasksStatistics`: The statistics of the finish_job.
-    """
-    # check if the job is still in started status
+def save_job_result(job_result: JobResult, failed_runs: int) -> None:
     job_info = job_result["job_info"]
-    if not Queue().is_job_started(job_id=job_info["job_id"]):
-        logging.debug("the job was deleted, don't update the cache")
-        return TasksStatistics()
-    # if the job could not provide an output, finish it and return
-    if not job_result["output"]:
-        Queue().finish_job(job_id=job_info["job_id"])
-        logging.debug("the job raised an exception, don't update the cache")
-        return TasksStatistics()
     # update the cache
     output = job_result["output"]
     params = job_info["params"]
@@ -1258,21 +1254,8 @@ def finish_job(
     except ProcessingStepDoesNotExist as e:
         raise ValueError(f"Processing step for job type {job_info['type']} does not exist") from e
 
-    try:
-        previous_response = get_response_metadata(
-            kind=processing_step.cache_kind,
-            dataset=params["dataset"],
-            config=params["config"],
-            split=params["split"],
-        )
-        failed_runs = (
-            previous_response["failed_runs"] + 1
-            if output["http_status"] != HTTPStatus.OK
-            and previous_response["dataset_git_revision"] == params["revision"]
-            else 0
-        )
-    except CachedArtifactNotFoundError:
-        failed_runs = 0
+    if output["http_status"] != HTTPStatus.OK:
+        failed_runs += 1
 
     upsert_response_params(
         # inputs
@@ -1289,6 +1272,33 @@ def finish_job(
         duration=job_result["duration"],
     )
     logging.debug("the job output has been written to the cache.")
+
+
+def finish_job(
+    job_info: JobInfo,
+    failed_runs: int,
+    processing_graph: ProcessingGraph = processing_graph,
+) -> TasksStatistics:
+    """
+    Finish a job.
+
+    It will finish the job, store the result in the cache, and trigger the next steps.
+
+    Args:
+        job_result (`JobResult`): The result of the job.
+        processing_graph (`ProcessingGraph`, *optional*): The processing graph.
+        failed_runs (`int`): The number of times this job has failed previously.
+
+    Raises:
+        [`ValueError`]: If the job is not found, or if the processing step is not found.
+
+    Returns:
+        `TasksStatistics`: The statistics of the finish_job.
+    """
+    # check if the job is still in started status
+    if not Queue().is_job_started(job_id=job_info["job_id"]):
+        logging.debug("the job was deleted, don't update the cache")
+        return TasksStatistics()
     # finish the job
     job_priority = Queue().finish_job(job_id=job_info["job_id"])
     if job_priority:

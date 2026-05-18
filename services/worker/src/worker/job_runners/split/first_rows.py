@@ -4,6 +4,7 @@
 
 import functools
 import logging
+from collections.abc import Iterator
 from pathlib import Path
 from typing import Optional
 
@@ -314,9 +315,9 @@ class SplitFirstRowsJobRunner(SplitJobRunnerWithDatasetsCache):
         self.parquet_metadata_directory = parquet_metadata_directory
         self.storage_client = storage_client
 
-    def compute(self) -> CompleteJobResult:
+    def compute(self) -> Iterator[CompleteJobResult]:
         try:
-            return CompleteJobResult(
+            yield CompleteJobResult(
                 compute_first_rows_from_parquet_response(
                     dataset=self.dataset,
                     revision=self.dataset_git_revision,
@@ -345,7 +346,7 @@ class SplitFirstRowsJobRunner(SplitJobRunnerWithDatasetsCache):
                 f"Trying to compute it using streaming."
             )
             pass
-        return CompleteJobResult(
+        yield CompleteJobResult(
             compute_first_rows_from_streaming_response(
                 dataset=self.dataset,
                 revision=self.dataset_git_revision,

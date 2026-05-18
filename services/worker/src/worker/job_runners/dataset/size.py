@@ -2,6 +2,7 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
+from collections.abc import Iterator
 from http import HTTPStatus
 from typing import Optional
 
@@ -17,8 +18,8 @@ from worker.dtos import (
     ConfigSizeResponse,
     DatasetSize,
     DatasetSizeResponse,
+    Job,
     JobResult,
-    PreviousJob,
     SplitSize,
 )
 from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
@@ -63,7 +64,7 @@ def compute_sizes_response(dataset: str) -> tuple[DatasetSizeResponse, float]:
             except CachedArtifactNotFoundError:
                 logging.debug("No response found in previous step for this dataset: 'config-size' endpoint.")
                 pending.append(
-                    PreviousJob(
+                    Job(
                         {
                             "kind": "config-size",
                             "dataset": dataset,
@@ -76,7 +77,7 @@ def compute_sizes_response(dataset: str) -> tuple[DatasetSizeResponse, float]:
             if response["http_status"] != HTTPStatus.OK:
                 logging.debug(f"Previous step gave an error: {response['http_status']}.")
                 failed.append(
-                    PreviousJob(
+                    Job(
                         {
                             "kind": "config-size",
                             "dataset": dataset,
@@ -138,6 +139,6 @@ class DatasetSizeJobRunner(DatasetJobRunner):
     def get_job_type() -> str:
         return "dataset-size"
 
-    def compute(self) -> JobResult:
+    def compute(self) -> Iterator[JobResult]:
         response_content, progress = compute_sizes_response(dataset=self.dataset)
-        return JobResult(response_content, progress=progress)
+        yield JobResult(response_content, progress=progress)

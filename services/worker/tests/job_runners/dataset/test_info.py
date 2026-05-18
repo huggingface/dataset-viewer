@@ -16,7 +16,7 @@ from libcommon.simple_cache import (
 )
 
 from worker.config import AppConfig
-from worker.dtos import PreviousJob
+from worker.dtos import Job
 from worker.job_runners.dataset.info import DatasetInfoJobRunner
 
 from ..config.test_info import CONFIG_INFO_1, CONFIG_INFO_2, DATASET_INFO_OK
@@ -80,7 +80,7 @@ EXPECTED_PARTIAL_PENDING = (
             "config_1": CONFIG_INFO_1,
         },
         "pending": [
-            PreviousJob(
+            Job(
                 kind="config-info",
                 dataset="dataset_ok",
                 config="config_2",
@@ -100,7 +100,7 @@ EXPECTED_PARTIAL_FAILED = (
         },
         "pending": [],
         "failed": [
-            PreviousJob(
+            Job(
                 kind="config-info",
                 dataset="dataset_ok",
                 config="config_2",

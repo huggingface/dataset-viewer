@@ -5,7 +5,7 @@ import functools
 import logging
 import os
 import re
-from collections.abc import Callable, Generator
+from collections.abc import Callable, Generator, Iterator
 from contextlib import ExitStack
 from itertools import groupby
 from pathlib import Path
@@ -1441,8 +1441,8 @@ class ConfigParquetAndInfoJobRunner(ConfigJobRunnerWithDatasetsCache):
         self.parquet_and_info_config = app_config.parquet_and_info
         self.committer_config = app_config.committer
 
-    def compute(self) -> CompleteJobResult:
-        return CompleteJobResult(
+    def compute(self) -> Iterator[CompleteJobResult]:
+        yield CompleteJobResult(
             compute_config_parquet_and_info_response(
                 job_id=self.job_info["job_id"],
                 dataset=self.dataset,

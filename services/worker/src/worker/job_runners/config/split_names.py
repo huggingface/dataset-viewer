@@ -2,6 +2,7 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
+from collections.abc import Iterator
 from typing import Optional
 
 from datasets import get_dataset_split_names
@@ -140,9 +141,9 @@ class ConfigSplitNamesJobRunner(ConfigJobRunnerWithDatasetsCache):
     def get_job_type() -> str:
         return "config-split-names"
 
-    def compute(self) -> CompleteJobResult:
+    def compute(self) -> Iterator[CompleteJobResult]:
         try:
-            return CompleteJobResult(
+            yield CompleteJobResult(
                 compute_split_names_from_info_response(
                     dataset=self.dataset, config=self.config, max_number=self.app_config.split_names.max_number
                 )
@@ -153,7 +154,7 @@ class ConfigSplitNamesJobRunner(ConfigJobRunnerWithDatasetsCache):
                 f"Trying to compute it using streaming."
             )
             pass
-        return CompleteJobResult(
+        yield CompleteJobResult(
             compute_split_names_from_streaming_response(
                 dataset=self.dataset,
                 config=self.config,

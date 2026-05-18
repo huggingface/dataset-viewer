@@ -132,10 +132,12 @@ class Loop:
         with LongStepProfiler("loop", "run_job"):
             job_runner = self.job_runner_factory.create_job_runner(job_info)
             job_manager = JobManager(job_info=job_info, app_config=self.app_config, job_runner=job_runner)
-            job_result = job_manager.run_job()
+            job_results = job_manager.run_job()
+            for job_result in job_results:
+                job_manager.save_job_result(job_result)
 
         with StepProfiler("loop", "finish_job"):
-            job_manager.finish(job_result=job_result)
+            job_manager.finish()
             self.set_worker_state(current_job_info=None)
             return True
 

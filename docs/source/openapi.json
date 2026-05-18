@@ -918,7 +918,7 @@
           }
         }
       },
-      "PreviousJob": {
+      "Job": {
         "type": "object",
         "required": ["dataset", "config", "split", "kind"],
         "properties": {
@@ -934,10 +934,10 @@
           "split": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
         }
       },
-      "PreviousJobs": {
+      "Jobs": {
         "type": "array",
         "items": {
-          "$ref": "#/components/schemas/PreviousJob"
+          "$ref": "#/components/schemas/Job"
         }
       },
       "ParquetResponse": {
@@ -954,10 +954,10 @@
             "type": "object"
           },
           "pending": {
-            "$ref": "#/components/schemas/PreviousJobs"
+            "$ref": "#/components/schemas/Jobs"
           },
           "failed": {
-            "$ref": "#/components/schemas/PreviousJobs"
+            "$ref": "#/components/schemas/Jobs"
           },
           "partial": {
             "$ref": "#/components/schemas/Partial"
@@ -998,10 +998,10 @@
             "description": "A dump of the DatasetInfo object from the datasets library. See https://huggingface.co/docs/datasets/en/package_reference/main_classes#datasets.DatasetInfo. We don't describe the contents of these metadata for now."
           },
           "pending": {
-            "$ref": "#/components/schemas/PreviousJobs"
+            "$ref": "#/components/schemas/Jobs"
           },
           "failed": {
-            "$ref": "#/components/schemas/PreviousJobs"
+            "$ref": "#/components/schemas/Jobs"
           },
           "partial": {
             "$ref": "#/components/schemas/Partial"
@@ -1145,10 +1145,10 @@
             }
           },
           "pending": {
-            "$ref": "#/components/schemas/PreviousJobs"
+            "$ref": "#/components/schemas/Jobs"
           },
           "failed": {
-            "$ref": "#/components/schemas/PreviousJobs"
+            "$ref": "#/components/schemas/Jobs"
           },
           "partial": {
             "$ref": "#/components/schemas/Partial"

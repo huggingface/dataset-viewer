@@ -2,6 +2,7 @@
 # Copyright 2023 The HuggingFace Authors.
 
 import logging
+from collections.abc import Iterator
 from typing import Optional
 
 from libcommon.exceptions import PreviousStepFormatError
@@ -139,6 +140,6 @@ class DatasetHubCacheJobRunner(DatasetJobRunner):
     def get_job_type() -> str:
         return "dataset-hub-cache"
 
-    def compute(self) -> JobResult:
+    def compute(self) -> Iterator[JobResult]:
         response_content, progress = compute_hub_cache_response(dataset=self.dataset)
-        return JobResult(response_content, progress=progress)
+        yield JobResult(response_content, progress=progress)
