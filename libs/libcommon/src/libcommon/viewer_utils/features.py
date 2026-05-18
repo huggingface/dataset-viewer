@@ -98,7 +98,7 @@ def image(
     hf_endpoint: str,
     hf_token: Optional[str],
     json_path: Optional[list[Union[str, int]]] = None,
-) -> ImageSource:
+) -> Optional[ImageSource]:
     if value is None:
         return None
     if isinstance(value, dict) and value.get("bytes"):
@@ -153,7 +153,7 @@ def audio(
     storage_client: StorageClient,
     hf_endpoint: str,
     json_path: Optional[list[Union[str, int]]] = None,
-) -> list[AudioSource]:
+) -> Optional[list[AudioSource]]:
     from datasets.features._torchcodec import AudioDecoder
 
     if value is None:
@@ -282,7 +282,7 @@ def video(
     storage_client: StorageClient,
     hf_endpoint: str,
     json_path: Optional[list[Union[str, int]]] = None,
-) -> VideoSource:
+) -> Optional[VideoSource]:
     if datasets.config.TORCHCODEC_AVAILABLE:
         from torchcodec.decoders import VideoDecoder
 
@@ -373,7 +373,7 @@ def pdf(
     hf_endpoint: str,
     hf_token: Optional[str],
     json_path: Optional[list[Union[str, int]]] = None,
-) -> PDFSource:
+) -> Optional[PDFSource]:
     if value is None:
         return None
     if isinstance(value, dict) and value.get("bytes"):
