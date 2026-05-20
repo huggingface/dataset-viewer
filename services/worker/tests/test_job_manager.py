@@ -1,3 +1,4 @@
+from collections.abc import Iterator
 from http import HTTPStatus
 
 import pytest
@@ -8,12 +9,13 @@ from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import CachedResponseDocument, get_response, get_response_metadata, upsert_response
 
 from worker.config import AppConfig
-from worker.dtos import CompleteJobResult
+from worker.dtos import CompleteJobResult, JobResult, ShortcutJobResult
 from worker.job_manager import JobManager
 from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
 
 JOB_TYPE = "dataset-config-names"
 JOB_TYPE_2 = "dataset-info"
+JOB_WITH_SHORTCUTS_TYPE = "dataset-init"
 
 
 @pytest.fixture(autouse=True)
@@ -30,8 +32,24 @@ class DummyJobRunner(DatasetJobRunner):
     def get_job_type() -> str:
         return JOB_TYPE
 
-    def compute(self) -> CompleteJobResult:
-        return CompleteJobResult({"key": "value"})
+    def compute(self) -> Iterator[CompleteJobResult]:
+        yield CompleteJobResult({"key": "value"})
+
+
+class DummyJobRunnerWithShortcuts(DatasetJobRunner):
+    @staticmethod
+    def get_job_type() -> str:
+        return JOB_WITH_SHORTCUTS_TYPE
+
+    def compute(self) -> Iterator[JobResult]:
+        yield ShortcutJobResult(
+            {"key": "value"}, {"dataset": self.dataset, "kind": "dataset-config-names", "config": None, "split": None}
+        )
+        yield JobResult({"key": "value"}, progress=0.5)
+        yield ShortcutJobResult(
+            {"key": "value"}, {"dataset": self.dataset, "kind": "dataset-is-valid", "config": None, "split": None}
+        )
+        yield JobResult({"key": "value"}, progress=1.0)
 
 
 def test_check_type(
@@ -94,7 +112,7 @@ def test_run_job_and_finish(priority: Priority, app_config: AppConfig) -> None:
     queue = Queue()
     assert JobDocument.objects().count() == 0
     queue.add_job(
-        job_type="dataset-config-names",
+        job_type=JOB_TYPE,
         dataset="dataset",
         revision="revision",
         config=None,
@@ -113,20 +131,73 @@ def test_run_job_and_finish(priority: Priority, app_config: AppConfig) -> None:
     job_manager = JobManager(job_info=job_info, app_config=app_config, job_runner=job_runner)
     assert job_manager.priority == priority
 
-    job_result = job_manager.run_job()
+    job_result = list(job_manager.run_job())[0]
     assert job_result["is_success"]
     assert job_result["output"] is not None
     assert job_result["output"]["content"] == {"key": "value"}
     assert job_result["duration"] is not None
     assert job_result["duration"] > 0
 
-    job_manager.finish(job_result=job_result)
+    job_manager.save_job_result(job_result)
+    job_manager.finish()
 
     # check that the job has been finished and deleted
     assert JobDocument.objects(pk=job_info["job_id"]).count() == 0
 
     # check that the cache entry has have been created
-    cached_response = get_response(kind="dataset-config-names", dataset="dataset", config=None, split=None)
+    cached_response = get_response(kind=JOB_TYPE, dataset="dataset", config=None, split=None)
+    assert cached_response is not None
+    assert cached_response["http_status"] == HTTPStatus.OK
+    assert cached_response["error_code"] is None
+    assert cached_response["content"] == {"key": "value"}
+    assert cached_response["dataset_git_revision"] == "revision"
+    assert cached_response["job_runner_version"] == processing_graph.get_processing_step(JOB_TYPE).job_runner_version
+    assert cached_response["progress"] == 1.0
+
+    cached_entry_metadata = get_response_metadata(kind=JOB_TYPE, dataset="dataset", config=None, split=None)
+    assert cached_entry_metadata is not None
+    assert cached_entry_metadata["failed_runs"] == 0
+
+    # check children jobs
+    child = processing_graph.get_children(JOB_TYPE).pop()
+    dataset_child_jobs = queue.get_dump_with_status(job_type=child.job_type, status=Status.WAITING)
+    assert len(dataset_child_jobs) == 1
+    assert dataset_child_jobs[0]["dataset"] == "dataset"
+    assert dataset_child_jobs[0]["revision"] == "revision"
+    assert dataset_child_jobs[0]["priority"] is priority.value
+
+
+def test_run_job_and_finish_with_shortcuts(app_config: AppConfig) -> None:
+    queue = Queue()
+    assert JobDocument.objects().count() == 0
+    queue.add_job(
+        job_type=JOB_WITH_SHORTCUTS_TYPE,
+        dataset="dataset",
+        revision="revision",
+        config=None,
+        split=None,
+        priority=Priority.NORMAL,
+        difficulty=50,
+    )
+    job_info = queue.start_job()
+
+    job_runner = DummyJobRunnerWithShortcuts(
+        job_info=job_info,
+        app_config=app_config,
+    )
+
+    job_manager = JobManager(job_info=job_info, app_config=app_config, job_runner=job_runner)
+
+    job_results = job_manager.run_job()
+    for job_result in job_results:
+        job_manager.save_job_result(job_result)
+    job_manager.finish()
+
+    # check that the job has been finished and deleted
+    assert JobDocument.objects(pk=job_info["job_id"]).count() == 0
+
+    # check that the cache entry has been created
+    cached_response = get_response(kind=JOB_WITH_SHORTCUTS_TYPE, dataset="dataset", config=None, split=None)
     assert cached_response is not None
     assert cached_response["http_status"] == HTTPStatus.OK
     assert cached_response["error_code"] is None
@@ -134,22 +205,46 @@ def test_run_job_and_finish(priority: Priority, app_config: AppConfig) -> None:
     assert cached_response["dataset_git_revision"] == "revision"
     assert (
         cached_response["job_runner_version"]
-        == processing_graph.get_processing_step("dataset-config-names").job_runner_version
+        == processing_graph.get_processing_step(JOB_WITH_SHORTCUTS_TYPE).job_runner_version
     )
     assert cached_response["progress"] == 1.0
 
     cached_entry_metadata = get_response_metadata(
-        kind="dataset-config-names", dataset="dataset", config=None, split=None
+        kind=JOB_WITH_SHORTCUTS_TYPE, dataset="dataset", config=None, split=None
     )
     assert cached_entry_metadata is not None
     assert cached_entry_metadata["failed_runs"] == 0
 
-    child = processing_graph.get_children("dataset-config-names").pop()
-    dataset_child_jobs = queue.get_dump_with_status(job_type=child.job_type, status=Status.WAITING)
-    assert len(dataset_child_jobs) == 1
-    assert dataset_child_jobs[0]["dataset"] == "dataset"
-    assert dataset_child_jobs[0]["revision"] == "revision"
-    assert dataset_child_jobs[0]["priority"] is priority.value
+    # check that the shortcut cache entry has been created
+    cached_response = get_response(kind=JOB_TYPE, dataset="dataset", config=None, split=None)
+    assert cached_response is not None
+    assert cached_response["http_status"] == HTTPStatus.OK
+    assert cached_response["error_code"] is None
+    assert cached_response["content"] == {"key": "value"}
+    assert cached_response["dataset_git_revision"] == "revision"
+    assert (
+        cached_response["job_runner_version"]
+        == processing_graph.get_processing_step(JOB_WITH_SHORTCUTS_TYPE).job_runner_version
+    )
+    assert cached_response["progress"] == 1.0
+
+    cached_entry_metadata = get_response_metadata(
+        kind=JOB_WITH_SHORTCUTS_TYPE, dataset="dataset", config=None, split=None
+    )
+    assert cached_entry_metadata is not None
+    assert cached_entry_metadata["failed_runs"] == 0
+
+    # check children jobs
+    children = processing_graph.get_children(JOB_WITH_SHORTCUTS_TYPE)
+    assert any(child.job_type == JOB_TYPE for child in children)
+    assert len(children) > 1
+    # dataset-config-names is doneusing a shortcut but not others like dataset-filetypes
+    dataset_child_jobs = queue.get_dump_with_status(job_type=JOB_TYPE, status=Status.WAITING)
+    assert len(dataset_child_jobs) == 0
+    for child in children:
+        if child.job_type != JOB_TYPE:
+            dataset_child_jobs = queue.get_dump_with_status(job_type=child.job_type, status=Status.WAITING)
+            assert len(dataset_child_jobs) == 1
 
 
 def test_job_runner_set_crashed(app_config: AppConfig) -> None:

@@ -8,7 +8,7 @@ from typing import Optional
 from uuid import uuid4
 
 from libcommon.config import CommonConfig
-from libcommon.dtos import JobInfo, JobParams, JobResult, Priority
+from libcommon.dtos import CachedJob, JobInfo, JobParams, JobResult, Priority
 from libcommon.exceptions import (
     CustomError,
     DatasetNotFoundError,
@@ -18,7 +18,7 @@ from libcommon.exceptions import (
     TooBigContentError,
     UnexpectedError,
 )
-from libcommon.orchestrator import finish_job, get_failed_runs, save_job_result
+from libcommon.orchestrator import finish_job, get_failed_runs, get_shortcut_job_key, save_job_result
 from libcommon.processing_graph import ProcessingStepDoesNotExist, processing_graph
 from libcommon.simple_cache import (
     CachedArtifactError,
@@ -68,6 +68,7 @@ class JobManager:
         self.worker_config = app_config.worker
         self.job_runner = job_runner
         self.job_runner_version = processing_graph.get_processing_step_by_job_type(self.job_type).job_runner_version
+        self.shortcut_jobs_by_key: dict[str, CachedJob] = {}
         self._failed_runs: Optional[int] = None
         self.setup()
 
@@ -126,7 +127,7 @@ class JobManager:
         save_job_result(job_result=job_result, failed_runs=self.failed_runs)
 
     def finish(self) -> None:
-        finish_job(job_info=self.job_info, failed_runs=self.failed_runs)
+        finish_job(job_info=self.job_info, shortcut_jobs_by_key=self.shortcut_jobs_by_key)
 
     def process(
         self,
@@ -146,6 +147,8 @@ class JobManager:
                             f" ({self.worker_config.content_max_bytes})."
                         )
                     if isinstance(job_result, ShortcutJobResult):
+                        # use a dict in case it updates the same job multiple times
+                        self.shortcut_jobs_by_key[get_shortcut_job_key(job_result.job)] = job_result.job
                         job_info = JobInfo(
                             job_id=self.job_id + "-shortcut-" + str(uuid4()),
                             type=job_result.job["kind"],
@@ -161,7 +164,7 @@ class JobManager:
                         )
                         try:
                             processing_step = processing_graph.get_processing_step_by_job_type(job_result.job["kind"])
-                            processing_step.job_runner_version
+                            job_runner_version = processing_step.job_runner_version
                         except ProcessingStepDoesNotExist as e:
                             raise ValueError(f"Processing step for job type {job_info['type']} does not exist") from e
                     else:

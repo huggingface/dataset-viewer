@@ -6,6 +6,7 @@ from collections.abc import Iterator
 from http import HTTPStatus
 from typing import Any
 
+from libcommon.dtos import CachedJob
 from libcommon.exceptions import PreviousStepFormatError
 from libcommon.simple_cache import (
     CachedArtifactNotFoundError,
@@ -13,7 +14,7 @@ from libcommon.simple_cache import (
     get_response,
 )
 
-from worker.dtos import DatasetInfoResponse, Job, JobResult
+from worker.dtos import DatasetInfoResponse, JobResult
 from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
 
 
@@ -57,7 +58,7 @@ def compute_dataset_info_response(dataset: str) -> tuple[DatasetInfoResponse, fl
             except CachedArtifactNotFoundError:
                 logging.debug(f"No response found in previous step for {dataset=} {config=}: 'config-info'.")
                 pending.append(
-                    Job(
+                    CachedJob(
                         kind="config-info",
                         dataset=dataset,
                         config=config,
@@ -68,7 +69,7 @@ def compute_dataset_info_response(dataset: str) -> tuple[DatasetInfoResponse, fl
             if config_response["http_status"] != HTTPStatus.OK:
                 logging.debug(f"Previous step gave an error: {config_response['http_status']}")
                 failed.append(
-                    Job(
+                    CachedJob(
                         kind="config-info",
                         dataset=dataset,
                         config=config,

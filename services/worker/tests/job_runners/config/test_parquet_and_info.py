@@ -145,7 +145,7 @@ def test_compute(
     config = hub_responses_public["config_names_response"]["config_names"][0]["config"]
     job_runner = get_job_runner(dataset, config, app_config)
     job_runner.pre_compute()
-    response = job_runner.compute()
+    response = list(job_runner.compute())[0]
     job_runner.post_compute()
     assert response
     content = response.content
@@ -211,7 +211,7 @@ def test_supported_if_big_parquet(
     config = hub_responses_big["config_names_response"]["config_names"][0]["config"]
     job_runner = get_job_runner(dataset, config, app_config)
     job_runner.pre_compute()
-    response = job_runner.compute()
+    response = list(job_runner.compute())[0]
     job_runner.post_compute()
     assert response
     content = response.content
@@ -236,7 +236,7 @@ def test_partially_converted_if_big_non_parquet(
     # to be able to stop the generation mid-way.
     job_runner.pre_compute()
     with patch.object(CsvConfig, "pd_read_csv_kwargs", {"chunksize": 10}):
-        response = job_runner.compute()
+        response = list(job_runner.compute())[0]
     job_runner.post_compute()
     assert response
     content = response.content
@@ -258,7 +258,7 @@ def test_supported_if_gated(
     config = hub_responses_gated["config_names_response"]["config_names"][0]["config"]
     job_runner = get_job_runner(dataset, config, app_config)
     job_runner.pre_compute()
-    response = job_runner.compute()
+    response = list(job_runner.compute())[0]
     job_runner.post_compute()
     assert response
     assert response.content
@@ -290,7 +290,7 @@ def test_compute_splits_response_simple_csv_ok(
     expected_parquet_and_info_response = hub_datasets[name]["parquet_and_info_response"]
     job_runner = get_job_runner(dataset, config, app_config)
     job_runner.pre_compute()
-    result = job_runner.compute().content
+    result = list(job_runner.compute())[0].content
     job_runner.post_compute()
     assert_content_is_equal(result, expected_parquet_and_info_response)
 
@@ -478,7 +478,7 @@ def launch_job_runner(job_runner_args: JobRunnerArgs) -> CompleteJobResult:
         hf_datasets_cache=tmp_path,
     )
     job_runner.pre_compute()
-    result = job_runner.compute()
+    result = list(job_runner.compute())[0]
     job_runner.post_compute()
     return result
 
@@ -521,8 +521,8 @@ def test_concurrency(
         app_config=app_config,
         job_runner=get_dataset_config_names_job_runner(repo_id, app_config),
     )
-    job_result = job_manager.run_job()
-    job_manager.finish(job_result=job_result)
+    job_result = list(job_manager.run_job())[0]
+    job_manager.finish()
     if not job_result["output"]:
         raise ValueError("Could not get config names")
     configs = [str(config_name["config"]) for config_name in job_result["output"]["content"]["config_names"]]

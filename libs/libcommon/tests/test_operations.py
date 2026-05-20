@@ -15,6 +15,7 @@ from huggingface_hub.utils import HfHubHTTPError
 from requests import Response
 
 from libcommon.constants import CONFIG_SPLIT_NAMES_KIND, DATASET_CONFIG_NAMES_KIND, TAG_NFAA_SYNONYMS
+from libcommon.dtos import JobResult
 from libcommon.exceptions import (
     DatasetInBlockListError,
     NotSupportedDisabledRepositoryError,
@@ -29,7 +30,7 @@ from libcommon.operations import (
     get_latest_dataset_revision_if_supported_or_raise,
     update_dataset,
 )
-from libcommon.orchestrator import finish_job
+from libcommon.orchestrator import finish_job, save_job_result
 from libcommon.processing_graph import specification
 from libcommon.queue.jobs import Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
@@ -412,21 +413,22 @@ def test_2274_only_first_steps(
 
         # process the first two jobs
         for _ in range(2):
-            finish_job(
-                job_result={
-                    "job_info": queue.start_job(),
-                    "job_runner_version": JOB_RUNNER_VERSION,
-                    "is_success": True,
-                    "output": {
-                        "content": {},
-                        "http_status": HTTPStatus.OK,
-                        "error_code": None,
-                        "details": None,
-                        "progress": 1.0,
-                    },
-                    "duration": 1,
-                }
-            )
+            job_info = queue.start_job()
+            job_result: JobResult = {
+                "job_info": job_info,
+                "job_runner_version": JOB_RUNNER_VERSION,
+                "is_success": True,
+                "output": {
+                    "content": {},
+                    "http_status": HTTPStatus.OK,
+                    "error_code": None,
+                    "details": None,
+                    "progress": 1.0,
+                },
+                "duration": 1,
+            }
+            save_job_result(job_result, failed_runs=0)
+            finish_job(job_info, shortcut_jobs_by_key={})
 
         assert len(queue.get_pending_jobs_df(dataset=dataset)) == 7
         assert len(get_cache_entries_df(dataset=dataset)) == 2

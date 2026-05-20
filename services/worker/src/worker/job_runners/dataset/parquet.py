@@ -5,7 +5,7 @@ import logging
 from collections.abc import Iterator
 from http import HTTPStatus
 
-from libcommon.dtos import SplitHubFile
+from libcommon.dtos import CachedJob, SplitHubFile
 from libcommon.exceptions import PreviousStepFormatError
 from libcommon.simple_cache import (
     CachedArtifactNotFoundError,
@@ -16,7 +16,6 @@ from libcommon.simple_cache import (
 from worker.dtos import (
     ConfigParquetResponse,
     DatasetParquetResponse,
-    Job,
     JobResult,
 )
 from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
@@ -60,7 +59,7 @@ def compute_parquet_response(dataset: str) -> tuple[DatasetParquetResponse, floa
             except CachedArtifactNotFoundError:
                 logging.debug("No response found in previous step for this dataset: 'config-parquet' endpoint.")
                 pending.append(
-                    Job(
+                    CachedJob(
                         {
                             "kind": "config-parquet",
                             "dataset": dataset,
@@ -73,7 +72,7 @@ def compute_parquet_response(dataset: str) -> tuple[DatasetParquetResponse, floa
             if response["http_status"] != HTTPStatus.OK:
                 logging.debug(f"Previous step gave an error: {response['http_status']}.")
                 failed.append(
-                    Job(
+                    CachedJob(
                         {
                             "kind": "config-parquet",
                             "dataset": dataset,

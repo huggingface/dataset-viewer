@@ -5,7 +5,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import Any, Literal, Optional, TypedDict, Union
 
-from libcommon.dtos import FullConfigItem, FullSplitItem, SplitHubFile, SplitItem
+from libcommon.dtos import CachedJob, FullConfigItem, FullSplitItem, SplitHubFile, SplitItem
 
 
 class JobRunnerInfo(TypedDict):
@@ -43,16 +43,9 @@ class DatasetSplitNamesResponse(TypedDict):
     failed: list[FailedConfigItem]
 
 
-class Job(TypedDict):
-    dataset: str
-    config: Optional[str]
-    split: Optional[Union[str, None]]
-    kind: str
-
-
 @dataclass
 class ShortcutJobResult(JobResult):
-    job: Job
+    job: CachedJob
     content: Mapping[str, Any]
     progress: float = field(init=False, default=1.0)
 
@@ -248,8 +241,8 @@ class DatasetConfigNamesResponse(TypedDict):
 
 class DatasetInfoResponse(TypedDict):
     dataset_info: dict[str, Any]
-    pending: list[Job]
-    failed: list[Job]
+    pending: list[CachedJob]
+    failed: list[CachedJob]
     partial: bool
 
 
@@ -329,8 +322,8 @@ class DatasetFiletypesResponse(TypedDict):
 
 class DatasetParquetResponse(TypedDict):
     parquet_files: list[SplitHubFile]
-    pending: list[Job]
-    failed: list[Job]
+    pending: list[CachedJob]
+    failed: list[CachedJob]
     partial: bool
 
 
@@ -351,11 +344,11 @@ class DatasetSizeContent(TypedDict):
 
 class DatasetSizeResponse(TypedDict):
     size: DatasetSizeContent
-    pending: list[Job]
-    failed: list[Job]
+    pending: list[CachedJob]
+    failed: list[CachedJob]
     partial: bool
 
 
 class DatasetInitResponse(TypedDict):
-    successes: list[Job]
-    failed: list[Job]
+    successes: list[CachedJob]
+    failed: list[CachedJob]

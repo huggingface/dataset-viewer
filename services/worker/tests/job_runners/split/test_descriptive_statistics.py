@@ -402,7 +402,7 @@ def test_compute(
     # computing and pushing real parquet files because we need them for stats computation
     parquet_and_info_job_runner = get_parquet_and_info_job_runner(dataset, config, app_config)
     parquet_and_info_job_runner.pre_compute()
-    parquet_and_info_response = parquet_and_info_job_runner.compute()
+    parquet_and_info_response = list(parquet_and_info_job_runner.compute())[0]
     parquet_and_info_job_runner.post_compute()
     config_parquet_and_info = parquet_and_info_response.content
 
@@ -419,7 +419,7 @@ def test_compute(
 
     parquet_job_runner = get_parquet_job_runner(dataset, config, app_config)
     parquet_job_runner.pre_compute()
-    parquet_response = parquet_job_runner.compute()
+    parquet_response = list(parquet_job_runner.compute())[0]
     parquet_job_runner.post_compute()
     config_parquet = parquet_response.content
 
@@ -436,7 +436,7 @@ def test_compute(
 
     parquet_metadata_job_runner = get_parquet_metadata_job_runner(dataset, config, app_config)
     parquet_metadata_job_runner.pre_compute()
-    parquet_metadata_response = parquet_metadata_job_runner.compute()
+    parquet_metadata_response = list(parquet_metadata_job_runner.compute())[0]
     parquet_metadata_job_runner.post_compute()
     config_parquet_metadata = parquet_metadata_response.content
 
@@ -457,7 +457,7 @@ def test_compute(
             job_runner.compute()
         assert e.typename == expected_error_code
     else:
-        response = job_runner.compute()
+        response = list(job_runner.compute())[0]
         assert sorted(response.content.keys()) == ["num_examples", "partial", "statistics"]
         assert response.content["num_examples"] == expected_response["num_examples"]  # type: ignore
 

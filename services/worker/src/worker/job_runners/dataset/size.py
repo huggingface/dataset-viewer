@@ -6,6 +6,7 @@ from collections.abc import Iterator
 from http import HTTPStatus
 from typing import Optional
 
+from libcommon.dtos import CachedJob
 from libcommon.exceptions import PreviousStepFormatError
 from libcommon.simple_cache import (
     CachedArtifactNotFoundError,
@@ -18,7 +19,6 @@ from worker.dtos import (
     ConfigSizeResponse,
     DatasetSize,
     DatasetSizeResponse,
-    Job,
     JobResult,
     SplitSize,
 )
@@ -64,7 +64,7 @@ def compute_sizes_response(dataset: str) -> tuple[DatasetSizeResponse, float]:
             except CachedArtifactNotFoundError:
                 logging.debug("No response found in previous step for this dataset: 'config-size' endpoint.")
                 pending.append(
-                    Job(
+                    CachedJob(
                         {
                             "kind": "config-size",
                             "dataset": dataset,
@@ -77,7 +77,7 @@ def compute_sizes_response(dataset: str) -> tuple[DatasetSizeResponse, float]:
             if response["http_status"] != HTTPStatus.OK:
                 logging.debug(f"Previous step gave an error: {response['http_status']}.")
                 failed.append(
-                    Job(
+                    CachedJob(
                         {
                             "kind": "config-size",
                             "dataset": dataset,

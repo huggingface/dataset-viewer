@@ -192,9 +192,8 @@ def create_first_rows_response(
             / len(transformed_rows)
             > URL_COLUMN_RATIO
         )
-        or ( # prompt column of agent traces
-            features == AGENT_TRACES_FEATURES
-            and col == "prompt"
+        or (  # prompt column of agent traces
+            features == AGENT_TRACES_FEATURES and col == "prompt"
         )
     ]
     row_items, truncated = create_truncated_row_items(

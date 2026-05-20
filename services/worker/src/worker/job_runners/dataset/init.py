@@ -12,6 +12,7 @@ from datasets.exceptions import (
 from datasets.exceptions import DatasetNotFoundError
 from datasets.load import dataset_module_factory, get_dataset_builder_class
 from huggingface_hub.utils import HfHubHTTPError
+from libcommon.dtos import CachedJob
 from libcommon.exceptions import (
     ConfigNamesError,
     DataFilesNotFoundError,
@@ -22,7 +23,13 @@ from libcommon.exceptions import (
     RetryableConfigNamesError,
 )
 
-from worker.dtos import ConfigNameItem, DatasetConfigNamesResponse, DatasetInitResponse, Job, JobResult, ShortcutJobResult
+from worker.dtos import (
+    ConfigNameItem,
+    DatasetConfigNamesResponse,
+    DatasetInitResponse,
+    JobResult,
+    ShortcutJobResult,
+)
 from worker.job_runners.dataset.config_names import DatasetConfigNamesJobRunner
 from worker.job_runners.dataset.dataset_job_runner import (
     DatasetJobRunnerWithDatasetsCache,
@@ -105,7 +112,12 @@ def compute_init_responses(
             f"The maximum number of configs allowed is {max_num_configs}, dataset has {number_of_configs} configs."
         )
 
-    job: Job = {"dataset": dataset, "kind": DatasetConfigNamesJobRunner.get_job_type(), "config": None, "split": None}
+    job: CachedJob = {
+        "dataset": dataset,
+        "kind": DatasetConfigNamesJobRunner.get_job_type(),
+        "config": None,
+        "split": None,
+    }
     dataset_init_response["successes"].append(job)
     yield ShortcutJobResult(
         content=DatasetConfigNamesResponse(config_names=config_name_items),
