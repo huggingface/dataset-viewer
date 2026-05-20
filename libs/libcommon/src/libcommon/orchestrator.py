@@ -22,7 +22,7 @@ from libcommon.constants import (
     DIFFICULTY_BONUS_BY_FAILED_RUNS,
     YAML_FIELDS_TO_CHECK,
 )
-from libcommon.dtos import JobInfo, JobResult, Priority
+from libcommon.dtos import CachedJob, JobInfo, JobResult, Priority
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep, ProcessingStepDoesNotExist, processing_graph
 from libcommon.prometheus import StepProfiler
 from libcommon.queue.jobs import Queue
@@ -445,12 +445,13 @@ class AfterJobPlan(Plan):
 
     Args:
         job_info (`JobInfo`): The job info.
+        shortcuts_jobs (`dict[str, CachedJob]`): The list of shortcut job results obtained running job_info
         processing_graph (`ProcessingGraph`): The processing graph.
     """
 
     job_info: JobInfo
+    shortcut_jobs_by_key: dict[str, CachedJob]
     processing_graph: ProcessingGraph
-    failed_runs: int
 
     dataset: str = field(init=False)
     config: Optional[str] = field(init=False)
@@ -494,7 +495,7 @@ class AfterJobPlan(Plan):
         config_names: Optional[list[str]] = None
         split_names: Optional[list[str]] = None
 
-        # filter to only get the jobs that are not already in the queue
+        # filter to only get the jobs that are not already in the queue or done using a shortcut
         for next_processing_step in next_processing_steps:
             if processing_step.input_type == next_processing_step.input_type:
                 # same level, one job is expected
@@ -554,6 +555,14 @@ class AfterJobPlan(Plan):
         config: Optional[str],
         split: Optional[str],
     ) -> None:
+        # ignore if job was done using a shortcut
+        if (
+            get_shortcut_job_key(
+                {"kind": next_processing_step.job_type, "dataset": self.dataset, "config": config, "split": split}
+            )
+            in self.shortcut_jobs_by_key
+        ):
+            return
         # ignore unrelated jobs
         config_mask = (
             self.pending_jobs_df["config"].isnull() if config is None else self.pending_jobs_df["config"] == config
@@ -1236,15 +1245,16 @@ def get_failed_runs(job_info: JobInfo) -> int:
             split=params["split"],
         )
         return (
-            previous_response["failed_runs"]
-            if previous_response["dataset_git_revision"] == params["revision"]
-            else 0
+            previous_response["failed_runs"] if previous_response["dataset_git_revision"] == params["revision"] else 0
         )
     except CachedArtifactNotFoundError:
         return 0
 
 
 def save_job_result(job_result: JobResult, failed_runs: int) -> None:
+    if not job_result["output"]:
+        logging.debug("the job raised an exception, don't update the cache")
+        return
     job_info = job_result["job_info"]
     # update the cache
     output = job_result["output"]
@@ -1276,7 +1286,7 @@ def save_job_result(job_result: JobResult, failed_runs: int) -> None:
 
 def finish_job(
     job_info: JobInfo,
-    failed_runs: int,
+    shortcut_jobs_by_key: dict[str, CachedJob],
     processing_graph: ProcessingGraph = processing_graph,
 ) -> TasksStatistics:
     """
@@ -1286,6 +1296,7 @@ def finish_job(
 
     Args:
         job_result (`JobResult`): The result of the job.
+        shortcuts_jobs (`dict[str, CachedJob]`): The list of shortcut job results obtained running job_info
         processing_graph (`ProcessingGraph`, *optional*): The processing graph.
         failed_runs (`int`): The number of times this job has failed previously.
 
@@ -1306,7 +1317,11 @@ def finish_job(
         # ^ change the priority of children jobs if the priority was updated during the job
     logging.debug("the job has been finished.")
     # trigger the next steps
-    plan = AfterJobPlan(job_info=job_info, processing_graph=processing_graph, failed_runs=failed_runs)
+    plan = AfterJobPlan(
+        job_info=job_info,
+        shortcut_jobs_by_key=shortcut_jobs_by_key.copy(),
+        processing_graph=processing_graph,
+    )
     statistics = plan.run()
     logging.debug("jobs have been created for the next steps.")
     return statistics
@@ -1373,3 +1388,7 @@ def get_revision(dataset: str) -> Optional[str]:
     if pending_jobs.get("revision") and isinstance(revision := pending_jobs["revision"][0], str):
         return revision
     return None
+
+
+def get_shortcut_job_key(job: CachedJob) -> str:
+    return f"{job['kind']}({job['dataset']}, {job['config']}, {job['split']})"
