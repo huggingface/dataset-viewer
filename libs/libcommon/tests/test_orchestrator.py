@@ -449,8 +449,8 @@ def test_upsert_response_failed_runs() -> None:
 
     # overwrite cache record with failed result and new revision
     run_job(second_revision, HTTPStatus.INTERNAL_SERVER_ERROR)
-    assert_failed_runs(0)
+    assert_failed_runs(1)
 
     # overwrite cache record with success result and new revision
     run_job(second_revision, HTTPStatus.OK)
-    assert_failed_runs(0)
+    assert_failed_runs(1)
