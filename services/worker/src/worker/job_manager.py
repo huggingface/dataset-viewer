@@ -165,8 +165,8 @@ class JobManager:
                         try:
                             processing_step = processing_graph.get_processing_step_by_job_type(job_result.job["kind"])
                             job_runner_version = processing_step.job_runner_version
-                        except ProcessingStepDoesNotExist as e:
-                            raise ValueError(f"Processing step for job type {job_info['type']} does not exist") from e
+                        except ProcessingStepDoesNotExist as shortcut_e:
+                            raise ValueError(f"Processing step for job type {job_info['type']} does not exist") from shortcut_e
                     else:
                         job_info = self.job_info
                         job_runner_version = self.job_runner_version
