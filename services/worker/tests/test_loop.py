@@ -1,3 +1,5 @@
+from collections.abc import Iterator
+
 from libcommon.dtos import JobInfo
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 
@@ -16,8 +18,8 @@ class DummyJobRunner(JobRunner):
     def get_job_type() -> str:
         return JOB_TYPE
 
-    def compute(self) -> CompleteJobResult:
-        return CompleteJobResult({"key": "value"})
+    def compute(self) -> Iterator[CompleteJobResult]:
+        yield CompleteJobResult({"key": "value"})
 
 
 class DummyJobRunnerFactory(BaseJobRunnerFactory):

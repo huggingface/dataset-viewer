@@ -33,7 +33,7 @@ class DummyJobRunner(DatasetJobRunner):
         return JOB_TYPE
 
     def compute(self) -> Iterator[CompleteJobResult]:
-        yield CompleteJobResult({"key": "value"})
+        yield CompleteJobResult({"config_names": [{"dataset": self.dataset, "config": "default"}]})
 
 
 class DummyJobRunnerWithShortcuts(DatasetJobRunner):
@@ -43,12 +43,10 @@ class DummyJobRunnerWithShortcuts(DatasetJobRunner):
 
     def compute(self) -> Iterator[JobResult]:
         yield ShortcutJobResult(
-            {"key": "value"}, {"dataset": self.dataset, "kind": "dataset-config-names", "config": None, "split": None}
+            {"config_names": [{"dataset": self.dataset, "config": "default"}]},
+            {"dataset": self.dataset, "kind": "dataset-config-names", "config": None, "split": None},
         )
         yield JobResult({"key": "value"}, progress=0.5)
-        yield ShortcutJobResult(
-            {"key": "value"}, {"dataset": self.dataset, "kind": "dataset-is-valid", "config": None, "split": None}
-        )
         yield JobResult({"key": "value"}, progress=1.0)
 
 
@@ -134,7 +132,7 @@ def test_run_job_and_finish(priority: Priority, app_config: AppConfig) -> None:
     job_result = list(job_manager.run_job())[0]
     assert job_result["is_success"]
     assert job_result["output"] is not None
-    assert job_result["output"]["content"] == {"key": "value"}
+    assert job_result["output"]["content"] == {"config_names": [{"dataset": "dataset", "config": "default"}]}
     assert job_result["duration"] is not None
     assert job_result["duration"] > 0
 
@@ -149,7 +147,7 @@ def test_run_job_and_finish(priority: Priority, app_config: AppConfig) -> None:
     assert cached_response is not None
     assert cached_response["http_status"] == HTTPStatus.OK
     assert cached_response["error_code"] is None
-    assert cached_response["content"] == {"key": "value"}
+    assert cached_response["content"] == {"config_names": [{"dataset": "dataset", "config": "default"}]}
     assert cached_response["dataset_git_revision"] == "revision"
     assert cached_response["job_runner_version"] == processing_graph.get_processing_step(JOB_TYPE).job_runner_version
     assert cached_response["progress"] == 1.0
@@ -220,7 +218,7 @@ def test_run_job_and_finish_with_shortcuts(app_config: AppConfig) -> None:
     assert cached_response is not None
     assert cached_response["http_status"] == HTTPStatus.OK
     assert cached_response["error_code"] is None
-    assert cached_response["content"] == {"key": "value"}
+    assert cached_response["content"] == {"config_names": [{"dataset": "dataset", "config": "default"}]}
     assert cached_response["dataset_git_revision"] == "revision"
     assert (
         cached_response["job_runner_version"]
@@ -238,13 +236,18 @@ def test_run_job_and_finish_with_shortcuts(app_config: AppConfig) -> None:
     children = processing_graph.get_children(JOB_WITH_SHORTCUTS_TYPE)
     assert any(child.job_type == JOB_TYPE for child in children)
     assert len(children) > 1
-    # dataset-config-names is doneusing a shortcut but not others like dataset-filetypes
+    # dataset-config-names is done using a shortcut but not others like dataset-filetypes
     dataset_child_jobs = queue.get_dump_with_status(job_type=JOB_TYPE, status=Status.WAITING)
     assert len(dataset_child_jobs) == 0
     for child in children:
         if child.job_type != JOB_TYPE:
             dataset_child_jobs = queue.get_dump_with_status(job_type=child.job_type, status=Status.WAITING)
             assert len(dataset_child_jobs) == 1
+    # dataset-config-names children should be in the queue
+    children = processing_graph.get_children(JOB_TYPE)
+    for child in children:
+        dataset_child_jobs = queue.get_dump_with_status(job_type=child.job_type, status=Status.WAITING)
+        assert len(dataset_child_jobs) == 1
 
 
 def test_job_runner_set_crashed(app_config: AppConfig) -> None:

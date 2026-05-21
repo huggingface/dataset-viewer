@@ -23,7 +23,13 @@ from libcommon.constants import (
     YAML_FIELDS_TO_CHECK,
 )
 from libcommon.dtos import CachedJob, JobInfo, JobResult, Priority
-from libcommon.processing_graph import ProcessingGraph, ProcessingStep, ProcessingStepDoesNotExist, processing_graph
+from libcommon.processing_graph import (
+    InputType,
+    ProcessingGraph,
+    ProcessingStep,
+    ProcessingStepDoesNotExist,
+    processing_graph,
+)
 from libcommon.prometheus import StepProfiler
 from libcommon.queue.jobs import Queue
 from libcommon.simple_cache import (
@@ -468,11 +474,28 @@ class AfterJobPlan(Plan):
         config = self.job_info["params"]["config"]
         split = self.job_info["params"]["split"]
         job_type = self.job_info["type"]
+        next_processing_steps: list[tuple[CachedJob, ProcessingStep]] = []
         try:
             processing_step = self.processing_graph.get_processing_step_by_job_type(job_type)
-            next_processing_steps = self.processing_graph.get_children(processing_step.name)
+            for next_processing_step in self.processing_graph.get_children(processing_step.name):
+                next_processing_steps.append(
+                    (
+                        {"dataset": self.dataset, "config": config, "split": split, "kind": job_type},
+                        next_processing_step,
+                    )
+                )
         except ProcessingStepDoesNotExist as e:
             raise ValueError(f"Processing step with job type: {job_type} does not exist") from e
+
+        if self.shortcut_jobs_by_key:
+            for shortcut_job in self.shortcut_jobs_by_key.values():
+                job_type = shortcut_job["kind"]
+                try:
+                    processing_step = self.processing_graph.get_processing_step_by_job_type(job_type)
+                    for next_processing_step in self.processing_graph.get_children(processing_step.name):
+                        next_processing_steps.append((shortcut_job, next_processing_step))
+                except ProcessingStepDoesNotExist as e:
+                    raise ValueError(f"Processing step with job type: {job_type} does not exist") from e
 
         if len(next_processing_steps) == 0:
             # no next processing step, nothing to do
@@ -488,28 +511,31 @@ class AfterJobPlan(Plan):
         # note that it can contain a lot of unrelated jobs, we will clean after
         self.pending_jobs_df = Queue().get_pending_jobs_df(
             dataset=self.dataset,
-            job_types=[next_processing_step.job_type for next_processing_step in next_processing_steps],
+            job_types=[next_processing_step[1].job_type for next_processing_step in next_processing_steps],
         )
 
-        self.job_infos_to_create: list[JobInfo] = []
+        self.job_infos_to_create: dict[str, JobInfo] = {}
         config_names: Optional[list[str]] = None
         split_names: Optional[list[str]] = None
 
         # filter to only get the jobs that are not already in the queue or done using a shortcut
-        for next_processing_step in next_processing_steps:
-            if processing_step.input_type == next_processing_step.input_type:
+        for cached_job, next_processing_step in next_processing_steps:
+            cached_job_input_type: InputType = (
+                "split" if cached_job["split"] else ("config" if cached_job["config"] else "dataset")
+            )
+            if cached_job_input_type == next_processing_step.input_type:
                 # same level, one job is expected
                 # D -> D, C -> C, S -> S
-                self.update(next_processing_step, config, split)
-            elif processing_step.input_type in ["config", "split"] and next_processing_step.input_type == "dataset":
+                self.update(next_processing_step, cached_job["config"], cached_job["split"])
+            elif cached_job_input_type in ["config", "split"] and next_processing_step.input_type == "dataset":
                 # going to upper level (fan-in), one job is expected
                 # S -> D, C -> D
                 self.update(next_processing_step, None, None)
-            elif processing_step.input_type == "split" and next_processing_step.input_type == "config":
+            elif cached_job_input_type == "split" and next_processing_step.input_type == "config":
                 # going to upper level (fan-in), one job is expected
                 # S -> C
-                self.update(next_processing_step, config, None)
-            elif processing_step.input_type == "dataset" and next_processing_step.input_type == "config":
+                self.update(next_processing_step, cached_job["config"], None)
+            elif cached_job_input_type == "dataset" and next_processing_step.input_type == "config":
                 # going to lower level (fan-out), one job is expected per config, we need the list of configs
                 # D -> C
                 if config_names is None:
@@ -522,7 +548,7 @@ class AfterJobPlan(Plan):
                     )  # Note that we use the cached content even the revision is different (ie. maybe obsolete)
                 for config_name in config_names:
                     self.update(next_processing_step, config_name, None)
-            elif processing_step.input_type == "config" and next_processing_step.input_type == "split":
+            elif cached_job_input_type == "config" and next_processing_step.input_type == "split":
                 # going to lower level (fan-out), one job is expected per split, we need the list of splits
                 # C -> S
                 if split_names is None:
@@ -534,20 +560,19 @@ class AfterJobPlan(Plan):
                         name_field="split",
                     )  # Note that we use the cached content even the revision is different (ie. maybe obsolete)
                 for split_name in split_names:
-                    self.update(next_processing_step, config, split_name)
+                    self.update(next_processing_step, cached_job["config"], split_name)
             else:
                 raise NotImplementedError(
-                    f"Unsupported input types: {processing_step.input_type} -> {next_processing_step.input_type}"
+                    f"Unsupported input types: {cached_job_input_type} -> {next_processing_step.input_type}"
                 )
                 # we don't support fan-out dataset-level to split-level (no need for now)
-
         # Better keep this order: delete, then create
         # Note that all the waiting jobs for other revisions will be deleted
         # The started jobs are ignored, for now.
         if not self.pending_jobs_df.empty:
             self.add_task(DeleteWaitingJobsTask(jobs_df=self.pending_jobs_df))
         if self.job_infos_to_create:
-            self.add_task(CreateJobsTask(job_infos=self.job_infos_to_create))
+            self.add_task(CreateJobsTask(job_infos=list(self.job_infos_to_create.values())))
 
     def update(
         self,
@@ -556,12 +581,10 @@ class AfterJobPlan(Plan):
         split: Optional[str],
     ) -> None:
         # ignore if job was done using a shortcut
-        if (
-            get_shortcut_job_key(
-                {"kind": next_processing_step.job_type, "dataset": self.dataset, "config": config, "split": split}
-            )
-            in self.shortcut_jobs_by_key
-        ):
+        job_key = get_shortcut_job_key(
+            {"kind": next_processing_step.job_type, "dataset": self.dataset, "config": config, "split": split}
+        )
+        if job_key in self.shortcut_jobs_by_key or job_key in self.job_infos_to_create:
             return
         # ignore unrelated jobs
         config_mask = (
@@ -593,21 +616,19 @@ class AfterJobPlan(Plan):
                 difficulty += next_processing_step.bonus_difficulty_if_dataset_is_big
             # increase difficulty according to number of failed runs
             difficulty = min(DEFAULT_DIFFICULTY_MAX, difficulty)
-            self.job_infos_to_create.append(
-                {
-                    "job_id": "not used",  # TODO: remove this field
-                    "type": next_processing_step.job_type,
-                    "params": {
-                        "dataset": self.dataset,
-                        "config": config,
-                        "split": split,
-                        "revision": self.revision,
-                    },
-                    "priority": self.priority,
-                    "difficulty": difficulty,
-                    "started_at": None,
-                }
-            )
+            self.job_infos_to_create[job_key] = {
+                "job_id": "not used",  # TODO: remove this field
+                "type": next_processing_step.job_type,
+                "params": {
+                    "dataset": self.dataset,
+                    "config": config,
+                    "split": split,
+                    "revision": self.revision,
+                },
+                "priority": self.priority,
+                "difficulty": difficulty,
+                "started_at": None,
+            }
 
 
 @dataclass
