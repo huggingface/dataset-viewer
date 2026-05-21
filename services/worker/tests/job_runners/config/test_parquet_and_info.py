@@ -340,7 +340,7 @@ def test_previous_step_error(
     )
     job_runner.pre_compute()
     with pytest.raises(Exception) as exc_info:
-        job_runner.compute()
+        list(job_runner.compute())
     job_runner.post_compute()
     assert exc_info.typename == exception_name
 

@@ -454,7 +454,7 @@ def test_compute(
     job_runner.pre_compute()
     if expected_error_code:
         with pytest.raises(Exception) as e:
-            job_runner.compute()
+            list(job_runner.compute())
         assert e.typename == expected_error_code
     else:
         response = list(job_runner.compute())[0]

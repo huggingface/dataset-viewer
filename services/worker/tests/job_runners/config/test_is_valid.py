@@ -236,7 +236,7 @@ def test_compute(
         upsert_response(**upstream_response)
     job_runner = get_job_runner(dataset, config, app_config)
     job_runner.pre_compute()
-    compute_result = job_runner.compute()
+    compute_result = list(job_runner.compute())[0]
     job_runner.post_compute()
     assert compute_result.content == expected[0]
     assert compute_result.progress == expected[1]
@@ -260,5 +260,5 @@ def test_compute_raises(
     job_runner = get_job_runner(dataset, config, app_config)
     job_runner.pre_compute()
     with pytest.raises(Exception):
-        job_runner.compute()
+        list(job_runner.compute())
     job_runner.post_compute()
