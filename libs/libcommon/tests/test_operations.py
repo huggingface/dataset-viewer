@@ -395,7 +395,7 @@ def test_2274_only_first_steps(
     cache_mongo_resource: CacheMongoResource,
 ) -> None:
     JOB_RUNNER_VERSION = 1
-    FIRST_CACHE_KINDS = ["dataset-config-names", "dataset-filetypes"]
+    FIRST_CACHE_KINDS = ["dataset-init"]
 
     # see https://github.com/huggingface/dataset-viewer/issues/2274
     with tmp_dataset(namespace=NORMAL_USER, token=NORMAL_USER_TOKEN, private=False) as dataset:
@@ -407,12 +407,12 @@ def test_2274_only_first_steps(
         pending_jobs_df = queue.get_pending_jobs_df(dataset=dataset)
         cache_entries_df = get_cache_entries_df(dataset=dataset)
 
-        assert len(pending_jobs_df) == 2
+        assert len(pending_jobs_df) == len(FIRST_CACHE_KINDS)
         assert pending_jobs_df.iloc[0]["type"] in FIRST_CACHE_KINDS
         assert cache_entries_df.empty
 
         # process the first two jobs
-        for _ in range(2):
+        for _ in range(len(FIRST_CACHE_KINDS)):
             job_info = queue.start_job()
             job_result: JobResult = {
                 "job_info": job_info,
@@ -430,27 +430,27 @@ def test_2274_only_first_steps(
             save_job_result(job_result, failed_runs=0)
             finish_job(job_info, shortcut_jobs_by_key={})
 
-        assert len(queue.get_pending_jobs_df(dataset=dataset)) == 7
-        assert len(get_cache_entries_df(dataset=dataset)) == 2
+        assert len(queue.get_pending_jobs_df(dataset=dataset)) == 2
+        assert len(get_cache_entries_df(dataset=dataset)) == len(FIRST_CACHE_KINDS)
 
         # let's delete all the jobs, to get in the same state as the bug
         queue.delete_dataset_waiting_jobs(dataset=dataset)
 
         assert queue.get_pending_jobs_df(dataset=dataset).empty
-        assert len(get_cache_entries_df(dataset=dataset)) == 2
+        assert len(get_cache_entries_df(dataset=dataset)) == len(FIRST_CACHE_KINDS)
 
         # try to reproduce the bug in #2375 by update at this point: no
         update_dataset(dataset=dataset, hf_endpoint=CI_HUB_ENDPOINT, hf_token=CI_APP_TOKEN)
 
         assert queue.get_pending_jobs_df(dataset=dataset).empty
-        assert len(get_cache_entries_df(dataset=dataset)) == 2
+        assert len(get_cache_entries_df(dataset=dataset)) == len(FIRST_CACHE_KINDS)
 
         # THE BUG IS REPRODUCED: the jobs should have been recreated at that point.
 
         backfill_dataset(dataset=dataset, hf_endpoint=CI_HUB_ENDPOINT, hf_token=CI_APP_TOKEN)
 
         assert not queue.get_pending_jobs_df(dataset=dataset).empty
-        assert len(get_cache_entries_df(dataset=dataset)) == 2
+        assert len(get_cache_entries_df(dataset=dataset)) == len(FIRST_CACHE_KINDS)
 
 
 @pytest.mark.parametrize(

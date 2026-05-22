@@ -228,9 +228,23 @@ def test_finish_job_priority_update(
         difficulty=DIFFICULTY,
     )
     job_info = Queue().start_job()
+    job_result = JobResult(
+        job_info=job_info,
+        job_runner_version=JOB_RUNNER_VERSION,
+        is_success=True,
+        output=JobOutput(
+            content=CONFIG_NAMES_CONTENT,
+            http_status=HTTPStatus.OK,
+            error_code=None,
+            details=None,
+            progress=1.0,
+        ),
+        duration=1,
+    )
     # update the priority of the started job before it finishes
     JobDocument(dataset=DATASET_NAME, pk=job_info["job_id"]).update(priority=Priority.HIGH)
     # then finish
+    save_job_result(job_result, failed_runs=0)
     finish_job(job_info=job_info, shortcut_jobs_by_key={}, processing_graph=processing_graph)
 
     assert JobDocument.objects(dataset=DATASET_NAME).count() == len(artifacts_to_create)
