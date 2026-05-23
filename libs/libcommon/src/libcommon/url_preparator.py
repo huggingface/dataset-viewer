@@ -5,6 +5,7 @@ from abc import ABC
 from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Any, Callable, Literal, Optional, Union
+from urllib.parse import quote
 
 from datasets import Audio, Features, Image, Pdf, Video
 from datasets.features.features import FeatureType, LargeList, List
@@ -12,6 +13,15 @@ from datasets.features.features import FeatureType, LargeList, List
 from libcommon.cloudfront import CloudFrontSigner
 from libcommon.dtos import FeatureItem
 from libcommon.viewer_utils.asset import replace_dataset_git_revision_placeholder
+
+
+def hf_to_https_url(hf_url: str, hf_endpoint: str) -> str:
+    # hf://datasets/user/repo@sha/path/to/file -> https://endpoint/datasets/user/repo/resolve/sha/path%20to/file
+    no_scheme = hf_url[len("hf://"):]
+    prefix, rest = no_scheme.split("@", 1)
+    sha, file_path = rest.split("/", 1)
+    encoded_path = "/".join(quote(seg, safe="") for seg in file_path.split("/"))
+    return f"{hf_endpoint}/{prefix}/resolve/{sha}/{encoded_path}"
 
 
 class InvalidFirstRowsError(ValueError):
@@ -100,7 +110,7 @@ class URLPreparator(ABC):
         # Before: hf://datasets/username/dataset_name@5fe59d7e52732b86d11ee0e9c4a8cdb0e8ba7a6e/video.mp4
         # After:  https://huggingface.co/datasets/username/dataset_name/resolve/5fe59d7e52732b86d11ee0e9c4a8cdb0e8ba7a6e/video.mp4
         if url.startswith("hf://"):
-            url = url.replace("hf://", self.hf_endpoint + "/").replace("@", "/resolve/")
+            url = hf_to_https_url(url, self.hf_endpoint)
         return url
 
     def __str__(self) -> str:
