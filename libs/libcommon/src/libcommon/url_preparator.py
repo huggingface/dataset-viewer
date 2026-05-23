@@ -17,7 +17,7 @@ from libcommon.viewer_utils.asset import replace_dataset_git_revision_placeholde
 
 def hf_to_https_url(hf_url: str, hf_endpoint: str) -> str:
     # hf://datasets/user/repo@sha/path/to/file -> https://endpoint/datasets/user/repo/resolve/sha/path%20to/file
-    no_scheme = hf_url[len("hf://"):]
+    no_scheme = hf_url[len("hf://") :]
     prefix, rest = no_scheme.split("@", 1)
     sha, file_path = rest.split("/", 1)
     encoded_path = "/".join(quote(seg, safe="") for seg in file_path.split("/"))
