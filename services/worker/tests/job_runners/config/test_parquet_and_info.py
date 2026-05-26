@@ -543,17 +543,24 @@ def test_concurrency(
     configs = [str(config_name["config"]) for config_name in job_result["output"]["content"]["config_names"]]
 
     # launch the job runners
-    NUM_JOB_RUNNERS = 10
+    NUM_JOB_RUNNERS = 4
     with Pool(NUM_JOB_RUNNERS, initializer=set_hub_ci_env) as pool:
-        pool.map(
-            launch_job_runner,
-            [
-                JobRunnerArgs(
-                    dataset=repo_id, revision=revision, config=config, app_config=app_config, tmp_path=tmp_path
-                )
-                for config in configs
-            ],
-        )
+        async_results = [
+            pool.apply_async(
+                launch_job_runner,
+                (
+                    JobRunnerArgs(
+                        dataset=repo_id, revision=revision, config=config, app_config=app_config, tmp_path=tmp_path
+                    ),
+                ),
+            )
+            for config in configs
+        ]
+        for i, async_result in enumerate(async_results):
+            try:
+                async_result.get(timeout=300)  # 5 minutes per worker
+            except Exception as e:
+                raise RuntimeError(f"Worker {i} (config={configs[i]}) failed: {e}") from e
 
 
 @pytest.mark.parametrize(
