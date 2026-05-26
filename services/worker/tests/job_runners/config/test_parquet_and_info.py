@@ -460,27 +460,41 @@ class JobRunnerArgs(TypedDict):
 
 
 def launch_job_runner(job_runner_args: JobRunnerArgs) -> CompleteJobResult:
+    from libcommon.resources import CacheMongoResource
+
     config = job_runner_args["config"]
     dataset = job_runner_args["dataset"]
     revision = job_runner_args["revision"]
     app_config = job_runner_args["app_config"]
     tmp_path = job_runner_args["tmp_path"]
-    job_runner = ConfigParquetAndInfoJobRunner(
-        job_info=JobInfo(
-            job_id=f"job_{config}",
-            type="config-parquet-and-info",
-            params=JobParams(dataset=dataset, revision=revision, config=config, split=None),
-            priority=Priority.NORMAL,
-            difficulty=50,
-            started_at=None,
-        ),
-        app_config=app_config,
-        hf_datasets_cache=tmp_path,
-    )
-    job_runner.pre_compute()
-    result = list(job_runner.compute())[0]
-    job_runner.post_compute()
-    return result
+    with CacheMongoResource(database=app_config.cache.mongo_database, host=app_config.cache.mongo_url):
+        job_runner = ConfigParquetAndInfoJobRunner(
+            job_info=JobInfo(
+                job_id=f"job_{config}",
+                type="config-parquet-and-info",
+                params=JobParams(dataset=dataset, revision=revision, config=config, split=None),
+                priority=Priority.NORMAL,
+                difficulty=50,
+                started_at=None,
+            ),
+            app_config=app_config,
+            hf_datasets_cache=tmp_path,
+        )
+        job_runner.pre_compute()
+        result = list(job_runner.compute())[0]
+        job_runner.post_compute()
+        return result
+
+
+def set_hub_ci_env() -> None:
+    import os
+
+    import datasets.config
+    import huggingface_hub.constants
+
+    os.environ["HF_ENDPOINT"] = CI_HUB_ENDPOINT
+    datasets.config.HF_ENDPOINT = CI_HUB_ENDPOINT
+    huggingface_hub.constants.ENDPOINT = CI_HUB_ENDPOINT
 
 
 def test_concurrency(
@@ -522,6 +536,7 @@ def test_concurrency(
         job_runner=get_dataset_config_names_job_runner(repo_id, app_config),
     )
     job_result = list(job_manager.run_job())[0]
+    job_manager.save_job_result(job_result)
     job_manager.finish()
     if not job_result["output"]:
         raise ValueError("Could not get config names")
@@ -529,7 +544,7 @@ def test_concurrency(
 
     # launch the job runners
     NUM_JOB_RUNNERS = 10
-    with Pool(NUM_JOB_RUNNERS) as pool:
+    with Pool(NUM_JOB_RUNNERS, initializer=set_hub_ci_env) as pool:
         pool.map(
             launch_job_runner,
             [
