@@ -201,11 +201,11 @@ class JobManager:
                 "duration": get_duration_or_none(started_at),
             }
 
-    def set_crashed(self, message: str, cause: Optional[BaseException] = None) -> None:
+    def set_stuck(self, message: str, reason: str, cause: Optional[BaseException] = None) -> None:
         self.info(
             "response for"
             f" dataset={self.job_params['dataset']} revision={self.job_params['revision']} job_info={self.job_info}"
-            " had an error (crashed)"
+            f" had an error ('{reason}')"
         )
         error = JobManagerCrashedError(message=message, cause=cause)
         self.finish(

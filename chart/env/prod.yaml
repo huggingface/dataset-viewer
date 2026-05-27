@@ -460,6 +460,7 @@ sseApi:
 
 workers:
   - deployName: "heavy"
+    terminationGracePeriodSeconds: 120
     prometheusMultiprocDirectory: "/tmp"
     uvicornHostname: "0.0.0.0"
     uvicornNumWorkers: "1"
@@ -489,6 +490,7 @@ workers:
         cpu: 8
         memory: "44Gi"
   - deployName: "medium"
+    terminationGracePeriodSeconds: 60
     prometheusMultiprocDirectory: "/tmp"
     uvicornHostname: "0.0.0.0"
     uvicornNumWorkers: "1"
@@ -518,6 +520,7 @@ workers:
         cpu: 2
         memory: "14Gi"
   - deployName: "light"
+    terminationGracePeriodSeconds: 30
     prometheusMultiprocDirectory: "/tmp"
     uvicornHostname: "0.0.0.0"
     uvicornNumWorkers: "1"
