@@ -345,7 +345,9 @@ class SplitFirstRowsJobRunner(SplitJobRunnerWithDatasetsCache):
                 f"Cannot compute 'split-first-rows' from parquet for {self.dataset=} {self.config=}. "
                 f"Trying to compute it using streaming."
             )
-            pass
+        else:
+            # If the parquet path succeeded, return early to avoid trying the streaming path
+            return
         yield CompleteJobResult(
             compute_first_rows_from_streaming_response(
                 dataset=self.dataset,
