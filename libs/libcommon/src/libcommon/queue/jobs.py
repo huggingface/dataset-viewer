@@ -972,11 +972,15 @@ class Queue:
     def get_zombies(self, max_seconds_without_heartbeat: float) -> list["JobInfo"]:
         """Deprecated: use get_stuck_jobs instead."""
         return [
-            job_info for job_info, reason in self.get_stuck_jobs(max_seconds_without_heartbeat) if reason == "missing heartbeats"
+            job_info
+            for job_info, reason in self.get_stuck_jobs(max_seconds_without_heartbeat)
+            if reason == "missing heartbeats"
         ]
 
     def get_terminated_jobs(self, max_seconds_after_termination: float) -> list["JobInfo"]:
         """Deprecated: use get_stuck_jobs instead."""
         return [
-            job_info for job_info, reason in self.get_stuck_jobs(max_seconds_after_termination) if reason == "terminated"
+            job_info
+            for job_info, reason in self.get_stuck_jobs(max_seconds_after_termination)
+            if reason == "terminated"
         ]
