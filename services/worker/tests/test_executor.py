@@ -198,6 +198,43 @@ def set_zombie_job_in_queue(queue_mongo_resource: QueueMongoResource) -> Iterato
 
 
 @fixture
+def set_terminated_job_in_queue(queue_mongo_resource: QueueMongoResource) -> Iterator[JobDocument]:
+    """Simulate a job that received SIGTERM (has terminated_at) but didn't finish before SIGKILL.
+    The job has no heartbeat after termination, mimicking the real-world scenario where
+    SIGKILL arrived before the job could complete or update its heartbeat."""
+    if not queue_mongo_resource.is_available():
+        raise RuntimeError("Mongo resource is not available")
+    job_info = get_job_info("terminated")
+    try:
+        JobDocument.get(job_id=job_info["job_id"]).delete()
+    except JobDoesNotExistError:
+        pass
+    now = get_datetime()
+    terminated_at = now - timedelta(seconds=20)  # terminated 20 seconds ago
+    last_heartbeat = terminated_at - timedelta(seconds=1)  # last heartbeat was before SIGTERM
+    job = JobDocument(
+        pk=job_info["job_id"],
+        type=job_info["type"],
+        dataset=job_info["params"]["dataset"],
+        revision=job_info["params"]["revision"],
+        config=job_info["params"]["config"],
+        split=job_info["params"]["split"],
+        unicity_id="unicity_id",
+        namespace="user",
+        priority=job_info["priority"],
+        status=Status.STARTED,
+        created_at=now - timedelta(days=1),
+        started_at=now - timedelta(days=1) + timedelta(milliseconds=1),
+        last_heartbeat=last_heartbeat,
+        terminated_at=terminated_at,
+        difficulty=job_info["difficulty"],
+    )
+    job.save()
+    yield job
+    job.delete()
+
+
+@fixture
 def job_runner_factory(
     app_config: AppConfig,
     libraries_resource: LibrariesResource,
@@ -260,7 +297,7 @@ def test_executor_heartbeat(
     assert last_heartbeat_datetime >= get_datetime() - timedelta(seconds=1)
 
 
-def test_executor_kill_zombies(
+def test_executor_kill_stuck_jobs(
     executor: WorkerExecutor,
     set_just_started_job_in_queue: JobDocument,
     set_long_running_job_in_queue: JobDocument,
@@ -270,7 +307,7 @@ def test_executor_kill_zombies(
     zombie = set_zombie_job_in_queue
     normal_job = set_just_started_job_in_queue
     tmp_dataset_repo_factory(zombie.dataset)
-    executor.kill_zombies()
+    executor.kill_stuck_jobs()
     assert JobDocument.objects(pk=zombie.pk).count() == 0
     assert JobDocument.objects(pk=normal_job.pk).get().status == Status.STARTED
     response = CachedResponseDocument.objects()[0]
@@ -297,7 +334,7 @@ def test_executor_start(
     tmp_dataset_repo_factory(zombie.dataset)
     # tmp_dataset_repo_factory(zombie.dataset)
     with patch.object(executor, "heartbeat", wraps=executor.heartbeat) as heartbeat_mock:
-        with patch.object(executor, "kill_zombies", wraps=executor.kill_zombies) as kill_zombies_mock:
+        with patch.object(executor, "kill_stuck_jobs", wraps=executor.kill_stuck_jobs) as kill_stuck_jobs_mock:
             with (
                 patch("worker.executor.START_WORKER_LOOP_PATH", __file__),
                 patch.dict(os.environ, {"WORKER_TEST_TIME": str(_TIME)}),
@@ -308,8 +345,66 @@ def test_executor_start(
     assert str(current_job.pk) == get_job_info()["job_id"]
     assert heartbeat_mock.call_count > 0
     assert JobDocument.objects(pk=set_just_started_job_in_queue.pk).get().last_heartbeat is not None
-    assert kill_zombies_mock.call_count > 0
+    assert kill_stuck_jobs_mock.call_count > 0
     assert JobDocument.objects(pk=set_zombie_job_in_queue.pk).count() == 0
+
+
+def test_executor_kill_terminated_jobs(
+    executor: WorkerExecutor,
+    set_terminated_job_in_queue: JobDocument,
+    tmp_dataset_repo_factory: Callable[[str], str],
+) -> None:
+    """Test that kill_stuck_jobs() detects jobs that received SIGTERM but didn't finish before SIGKILL."""
+    terminated_job = set_terminated_job_in_queue
+    tmp_dataset_repo_factory(terminated_job.dataset)
+
+    # Verify the job is in the expected state before the test
+    terminated_job.reload()
+    assert terminated_job.terminated_at is not None
+    assert terminated_job.status == Status.STARTED
+
+    # Run kill_stuck_jobs (which now handles both zombies and terminated jobs)
+    executor.kill_stuck_jobs()
+
+    # Job should be deleted (stuck)
+    assert JobDocument.objects(pk=terminated_job.pk).count() == 0
+
+    # Verify the cached error has the correct SIGTERM message
+    responses = CachedResponseDocument.objects()
+    assert len(responses) == 1
+    response = responses[0]
+    expected_message = "Job has been terminated due to a temporary spike in resource usage and may be restarted later."
+    expected_error = {"error": expected_message}
+    assert response.http_status == HTTPStatus.NOT_IMPLEMENTED
+    assert response.error_code == "JobManagerCrashedError"
+    assert response.dataset == terminated_job.dataset
+    assert response.config == terminated_job.config
+    assert response.split == terminated_job.split
+    assert response.content == expected_error
+    assert response.details == expected_error
+
+
+def test_executor_sigterm_stop_records_termination(
+    executor: WorkerExecutor,
+    set_just_started_job_in_queue: JobDocument,
+    set_worker_state: WorkerState,
+) -> None:
+    """Test that sigterm_stop() records the termination timestamp on the current job."""
+    job = set_just_started_job_in_queue
+    job.reload()
+    assert job.terminated_at is None
+
+    # Call sigterm_stop (simulating SIGTERM signal)
+    # We need to create a mock web_app_executor to avoid the alive check error
+    with patch.object(executor, "is_webapp_alive", return_value=True):
+        executor.sigterm_stop(web_app_executor=None)  # type: ignore[arg-type]
+
+    # The job should now have terminated_at set
+    job.reload()
+    assert job.terminated_at is not None
+
+    # Also verify the state file was read (no exception raised)
+    assert executor.get_state() is not None
 
 
 @pytest.mark.parametrize(

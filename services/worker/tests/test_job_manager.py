@@ -152,10 +152,11 @@ def test_run_job_and_finish(priority: Priority, app_config: AppConfig) -> None:
     assert dataset_child_jobs[0]["priority"] is priority.value
 
 
-def test_job_runner_set_crashed(app_config: AppConfig) -> None:
+def test_job_runner_set_stuck(app_config: AppConfig) -> None:
     dataset = "dataset"
     revision = "revision"
     message = "I'm crashed :("
+    reason = "crashed"
     failed_runs = 2
 
     upsert_response(
@@ -189,7 +190,7 @@ def test_job_runner_set_crashed(app_config: AppConfig) -> None:
 
     job_manager = JobManager(job_info=job_info, app_config=app_config, job_runner=job_runner)
 
-    job_manager.set_crashed(message=message)
+    job_manager.set_stuck(message=message, reason=reason)
     response = CachedResponseDocument.objects()[0]
     expected_error = {"error": message}
     assert response.http_status == HTTPStatus.NOT_IMPLEMENTED
