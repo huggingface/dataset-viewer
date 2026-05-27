@@ -3,7 +3,7 @@
 
 import logging
 import re
-from collections.abc import Mapping
+from collections.abc import Iterator, Mapping
 from itertools import islice
 from typing import Any
 
@@ -230,6 +230,5 @@ class DatasetCroissantCrumbsJobRunner(DatasetJobRunner):
     def get_job_type() -> str:
         return "dataset-croissant-crumbs"
 
-    def compute(self) -> CompleteJobResult:
-        response_content = compute_croissant_crumbs_response(dataset=self.dataset)
-        return CompleteJobResult(response_content)
+    def compute(self) -> Iterator[CompleteJobResult]:
+        yield CompleteJobResult(compute_croissant_crumbs_response(dataset=self.dataset))

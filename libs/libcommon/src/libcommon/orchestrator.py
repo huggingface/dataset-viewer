@@ -22,8 +22,14 @@ from libcommon.constants import (
     DIFFICULTY_BONUS_BY_FAILED_RUNS,
     YAML_FIELDS_TO_CHECK,
 )
-from libcommon.dtos import JobInfo, JobResult, Priority
-from libcommon.processing_graph import ProcessingGraph, ProcessingStep, ProcessingStepDoesNotExist, processing_graph
+from libcommon.dtos import CachedJob, JobInfo, JobResult, Priority
+from libcommon.processing_graph import (
+    InputType,
+    ProcessingGraph,
+    ProcessingStep,
+    ProcessingStepDoesNotExist,
+    processing_graph,
+)
 from libcommon.prometheus import StepProfiler
 from libcommon.queue.jobs import Queue
 from libcommon.simple_cache import (
@@ -445,12 +451,13 @@ class AfterJobPlan(Plan):
 
     Args:
         job_info (`JobInfo`): The job info.
+        shortcuts_jobs (`dict[str, CachedJob]`): The list of shortcut job results obtained running job_info
         processing_graph (`ProcessingGraph`): The processing graph.
     """
 
     job_info: JobInfo
+    shortcut_jobs_by_key: dict[str, CachedJob]
     processing_graph: ProcessingGraph
-    failed_runs: int
 
     dataset: str = field(init=False)
     config: Optional[str] = field(init=False)
@@ -467,11 +474,28 @@ class AfterJobPlan(Plan):
         config = self.job_info["params"]["config"]
         split = self.job_info["params"]["split"]
         job_type = self.job_info["type"]
+        next_processing_steps: list[tuple[CachedJob, ProcessingStep]] = []
         try:
             processing_step = self.processing_graph.get_processing_step_by_job_type(job_type)
-            next_processing_steps = self.processing_graph.get_children(processing_step.name)
+            for next_processing_step in self.processing_graph.get_children(processing_step.name):
+                next_processing_steps.append(
+                    (
+                        {"dataset": self.dataset, "config": config, "split": split, "kind": job_type},
+                        next_processing_step,
+                    )
+                )
         except ProcessingStepDoesNotExist as e:
             raise ValueError(f"Processing step with job type: {job_type} does not exist") from e
+
+        if self.shortcut_jobs_by_key:
+            for shortcut_job in self.shortcut_jobs_by_key.values():
+                job_type = shortcut_job["kind"]
+                try:
+                    processing_step = self.processing_graph.get_processing_step_by_job_type(job_type)
+                    for next_processing_step in self.processing_graph.get_children(processing_step.name):
+                        next_processing_steps.append((shortcut_job, next_processing_step))
+                except ProcessingStepDoesNotExist as e:
+                    raise ValueError(f"Processing step with job type: {job_type} does not exist") from e
 
         if len(next_processing_steps) == 0:
             # no next processing step, nothing to do
@@ -487,28 +511,31 @@ class AfterJobPlan(Plan):
         # note that it can contain a lot of unrelated jobs, we will clean after
         self.pending_jobs_df = Queue().get_pending_jobs_df(
             dataset=self.dataset,
-            job_types=[next_processing_step.job_type for next_processing_step in next_processing_steps],
+            job_types=[next_processing_step[1].job_type for next_processing_step in next_processing_steps],
         )
 
-        self.job_infos_to_create: list[JobInfo] = []
+        self.job_infos_to_create: dict[str, JobInfo] = {}
         config_names: Optional[list[str]] = None
         split_names: Optional[list[str]] = None
 
-        # filter to only get the jobs that are not already in the queue
-        for next_processing_step in next_processing_steps:
-            if processing_step.input_type == next_processing_step.input_type:
+        # filter to only get the jobs that are not already in the queue or done using a shortcut
+        for cached_job, next_processing_step in next_processing_steps:
+            cached_job_input_type: InputType = (
+                "split" if cached_job["split"] else ("config" if cached_job["config"] else "dataset")
+            )
+            if cached_job_input_type == next_processing_step.input_type:
                 # same level, one job is expected
                 # D -> D, C -> C, S -> S
-                self.update(next_processing_step, config, split)
-            elif processing_step.input_type in ["config", "split"] and next_processing_step.input_type == "dataset":
+                self.update(next_processing_step, cached_job["config"], cached_job["split"])
+            elif cached_job_input_type in ["config", "split"] and next_processing_step.input_type == "dataset":
                 # going to upper level (fan-in), one job is expected
                 # S -> D, C -> D
                 self.update(next_processing_step, None, None)
-            elif processing_step.input_type == "split" and next_processing_step.input_type == "config":
+            elif cached_job_input_type == "split" and next_processing_step.input_type == "config":
                 # going to upper level (fan-in), one job is expected
                 # S -> C
-                self.update(next_processing_step, config, None)
-            elif processing_step.input_type == "dataset" and next_processing_step.input_type == "config":
+                self.update(next_processing_step, cached_job["config"], None)
+            elif cached_job_input_type == "dataset" and next_processing_step.input_type == "config":
                 # going to lower level (fan-out), one job is expected per config, we need the list of configs
                 # D -> C
                 if config_names is None:
@@ -521,7 +548,7 @@ class AfterJobPlan(Plan):
                     )  # Note that we use the cached content even the revision is different (ie. maybe obsolete)
                 for config_name in config_names:
                     self.update(next_processing_step, config_name, None)
-            elif processing_step.input_type == "config" and next_processing_step.input_type == "split":
+            elif cached_job_input_type == "config" and next_processing_step.input_type == "split":
                 # going to lower level (fan-out), one job is expected per split, we need the list of splits
                 # C -> S
                 if split_names is None:
@@ -533,20 +560,19 @@ class AfterJobPlan(Plan):
                         name_field="split",
                     )  # Note that we use the cached content even the revision is different (ie. maybe obsolete)
                 for split_name in split_names:
-                    self.update(next_processing_step, config, split_name)
+                    self.update(next_processing_step, cached_job["config"], split_name)
             else:
                 raise NotImplementedError(
-                    f"Unsupported input types: {processing_step.input_type} -> {next_processing_step.input_type}"
+                    f"Unsupported input types: {cached_job_input_type} -> {next_processing_step.input_type}"
                 )
                 # we don't support fan-out dataset-level to split-level (no need for now)
-
         # Better keep this order: delete, then create
         # Note that all the waiting jobs for other revisions will be deleted
         # The started jobs are ignored, for now.
         if not self.pending_jobs_df.empty:
             self.add_task(DeleteWaitingJobsTask(jobs_df=self.pending_jobs_df))
         if self.job_infos_to_create:
-            self.add_task(CreateJobsTask(job_infos=self.job_infos_to_create))
+            self.add_task(CreateJobsTask(job_infos=list(self.job_infos_to_create.values())))
 
     def update(
         self,
@@ -554,6 +580,12 @@ class AfterJobPlan(Plan):
         config: Optional[str],
         split: Optional[str],
     ) -> None:
+        # ignore if job was done using a shortcut
+        job_key = get_shortcut_job_key(
+            {"kind": next_processing_step.job_type, "dataset": self.dataset, "config": config, "split": split}
+        )
+        if job_key in self.shortcut_jobs_by_key or job_key in self.job_infos_to_create:
+            return
         # ignore unrelated jobs
         config_mask = (
             self.pending_jobs_df["config"].isnull() if config is None else self.pending_jobs_df["config"] == config
@@ -584,21 +616,19 @@ class AfterJobPlan(Plan):
                 difficulty += next_processing_step.bonus_difficulty_if_dataset_is_big
             # increase difficulty according to number of failed runs
             difficulty = min(DEFAULT_DIFFICULTY_MAX, difficulty)
-            self.job_infos_to_create.append(
-                {
-                    "job_id": "not used",  # TODO: remove this field
-                    "type": next_processing_step.job_type,
-                    "params": {
-                        "dataset": self.dataset,
-                        "config": config,
-                        "split": split,
-                        "revision": self.revision,
-                    },
-                    "priority": self.priority,
-                    "difficulty": difficulty,
-                    "started_at": None,
-                }
-            )
+            self.job_infos_to_create[job_key] = {
+                "job_id": "not used",  # TODO: remove this field
+                "type": next_processing_step.job_type,
+                "params": {
+                    "dataset": self.dataset,
+                    "config": config,
+                    "split": split,
+                    "revision": self.revision,
+                },
+                "priority": self.priority,
+                "difficulty": difficulty,
+                "started_at": None,
+            }
 
 
 @dataclass
@@ -1221,35 +1251,32 @@ def backfill(
     return plan.run()
 
 
-def finish_job(
-    job_result: JobResult,
-    processing_graph: ProcessingGraph = processing_graph,
-) -> TasksStatistics:
-    """
-    Finish a job.
+def get_failed_runs(job_info: JobInfo) -> int:
+    try:
+        processing_step = processing_graph.get_processing_step_by_job_type(job_info["type"])
+    except ProcessingStepDoesNotExist as e:
+        raise ValueError(f"Processing step for job type {job_info['type']} does not exist") from e
 
-    It will finish the job, store the result in the cache, and trigger the next steps.
+    params = job_info["params"]
+    try:
+        previous_response = get_response_metadata(
+            kind=processing_step.cache_kind,
+            dataset=params["dataset"],
+            config=params["config"],
+            split=params["split"],
+        )
+        return (
+            previous_response["failed_runs"] if previous_response["dataset_git_revision"] == params["revision"] else 0
+        )
+    except CachedArtifactNotFoundError:
+        return 0
 
-    Args:
-        job_result (`JobResult`): The result of the job.
-        processing_graph (`ProcessingGraph`, *optional*): The processing graph.
 
-    Raises:
-        [`ValueError`]: If the job is not found, or if the processing step is not found.
-
-    Returns:
-        `TasksStatistics`: The statistics of the finish_job.
-    """
-    # check if the job is still in started status
-    job_info = job_result["job_info"]
-    if not Queue().is_job_started(job_id=job_info["job_id"]):
-        logging.debug("the job was deleted, don't update the cache")
-        return TasksStatistics()
-    # if the job could not provide an output, finish it and return
+def save_job_result(job_result: JobResult, failed_runs: int) -> None:
     if not job_result["output"]:
-        Queue().finish_job(job_id=job_info["job_id"])
         logging.debug("the job raised an exception, don't update the cache")
-        return TasksStatistics()
+        return
+    job_info = job_result["job_info"]
     # update the cache
     output = job_result["output"]
     params = job_info["params"]
@@ -1258,21 +1285,8 @@ def finish_job(
     except ProcessingStepDoesNotExist as e:
         raise ValueError(f"Processing step for job type {job_info['type']} does not exist") from e
 
-    try:
-        previous_response = get_response_metadata(
-            kind=processing_step.cache_kind,
-            dataset=params["dataset"],
-            config=params["config"],
-            split=params["split"],
-        )
-        failed_runs = (
-            previous_response["failed_runs"] + 1
-            if output["http_status"] != HTTPStatus.OK
-            and previous_response["dataset_git_revision"] == params["revision"]
-            else 0
-        )
-    except CachedArtifactNotFoundError:
-        failed_runs = 0
+    if output["http_status"] != HTTPStatus.OK:
+        failed_runs += 1
 
     upsert_response_params(
         # inputs
@@ -1289,6 +1303,34 @@ def finish_job(
         duration=job_result["duration"],
     )
     logging.debug("the job output has been written to the cache.")
+
+
+def finish_job(
+    job_info: JobInfo,
+    shortcut_jobs_by_key: dict[str, CachedJob],
+    processing_graph: ProcessingGraph = processing_graph,
+) -> TasksStatistics:
+    """
+    Finish a job.
+
+    It will finish the job, store the result in the cache, and trigger the next steps.
+
+    Args:
+        job_result (`JobResult`): The result of the job.
+        shortcuts_jobs (`dict[str, CachedJob]`): The list of shortcut job results obtained running job_info
+        processing_graph (`ProcessingGraph`, *optional*): The processing graph.
+        failed_runs (`int`): The number of times this job has failed previously.
+
+    Raises:
+        [`ValueError`]: If the job is not found, or if the processing step is not found.
+
+    Returns:
+        `TasksStatistics`: The statistics of the finish_job.
+    """
+    # check if the job is still in started status
+    if not Queue().is_job_started(job_id=job_info["job_id"]):
+        logging.debug("the job was deleted, don't update the cache")
+        return TasksStatistics()
     # finish the job
     job_priority = Queue().finish_job(job_id=job_info["job_id"])
     if job_priority:
@@ -1296,7 +1338,11 @@ def finish_job(
         # ^ change the priority of children jobs if the priority was updated during the job
     logging.debug("the job has been finished.")
     # trigger the next steps
-    plan = AfterJobPlan(job_info=job_info, processing_graph=processing_graph, failed_runs=failed_runs)
+    plan = AfterJobPlan(
+        job_info=job_info,
+        shortcut_jobs_by_key=shortcut_jobs_by_key.copy(),
+        processing_graph=processing_graph,
+    )
     statistics = plan.run()
     logging.debug("jobs have been created for the next steps.")
     return statistics
@@ -1363,3 +1409,7 @@ def get_revision(dataset: str) -> Optional[str]:
     if pending_jobs.get("revision") and isinstance(revision := pending_jobs["revision"][0], str):
         return revision
     return None
+
+
+def get_shortcut_job_key(job: CachedJob) -> str:
+    return f"{job['kind']}({job['dataset']}, {job['config']}, {job['split']})"

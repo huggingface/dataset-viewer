@@ -2,6 +2,7 @@
 # Copyright 2022 The HuggingFace Authors.
 
 from abc import ABC, abstractmethod
+from collections.abc import Iterator
 
 from libcommon.dtos import JobInfo
 
@@ -27,7 +28,7 @@ class JobRunner(ABC):
         pass
 
     @abstractmethod
-    def compute(self) -> JobResult:
+    def compute(self) -> Iterator[JobResult]:
         pass
 
     def post_compute(self) -> None:

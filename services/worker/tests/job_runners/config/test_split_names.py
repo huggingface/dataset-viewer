@@ -210,12 +210,12 @@ def test_compute_split_names_from_streaming_response(
 
     job_runner.pre_compute()
     if error_code is None:
-        result = job_runner.compute().content
+        result = list(job_runner.compute())[0].content
         assert result == expected_configs_response
         return
 
     with pytest.raises(CustomError) as exc_info:
-        job_runner.compute()
+        list(job_runner.compute())
     job_runner.post_compute()
 
     assert exc_info.value.code == error_code
@@ -235,7 +235,7 @@ def test_compute(app_config: AppConfig, get_job_runner: GetJobRunner, hub_public
     config, _ = get_default_config_split()
     job_runner = get_job_runner(dataset, config, app_config)
     job_runner.pre_compute()
-    response = job_runner.compute()
+    response = list(job_runner.compute())[0]
     job_runner.post_compute()
     content = response.content
     assert len(content["splits"]) == 1

@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from pathlib import Path
 from typing import Optional
 
@@ -28,8 +28,8 @@ class DummyJobRunner(JobRunnerWithDatasetsCache):
         # ^ borrowing the type, so that the processing step exists and the job runner can be initialized
         # refactoring libcommon.processing_graph might help avoiding this
 
-    def compute(self) -> CompleteJobResult:
-        return CompleteJobResult({"col1": "a" * 200})
+    def compute(self) -> Iterator[CompleteJobResult]:
+        yield CompleteJobResult({"col1": "a" * 200})
 
 
 GetJobRunner = Callable[[str, Optional[str], Optional[str], AppConfig], DummyJobRunner]

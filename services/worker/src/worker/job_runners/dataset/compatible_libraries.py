@@ -3,6 +3,7 @@
 
 import logging
 import re
+from collections.abc import Iterator
 from http import HTTPStatus
 from itertools import islice
 from typing import Any, Callable, Optional
@@ -932,8 +933,7 @@ class DatasetCompatibleLibrariesJobRunner(DatasetJobRunnerWithDatasetsCache):
     def get_job_type() -> str:
         return "dataset-compatible-libraries"
 
-    def compute(self) -> CompleteJobResult:
-        response_content = compute_compatible_libraries_response(
-            dataset=self.dataset, hf_token=self.app_config.common.hf_token
+    def compute(self) -> Iterator[CompleteJobResult]:
+        yield CompleteJobResult(
+            compute_compatible_libraries_response(dataset=self.dataset, hf_token=self.app_config.common.hf_token)
         )
-        return CompleteJobResult(response_content)

@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2023 The HuggingFace Authors.
+from collections.abc import Iterator
 
 import pytest
 from libcommon.dtos import Priority
@@ -15,8 +16,8 @@ class DummyDatasetJobRunner(DatasetJobRunner):
     def get_job_type() -> str:
         return "/dummy"
 
-    def compute(self) -> CompleteJobResult:
-        return CompleteJobResult({"key": "value"})
+    def compute(self) -> Iterator[CompleteJobResult]:
+        yield CompleteJobResult({"key": "value"})
 
 
 def test_failed_creation(app_config: AppConfig) -> None:

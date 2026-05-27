@@ -488,10 +488,16 @@ class Artifact:
 # - every config-level step should be triggered by at least one dataset-level or config-level step
 # to be sure the steps are processed even if a dataset has no configs, or if a config has no splits.
 specification: ProcessingGraphSpecification = {
+    "dataset-init": {
+        "input_type": "dataset",
+        "job_runner_version": 1,
+        "difficulty": 50,
+    },
     "dataset-config-names": {
         "input_type": "dataset",
         "job_runner_version": 1,
         "difficulty": 50,
+        "triggered_by": "dataset-init",
     },
     "split-first-rows": {
         "input_type": "split",
@@ -695,11 +701,12 @@ specification: ProcessingGraphSpecification = {
     },
     "dataset-filetypes": {
         "input_type": "dataset",
-        # no "triggered_by" <- this is a root step
+        "triggered_by": "dataset-init",
         "job_runner_version": 1,
         "difficulty": 50,
     },
 }
+
 
 # global variable
 processing_graph = ProcessingGraph(specification=specification)

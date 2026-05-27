@@ -133,3 +133,10 @@ class SplitFirstRowsResponse(FullSplitItem):
     features: list[FeatureItem]
     rows: list[RowItem]
     truncated: bool
+
+
+class CachedJob(TypedDict):
+    dataset: str
+    config: Optional[str]
+    split: Optional[str]
+    kind: str

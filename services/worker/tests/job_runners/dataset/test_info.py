@@ -6,7 +6,7 @@ from http import HTTPStatus
 from typing import Any
 
 import pytest
-from libcommon.dtos import Priority
+from libcommon.dtos import CachedJob, Priority
 from libcommon.exceptions import PreviousStepFormatError
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import (
@@ -16,7 +16,6 @@ from libcommon.simple_cache import (
 )
 
 from worker.config import AppConfig
-from worker.dtos import PreviousJob
 from worker.job_runners.dataset.info import DatasetInfoJobRunner
 
 from ..config.test_info import CONFIG_INFO_1, CONFIG_INFO_2, DATASET_INFO_OK
@@ -80,7 +79,7 @@ EXPECTED_PARTIAL_PENDING = (
             "config_1": CONFIG_INFO_1,
         },
         "pending": [
-            PreviousJob(
+            CachedJob(
                 kind="config-info",
                 dataset="dataset_ok",
                 config="config_2",
@@ -100,7 +99,7 @@ EXPECTED_PARTIAL_FAILED = (
         },
         "pending": [],
         "failed": [
-            PreviousJob(
+            CachedJob(
                 kind="config-info",
                 dataset="dataset_ok",
                 config="config_2",
@@ -230,10 +229,10 @@ def test_compute(
     job_runner.pre_compute()
     if should_raise:
         with pytest.raises(Exception) as e:
-            job_runner.compute()
+            list(job_runner.compute())
         assert e.typename == expected_error_code
     else:
-        compute_result = job_runner.compute()
+        compute_result = list(job_runner.compute())[0]
         assert compute_result.content == expected[0]
         assert compute_result.progress == expected[1]
     job_runner.post_compute()
@@ -244,5 +243,5 @@ def test_doesnotexist(app_config: AppConfig, get_job_runner: GetJobRunner) -> No
     job_runner = get_job_runner(dataset, app_config)
     job_runner.pre_compute()
     with pytest.raises(CachedArtifactNotFoundError):
-        job_runner.compute()
+        list(job_runner.compute())
     job_runner.post_compute()

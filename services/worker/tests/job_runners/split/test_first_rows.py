@@ -188,10 +188,10 @@ def test_compute_from_parquet_libviewer(
         job_runner.pre_compute()
         if error_code:
             with pytest.raises(CustomError) as error_info:
-                job_runner.compute()
+                list(job_runner.compute())
             assert error_info.value.code == error_code
         else:
-            response = job_runner.compute().content
+            response = list(job_runner.compute())[0].content
             assert get_json_size(response) <= rows_max_bytes
             assert response
             assert response["rows"]
@@ -285,12 +285,12 @@ def test_number_rows(
     job_runner.pre_compute()
     if exception_name is None:
         job_runner.validate()
-        result = job_runner.compute().content
+        result = list(job_runner.compute())[0].content
         assert result == expected_first_rows_response
     else:
         with pytest.raises(Exception) as exc_info:
             job_runner.validate()
-            job_runner.compute()
+            list(job_runner.compute())
         assert exc_info.typename == exception_name
     job_runner.post_compute()
 
@@ -302,7 +302,7 @@ def test_compute(app_config: AppConfig, get_job_runner: GetJobRunner, hub_public
     config, split = get_default_config_split()
     job_runner = get_job_runner(dataset, config, split, app_config)
     job_runner.pre_compute()
-    response = job_runner.compute()
+    response = list(job_runner.compute())[0]
     job_runner.post_compute()
     assert response
     content = response.content
@@ -334,7 +334,7 @@ def test_long_column_name(
     with patch("worker.utils.MAX_COLUMN_NAME_LENGTH", max_column_name_length):
         if raises:
             with pytest.raises(TooLongColumnNameError):
-                job_runner.compute()
+                list(job_runner.compute())
         else:
-            job_runner.compute()
+            list(job_runner.compute())
     job_runner.post_compute()

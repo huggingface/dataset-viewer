@@ -5,7 +5,7 @@ import functools
 import logging
 import os
 import re
-from collections.abc import Callable, Generator
+from collections.abc import Callable, Generator, Iterator
 from contextlib import ExitStack
 from itertools import groupby
 from pathlib import Path
@@ -1131,7 +1131,7 @@ def commit_parquet_conversion(
         commit_message (`str`):
             The summary (first line) of the commit that will be created.
         target_revision (`str`, *optional*):
-            The git revision to commit from. Defaults to the head of the `"main"` branch.
+            The git revision to commit to. Defaults to the head of the `"refs/convert/parquet"` branch.
 
     Raises:
         [`ValueError`](https://docs.python.org/3/library/exceptions.html#ValueError):
@@ -1151,7 +1151,7 @@ def commit_parquet_conversion(
     )
     operations: list[CommitOperation] = list(delete_operations + parquet_operations)
     logging.info(f"{len(operations)} git operations to do for {dataset=} {config=}.")
-    create_commits(
+    commits = create_commits(
         committer_hf_api,
         repo_id=dataset,
         revision=target_revision,
@@ -1159,27 +1159,28 @@ def commit_parquet_conversion(
         commit_message=commit_message,
         parent_commit=target_dataset_info.sha,
     )
-    # squash the history to save space
-    retry_super_squash_history = retry(on=[HfHubHTTPError], sleeps=HF_HUB_HTTP_ERROR_RETRY_SLEEPS)(
-        committer_hf_api.super_squash_history
-    )
-    try:
-        retry_super_squash_history(
-            repo_id=dataset,
-            repo_type=DATASET_TYPE,
-            commit_message=commit_message,
-            branch=target_revision,
+    if commits and commits[-1].oid != target_dataset_info.sha:
+        # squash the history to save space
+        retry_super_squash_history = retry(on=[HfHubHTTPError], sleeps=HF_HUB_HTTP_ERROR_RETRY_SLEEPS)(
+            committer_hf_api.super_squash_history
         )
-    except RuntimeError as e:
-        if e.__cause__ and isinstance(e.__cause__, HfHubHTTPError):
-            raise CreateCommitError(
-                message=(
-                    f"Could not squash the history of the commits (after {len(HF_HUB_HTTP_ERROR_RETRY_SLEEPS)}"
-                    f" attempts)."
-                ),
-                cause=e.__cause__,
-            ) from e.__cause__
-        raise e
+        try:
+            retry_super_squash_history(
+                repo_id=dataset,
+                repo_type=DATASET_TYPE,
+                commit_message=commit_message,
+                branch=target_revision,
+            )
+        except RuntimeError as e:
+            if e.__cause__ and isinstance(e.__cause__, HfHubHTTPError):
+                raise CreateCommitError(
+                    message=(
+                        f"Could not squash the history of the commits (after {len(HF_HUB_HTTP_ERROR_RETRY_SLEEPS)}"
+                        f" attempts)."
+                    ),
+                    cause=e.__cause__,
+                ) from e.__cause__
+            raise e
 
 
 def backward_compat_features(
@@ -1441,8 +1442,8 @@ class ConfigParquetAndInfoJobRunner(ConfigJobRunnerWithDatasetsCache):
         self.parquet_and_info_config = app_config.parquet_and_info
         self.committer_config = app_config.committer
 
-    def compute(self) -> CompleteJobResult:
-        return CompleteJobResult(
+    def compute(self) -> Iterator[CompleteJobResult]:
+        yield CompleteJobResult(
             compute_config_parquet_and_info_response(
                 job_id=self.job_info["job_id"],
                 dataset=self.dataset,

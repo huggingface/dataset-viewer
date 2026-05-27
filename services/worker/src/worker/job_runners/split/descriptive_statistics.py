@@ -2,6 +2,7 @@
 # Copyright 2023 The HuggingFace Authors.
 import logging
 from collections import Counter
+from collections.abc import Iterator
 from pathlib import Path
 from typing import Any, Optional, TypedDict, Union
 
@@ -333,10 +334,10 @@ class SplitDescriptiveStatisticsJobRunner(SplitJobRunnerWithCache):
     def get_job_type() -> str:
         return "split-descriptive-statistics"
 
-    def compute(self) -> CompleteJobResult:
+    def compute(self) -> Iterator[CompleteJobResult]:
         if self.cache_subdirectory is None:
             raise CacheDirectoryNotInitializedError("Cache directory has not been initialized.")
-        return CompleteJobResult(
+        yield CompleteJobResult(
             compute_descriptive_statistics_response(
                 dataset=self.dataset,
                 config=self.config,

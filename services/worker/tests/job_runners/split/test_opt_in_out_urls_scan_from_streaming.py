@@ -207,7 +207,7 @@ def test_compute(
     )
     job_runner.pre_compute()
     with patch("worker.job_runners.split.opt_in_out_urls_scan_from_streaming.check_spawning", mock_check_spawning):
-        response = job_runner.compute()
+        response = list(job_runner.compute())[0]
     job_runner.post_compute()
     assert response
     assert response.content == expected_content
@@ -274,7 +274,7 @@ def test_compute_failed(
         )
     job_runner.pre_compute()
     with pytest.raises(Exception) as exc_info:
-        job_runner.compute()
+        list(job_runner.compute())
     job_runner.post_compute()
     assert exc_info.typename == exception_name
 
@@ -305,7 +305,7 @@ def test_compute_error_from_spawning(
     )
     job_runner.pre_compute()
     with pytest.raises(ExternalServerError):
-        job_runner.compute()
+        list(job_runner.compute())
     job_runner.post_compute()
 
 

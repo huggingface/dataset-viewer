@@ -24,7 +24,7 @@ def test_metrics() -> None:
 
     # the queue metrics are computed each time a job is created and processed
     # they should exist at least for some of jobs types
-    for queue in ["dataset-config-names", "split-first-rows", "dataset-parquet"]:
+    for queue in ["dataset-init", "split-first-rows", "dataset-parquet"]:
         # eg. 'queue_jobs_total{pid="10",queue="split-first-rows",status="started"}'
         assert has_metric(
             name="queue_jobs_total",

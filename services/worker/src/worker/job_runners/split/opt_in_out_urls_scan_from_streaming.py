@@ -3,6 +3,7 @@
 
 import logging
 from asyncio import Semaphore, create_task, run, wait
+from collections.abc import Iterator
 from pathlib import Path
 from typing import Any, Optional
 
@@ -277,8 +278,8 @@ class SplitOptInOutUrlsScanJobRunner(SplitJobRunnerWithDatasetsCache):
         )
         self.urls_scan_config = app_config.urls_scan
 
-    def compute(self) -> CompleteJobResult:
-        return CompleteJobResult(
+    def compute(self) -> Iterator[CompleteJobResult]:
+        yield CompleteJobResult(
             compute_opt_in_out_urls_scan_response(
                 dataset=self.dataset,
                 config=self.config,
