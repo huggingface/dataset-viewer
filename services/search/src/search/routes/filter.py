@@ -16,7 +16,12 @@ from libapi.duckdb import (
     get_cache_entry_from_parquet_metadata_job,
     get_index_file_location_and_build_if_missing,
 )
-from libapi.exceptions import ApiError, InvalidParameterError, UnexpectedApiError
+from libapi.exceptions import (
+    ApiError,
+    InvalidParameterError,
+    UnexpectedApiError,
+    UnprocessableIndexError,
+)
 from libapi.request import (
     get_request_parameter,
     get_request_parameter_length,
@@ -172,16 +177,36 @@ def create_filter_endpoint(
                     columns = list(features.keys())
 
                 with StepProfiler(method="filter_endpoint", step="execute filter query"):
-                    num_rows_total, pa_table = await anyio.to_thread.run_sync(
-                        execute_filter_query,
-                        index_file_location,
-                        columns,
-                        where,
-                        orderby,
-                        length,
-                        offset,
-                        extensions_directory,
-                    )
+                    try:
+                        num_rows_total, pa_table = await anyio.to_thread.run_sync(
+                            execute_filter_query,
+                            index_file_location,
+                            columns,
+                            where,
+                            orderby,
+                            length,
+                            offset,
+                            extensions_directory,
+                        )
+                    except OSError as err:
+                        # The index file is corrupted (e.g., from an interrupted build).
+                        # Clean it up so the next request triggers a rebuild.
+                        logger.warning(
+                            "Corrupted index file for %s/%s/%s: %s. Removing and will rebuild on next request.",
+                            dataset,
+                            config,
+                            split,
+                            err,
+                        )
+                        try:
+                            import os
+
+                            os.remove(index_file_location)
+                        except OSError:
+                            pass  # File might already be removed
+                        raise UnprocessableIndexError(
+                            f"The dataset index is corrupted and being rebuilt: {err}"
+                        ) from err
                     # no need to do it every time
                     # TODO: Will be moved to another process in parallel
                     if random.random() < clean_cache_proba:  # nosec

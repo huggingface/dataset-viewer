@@ -29,6 +29,7 @@ ApiErrorCode = Literal[
     "TooBigContentError",
     "TransformRowsProcessingError",
     "UnexpectedApiError",
+    "UnprocessableIndexError",
 ]
 
 
@@ -199,3 +200,17 @@ class UnexpectedApiError(ApiError):
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         logging.error(message, exc_info=cause)
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "UnexpectedApiError", cause)
+
+
+class UnprocessableIndexError(ApiError):
+    """The DuckDB index file is corrupted or invalid and needs to be rebuilt.
+
+    This is raised when an index file exists but is not a valid DuckDB database,
+    typically due to an interrupted index build operation. The index file is
+    automatically cleaned up and will be rebuilt on the next request.
+    """
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(
+            message, HTTPStatus.INTERNAL_SERVER_ERROR, "UnprocessableIndexError", cause=cause, disclose_cause=True
+        )

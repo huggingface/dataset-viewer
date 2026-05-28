@@ -17,6 +17,7 @@ from libapi.duckdb import (
 from libapi.exceptions import (
     ApiError,
     UnexpectedApiError,
+    UnprocessableIndexError,
 )
 from libapi.request import (
     get_request_parameter,
@@ -204,15 +205,35 @@ def create_search_endpoint(
 
                 with StepProfiler(method="search_endpoint", step="perform FTS command"):
                     logging.debug(f"connect to index file {index_file_location}")
-                    num_rows_total, pa_table = await anyio.to_thread.run_sync(
-                        full_text_search,
-                        index_file_location,
-                        columns,
-                        query,
-                        offset,
-                        length,
-                        extensions_directory,
-                    )
+                    try:
+                        num_rows_total, pa_table = await anyio.to_thread.run_sync(
+                            full_text_search,
+                            index_file_location,
+                            columns,
+                            query,
+                            offset,
+                            length,
+                            extensions_directory,
+                        )
+                    except OSError as err:
+                        # The index file is corrupted (e.g., from an interrupted build).
+                        # Clean it up so the next request triggers a rebuild.
+                        logger.warning(
+                            "Corrupted index file for %s/%s/%s: %s. Removing and will rebuild on next request.",
+                            dataset,
+                            config,
+                            split,
+                            err,
+                        )
+                        try:
+                            import os
+
+                            os.remove(index_file_location)
+                        except OSError:
+                            pass  # File might already be removed
+                        raise UnprocessableIndexError(
+                            f"The dataset index is corrupted and being rebuilt: {err}"
+                        ) from err
                     # no need to do it every time
                     # TODO: Will be moved to another process in parallel
                     if random.random() < clean_cache_proba:  # nosec
