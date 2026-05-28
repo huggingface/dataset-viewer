@@ -2,6 +2,7 @@
 # Copyright 2023 The HuggingFace Authors.
 
 import asyncio
+from contextlib import asynccontextmanager
 
 import uvicorn
 from libapi.config import UvicornConfig
@@ -70,11 +71,20 @@ def create_app_with_config(app_config: AppConfig) -> Starlette:
         # ^ called by Prometheus
     ]
 
+    @asynccontextmanager
+    async def lifespan(_app: Starlette):  # type: ignore[no-untyped-def]
+        # Starlette 1.0 removed on_startup/on_shutdown in favor of the ASGI lifespan
+        # protocol. start_watching is sync; stop_watching is async.
+        hub_cache_watcher.start_watching()
+        try:
+            yield
+        finally:
+            await hub_cache_watcher.stop_watching()
+
     return Starlette(
         routes=routes,
         middleware=middleware,
-        on_startup=[hub_cache_watcher.start_watching],
-        on_shutdown=[hub_cache_watcher.stop_watching],
+        lifespan=lifespan,
     )
 
 
