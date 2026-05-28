@@ -34,6 +34,11 @@
     value: {{ .workerValues.uvicornNumWorkers | quote }}
   - name: WORKER_UVICORN_PORT
     value: {{ .workerValues.uvicornPort | quote }}
+  # difficulty and memory thresholds (per-worker overrides)
+  - name: WORKER_MAX_MEMORY_PCT
+    value: {{ .workerValues.maxMemoryPct | default .Values.worker.maxMemoryPct | quote }}
+  - name: WORKER_MAX_SYSTEM_MEMORY_PCT
+    value: {{ .workerValues.maxSystemMemoryPct | default .Values.worker.maxSystemMemoryPct | quote }}
   volumeMounts:
   {{ include "volumeMountParquetMetadataRW" . | nindent 2 }}
   securityContext:

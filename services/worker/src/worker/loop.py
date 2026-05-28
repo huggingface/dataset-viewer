@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+import gc
 import logging
 import os
 import random
@@ -69,16 +70,90 @@ class Loop:
         self.num_jobs_since_last_hffs_cache_clear = 0
 
     def has_memory(self) -> bool:
+        """Deprecated: use has_pod_memory() + has_system_memory() instead.
+        Kept for backward compatibility in other code that may call this.
+        Returns True if EITHER pod-level OR system-level memory is OK."""
+        return self.has_pod_memory() or self.has_system_memory()
+
+    def _get_pod_memory_limit_bytes(self) -> Optional[int]:
+        """Read the pod's memory limit from cgroup v1 or v2."""
+        # Try cgroup v2 first (newer kernels)
+        for path in ["/sys/fs/cgroup/memory.max", "/sys/fs/cgroup/memory/memory.limit_in_bytes"]:
+            try:
+                with open(path, "r") as f:
+                    val = f.read().strip()
+                    if val == "max":
+                        return None  # No limit set
+                    return int(val)
+            except (FileNotFoundError, ValueError, PermissionError):
+                continue
+        return None
+
+    def _get_pod_memory_usage_bytes(self) -> Optional[int]:
+        """Read the pod's memory usage from cgroup v1 or v2."""
+        # Try cgroup v2 first (newer kernels)
+        for path in ["/sys/fs/cgroup/memory.current", "/sys/fs/cgroup/memory/memory.usage_in_bytes"]:
+            try:
+                with open(path, "r") as f:
+                    return int(f.read().strip())
+            except (FileNotFoundError, ValueError, PermissionError):
+                continue
+        return None
+
+    def has_pod_memory(self) -> bool:
+        """Check if THIS pod is within its memory limit (prevents OOM-SIGKILL).
+
+        Reads the pod's memory limit and usage directly from cgroup, which is accurate
+        for containers regardless of how many other pods share the node.
+        If the pod has no memory limit (cgroup returns None), falls back to system check.
+        """
         if self.app_config.worker.max_memory_pct <= 0:
             return True
-        virtual_memory_used = int(virtual_memory().used)
-        virtual_memory_total = int(virtual_memory().total)
-        percent = (swap_memory().used + virtual_memory_used) / (swap_memory().total + virtual_memory_total)
-        ok = percent < self.app_config.worker.max_memory_pct
+
+        pod_limit = self._get_pod_memory_limit_bytes()
+        pod_usage = self._get_pod_memory_usage_bytes()
+
+        if pod_limit and pod_usage:
+            # Pod-level check: compare against the pod's cgroup limit
+            percent = pod_usage / pod_limit
+            threshold = self.app_config.worker.max_memory_pct / 100
+        else:
+            # Fallback to system memory if cgroup is not available
+            total = swap_memory().total + virtual_memory().total
+            used = swap_memory().used + virtual_memory().used
+            percent = used / total if total > 0 else 0
+            threshold = self.app_config.worker.max_memory_pct / 100
+
+        ok = percent < threshold
+        source = "cgroup" if (pod_limit and pod_usage) else "system"
         if not ok:
             logging.info(
-                f"memory usage (RAM + SWAP) is too high: {percent:.0f}% - max is"
-                f" {self.app_config.worker.max_memory_pct}%"
+                f"pod memory usage too high: {percent:.0%} vs {threshold:.0%} "
+                f"(limit: {pod_limit // 1024**3 if pod_limit else 'N/A'}Gi, "
+                f"used: {pod_usage // 1024**3 if pod_usage else 'N/A'}Gi, "
+                f"source: {source})"
+            )
+        return ok
+
+    def has_system_memory(self) -> bool:
+        """Check if the NODE is within memory limits (prevents K8s eviction cascade).
+
+        When the node is under memory pressure, K8s may SIGTERM all pods simultaneously
+        to reclaim resources. This check prevents contributing to system-wide pressure.
+        """
+        if self.app_config.worker.max_system_memory_pct <= 0:
+            return True
+
+        total = swap_memory().total + virtual_memory().total
+        used = swap_memory().used + virtual_memory().used
+        percent = used / total if total > 0 else 0
+        threshold = self.app_config.worker.max_system_memory_pct / 100
+
+        ok = percent < threshold
+        if not ok:
+            logging.info(
+                f"system memory usage too high: {percent:.0%} vs {threshold:.0%} "
+                f"(limit: {total // 1024**3}Gi, used: {used // 1024**3}Gi)"
             )
         return ok
 
@@ -93,9 +168,18 @@ class Loop:
         return ok
 
     def has_resources(self) -> bool:
-        return self.has_memory() and self.has_cpu()
+        # Pod-level check: prevents THIS pod from OOM-SIGKILL
+        if not self.has_pod_memory():
+            return False
+        # System-level check: prevents system-wide pressure that triggers K8s eviction
+        if not self.has_system_memory():
+            return False
+        return self.has_cpu()
 
     def sleep(self) -> None:
+        # Free memory accumulated between jobs (Python reference cycles, freed objects)
+        # This gives the GC a chance to reclaim memory before we re-check has_resources()
+        gc.collect()
         jitter = 0.75 + random.random() / 2  # nosec
         # ^ between 0.75 and 1.25
         duration = self.app_config.worker.sleep_seconds * jitter

@@ -14,8 +14,7 @@
   value: {{ .Values.worker.maxJobDurationSeconds | quote }}
 - name: WORKER_MAX_LOAD_PCT
   value: {{ .Values.worker.maxLoadPct | quote }}
-- name: WORKER_MAX_MEMORY_PCT
-  value: {{ .Values.worker.maxMemoryPct | quote }}
+
 - name: WORKER_MAX_MISSING_HEARTBEATS
   value: {{ .Values.worker.maxMissingHeartbeats | quote }}
 - name: WORKER_SLEEP_SECONDS
