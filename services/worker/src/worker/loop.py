@@ -2,6 +2,7 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
+import os
 import random
 import time
 from dataclasses import dataclass
@@ -33,6 +34,12 @@ class WorkerState(TypedDict):
     last_updated: datetime
 
 
+class SigtermNotified(Exception):
+    """a sigterm file used to notify a sigterm was sent by k8s to ask the loop to stop"""
+
+    pass
+
+
 @dataclass
 class Loop:
     """
@@ -40,6 +47,8 @@ class Loop:
 
     Once initialized, the loop can be started with the `run` method and will run until an uncaught exception
     is raised.
+
+    The loop gracefully stops between jobs if a sigterm file is placed next to the state file.
 
     Args:
         job_runner_factory (`JobRunnerFactory`):
@@ -93,16 +102,24 @@ class Loop:
         logging.debug(f"sleep during {duration:.2f} seconds")
         time.sleep(duration)
 
+    def check_sigterm_notification(self) -> None:
+        if os.path.exists(os.path.join(os.path.dirname(self.state_file_path), "sigterm")):
+            raise SigtermNotified()
+
     def run(self) -> None:
         logging.info("Worker loop started")
         try:
             while True:
+                self.check_sigterm_notification()
                 if self.has_resources() and self.process_next_job():
                     # loop immediately to try another job
                     # see https://github.com/huggingface/dataset-viewer/issues/265
                     continue
+                self.check_sigterm_notification()
                 with StepProfiler("loop", "sleep"):
                     self.sleep()
+        except SigtermNotified:
+            logging.exception("gracefully quit due to sigterm")
         except BaseException as err:
             logging.exception(f"quit due to an uncaught error: {err}")
             raise

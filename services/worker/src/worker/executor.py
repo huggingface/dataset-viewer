@@ -133,11 +133,14 @@ class WorkerExecutor:
         logging.error("Executor received SIGTERM")
         logging.error("Web app was not running" if not self.is_webapp_alive(web_app_executor) else "Reason unknown")
         # Mark the current job as terminated so kill_stuck_jobs() can identify SIGTERM-caused crashes
+        # and notify the worker loop process that sigterm was received so it can stop with a "sigterm" file
         worker_state = self.get_state()
         if worker_state and worker_state["current_job_info"]:
             job_id = worker_state["current_job_info"]["job_id"]
             try:
                 Queue().set_terminated(job_id=job_id)
+                with open(os.path.join(os.path.dirname(self.state_file_path), "sigterm"), "wb"):
+                    pass
                 logging.info("Marked job %s as terminated (SIGTERM received).", job_id)
             except Exception as error:
                 logging.warning("Failed to mark job %s as terminated: %s", job_id, error)
