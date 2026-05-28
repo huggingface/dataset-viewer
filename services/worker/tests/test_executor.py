@@ -1,3 +1,4 @@
+import logging
 import os
 import sys
 import time
@@ -24,7 +25,7 @@ from pytest import fixture
 from worker.config import AppConfig
 from worker.executor import WorkerExecutor
 from worker.job_runner_factory import JobRunnerFactory
-from worker.loop import WorkerState
+from worker.loop import Loop, WorkerState
 from worker.resources import LibrariesResource
 
 _TIME = int(os.environ.get("WORKER_TEST_TIME", int(time.time() * 10e3)))
@@ -405,6 +406,38 @@ def test_executor_sigterm_stop_records_termination(
 
     # Also verify the state file was read (no exception raised)
     assert executor.get_state() is not None
+
+
+def test_executor_sigterm_stop_creates_sigterm_file(
+    app_config: AppConfig,
+    executor: WorkerExecutor,
+    set_just_started_job_in_queue: JobDocument,
+    set_worker_state: WorkerState,
+    worker_state_file_path: str,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Test that sigterm_stop() creates a 'sigterm' file next to the state file directory."""
+    sigterm_file_path = os.path.join(os.path.dirname(worker_state_file_path), "sigterm")
+
+    # Verify the sigterm file does not exist before calling sigterm_stop
+    assert not os.path.exists(sigterm_file_path)
+
+    # Call sigterm_stop (simulating SIGTERM signal)
+    with patch.object(executor, "is_webapp_alive", return_value=True):
+        executor.sigterm_stop(web_app_executor=None)  # type: ignore[arg-type]
+
+    # Verify the sigterm file was created
+    assert os.path.exists(sigterm_file_path)
+
+    # Make sure the loop stops gracefully
+    caplog.set_level(logging.WARNING)
+    Loop(
+        job_runner_factory=executor.job_runner_factory, app_config=app_config, state_file_path=worker_state_file_path
+    ).run()
+    assert "gracefully" in caplog.text
+
+    # Cleanup
+    os.remove(sigterm_file_path)
 
 
 @pytest.mark.parametrize(
