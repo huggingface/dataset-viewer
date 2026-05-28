@@ -179,8 +179,12 @@ worker:
   maxJobDurationSeconds: 2400
   # Max CPU load (%) - if reached, sleeps until it comes back under the limit. Set to 0 to disable the test.
   maxLoadPct: 0
-  # Max memory (RAM + SWAP) (%) - if reached, sleeps until it comes back under the limit. Set to 0 to disable the test.
+  # Max pod memory (%) relative to pod memory limit - if reached, refuses new jobs to give GC time
+  # and leave headroom for sibling pods. Set to 0 to disable. Uses cgroup for accurate reading.
   maxMemoryPct: 0
+  # Max system (node) memory (%) relative to total node RAM - if reached, refuses new jobs
+  # to prevent system-wide pressure that triggers K8s SIGTERM eviction of ALL pods.
+  maxSystemMemoryPct: 0
   # the number of heartbeats a job must have missed to be considered a zombie job.
   maxMissingHeartbeats: 5
   # Number of seconds a worker will sleep before trying to process a new job

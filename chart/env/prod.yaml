@@ -467,6 +467,8 @@ workers:
     uvicornPort: 8080
     workerDifficultyMax: 100
     workerDifficultyMin: 70
+    maxMemoryPct: 60
+    maxSystemMemoryPct: 80
     nodeSelector:
       role-datasets-server-worker: "true"
     tolerations:
@@ -497,6 +499,8 @@ workers:
     uvicornPort: 8080
     workerDifficultyMax: 70
     workerDifficultyMin: 40
+    maxMemoryPct: 70
+    maxSystemMemoryPct: 80
     nodeSelector:
       role-datasets-server-worker: "true"
     tolerations:
@@ -527,6 +531,8 @@ workers:
     uvicornPort: 8080
     workerDifficultyMax: 40
     workerDifficultyMin: 0
+    maxMemoryPct: 80
+    maxSystemMemoryPct: 80
     # Increased probe timeouts for light workers due to limited resources
     startupProbe:
       failureThreshold: 120
