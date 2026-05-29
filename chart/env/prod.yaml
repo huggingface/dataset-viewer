@@ -531,8 +531,8 @@ workers:
     uvicornPort: 8080
     workerDifficultyMax: 40
     workerDifficultyMin: 0
-    maxMemoryPct: 80
-    maxSystemMemoryPct: 80
+    maxMemoryPct: 0
+    maxSystemMemoryPct: 0
     # Increased probe timeouts for light workers due to limited resources
     startupProbe:
       failureThreshold: 120
