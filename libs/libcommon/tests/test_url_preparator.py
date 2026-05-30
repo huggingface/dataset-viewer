@@ -11,7 +11,7 @@ from libcommon.cloudfront import CloudFrontSigner
 from libcommon.constants import MAX_NUM_ROWS_PER_PAGE
 from libcommon.dtos import RowsContent
 from libcommon.storage_client import StorageClient
-from libcommon.url_preparator import URLPreparator, get_asset_url_paths, to_features_dict
+from libcommon.url_preparator import URLPreparator, get_asset_url_paths, hf_to_https_url, to_features_dict
 from libcommon.viewer_utils.features import to_features_list
 from libcommon.viewer_utils.rows import create_first_rows_response
 
@@ -210,3 +210,27 @@ def test_prepare_urls_in_first_rows_in_place_with_truncated_cells(
         assert len(first_rows["rows"][0]["truncated_cells"]) == 1
         # ^ see test_rows.py
         assert url_signer.counter == 0, first_rows
+
+
+@pytest.mark.parametrize(
+    "hf_url,hf_endpoint,expected",
+    [
+        (
+            "hf://datasets/user/repo@abc123/default/train/image.jpg",
+            "https://huggingface.co",
+            "https://huggingface.co/datasets/user/repo/resolve/abc123/default/train/image.jpg",
+        ),
+        (
+            "hf://datasets/user/repo@abc123/config with spaces/train/image.jpg",
+            "https://huggingface.co",
+            "https://huggingface.co/datasets/user/repo/resolve/abc123/config%20with%20spaces/train/image.jpg",
+        ),
+        (
+            "hf://datasets/user/repo@abc123/config/split name/image.jpg",
+            "https://huggingface.co",
+            "https://huggingface.co/datasets/user/repo/resolve/abc123/config/split%20name/image.jpg",
+        ),
+    ],
+)
+def test_hf_to_https_url(hf_url: str, hf_endpoint: str, expected: str) -> None:
+    assert hf_to_https_url(hf_url, hf_endpoint) == expected
