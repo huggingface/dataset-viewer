@@ -10,7 +10,7 @@ python = "3.12.11"
 anyio = ">=3.4.0,<5"
 appdirs = "^1.4.4"
 cryptography = "^43.0.1"
-datasets = { git = "https://github.com/huggingface/datasets", rev = "aa24915bdebba451d04e886d33405c36b002ba99" }
+datasets = { git = "https://github.com/huggingface/datasets", rev = "cfe4492b0e2dde98412198927fe3938be942c0b0" }
 duckdb = "^1.2.2"
 environs = "^14.3.0"
 filelock = "^3.18.0"
@@ -36,6 +36,7 @@ pytz = "^2020.1"
 s3fs = "2024.3.1"  # Aligned with fsspec[s3] version
 soundfile = ">=0.12.1"
 starlette-prometheus = "^0.9.0"
+teich = "0.1.1a76"
 torch = [
     { url = "https://download.pytorch.org/whl/cpu/torch-2.8.0%2Bcpu-cp312-cp312-manylinux_2_28_x86_64.whl", markers = "sys_platform == 'linux' and platform_machine != 'aarch64'"},
     { url = "https://download.pytorch.org/whl/cpu/torch-2.8.0%2Bcpu-cp312-cp312-manylinux_2_28_x86_64.whl", markers = "sys_platform == 'darwin' and platform_machine != 'arm64'"},
