@@ -512,7 +512,7 @@ def fill_builder_info(
 
         if len(urls) > 1:
             try:
-                if len(urls) > 100:
+                if len(urls) > 20:
                     logging.info(f"Counting rows of lots of Parquet files: {len(urls)}")
                 num_examples_sizes_and_num_bytes: list[tuple[int, int]] = thread_map(
                     functools.partial(
