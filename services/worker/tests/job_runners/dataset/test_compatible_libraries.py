@@ -21,6 +21,7 @@ from worker.job_runners.dataset.compatible_libraries import (
     DatasetCompatibleLibrariesJobRunner,
     get_builder_configs,
     get_compatible_libraries_for_json,
+    get_compatible_libraries_for_lerobot,
     get_compatible_library_for_builder,
 )
 from worker.resources import LibrariesResource
@@ -40,6 +41,7 @@ PARQUET_DATASET = "parquet-dataset"
 PARQUET_DATASET_LOGIN_REQUIRED = "parquet-dataset-login_required"
 WEBDATASET_DATASET = "webdataset-dataset"
 LANCE_DATASET = "lance-dataset"
+LEROBOT_DATASET = "lerobot-dataset"
 ERROR_DATASET = "error-dataset"
 
 UPSTREAM_RESPONSE_INFO_PARQUET: UpstreamResponse = UpstreamResponse(
@@ -72,6 +74,14 @@ UPSTREAM_RESPONSE_INFO_LANCE: UpstreamResponse = UpstreamResponse(
     dataset_git_revision=REVISION_NAME,
     http_status=HTTPStatus.OK,
     content={"dataset_info": {"default": {"config_name": "default", "builder_name": "lance"}}, "partial": False},
+    progress=1.0,
+)
+UPSTREAM_RESPONSE_INFO_LEROBOT: UpstreamResponse = UpstreamResponse(
+    kind="dataset-info",
+    dataset=LEROBOT_DATASET,
+    dataset_git_revision=REVISION_NAME,
+    http_status=HTTPStatus.OK,
+    content={"dataset_info": {"default": {"config_name": "default", "builder_name": "parquet"}}, "partial": False},
     progress=1.0,
 )
 UPSTREAM_RESPONSE_INFO_ERROR: UpstreamResponse = UpstreamResponse(
@@ -382,6 +392,21 @@ def mock_hffs(tmp_path_factory: TempPathFactory) -> Iterator[fsspec.AbstractFile
     (hf / "datasets" / LANCE_DATASET / "data" / "0000.lance").touch()
     (hf / "datasets" / LANCE_DATASET / "_versions" / "1.manifest").touch()
 
+    (hf / "datasets" / LEROBOT_DATASET / "data" / "chunk-000").mkdir(parents=True)
+    ds.to_parquet(hf / "datasets" / LEROBOT_DATASET / "data" / "chunk-000" / "episode_000000.parquet")
+    (hf / "datasets" / LEROBOT_DATASET / "README.md").write_text(
+        "---\n"
+        "license: apache-2.0\n"
+        "task_categories:\n"
+        "- robotics\n"
+        "tags:\n"
+        "- LeRobot\n"
+        "configs:\n"
+        "- config_name: default\n"
+        "  data_files: data/*/*.parquet\n"
+        "---\n"
+    )
+
     class MockHfFileSystem(DirFileSystem):  # type: ignore[misc]
         protocol = "hf"
 
@@ -481,6 +506,49 @@ def test_compute(
     job_runner.post_compute()
     assert compute_result.content == expected[0]
     assert compute_result.progress == expected[1]
+
+
+def test_compute_lerobot(
+    app_config: AppConfig,
+    get_job_runner: GetJobRunner,
+    mock_hffs: fsspec.AbstractFileSystem,
+) -> None:
+    upsert_response(**UPSTREAM_RESPONSE_INFO_LEROBOT)
+    job_runner = get_job_runner(LEROBOT_DATASET, app_config)
+    job_runner.pre_compute()
+    compute_result = list(job_runner.compute())[0]
+    job_runner.post_compute()
+    libraries = {library["library"] for library in compute_result.content["libraries"]}
+    # the "lerobot" library is detected from the "LeRobot" tag in the dataset card
+    assert "lerobot" in libraries
+    lerobot_library = next(
+        library for library in compute_result.content["libraries"] if library["library"] == "lerobot"
+    )
+    assert lerobot_library == {
+        "language": "python",
+        "library": "lerobot",
+        "function": "LeRobotDataset",
+        "loading_codes": [
+            {
+                "config_name": "default",
+                "arguments": {},
+                "code": ('from lerobot.datasets import LeRobotDataset\n\ndataset = LeRobotDataset("lerobot-dataset")'),
+            }
+        ],
+    }
+    # the regular libraries are still added (LeRobot datasets are parquet-based)
+    assert {"datasets", "mlcroissant"} <= libraries
+
+
+def test_get_compatible_libraries_for_lerobot(
+    mock_hffs: fsspec.AbstractFileSystem,
+) -> None:
+    # a dataset tagged "LeRobot" is detected
+    compatible_libraries = get_compatible_libraries_for_lerobot(LEROBOT_DATASET, hf_token=None, login_required=False)
+    assert len(compatible_libraries) == 1
+    assert compatible_libraries[0]["library"] == "lerobot"
+    # a dataset without the "LeRobot" tag (or without a dataset card) is not detected
+    assert get_compatible_libraries_for_lerobot(PARQUET_DATASET, hf_token=None, login_required=False) == []
 
 
 @pytest.mark.parametrize(
