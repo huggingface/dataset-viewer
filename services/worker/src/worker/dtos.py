@@ -254,7 +254,7 @@ class IsValidResponse(TypedDict):
     statistics: bool
 
 
-DatasetLibrary = Literal["mlcroissant", "webdataset", "datasets", "pandas", "dask", "polars", "lance"]
+DatasetLibrary = Literal["mlcroissant", "webdataset", "datasets", "pandas", "dask", "polars", "lance", "lerobot"]
 DatasetFormat = Literal[
     "json",
     "csv",
