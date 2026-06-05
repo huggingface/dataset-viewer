@@ -533,7 +533,7 @@ def test_compute_lerobot(
                 "config_name": "default",
                 "arguments": {},
                 "code": (
-                    "from lerobot.datasets.lerobot_dataset import LeRobotDataset\n"
+                    "from lerobot.datasets import LeRobotDataset\n"
                     "\n"
                     'dataset = LeRobotDataset("lerobot-dataset")'
                 ),
