@@ -1729,6 +1729,7 @@ pytz = "^2020.1"
 s3fs = "2024.3.1"
 soundfile = ">=0.12.1"
 starlette-prometheus = "^0.9.0"
+teich = "0.1.1a76"
 torch = [
     {url = "https://download.pytorch.org/whl/cpu/torch-2.8.0%2Bcpu-cp312-cp312-manylinux_2_28_x86_64.whl", markers = "sys_platform == \"linux\" and platform_machine != \"aarch64\" or sys_platform == \"darwin\" and platform_machine != \"arm64\""},
     {url = "https://download.pytorch.org/whl/cpu/torch-2.8.0-cp312-none-macosx_11_0_arm64.whl", markers = "sys_platform == \"darwin\" and platform_machine == \"arm64\""},
@@ -4977,6 +4978,29 @@ mpmath = ">=1.1.0,<1.4"
 
 [package.extras]
 dev = ["hypothesis (>=6.70.0)", "pytest (>=7.1.0)"]
+
+[[package]]
+name = "teich"
+version = "0.1.1a76"
+description = "Turn coding agent traces into auditable supervised fine-tuning data"
+optional = false
+python-versions = ">=3.10"
+groups = ["main"]
+files = [
+    {file = "teich-0.1.1a76-py3-none-any.whl", hash = "sha256:7907fa25ef5790db652268b1f9896e7b4f6a05b0cf658b75ff1e4b71ac492aa1"},
+    {file = "teich-0.1.1a76.tar.gz", hash = "sha256:e94e9313733ac8b827512bbb7aadd1653d074e41e9a6ce3fb72a3239e2b68a23"},
+]
+
+[package.dependencies]
+datasets = ">=2.19.0"
+huggingface-hub = ">=0.23.0"
+pydantic = ">=2.0"
+pyyaml = ">=6.0"
+rich = ">=13.0"
+typer = ">=0.12"
+
+[package.extras]
+dev = ["jinja2 (>=3.1)", "pytest (>=8.0)", "ruff (>=0.4)"]
 
 [[package]]
 name = "texttable"
