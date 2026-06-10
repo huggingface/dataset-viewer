@@ -1717,7 +1717,6 @@ polars = "1.39.3"
 psutil = "^7.1.0"
 pyarrow = "^22.0.0"
 pydantic = "^2.13.4"
-pydub = "^0.25.1"
 pylance = "^1.0.4"
 pymongo = {version = "^4.15.1", extras = ["srv"]}
 pymongoarrow = "^1.10.0"

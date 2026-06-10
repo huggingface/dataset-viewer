@@ -31,7 +31,6 @@ pydantic = "^2.13.4"
 pylance = "^1.0.4"
 pymongoarrow = "^1.10.0"
 pymupdf = "^1.26.1"
-pydub = "^0.25.1"
 pymongo = { extras = ["srv"], version = "^4.15.1" }
 pytz = "^2020.1"
 s3fs = "2024.3.1"  # Aligned with fsspec[s3] version

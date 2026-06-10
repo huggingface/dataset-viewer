@@ -16,7 +16,7 @@ import orjson
 import pandas as pd
 import pytz
 from dateutil import parser
-from huggingface_hub import constants, hf_hub_download
+from huggingface_hub import hf_hub_download
 from requests.exceptions import ReadTimeout
 
 from libcommon.exceptions import DatasetInBlockListError

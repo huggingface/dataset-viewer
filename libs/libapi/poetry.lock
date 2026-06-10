@@ -1257,7 +1257,6 @@ polars = "1.39.3"
 psutil = "^7.1.0"
 pyarrow = "^22.0.0"
 pydantic = "^2.13.4"
-pydub = "^0.25.1"
 pylance = "^1.0.4"
 pymongo = {version = "^4.15.1", extras = ["srv"]}
 pymongoarrow = "^1.10.0"
@@ -2935,18 +2934,6 @@ files = [
 
 [package.dependencies]
 typing-extensions = ">=4.14.1"
-
-[[package]]
-name = "pydub"
-version = "0.25.1"
-description = "Manipulate audio with an simple and easy high level interface"
-optional = false
-python-versions = "*"
-groups = ["main"]
-files = [
-    {file = "pydub-0.25.1-py2.py3-none-any.whl", hash = "sha256:65617e33033874b59d87db603aa1ed450633288aefead953b30bded59cb599a6"},
-    {file = "pydub-0.25.1.tar.gz", hash = "sha256:980a33ce9949cab2a569606b65674d748ecbca4f0796887fd6f46173a7b0d30f"},
-]
 
 [[package]]
 name = "pygments"
