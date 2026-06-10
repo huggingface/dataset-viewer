@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any, Optional
 
 import requests
+import httpx
 from huggingface_hub.hf_api import HfApi
 from huggingface_hub.utils import hf_raise_for_status
 from requests import Response
@@ -213,7 +214,7 @@ def tmp_dataset(
         )
     if repo_settings:
         path = f"{hf_api.endpoint}/api/datasets/{dataset}/settings"
-        r = requests.put(
+        r = httpx.put(
             path,
             headers=hf_api._build_hf_headers(),
             json=repo_settings,
