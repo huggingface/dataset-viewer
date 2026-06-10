@@ -6,7 +6,7 @@ version = "0.1.0"
 license = "Apache-2.0"
 
 [tool.poetry.dependencies]
-python = "3.12.11"
+python = "3.14.5"
 environs = "^14.3.0"
 httpx = "^0.25.0"
 libcommon = {path = "../../libs/libcommon", develop = true}

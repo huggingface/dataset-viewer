@@ -10,9 +10,9 @@ dv = "libviewer.cli:cli"
 
 [tool.poetry.dependencies]
 anyio = ">=3.4.0,<5"
-python = "3.12.11"
+python = "3.14.5"
 click = "8.1.8"
-pyarrow = "^21.0.0"
+pyarrow = "^22.0.0"
 huggingface-hub = {version = "^0.31.0", extras = ["hf-transfer"]}
 
 [tool.poetry.group.dev.dependencies]

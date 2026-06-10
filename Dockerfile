@@ -1,7 +1,7 @@
 # Multi-stage Dockerfile for all dataset-viewer services and jobs
 # Build with: docker build --target <service_name> -t <tag> .
 
-ARG PYTHON_VERSION=3.12.11
+ARG PYTHON_VERSION=3.14.5
 FROM python:${PYTHON_VERSION}-slim AS viewer
 
 # Install Rust and minimal build deps
