@@ -19,11 +19,12 @@ pillow = "^10.3.0"
 polars = "^1.27.1"
 prometheus_client = "^0.12.0"
 py7zr = "^0.20.4"
+spacy = "3.8.13"
 starlette = "^0.37.1"
 uvicorn = "^0.30.1"
-zstandard = "^0.22.0"
-# to include fix for https://github.com/microsoft/presidio/pull/1377
-presidio-analyzer = { git = "https://github.com/microsoft/presidio.git", rev = "2348fff508f1a45af92945d5f597ec56bd4faae6", subdirectory = "presidio-analyzer" }
+zstandard = "^0.25.0"
+# to support python 3.14
+presidio-analyzer = { git = "https://github.com/lhoestq/presidio.git", rev = "713fa2a62c46f664b6a07a3e3239274405f27d0d", subdirectory = "presidio-analyzer" }
 
 [tool.poetry.group.dev.dependencies]
 bandit = "^1.7.4"

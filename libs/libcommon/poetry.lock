@@ -3983,14 +3983,14 @@ dev = ["hypothesis (>=6.70.0)", "pytest (>=7.1.0)"]
 
 [[package]]
 name = "teich"
-version = "0.1.1a76"
+version = "0.1.2"
 description = "Turn coding agent traces into auditable supervised fine-tuning data"
 optional = false
 python-versions = ">=3.10"
 groups = ["main"]
 files = [
-    {file = "teich-0.1.1a76-py3-none-any.whl", hash = "sha256:7907fa25ef5790db652268b1f9896e7b4f6a05b0cf658b75ff1e4b71ac492aa1"},
-    {file = "teich-0.1.1a76.tar.gz", hash = "sha256:e94e9313733ac8b827512bbb7aadd1653d074e41e9a6ce3fb72a3239e2b68a23"},
+    {file = "teich-0.1.2-py3-none-any.whl", hash = "sha256:c64a378c765d3311dc4b428f5e56b2b38c0236c56ef7496069e94ec112ec1888"},
+    {file = "teich-0.1.2.tar.gz", hash = "sha256:8b67a4177e74cf3ccff45ef92b165ceab5b282d5421dce78eed5715630ffff44"},
 ]
 
 [package.dependencies]
@@ -5299,4 +5299,4 @@ propcache = ">=0.2.1"
 [metadata]
 lock-version = "2.1"
 python-versions = "3.14.5"
-content-hash = "af1c0eecfd2a2580ba59a8f4df5d6db78d3beddba742b00490d91ed3c2563c36"
+content-hash = "92ef98fc167dd2bca1373055444c5daf1d9f472e188c63890170b813e0d8daea"
