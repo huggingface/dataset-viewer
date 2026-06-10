@@ -1343,7 +1343,11 @@ torch = [
     {url = "https://download.pytorch.org/whl/cpu/torch-2.11.0%2Bcpu-cp314-cp314-manylinux_2_28_x86_64.whl", markers = "sys_platform == \"linux\" and platform_machine != \"aarch64\" or sys_platform == \"darwin\" and platform_machine != \"arm64\""},
     {url = "https://download.pytorch.org/whl/cpu/torch-2.11.0%2Bcpu-cp314-cp314-manylinux_2_28_aarch64.whl", markers = "sys_platform == \"linux\" and platform_machine == \"aarch64\""},
 ]
-torchcodec = {version = "0.14", markers = "sys_platform != \"linux\" or platform_machine != \"aarch64\""}
+torchcodec = [
+    {url = "https://download.pytorch.org/whl/cpu/torchcodec-0.14.0-cp314-cp314-macosx_14_0_arm64.whl", markers = "sys_platform == \"darwin\" and platform_machine == \"arm64\""},
+    {url = "https://download.pytorch.org/whl/cpu/torchcodec-0.14.0%2Bcpu-cp314-cp314-manylinux_2_28_x86_64.whl", markers = "sys_platform == \"linux\" and platform_machine != \"aarch64\" or sys_platform == \"darwin\" and platform_machine != \"arm64\""},
+    {url = "https://download.pytorch.org/whl/cpu/torchcodec-0.14.0%2Bcpu-cp314-cp314-manylinux_2_28_aarch64.whl", markers = "sys_platform == \"linux\" and platform_machine == \"aarch64\""},
+]
 tqdm = "^4.66.3"
 tsfile = "^2.3.0"
 
@@ -4079,36 +4083,55 @@ description = "A video decoder for PyTorch"
 optional = false
 python-versions = ">=3.10"
 groups = ["main"]
-markers = "sys_platform != \"linux\" or platform_machine != \"aarch64\""
+markers = "sys_platform == \"darwin\" and platform_machine == \"arm64\""
 files = [
-    {file = "torchcodec-0.14.0-cp310-cp310-macosx_14_0_arm64.whl", hash = "sha256:492e08a606b4fa99cf04337affd2368aef7d598880feff8dffa420da8fa614cb"},
-    {file = "torchcodec-0.14.0-cp310-cp310-manylinux_2_28_aarch64.whl", hash = "sha256:a68a8247c8ddd2a5390ac1b03b12f0bd1db4a43bcaacd274b4c6dce546a82bf6"},
-    {file = "torchcodec-0.14.0-cp310-cp310-manylinux_2_28_x86_64.whl", hash = "sha256:90fb2c547c0a7510236d7dc1ff74683ec40dbab76fddd1f771a29fd33cdbcc6f"},
-    {file = "torchcodec-0.14.0-cp310-cp310-win_amd64.whl", hash = "sha256:fe875e2d2474abe1ef95fef4188a7a8b7d7cfdb70bb7a89ff6a9154e7c378f94"},
-    {file = "torchcodec-0.14.0-cp311-cp311-macosx_14_0_arm64.whl", hash = "sha256:3f4a2670429667d72d3b4b011cae972a572a50f0942ca43df741ef8413ca6657"},
-    {file = "torchcodec-0.14.0-cp311-cp311-manylinux_2_28_aarch64.whl", hash = "sha256:dc47f825ca376beebeec731b2b40d1ae51ce145edef82295946b6edec24412c5"},
-    {file = "torchcodec-0.14.0-cp311-cp311-manylinux_2_28_x86_64.whl", hash = "sha256:8dd63d5e5f7696b560619952a215a0b9565248a71c42cbea74b2a85282e8b841"},
-    {file = "torchcodec-0.14.0-cp311-cp311-win_amd64.whl", hash = "sha256:7bc8f6a54c2bda7144e7ae5ba70a34fdf544465fec21e037674e857cfe339b4b"},
-    {file = "torchcodec-0.14.0-cp312-cp312-macosx_14_0_arm64.whl", hash = "sha256:849b55c16d3d9791f07c7ff5ef6168a94bbd981e2e9e581999c9a2a8a660c61c"},
-    {file = "torchcodec-0.14.0-cp312-cp312-manylinux_2_28_aarch64.whl", hash = "sha256:db8740f5380d4345e7b1586ac957cde6dbce5be0a9079b9a8f8e5dad528af841"},
-    {file = "torchcodec-0.14.0-cp312-cp312-manylinux_2_28_x86_64.whl", hash = "sha256:9a8770b44ef71ef6a94581b9b1691370bfbc766396ecbb754967eceeb83fe58e"},
-    {file = "torchcodec-0.14.0-cp312-cp312-win_amd64.whl", hash = "sha256:c299a5309d883e2d9cdcf11e297e2859fade5b20254c716f31e77fa57e4f455e"},
-    {file = "torchcodec-0.14.0-cp313-cp313-macosx_14_0_arm64.whl", hash = "sha256:7bf335289c475da3e12c4e2ef8295ee3530c4c4e95274c591def53a136cfdbdd"},
-    {file = "torchcodec-0.14.0-cp313-cp313-manylinux_2_28_aarch64.whl", hash = "sha256:15d2abf91d9bdcad308eeda52ba507eaa6b83fc0dc1bb92d11f8c1f7b6343517"},
-    {file = "torchcodec-0.14.0-cp313-cp313-manylinux_2_28_x86_64.whl", hash = "sha256:77855d6969f33e82e5ff84445afdd4b68ba8a337e02b3c91229889eca988a004"},
-    {file = "torchcodec-0.14.0-cp313-cp313-win_amd64.whl", hash = "sha256:48455b37be6f8bb5978f2e3e348d22162db8beef14db5180721a7d2bfe6dae8f"},
-    {file = "torchcodec-0.14.0-cp313-cp313t-manylinux_2_28_aarch64.whl", hash = "sha256:7bf515c4ee6585637ab8ce9591f5f31423dbeba8f3df9cdb0c83da4f5f9dbb7d"},
-    {file = "torchcodec-0.14.0-cp313-cp313t-manylinux_2_28_x86_64.whl", hash = "sha256:fa5af195c92b1bfdefaaee6de5bd2691d56662ba56901bfa5b26c4f8ffb50c0b"},
     {file = "torchcodec-0.14.0-cp314-cp314-macosx_14_0_arm64.whl", hash = "sha256:f11ec6d25ee47d03eed0763d92bfc884402f583cc71f5697d7fd519be39e7f90"},
-    {file = "torchcodec-0.14.0-cp314-cp314-manylinux_2_28_aarch64.whl", hash = "sha256:03d34fafdb7b8d37614d90bc573e2d94c23c69cce81437a96611df49024c1bca"},
-    {file = "torchcodec-0.14.0-cp314-cp314-manylinux_2_28_x86_64.whl", hash = "sha256:43c9e74c7fd4142318630b40837c12ebf84342c12d39af147eb5d5bca8c95d1a"},
-    {file = "torchcodec-0.14.0-cp314-cp314-win_amd64.whl", hash = "sha256:539b814272e724bfe5e9b7328599978ec753735b383a5c3084617ff6d7cbad9c"},
-    {file = "torchcodec-0.14.0-cp314-cp314t-manylinux_2_28_aarch64.whl", hash = "sha256:0ffda245c6d719631cd40060c162a807d571f909ee8eda00f3b56b88be2356a4"},
-    {file = "torchcodec-0.14.0-cp314-cp314t-manylinux_2_28_x86_64.whl", hash = "sha256:241040305c0c3d9c5f9b923562e5e754818568a973a9ad8bb73a7badf4690dd6"},
 ]
 
 [package.extras]
 dev = ["numpy", "pillow", "pytest"]
+
+[package.source]
+type = "url"
+url = "https://download.pytorch.org/whl/cpu/torchcodec-0.14.0-cp314-cp314-macosx_14_0_arm64.whl"
+
+[[package]]
+name = "torchcodec"
+version = "0.14.0+cpu"
+description = "A video decoder for PyTorch"
+optional = false
+python-versions = ">=3.10"
+groups = ["main"]
+markers = "sys_platform == \"linux\" and platform_machine == \"aarch64\""
+files = [
+    {file = "torchcodec-0.14.0+cpu-cp314-cp314-manylinux_2_28_aarch64.whl", hash = "sha256:54d9b57ee11dbcbdd18bc1c0aeab66bd661f404e94fba8dba42738b12e16e077"},
+]
+
+[package.extras]
+dev = ["numpy", "pillow", "pytest"]
+
+[package.source]
+type = "url"
+url = "https://download.pytorch.org/whl/cpu/torchcodec-0.14.0%2Bcpu-cp314-cp314-manylinux_2_28_aarch64.whl"
+
+[[package]]
+name = "torchcodec"
+version = "0.14.0+cpu"
+description = "A video decoder for PyTorch"
+optional = false
+python-versions = ">=3.10"
+groups = ["main"]
+markers = "sys_platform == \"linux\" and platform_machine != \"aarch64\" or sys_platform == \"darwin\" and platform_machine != \"arm64\""
+files = [
+    {file = "torchcodec-0.14.0+cpu-cp314-cp314-manylinux_2_28_x86_64.whl", hash = "sha256:30216522430b59064943509429d64eccd642e78dab6a008f46806e4f98dfd0ee"},
+]
+
+[package.extras]
+dev = ["numpy", "pillow", "pytest"]
+
+[package.source]
+type = "url"
+url = "https://download.pytorch.org/whl/cpu/torchcodec-0.14.0%2Bcpu-cp314-cp314-manylinux_2_28_x86_64.whl"
 
 [[package]]
 name = "tqdm"
