@@ -28,7 +28,7 @@ FROM python:${PYTHON_VERSION}-slim AS libcommon
 
 # System dependencies
 RUN apt-get update \
-    && apt-get install -y unzip wget procps htop ffmpeg libavcodec-extra libsndfile1 \
+    && apt-get install -y unzip wget procps htop ffmpeg libavcodec-extra libsndfile1 libjpeg-dev zlib1g-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Common environment variables
