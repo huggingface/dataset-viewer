@@ -293,8 +293,7 @@ def download_file_from_hub(
     force_download: bool = False,
     resume_download: bool = False,
 ) -> str:
-    logging.debug(f"Using {constants.HF_HUB_ENABLE_HF_TRANSFER} for hf_transfer")
-    retry_on: list[type[Exception]] = [RuntimeError] if constants.HF_HUB_ENABLE_HF_TRANSFER else [ReadTimeout]
+    retry_on: list[type[Exception]] = [RuntimeError, ReadTimeout]
     retry_download_hub_file = retry(on=retry_on, sleeps=HF_HUB_HTTP_ERROR_RETRY_SLEEPS)(hf_hub_download)
     return retry_download_hub_file(
         repo_type=repo_type,
