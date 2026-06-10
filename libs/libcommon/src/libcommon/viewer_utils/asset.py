@@ -10,7 +10,7 @@ import fitz
 from datasets import Audio
 from pdfplumber.pdf import PDF
 from PIL import Image
-from torchcodec.encoders import AudioEncoder
+from torchcodec.encoders import AudioEncoder  # type: ignore[attr-defined]
 
 if TYPE_CHECKING:
     from libcommon.storage_client import StorageClient
