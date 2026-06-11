@@ -1,7 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2023 The HuggingFace Authors.
 
-import itertools
 from collections.abc import Iterator
 from contextlib import contextmanager
 from datetime import datetime
@@ -489,7 +488,7 @@ def artifact_id_to_job_info(artifact_id: str) -> JobInfo:
 
 
 def get_rows_content(rows_max_number: int, dataset: Dataset) -> RowsContent:
-    rows_plus_one = list(itertools.islice(dataset, rows_max_number + 1))
+    rows_plus_one = dataset.with_format("arrow")[: rows_max_number + 1].to_pylist()
     # ^^ to be able to detect if a split has exactly rows_max_number rows
     return RowsContent(
         rows=rows_plus_one[:rows_max_number], all_fetched=len(rows_plus_one) <= rows_max_number, truncated_columns=[]

@@ -9,12 +9,9 @@ from typing import Any, Optional
 
 from aiohttp import ClientSession
 from aiolimiter import AsyncLimiter
-from datasets import get_dataset_config_info
 from libcommon.dtos import JobInfo
 from libcommon.exceptions import (
-    DatasetWithScriptNotSupportedError,
     ExternalServerError,
-    InfoError,
     MissingSpawningTokenError,
     PreviousStepFormatError,
     TooManyColumnsError,
@@ -167,17 +164,6 @@ def compute_opt_in_out_urls_scan_response(
     except KeyError as e:
         raise PreviousStepFormatError("Previous step did not return the expected content.", e) from e
 
-    # get the info
-    try:
-        info = get_dataset_config_info(path=dataset, config_name=config, token=hf_token)
-    except Exception as err:
-        if isinstance(err, ValueError) and "trust_remote_code" in str(err):
-            raise DatasetWithScriptNotSupportedError from err
-        raise InfoError(
-            f"The info cannot be fetched for the config '{config}' of the dataset.",
-            cause=err,
-        ) from err
-
     if not image_url_columns:
         return OptInOutUrlsScanResponse(
             urls_columns=[],
@@ -202,7 +188,6 @@ def compute_opt_in_out_urls_scan_response(
         dataset=dataset,
         config=config,
         split=split,
-        info=info,
         rows_max_number=rows_max_number,
         token=hf_token,
         column_names=image_url_columns,

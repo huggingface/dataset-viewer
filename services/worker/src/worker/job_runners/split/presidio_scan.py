@@ -333,7 +333,6 @@ def compute_presidio_entities_scan_response(
         dataset=dataset,
         config=config,
         split=split,
-        info=info,
         rows_max_number=rows_max_number,
         token=hf_token,
         column_names=scanned_columns,

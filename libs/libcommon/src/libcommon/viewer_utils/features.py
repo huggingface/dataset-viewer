@@ -9,9 +9,7 @@ from typing import Any, Optional, Union
 from zlib import adler32
 
 import datasets.config
-import numpy as np
 import pdfplumber
-import soundfile  # type: ignore
 from datasets import (
     Array2D,
     Array3D,
@@ -30,6 +28,7 @@ from datasets import (
     Value,
     Video,
 )
+from datasets.utils.file_utils import is_local_path
 from huggingface_hub import HfFileSystem
 from PIL import Image as PILImage
 
@@ -106,8 +105,8 @@ def image(
     elif isinstance(value, bytes):
         value = PILImage.open(BytesIO(value))
     elif isinstance(value, dict) and "path" in value and isinstance(value["path"], str):
-        if os.path.exists(value["path"]):
-            value = PILImage.open(value["path"])
+        if is_local_path(value["path"]):
+            return None
         elif value["path"].startswith(f"hf://datasets/{dataset}@"):
             with HfFileSystem(endpoint=hf_endpoint, token=hf_token).open(value["path"], "rb") as f:
                 src = value["path"].replace("hf://", hf_endpoint + "/", 1).replace("@", "/resolve/", 1)
@@ -152,6 +151,7 @@ def audio(
     featureName: str,
     storage_client: StorageClient,
     hf_endpoint: str,
+    hf_token: Optional[str],
     json_path: Optional[list[Union[str, int]]] = None,
 ) -> Optional[list[AudioSource]]:
     from datasets.features._torchcodec import AudioDecoder
@@ -167,9 +167,9 @@ def audio(
     elif isinstance(value, str):
         value = {"path": value, "bytes": None}
 
-    if not isinstance(value, (dict, AudioDecoder)):
+    if not isinstance(value, dict):
         raise TypeError(
-            "Audio cell must be an encoded dict of an audio sample or a torchcodec AudioDecoder, "
+            "Audio cell must be an encoded dict of an audio sample, "
             f"but got {str(value)[:300]}{'...' if len(str(value)) > 300 else ''}"
         )
 
@@ -179,8 +179,21 @@ def audio(
             if value["path"].startswith(f"hf://datasets/{dataset}@"):
                 src = value["path"].replace("hf://", hf_endpoint + "/", 1).replace("@", "/resolve/", 1)
                 return [AudioSource(src=src, type=SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE[audio_file_extension])]
+        if is_local_path(value["path"]):
+            return None
+        elif value["path"].startswith(f"hf://datasets/{dataset}@"):
+            with HfFileSystem(endpoint=hf_endpoint, token=hf_token).open(value["path"], "rb") as f:
+                audio_file_bytes = f.read()
+        else:
+            raise ValueError(f"invalid path: {value['path']}")
+    elif "bytes" in value and isinstance(value["bytes"], bytes):
+        audio_file_bytes = value["bytes"]
+    else:
+        raise ValueError(
+            "Audio cell dict must be an audio sample, "
+            f"but got {str(value)[:300]}{'...' if len(str(value)) > 300 else ''}"
+        )
 
-    audio_file_bytes = get_audio_file_bytes(value)
     if not audio_file_extension:
         audio_file_extension = infer_audio_file_extension(audio_file_bytes)
     # convert to wav if the audio file extension is not supported
@@ -200,34 +213,6 @@ def audio(
         storage_client=storage_client,
         filename=f"{append_hash_suffix('audio', json_path)}{target_audio_file_extension}",
     )
-
-
-def get_audio_file_bytes(value: Any) -> bytes:
-    from datasets.features._torchcodec import AudioDecoder
-
-    if isinstance(value, dict) and "bytes" in value and isinstance(value["bytes"], bytes):
-        audio_file_bytes = value["bytes"]
-    elif (
-        isinstance(value, dict)
-        and "path" in value
-        and isinstance(value["path"], str)
-        and os.path.exists(value["path"])
-    ):
-        with open(value["path"], "rb") as f:
-            audio_file_bytes = f.read()
-    elif isinstance(value, AudioDecoder):
-        _array = value["array"]
-        _sampling_rate = value["sampling_rate"]
-        if isinstance(_array, np.ndarray) and isinstance(_sampling_rate, int):
-            buffer = BytesIO()
-            soundfile.write(buffer, _array, _sampling_rate, format="wav")
-            audio_file_bytes = buffer.getvalue()
-    else:
-        raise ValueError(
-            "An audio sample should have 'path' and 'bytes' (or 'array' and 'sampling_rate') but got"
-            f" {', '.join(value)}."
-        )
-    return audio_file_bytes
 
 
 def get_audio_file_extension(value: Any) -> Optional[str]:
@@ -315,9 +300,19 @@ def video(
         if value["path"].startswith(f"hf://datasets/{dataset}@"):
             src = value["path"].replace("hf://", hf_endpoint + "/", 1).replace("@", "/resolve/", 1)
             return VideoSource(src=src)
+        if is_local_path(value["path"]):
+            return None
+        else:
+            raise ValueError(f"invalid path: {value['path']}")
+    elif "bytes" in value and isinstance(value["bytes"], bytes):
+        video_file_bytes = value["bytes"]
+    else:
+        raise ValueError(
+            "Video cell dict must be an video sample, "
+            f"but got {str(value)[:300]}{'...' if len(str(value)) > 300 else ''}"
+        )
 
     video_file_extension = get_video_file_extension(value)
-    video_file_bytes = get_video_file_bytes(value)
     if not video_file_extension:
         video_file_extension = infer_audio_file_extension(video_file_bytes) or ".unknown"
     return create_video_file(
@@ -381,8 +376,8 @@ def pdf(
     elif isinstance(value, bytes):
         value = pdfplumber.open(BytesIO(value))
     elif isinstance(value, dict) and "path" in value and isinstance(value["path"], str):
-        if os.path.exists(value["path"]):
-            value = pdfplumber.open(value["path"])
+        if is_local_path(value["path"]):
+            return None
         elif value["path"].startswith(f"hf://datasets/{dataset}@"):
             f = HfFileSystem(endpoint=hf_endpoint, token=hf_token).open(value["path"], "rb")
             value = pdfplumber.open(f)
@@ -449,6 +444,7 @@ def get_cell_value(
             featureName=featureName,
             storage_client=storage_client,
             hf_endpoint=hf_endpoint,
+            hf_token=hf_token,
             json_path=json_path,
         )
     elif isinstance(fieldType, Video):
