@@ -64,21 +64,12 @@ images:
       useGlobalRegistry: false
       repository: datasets-server-services-webhook
       tag: sha-fb3399a
-# IRSA rollout (two steps):
-# 1) create the IAM role + S3 policy, then set create: true and the role-arn annotation below
-#    and run `helm upgrade` (pods get the projected web identity token, but still use static keys).
-# 2) once verified, set s3.useIrsa: true to stop injecting static AWS credentials.
 serviceAccount:
-  # step 1: SA "prod-datasets-server" created with the IRSA role annotation.
-  # Pods get the projected web identity token but still use static keys until s3.useIrsa: true.
-  # AWS account: 707930574880 (hub-prod). IAM role defined in infra repo
-  # (projects/hub/20-eks-datasets-server, module.datasets_server_s3_role).
-  # OIDC issuer: oidc.eks.us-east-1.amazonaws.com/id/083C864C44036226AD61D5B3F594B99D
-  # Trust sub: system:serviceaccount:datasets-server:prod-datasets-server
   create: true
   name: ""
-  annotations:
-    eks.amazonaws.com/role-arn: "arn:aws:iam::707930574880:role/hub-prod-datasets-server"
+  # eks.amazonaws.com/role-arn annotation is injected at deploy time (private overlay),
+  # not stored in this repo.
+  annotations: {}
 
 secrets:
   infisical:
@@ -131,7 +122,7 @@ mongodb:
 
 s3:
   regionName: "us-east-1"
-  # set to true only after IRSA is verified (step 2 above)
+  # when true, drop static S3 credentials and rely on the ServiceAccount IRSA role
   useIrsa: false
 
 common:
