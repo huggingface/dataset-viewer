@@ -18,9 +18,19 @@ from urllib.parse import quote
 
 import PIL
 import requests
-from datasets import DatasetBuilder, DownloadConfig, Features, IterableDataset, IterableDatasetDict, load_dataset
+from datasets import (
+    ClassLabel,
+    DatasetBuilder,
+    DownloadConfig,
+    DownloadMode,
+    Features,
+    IterableDataset,
+    IterableDatasetDict,
+    Json,
+    load_dataset,
+)
 from datasets.features.features import decode_nested_example
-from datasets.utils.file_utils import SINGLE_FILE_COMPRESSION_EXTENSION_TO_PROTOCOL
+from datasets.utils.file_utils import SINGLE_FILE_COMPRESSION_EXTENSION_TO_PROTOCOL, is_relative_path
 from huggingface_hub import HfFileSystem, HfFileSystemFile
 from huggingface_hub.errors import RepositoryNotFoundError
 from huggingface_hub.hf_api import HfApi
@@ -54,15 +64,19 @@ def _patched_decode_nested_example(
     schema: Any, obj: Any, allow: str, token_per_repo_id: Optional[dict[str, Union[str, bool, None]]] = None
 ) -> Any:
     path: Optional[str] = None
-    if hasattr(schema, "decode_example") and getattr(schema, "decode", True):
+    if (
+        hasattr(schema, "decode_example")
+        and getattr(schema, "decode", True)
+        and not isinstance(schema, (ClassLabel, Json))
+    ):
         if isinstance(obj, str):
             path = obj
         elif isinstance(obj, dict) and "path" in obj and isinstance(obj["path"], str):
             path = obj["path"]
-    if path:
-        resolved_path = resolve_hf_path(path)
-        if not fnmatch(resolved_path, allow):
-            raise ValueError(f"Data file doesn't belong to {allow}")
+        if path:
+            resolved_path = resolve_hf_path(path)
+            if not fnmatch(resolved_path, allow):
+                raise ValueError(f"Data file doesn't belong to {allow}")
     return decode_nested_example(schema, obj, token_per_repo_id=token_per_repo_id)
 
 
@@ -337,6 +351,7 @@ def safe_load_dataset_builder(
     revision: Optional[str] = None,
     download_config: Optional[DownloadConfig] = None,
     token: Optional[Union[bool, str]] = None,
+    **kwargs: Any,
 ) -> DatasetBuilder:
     """Simplified load_dataset_builder from `datasets` and with safety checks on data_files
 
@@ -357,6 +372,12 @@ def safe_load_dataset_builder(
 
     if path.count("/") != 1 or ".." in path or path.startswith("/"):
         raise ValueError(f"Invalid dataset: {path}")
+    for key in kwargs:
+        if key == "download_mode":
+            if kwargs[key] != DownloadMode.REUSE_DATASET_IF_EXISTS:
+                raise ValueError(f"not supported in safe_load_dataset_builder: {key}")
+        elif kwargs[key] is not None:
+            raise ValueError(f"not supported in safe_load_dataset_builder: {key}")
     if token is not None:
         download_config = download_config.copy() if download_config else DownloadConfig()
         download_config.token = token
@@ -379,11 +400,15 @@ def safe_load_dataset_builder(
     builder_cls = get_dataset_builder_class(dataset_module, dataset_name=dataset_name)
 
     # Safety checks
-    data_files = builder_cls.builder_configs[name].data_files
-    if data_files is not None:
-        for split in data_files:
-            for data_file in data_files[split]:
-                resolved_data_file = resolve_hf_path(data_file)
+    config_data_files = builder_cls.builder_configs[name].data_files
+    if config_data_files is not None:
+        for split in config_data_files:
+            for data_file in config_data_files[split]:
+                resolved_data_file = resolve_hf_path(
+                    posixpath.join(builder_kwargs["base_path"], data_file)
+                    if is_relative_path(data_file)
+                    else data_file
+                )
                 if not resolved_data_file.startswith(repo_dir_with_commit_hash + "/"):
                     raise ValueError(f"Data files don't belong to {repo_dir}")
 
@@ -438,13 +463,19 @@ def safe_load_dataset(
         raise ValueError("Safely loading a dataset is only available in streaming mode")
     with patch("datasets.load.load_dataset_builder", safe_load_dataset_builder):
         return load_dataset(
-            path, name=name, revision=revision, split=split, download_config=download_config, token=token
+            path,
+            name=name,
+            revision=revision,
+            split=split,
+            streaming=streaming,
+            download_config=download_config,
+            token=token,
         )
 
 
 def safe_iter(ds: IterableDataset, dataset: str) -> Iterator[dict[str, Any]]:
     with check_paths_during_decoding(allow=f"hf://datasets/{dataset}@*/**"):
-        yield from ds.decode(False)
+        yield from ds.decode(False) if ds.features else ds
 
 
 def resolve_hf_path(path: str) -> str:

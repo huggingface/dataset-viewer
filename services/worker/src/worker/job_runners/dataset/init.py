@@ -2,6 +2,7 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
+import posixpath
 from collections.abc import Iterator
 from typing import Optional
 
@@ -11,6 +12,7 @@ from datasets.exceptions import (
 )
 from datasets.exceptions import DatasetNotFoundError
 from datasets.load import dataset_module_factory, get_dataset_builder_class
+from datasets.utils.file_utils import is_relative_path
 from huggingface_hub.utils import HfHubHTTPError
 from libcommon.dtos import CachedJob
 from libcommon.exceptions import (
@@ -96,7 +98,11 @@ def compute_init_responses(
         if data_files is not None:
             for split in data_files:
                 for data_file in data_files[split]:
-                    resolved_data_file = resolve_hf_path(data_file)
+                    resolved_data_file = resolve_hf_path(
+                        posixpath.join(dataset_module.builder_kwargs["base_path"], data_file)
+                        if is_relative_path(data_file)
+                        else data_file
+                    )
                     if not resolved_data_file.startswith(repo_dir_with_commit_hash + "/"):
                         raise ValueError(f"Data files don't belong to {repo_dir}")
 

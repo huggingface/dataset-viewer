@@ -7,6 +7,7 @@ from typing import Literal
 import pandas as pd
 import pytest
 from datasets import Dataset
+from datasets.table import embed_table_storage
 
 from libcommon.constants import MAX_NUM_ROWS_PER_PAGE
 from libcommon.exceptions import TooBigContentError
@@ -39,6 +40,7 @@ def test_create_first_rows_response(
 ) -> None:
     dataset_fixture = datasets_fixtures[dataset_name]
     dataset = dataset_fixture.dataset
+    dataset = dataset.with_format("arrow").map(embed_table_storage)
 
     response = create_first_rows_response(
         dataset=dataset_name,
@@ -153,6 +155,7 @@ def test_create_first_rows_response_truncation_on_audio_or_image(
 ) -> None:
     dataset_fixture = datasets_fixtures[dataset_name]
     dataset = dataset_fixture.dataset
+    dataset = dataset.with_format("arrow").map(embed_table_storage)
 
     if expected == "error":
         with pytest.raises(TooBigContentError):

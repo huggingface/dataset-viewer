@@ -10,6 +10,7 @@ from unittest.mock import patch
 import boto3
 import pytest
 from aiobotocore.response import StreamingBody
+from datasets.table import embed_table_storage
 from moto import mock_s3
 from urllib3._collections import HTTPHeaderDict
 
@@ -50,22 +51,18 @@ def assert_output_has_valid_files(value: Any, storage_client: StorageClient) -> 
             assert os.path.getsize(path) > 0
 
 
-@pytest.mark.parametrize("decoded", [True, False])
 @pytest.mark.parametrize("dataset_name", DATASETS_NAMES)
 def test_get_cell_value_value(
     storage_client_with_url_preparator: StorageClient,
     datasets_fixtures: Mapping[str, DatasetFixture],
     dataset_name: str,
-    decoded: bool,
 ) -> None:
     dataset_fixture = datasets_fixtures[dataset_name]
     dataset = dataset_fixture.dataset
     feature = dataset.features[DEFAULT_COLUMN_NAME]
-    cell = (
-        dataset[DEFAULT_ROW_IDX][DEFAULT_COLUMN_NAME]
-        if decoded
-        else dataset.with_format("arrow")[DEFAULT_ROW_IDX].to_pydict()[DEFAULT_COLUMN_NAME][DEFAULT_ROW_IDX]
-    )
+    dataset = dataset.with_format("arrow").map(embed_table_storage)
+    cell = dataset[DEFAULT_ROW_IDX].to_pydict()[DEFAULT_COLUMN_NAME][DEFAULT_ROW_IDX]
+
     expected_cell = dataset_fixture.expected_cell
     value = get_cell_value(
         dataset=dataset_name,
@@ -110,6 +107,7 @@ def test_ogg_audio_with_s3(
     dataset_name = "audio_ogg"
     dataset_fixture = datasets_fixtures[dataset_name]
     dataset = dataset_fixture.dataset
+    dataset = dataset.with_format("arrow").map(embed_table_storage)
     feature = dataset.features[DEFAULT_COLUMN_NAME]
     bucket_name = "bucket"
     with mock_s3():
@@ -164,7 +162,7 @@ def test_ogg_audio_with_s3(
                 config=DEFAULT_CONFIG,
                 split=DEFAULT_SPLIT,
                 row_idx=DEFAULT_ROW_IDX,
-                cell=dataset[DEFAULT_ROW_IDX][DEFAULT_COLUMN_NAME],
+                cell=dataset[DEFAULT_ROW_IDX][DEFAULT_COLUMN_NAME].to_pylist()[0],
                 featureName=DEFAULT_COLUMN_NAME,
                 fieldType=feature,
                 storage_client=storage_client,

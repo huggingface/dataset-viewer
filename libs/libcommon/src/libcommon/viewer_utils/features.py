@@ -179,13 +179,20 @@ def audio(
             if value["path"].startswith(f"hf://datasets/{dataset}@"):
                 src = value["path"].replace("hf://", hf_endpoint + "/", 1).replace("@", "/resolve/", 1)
                 return [AudioSource(src=src, type=SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE[audio_file_extension])]
-        elif is_local_path(value["path"]):
+        if is_local_path(value["path"]):
             return None
         elif value["path"].startswith(f"hf://datasets/{dataset}@"):
             with HfFileSystem(endpoint=hf_endpoint, token=hf_token).open(value["path"], "rb") as f:
                 audio_file_bytes = f.read()
+        else:
+            raise ValueError(f"invalid path: {value['path']}")
     elif "bytes" in value and isinstance(value["bytes"], bytes):
         audio_file_bytes = value["bytes"]
+    else:
+        raise ValueError(
+            "Audio cell dict must be an audio sample, "
+            f"but got {str(value)[:300]}{'...' if len(str(value)) > 300 else ''}"
+        )
 
     if not audio_file_extension:
         audio_file_extension = infer_audio_file_extension(audio_file_bytes)
@@ -293,10 +300,17 @@ def video(
         if value["path"].startswith(f"hf://datasets/{dataset}@"):
             src = value["path"].replace("hf://", hf_endpoint + "/", 1).replace("@", "/resolve/", 1)
             return VideoSource(src=src)
-        elif is_local_path(value["path"]):
+        if is_local_path(value["path"]):
             return None
+        else:
+            raise ValueError(f"invalid path: {value['path']}")
     elif "bytes" in value and isinstance(value["bytes"], bytes):
         video_file_bytes = value["bytes"]
+    else:
+        raise ValueError(
+            "Video cell dict must be an video sample, "
+            f"but got {str(value)[:300]}{'...' if len(str(value)) > 300 else ''}"
+        )
 
     video_file_extension = get_video_file_extension(value)
     if not video_file_extension:
