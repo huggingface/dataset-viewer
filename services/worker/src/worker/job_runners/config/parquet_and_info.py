@@ -22,7 +22,8 @@ import fsspec
 import numpy as np
 import pyarrow as pa
 import pyarrow.parquet as pq
-from datasets import DownloadConfig, Features, load_dataset_builder
+from datasets import DownloadConfig, Features
+from datasets.arrow_writer import ParquetWriter
 from datasets.builder import DatasetBuilder
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
 from datasets.download import StreamingDownloadManager
@@ -88,6 +89,7 @@ from worker.utils import (
     hf_hub_url,
     raise_if_long_column_name,
     retry_on_arrow_invalid_open_file,
+    safe_load_dataset_builder,
 )
 
 DATASET_TYPE = "dataset"
@@ -844,6 +846,35 @@ def list_generated_parquet_files(builder: DatasetBuilder, partial: bool = False)
     return local_parquet_files
 
 
+class _PatchedParquetWriter(ParquetWriter):  # type: ignore[misc]
+    def __init__(
+        self, *args: Any, use_content_defined_chunking: bool = True, write_page_index: bool = True, **kwargs: Any
+    ) -> None:
+        kwargs["embed_local_files"] = False
+        super().__init__(
+            *args,
+            use_content_defined_chunking=use_content_defined_chunking,
+            write_page_index=write_page_index,
+            **kwargs,
+        )
+
+
+class disallow_embed_local_files:
+    def __init__(self) -> None:
+        self.exit_stack = ExitStack()
+
+    def __enter__(self) -> None:
+        self.exit_stack.enter_context(patch("datasets.builder.ParquetWriter", _PatchedParquetWriter))
+
+    def __exit__(
+        self,
+        exc_type: Optional[type[BaseException]],
+        exc_value: Optional[BaseException],
+        traceback: Optional[TracebackType],
+    ) -> None:
+        return self.exit_stack.close()
+
+
 def get_total_files_size(urlpaths: list[str], storage_options: dict[str, Any]) -> int:
     total_size = 0
     fs = HfFileSystem(**storage_options["hf"])
@@ -898,11 +929,13 @@ def stream_convert_to_parquet(
         split_info = splits_generators[split].split_info
         split_dict.add(split_info)
         if max_dataset_size_bytes is None:
-            builder._prepare_split(split_generator=splits_generators[split], file_format="parquet")
+            with disallow_embed_local_files():
+                builder._prepare_split(split_generator=splits_generators[split], file_format="parquet")
         else:
             with (
                 limit_parquet_writes(builder, max_dataset_size_bytes=max_dataset_size_bytes) as limiter,
                 track_reads() as reads_tracker,
+                disallow_embed_local_files(),
             ):
                 builder._prepare_split(split_generator=splits_generators[split], file_format="parquet")
                 partial = partial or limiter.total_bytes >= max_dataset_size_bytes
@@ -1291,10 +1324,10 @@ def compute_config_parquet_and_info_response(
     download_config = DownloadConfig(delete_extracted=True)
     try:
         logging.info(f"Loading {dataset=} {config=} builder. ")
-        retry_load_dataset_builder = retry(on=[HfHubHTTPError], sleeps=HF_HUB_HTTP_ERROR_RETRY_SLEEPS)(
-            load_dataset_builder
+        retry_safe_load_dataset_builder = retry(on=[HfHubHTTPError], sleeps=HF_HUB_HTTP_ERROR_RETRY_SLEEPS)(
+            safe_load_dataset_builder
         )
-        builder = retry_load_dataset_builder(
+        builder = retry_safe_load_dataset_builder(
             path=dataset,
             name=config,
             revision=source_revision,
@@ -1322,30 +1355,12 @@ def compute_config_parquet_and_info_response(
             logging.info(f"{len(parquet_operations)} parquet files to copy for {dataset=} {config=}.")
             with patch("huggingface_hub.hf_file_system.http_backoff", http_backoff_with_timeout):
                 fill_builder_info(builder, hf_endpoint=hf_endpoint, hf_token=hf_token)
-        elif is_video_builder(builder):  # videos should be saved from their URLs, not from locally downloaded files
-            logging.info(
-                f"{dataset=} {config=} is a video dataset, converting it by streaming to store the video URLs"
-            )
+        else:
+            # stream_convert_to_parquet disallows embedding local files for safety
+            logging.info(f"{dataset=} {config=} is not in parquet, converting it using streaming")
             parquet_operations, partial, estimated_dataset_info = stream_convert_to_parquet(
                 builder, max_dataset_size_bytes=max_dataset_size_bytes
             )
-        else:
-            hf_api_dataset_info = hf_api.dataset_info(repo_id=dataset, revision=source_revision, files_metadata=True)
-            if is_dataset_too_big(
-                dataset_info=hf_api_dataset_info,
-                builder=builder,
-                max_dataset_size_bytes=max_dataset_size_bytes,
-            ):
-                logging.info(
-                    f"{dataset=} {config=} is too big to be fully converted, "
-                    f"converting first {max_dataset_size_bytes} bytes."
-                )
-                parquet_operations, partial, estimated_dataset_info = stream_convert_to_parquet(
-                    builder, max_dataset_size_bytes=max_dataset_size_bytes
-                )
-
-            else:
-                parquet_operations = convert_to_parquet(builder)
             logging.info(f"{len(parquet_operations)} parquet files are ready to be pushed for {dataset=} {config=}.")
     except datasets.exceptions.DatasetGenerationCastError as err:
         raise DatasetGenerationCastError("The dataset generation failed because of a cast error", cause=err) from err
