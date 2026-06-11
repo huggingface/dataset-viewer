@@ -64,6 +64,21 @@ images:
       useGlobalRegistry: false
       repository: datasets-server-services-webhook
       tag: sha-fb3399a
+# IRSA rollout (two steps):
+# 1) create the IAM role + S3 policy, then set create: true and the role-arn annotation below
+#    and run `helm upgrade` (pods get the projected web identity token, but still use static keys).
+# 2) once verified, set s3.useIrsa: true to stop injecting static AWS credentials.
+serviceAccount:
+  # step 0 (current): create=false + empty name -> pods use the existing "default" SA
+  # AWS account: 707930574880 (hub-prod). OIDC provider already exists (used by the
+  # datasets-server-staging SA -> role hub-prod-datasets-server-mongodb).
+  # OIDC issuer: oidc.eks.us-east-1.amazonaws.com/id/083C864C44036226AD61D5B3F594B99D
+  # IAM role trust must allow sub: system:serviceaccount:datasets-server:prod-datasets-server
+  create: false
+  name: ""
+  annotations: {}
+    # eks.amazonaws.com/role-arn: "arn:aws:iam::707930574880:role/hub-prod-datasets-server"
+
 secrets:
   infisical:
     enabled: true
@@ -112,6 +127,11 @@ monitoring:
 
 mongodb:
   enabled: false
+
+s3:
+  regionName: "us-east-1"
+  # set to true only after IRSA is verified (step 2 above)
+  useIrsa: false
 
 common:
   # URL of the HuggingFace Hub
