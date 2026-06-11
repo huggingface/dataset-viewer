@@ -120,6 +120,7 @@ def test_prepare_urls_in_first_rows_in_place(
 ) -> None:
     dataset_fixture = datasets_fixtures[dataset_name]
     dataset = dataset_fixture.dataset
+    dataset = dataset.with_format("arrow").map(embed_table_storage)
 
     first_rows = create_first_rows_response(
         dataset=dataset_name,
