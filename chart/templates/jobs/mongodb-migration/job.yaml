@@ -19,6 +19,7 @@ spec:
       labels: {{ include "labels.mongodbMigration" . | nindent 8 }}
     spec:
       restartPolicy: Never
+      serviceAccountName: {{ include "datasetsServer.serviceAccountName" . }}
       {{- include "dnsConfig" . | nindent 6 }}
       {{- include "image.imagePullSecrets" . | nindent 6 }}
       containers: {{ include "containerMongodbMigration" . | nindent 8 }}

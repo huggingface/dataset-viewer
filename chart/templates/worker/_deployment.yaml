@@ -27,6 +27,7 @@ spec:
     metadata:
       labels: {{ include "labels.worker" (merge (dict "workerValues" .workerValues) $ ) | nindent 8 }}
     spec:
+      serviceAccountName: {{ include "datasetsServer.serviceAccountName" . }}
       terminationGracePeriodSeconds: {{ default 30 .workerValues.terminationGracePeriodSeconds }}
       {{- include "dnsConfig" . | nindent 6 }}
       {{- include "image.imagePullSecrets" . | nindent 6 }}
