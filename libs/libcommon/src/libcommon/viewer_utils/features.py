@@ -34,6 +34,7 @@ from PIL import Image as PILImage
 
 from libcommon.dtos import FeatureItem
 from libcommon.storage_client import StorageClient
+from libcommon.url_preparator import hf_to_https_url
 from libcommon.viewer_utils.asset import (
     SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE,
     SUPPORTED_AUDIO_EXTENSIONS,
@@ -109,7 +110,7 @@ def image(
             return None
         elif value["path"].startswith(f"hf://datasets/{dataset}@"):
             with HfFileSystem(endpoint=hf_endpoint, token=hf_token).open(value["path"], "rb") as f:
-                src = value["path"].replace("hf://", hf_endpoint + "/", 1).replace("@", "/resolve/", 1)
+                src = hf_to_https_url(value["path"], hf_endpoint)
                 image = PILImage.open(f)
                 return ImageSource(src=src, height=image.height, width=image.width)
 
@@ -177,7 +178,7 @@ def audio(
     if "path" in value and isinstance(value["path"], str) and value.get("bytes") is None:
         if audio_file_extension in SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE:
             if value["path"].startswith(f"hf://datasets/{dataset}@"):
-                src = value["path"].replace("hf://", hf_endpoint + "/", 1).replace("@", "/resolve/", 1)
+                src = hf_to_https_url(value["path"], hf_endpoint)
                 return [AudioSource(src=src, type=SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE[audio_file_extension])]
         if is_local_path(value["path"]):
             return None
@@ -298,7 +299,7 @@ def video(
 
     if "path" in value and isinstance(value["path"], str) and value.get("bytes") is None:
         if value["path"].startswith(f"hf://datasets/{dataset}@"):
-            src = value["path"].replace("hf://", hf_endpoint + "/", 1).replace("@", "/resolve/", 1)
+            src = hf_to_https_url(value["path"], hf_endpoint)
             return VideoSource(src=src)
         if is_local_path(value["path"]):
             return None
