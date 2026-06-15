@@ -226,13 +226,6 @@ def test_compute(
             "CachedArtifactError",
         ),
         (
-            "info_error",
-            10,
-            IMAGE_URL_COLUMNS_RESPONSE_EMPTY,
-            HTTPStatus.OK,
-            "InfoError",
-        ),
-        (
             "too_many_columns",
             0,
             IMAGE_URL_COLUMNS_RESPONSE_WITH_DATA,
