@@ -735,10 +735,10 @@ class AudioColumn(MediaColumn):
         if example is None:
             return None
 
-        from torchcodec.decoders import AudioDecoder
+        from torchcodec.decoders import AudioDecoder  # type: ignore[attr-defined]
 
         with MediaColumn.open(example, hf_token=hf_token) as f:
-            duration = AudioDecoder(f).metadata.duration_seconds_from_header if f else None
+            duration = AudioDecoder(f).metadata.duration_seconds_from_header if f else None  # type: ignore[arg-type]
         if not isinstance(duration, float):
             raise StatisticsComputationError("Failed to get the audio duration for the header.")
         return duration
@@ -757,10 +757,10 @@ class VideoColumn(MediaColumn):
         if example is None:
             return None
 
-        from torchcodec.decoders import VideoDecoder
+        from torchcodec.decoders import VideoDecoder  # type: ignore[attr-defined]
 
         with MediaColumn.open(example, hf_token=hf_token) as f:
-            duration = VideoDecoder(f).metadata.duration_seconds_from_header if f else None
+            duration = VideoDecoder(f).metadata.duration_seconds_from_header if f else None  # type: ignore[arg-type]
         if not isinstance(duration, float):
             raise StatisticsComputationError("Failed to get the video duration for the header.")
         return duration

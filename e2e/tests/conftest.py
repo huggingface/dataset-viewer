@@ -17,7 +17,7 @@ from .utils import poll, tmp_dataset
 @pytest.fixture(scope="session", autouse=True)
 def monkeypatch_session() -> Iterator[pytest.MonkeyPatch]:
     mp = pytest.MonkeyPatch()
-    mp.setattr("huggingface_hub.file_download.HUGGINGFACE_CO_URL_TEMPLATE", CI_URL_TEMPLATE)
+    mp.setattr("huggingface_hub.constants.HUGGINGFACE_CO_URL_TEMPLATE", CI_URL_TEMPLATE)
     # ^ see https://github.com/huggingface/datasets/pull/5196#issuecomment-1322191056
     mp.setattr("datasets.config.HF_ENDPOINT", CI_HUB_ENDPOINT)
     mp.setattr("datasets.config.HF_UPDATE_DOWNLOAD_COUNTS", False)

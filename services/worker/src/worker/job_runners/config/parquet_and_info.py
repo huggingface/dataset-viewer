@@ -19,6 +19,7 @@ import datasets.config
 import datasets.exceptions
 import datasets.info
 import fsspec
+import httpx
 import numpy as np
 import pyarrow as pa
 import pyarrow.parquet as pq
@@ -52,7 +53,8 @@ from huggingface_hub._commit_api import (
 )
 from huggingface_hub.errors import HfHubHTTPError, RepositoryNotFoundError
 from huggingface_hub.hf_api import CommitInfo, DatasetInfo, HfApi, RepoFile, RepoSibling
-from huggingface_hub.utils._http import HTTP_METHOD_T, Response, http_backoff
+from huggingface_hub.hf_file_system import HfFileSystemResolvedRepositoryPath
+from huggingface_hub.utils._http import HTTP_METHOD_T, http_backoff
 from libcommon.constants import (
     PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_ROW_GROUP_SIZE_FOR_AUDIO_DATASETS,
     PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_ROW_GROUP_SIZE_FOR_BINARY_DATASETS,
@@ -102,7 +104,7 @@ T = TypeVar("T")
 ImageFolderBuilder.EXTENSIONS = list(set(ImageFolderBuilder.EXTENSIONS) - {".h5", ".hdf"})  # fix for datasets <= 3.2.0
 
 
-def http_backoff_with_timeout(method: HTTP_METHOD_T, url: str, **kwargs: Any) -> Response:
+def http_backoff_with_timeout(method: HTTP_METHOD_T, url: str, **kwargs: Any) -> httpx.Response:
     kwargs["timeout"] = kwargs.get("timeout", 10)
     return http_backoff(method, url, **kwargs)
 
@@ -880,7 +882,13 @@ def get_total_files_size(urlpaths: list[str], storage_options: dict[str, Any]) -
     fs = HfFileSystem(**storage_options["hf"])
     # fastest way to get hf files sizes is using get_paths_info
     hf_paths = [fs.resolve_path(path.split("::")[-1]) for path in urlpaths if path.startswith("hf://")]
-    for repo_id, hf_paths_in_repo in groupby(hf_paths, key=lambda path: path.repo_id):
+    # resolve_path returns HfFileSystemResolvedRepositoryPath | HfFileSystemResolvedBucketPath;
+    # since we only use hf:// URLs, they should all be repository paths, but mypy sees the union.
+    repo_paths: list[HfFileSystemResolvedRepositoryPath] = []
+    for _path in hf_paths:
+        if isinstance(_path, HfFileSystemResolvedRepositoryPath):
+            repo_paths.append(_path)
+    for repo_id, hf_paths_in_repo in groupby(repo_paths, key=lambda path: path.repo_id):
         batches = list(batched((path.path_in_repo for path in hf_paths_in_repo), 200))  # max is 1k files per request
         paths_info_per_batch = thread_map(
             functools.partial(fs._api.get_paths_info, repo_type="dataset"), [repo_id] * len(batches), batches
