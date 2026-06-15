@@ -93,7 +93,7 @@ class WorkerExecutor:
         web_app_executor.start()  # blocking until socket connection is established
         self.executors.append(web_app_executor)
 
-        loop = asyncio.get_event_loop()
+        loop = asyncio.new_event_loop()
         loop.add_signal_handler(signal.SIGTERM, partial(self.sigterm_stop, web_app_executor=web_app_executor))
 
         logging.info("Starting heartbeat.")
