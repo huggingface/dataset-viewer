@@ -13,7 +13,7 @@ appdirs = "^1.4.4"
 async-lru = "^2.0.5"
 cryptography = "^43.0.1"
 datasets = { git = "https://github.com/huggingface/datasets", rev = "9afab5c007b8ec7cb12278652817d0df49a77596" }
-duckdb = "^1.2.2"
+duckdb = "^1.5.3"
 environs = "^14.3.0"
 filelock = "^3.18.0"
 fsspec = {version = "2024.3.1", extras = ["s3"]}
