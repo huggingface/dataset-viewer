@@ -1334,6 +1334,7 @@ files = []
 develop = true
 
 [package.dependencies]
+aiohttp = "^3.14.1"
 anyio = ">=3.4.0,<5"
 appdirs = "^1.4.4"
 async-lru = "^2.0.5"

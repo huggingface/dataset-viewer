@@ -128,9 +128,10 @@ def create_audio_file(
                 f.write(audio_file_bytes)
         else:  # we need to convert
             # might spawn a process to convert the audio file using ffmpeg
-            with NamedTemporaryFile("wb", suffix=audio_file_extension) as tmpfile:
+            with NamedTemporaryFile("wb", suffix=audio_file_extension, delete_on_close=False) as tmpfile:
                 tmpfile.write(audio_file_bytes)
-                audio = Audio.decode_example({"path": tmpfile.name, "bytes": None})
+                tmpfile.close()
+                audio = Audio().decode_example({"path": tmpfile.name, "bytes": None})
                 samples = audio.get_all_samples()
                 buffer = BytesIO()
                 num_channels = samples.data.shape[0]
