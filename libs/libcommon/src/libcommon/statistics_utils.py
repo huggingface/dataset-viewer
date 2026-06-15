@@ -739,8 +739,8 @@ class AudioColumn(MediaColumn):
 
         with MediaColumn.open(example, hf_token=hf_token) as f:
             duration = AudioDecoder(f).metadata.duration_seconds_from_header if f else None  # type: ignore[arg-type]
-        if not isinstance(duration, float):
-            raise StatisticsComputationError("Failed to get the audio duration for the header.")
+        if not isinstance(duration, (int, float)):
+            raise StatisticsComputationError(f"Failed to get the audio duration for the header {example=}")
         return duration
 
     @classmethod
@@ -761,7 +761,7 @@ class VideoColumn(MediaColumn):
 
         with MediaColumn.open(example, hf_token=hf_token) as f:
             duration = VideoDecoder(f).metadata.duration_seconds_from_header if f else None  # type: ignore[arg-type]
-        if not isinstance(duration, float):
+        if not isinstance(duration, (int, float)):
             raise StatisticsComputationError("Failed to get the video duration for the header.")
         return duration
 

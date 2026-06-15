@@ -1857,6 +1857,7 @@ torchcodec = [
 ]
 tqdm = "^4.66.3"
 tsfile = "^2.3.0"
+xxhash = "^3.7.0"
 
 [package.source]
 type = "directory"

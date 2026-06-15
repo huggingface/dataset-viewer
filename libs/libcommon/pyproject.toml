@@ -10,6 +10,7 @@ python = "3.14.5"
 aiohttp = "^3.14.1"
 anyio = ">=3.4.0,<5"
 appdirs = "^1.4.4"
+async-lru = "^2.0.5"
 cryptography = "^43.0.1"
 datasets = { git = "https://github.com/huggingface/datasets", rev = "9afab5c007b8ec7cb12278652817d0df49a77596" }
 duckdb = "^1.2.2"
@@ -17,6 +18,7 @@ environs = "^14.3.0"
 filelock = "^3.18.0"
 fsspec = {version = "2024.3.1", extras = ["s3"]}
 huggingface-hub = "^1.18.0"
+libviewer = { path = "../libviewer", develop = true }
 mongo-types = "0.15.1"
 mongoengine = "^0.29.1"
 networkx = "^3.0"
@@ -52,8 +54,7 @@ torchcodec = [
 ]
 tqdm = "^4.66.3"
 tsfile = "^2.3.0"
-async-lru = "^2.0.5"
-libviewer = { path = "../libviewer", develop = true }
+xxhash = "^3.7.0"
 
 [tool.poetry.group.dev.dependencies]
 aiobotocore = "2.13.0"

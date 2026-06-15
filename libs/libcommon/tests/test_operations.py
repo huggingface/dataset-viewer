@@ -226,6 +226,7 @@ def test_update_disabled_dataset_raises_way_2(
     response = httpx.Response(
         status_code=403,
         headers={"X-Error-Message": "Access to this resource is disabled."},
+        request=httpx.Request("GET", "dummy-url"),
     )
     with patch(
         "libcommon.operations.get_dataset_info",
