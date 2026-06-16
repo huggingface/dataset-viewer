@@ -14,7 +14,6 @@ import polars as pl
 import pyarrow.parquet as pq
 from datasets import DownloadConfig, Features
 from datasets.streaming import xopen
-from PIL import Image
 from tqdm.contrib.concurrent import thread_map
 
 from libcommon.exceptions import (
@@ -788,6 +787,8 @@ class ImageColumn(MediaColumn):
             return None, None
         with MediaColumn.open(example, hf_token=hf_token) as f:
             if f:
+                from PIL import Image
+
                 image = Image.open(f)
                 return image.size
             else:
