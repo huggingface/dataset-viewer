@@ -33,6 +33,7 @@ RUN apt-get update \
 
 # Common environment variables
 ARG POETRY_VERSION=2.1.4
+ENV USER=app
 ENV PYTHONFAULTHANDLER=1 \
     PYTHONUNBUFFERED=1 \
     PYTHONHASHSEED=random \
