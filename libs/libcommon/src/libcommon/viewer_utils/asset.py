@@ -10,9 +10,10 @@ import fitz
 from datasets import Audio
 
 if TYPE_CHECKING:
-    from libcommon.storage_client import StorageClient
     from pdfplumber.pdf import PDF
     from PIL import Image
+
+    from libcommon.storage_client import StorageClient
 
 
 SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE = {
