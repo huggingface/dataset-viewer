@@ -10,7 +10,7 @@ python = "3.14.5"
 gradio = "^6.17.3"
 libcommon = {path = "../../libs/libcommon", develop = true}
 matplotlib = "^3.7.0"
-pygraphviz = "~1.10"
+pygraphviz = "^1.14"
 requests = "^2.32.2"
 
 [build-system]

@@ -3264,13 +3264,13 @@ windows-terminal = ["colorama (>=0.4.6)"]
 
 [[package]]
 name = "pygraphviz"
-version = "1.10"
+version = "1.14"
 description = "Python interface to Graphviz"
 optional = false
-python-versions = ">=3.8"
+python-versions = ">=3.10"
 groups = ["main"]
 files = [
-    {file = "pygraphviz-1.10.zip", hash = "sha256:457e093a888128903251a266a8cc16b4ba93f3f6334b3ebfed92c7471a74d867"},
+    {file = "pygraphviz-1.14.tar.gz", hash = "sha256:c10df02377f4e39b00ae17c862f4ee7e5767317f1c6b2dfd04cea6acc7fc2bea"},
 ]
 
 [[package]]
@@ -4621,4 +4621,4 @@ propcache = ">=0.2.1"
 [metadata]
 lock-version = "2.1"
 python-versions = "3.14.5"
-content-hash = "4971c7c08bc67df549f12825cc4a88fc3e5e3aad8fcf51ebe8fd9b59a522f7e9"
+content-hash = "5b75eb910704303b9c5ed834a8460277e5717458eeaa3f3777bb772f6a958536"

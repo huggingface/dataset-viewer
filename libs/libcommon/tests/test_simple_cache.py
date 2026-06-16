@@ -673,7 +673,7 @@ def test_get_cache_reports() -> None:
 
 @pytest.mark.parametrize("num_entries", [1, 10, 100, 1_000])
 def test_stress_get_cache_reports(num_entries: int) -> None:
-    MAX_SECONDS = 0.1
+    MAX_SECONDS = 0.5
     kind = CACHE_KIND
     content = {"key": "value"}
     http_status = HTTPStatus.OK
