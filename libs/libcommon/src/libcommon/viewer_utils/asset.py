@@ -8,12 +8,11 @@ from typing import TYPE_CHECKING, Any, Optional, TypedDict, Union
 
 import fitz
 from datasets import Audio
-from pdfplumber.pdf import PDF
-from PIL import Image
-from torchcodec.encoders import AudioEncoder  # type: ignore[attr-defined]
 
 if TYPE_CHECKING:
     from libcommon.storage_client import StorageClient
+    from pdfplumber.pdf import PDF
+    from PIL import Image
 
 
 SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE = {
@@ -128,6 +127,8 @@ def create_audio_file(
                 f.write(audio_file_bytes)
         else:  # we need to convert
             # might spawn a process to convert the audio file using ffmpeg
+            from torchcodec.encoders import AudioEncoder  # type: ignore[attr-defined]
+
             with NamedTemporaryFile("wb", suffix=audio_file_extension, delete_on_close=False) as tmpfile:
                 tmpfile.write(audio_file_bytes)
                 tmpfile.close()
@@ -151,7 +152,7 @@ def create_pdf_file(
     row_idx: int,
     column: str,
     filename: str,
-    pdf: PDF,
+    pdf: "PDF",
     storage_client: "StorageClient",
 ) -> PDFSource:
     thumbnail_object_path = storage_client.generate_object_path(

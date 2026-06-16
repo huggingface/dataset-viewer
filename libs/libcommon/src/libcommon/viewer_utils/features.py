@@ -30,7 +30,6 @@ from datasets import (
 )
 from datasets.utils.file_utils import is_local_path
 from huggingface_hub import HfFileSystem
-from PIL import Image as PILImage
 
 from libcommon.dtos import FeatureItem
 from libcommon.storage_client import StorageClient
@@ -98,6 +97,8 @@ def image(
     hf_token: Optional[str],
     json_path: Optional[list[Union[str, int]]] = None,
 ) -> Optional[ImageSource]:
+    from PIL import Image as PILImage
+
     if value is None:
         return None
     if isinstance(value, dict) and value.get("bytes"):
