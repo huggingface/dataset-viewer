@@ -94,7 +94,7 @@ def test_rows_audios_endpoint(normal_user_audios_public_dataset: str) -> None:
     )
     content = rows_response.json()
     # ensure the URL is the HF one (no need to use s3)
-    url = content["rows"][0]["row"]["audio"]["src"]
+    url = content["rows"][0]["row"]["audio"][0]["src"]
     assert isinstance(url, str)
     assert url.startswith(CI_HUB_ENDPOINT)
     # ensure the URL is valid

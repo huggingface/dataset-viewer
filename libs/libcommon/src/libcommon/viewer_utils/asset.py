@@ -7,9 +7,10 @@ from tempfile import NamedTemporaryFile
 from typing import TYPE_CHECKING, Any, Optional, TypedDict, Union
 
 import fitz
+from datasets import Audio
 from pdfplumber.pdf import PDF
 from PIL import Image
-from pydub import AudioSegment  # type:ignore
+from torchcodec.encoders import AudioEncoder  # type: ignore[attr-defined]
 
 if TYPE_CHECKING:
     from libcommon.storage_client import StorageClient
@@ -127,14 +128,18 @@ def create_audio_file(
                 f.write(audio_file_bytes)
         else:  # we need to convert
             # might spawn a process to convert the audio file using ffmpeg
-            with NamedTemporaryFile("wb", suffix=audio_file_extension) as tmpfile:
+            with NamedTemporaryFile("wb", suffix=audio_file_extension, delete_on_close=False) as tmpfile:
                 tmpfile.write(audio_file_bytes)
-                segment: AudioSegment = AudioSegment.from_file(tmpfile.name)
+                tmpfile.close()
+                audio = Audio().decode_example({"path": tmpfile.name, "bytes": None})
+                samples = audio.get_all_samples()
                 buffer = BytesIO()
-                segment.export(buffer, format=suffix[1:])
-                buffer.seek(0)
+                num_channels = samples.data.shape[0]
+                AudioEncoder(samples.data.cpu(), sample_rate=samples.sample_rate).to_file_like(
+                    buffer, format="wav", num_channels=num_channels
+                )
                 with storage_client._fs.open(audio_path, "wb") as f:
-                    f.write(buffer.read())
+                    f.write(buffer.getvalue())
     return [AudioSource(src=storage_client.get_url(object_path, revision=revision), type=media_type)]
 
 

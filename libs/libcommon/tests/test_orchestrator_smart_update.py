@@ -2,8 +2,8 @@
 # Copyright 2024 The HuggingFace Authors.
 import time
 
+import httpx
 import pytest
-from requests.exceptions import RequestException
 from tqdm.contrib.concurrent import thread_map
 
 from libcommon.orchestrator import (
@@ -164,7 +164,7 @@ def test_empty_commit() -> None:
             files_impacted_by_commit=[],
             tasks=["UpdateRevisionOfDatasetCacheEntriesTask,1"],
         )
-    with pytest.raises(RequestException):  # if diff doesn't exist
+    with pytest.raises((httpx.ConnectError, httpx.HTTPStatusError)):  # if diff doesn't exist
         get_smart_dataset_update_plan(processing_graph=PROCESSING_GRAPH_TWO_STEPS)
 
 

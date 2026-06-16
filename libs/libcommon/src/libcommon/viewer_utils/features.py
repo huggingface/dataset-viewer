@@ -269,16 +269,17 @@ def video(
     json_path: Optional[list[Union[str, int]]] = None,
 ) -> Optional[VideoSource]:
     if datasets.config.TORCHCODEC_AVAILABLE:
-        from torchcodec.decoders import VideoDecoder
+        from torchcodec.decoders import VideoDecoder  # type: ignore[attr-defined]
 
+        _VideoDecoder: Optional[type] = VideoDecoder
     else:
-        VideoDecoder = None
+        _VideoDecoder = None
 
     if value is None:
         return None
     if (
-        VideoDecoder
-        and isinstance(value, VideoDecoder)
+        _VideoDecoder
+        and isinstance(value, _VideoDecoder)
         and hasattr(value, "_hf_encoded")
         and isinstance(value._hf_encoded, dict)
     ):

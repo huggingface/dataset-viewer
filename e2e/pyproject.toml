@@ -7,13 +7,13 @@ version = "0.1.0"
 license = "Apache-2.0"
 
 [tool.poetry.dependencies]
-python = "3.12.11"
+python = "3.14.5"
 
 [tool.poetry.group.dev.dependencies]
 bandit = "^1.7.4"
-huggingface-hub = {version = "^0.28.0", extras = ["hf-transfer"]}
+huggingface-hub = "^1.18.0"
 datasets = "^5.0.0"
-pillow = "^10.3.0"
+pillow = "^12.2.0"
 mypy = "^1.10.0"
 pip-audit = "^2.7.3"
 pytest = "^8.2.2"
