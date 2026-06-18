@@ -7,12 +7,14 @@ from typing import Literal
 import pandas as pd
 import pytest
 from datasets import Dataset
+from datasets.packaged_modules.json.json import AGENT_TRACES_FEATURES
 from datasets.table import embed_table_storage
 
 from libcommon.constants import MAX_NUM_ROWS_PER_PAGE
+from libcommon.dtos import Row, RowsContent
 from libcommon.exceptions import TooBigContentError
 from libcommon.storage_client import StorageClient
-from libcommon.viewer_utils.rows import create_first_rows_response
+from libcommon.viewer_utils.rows import GetRowsContent, create_first_rows_response
 
 from ..constants import (
     CI_HUB_ENDPOINT,
@@ -65,6 +67,87 @@ def test_create_first_rows_response(
 
 
 NUM_ROWS = 15
+
+
+def get_agent_trace_rows_content(rows: list[Row]) -> GetRowsContent:
+    def _get_rows_content(rows_max_number: int) -> RowsContent:
+        rows_to_return = rows[:rows_max_number]
+        return RowsContent(
+            rows=rows_to_return,
+            all_fetched=len(rows) <= rows_max_number,
+            truncated_columns=[],
+        )
+
+    return _get_rows_content
+
+
+def get_agent_trace_row(trace: object) -> Row:
+    return {
+        "harness": "hermes",
+        "session_id": "hermes-session",
+        "prompt": "Run pwd and date.",
+        "messages": [{"role": "assistant", "content": "a" * 5_000}],
+        "tools": [],
+        "metadata": {"trace_type": "hermes"},
+        "sent_at": "2026-06-05T13:22:48.307Z",
+        "num_user_messages": 1,
+        "num_tool_calls": 1,
+        "trace": trace,
+        "file_path": "sessions.jsonl",
+    }
+
+
+def test_create_first_rows_response_keeps_agent_trace_when_it_fits(storage_client: StorageClient) -> None:
+    trace = [{"role": "user", "content": "keep this row-level trace"}]
+
+    response = create_first_rows_response(
+        dataset="dataset",
+        revision=DEFAULT_REVISION,
+        config=DEFAULT_CONFIG,
+        split=DEFAULT_SPLIT,
+        storage_client=storage_client,
+        hf_endpoint=CI_HUB_ENDPOINT,
+        hf_token=None,
+        features=AGENT_TRACES_FEATURES,
+        get_rows_content=get_agent_trace_rows_content([get_agent_trace_row(trace)]),
+        min_cell_bytes=DEFAULT_MIN_CELL_BYTES,
+        rows_max_bytes=2_000,
+        rows_max_number=DEFAULT_ROWS_MAX_NUMBER,
+        rows_min_number=DEFAULT_ROWS_MIN_NUMBER,
+        columns_max_number=DEFAULT_COLUMNS_MAX_NUMBER,
+    )
+
+    row = response["rows"][0]
+    assert row["row"]["trace"] == trace
+    assert "trace" not in row["truncated_cells"]
+    assert "messages" in row["truncated_cells"]
+
+
+def test_create_first_rows_response_truncates_agent_trace_when_it_does_not_fit(
+    storage_client: StorageClient,
+) -> None:
+    trace = [{"role": "user", "content": "x" * 5_000}]
+
+    response = create_first_rows_response(
+        dataset="dataset",
+        revision=DEFAULT_REVISION,
+        config=DEFAULT_CONFIG,
+        split=DEFAULT_SPLIT,
+        storage_client=storage_client,
+        hf_endpoint=CI_HUB_ENDPOINT,
+        hf_token=None,
+        features=AGENT_TRACES_FEATURES,
+        get_rows_content=get_agent_trace_rows_content([get_agent_trace_row(trace)]),
+        min_cell_bytes=DEFAULT_MIN_CELL_BYTES,
+        rows_max_bytes=2_000,
+        rows_max_number=DEFAULT_ROWS_MAX_NUMBER,
+        rows_min_number=DEFAULT_ROWS_MIN_NUMBER,
+        columns_max_number=DEFAULT_COLUMNS_MAX_NUMBER,
+    )
+
+    row = response["rows"][0]
+    assert isinstance(row["row"]["trace"], str)
+    assert "trace" in row["truncated_cells"]
 
 
 @pytest.mark.parametrize(

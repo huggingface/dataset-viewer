@@ -2,13 +2,14 @@
 # Copyright 2022 The HuggingFace Authors.
 
 
+from copy import deepcopy
 from typing import Optional, Protocol
 
 import PIL
 from datasets import Audio, Features, Image, Pdf, Value, Video
 from datasets.packaged_modules.json.json import AGENT_TRACES_FEATURES
 
-from libcommon.dtos import Row, RowsContent, SplitFirstRowsResponse
+from libcommon.dtos import Row, RowItem, RowsContent, SplitFirstRowsResponse
 from libcommon.exceptions import (
     RowsPostProcessingError,
     TooBigContentError,
@@ -20,6 +21,18 @@ from libcommon.viewer_utils.features import get_cell_value, to_features_list
 from libcommon.viewer_utils.truncate_rows import create_truncated_row_items
 
 URL_COLUMN_RATIO = 0.3
+
+
+def create_response_with_rows(
+    response_features_only: SplitFirstRowsResponse,
+    row_items: list[RowItem],
+    rows_content: RowsContent,
+    truncated: bool,
+) -> SplitFirstRowsResponse:
+    response = response_features_only.copy()
+    response["rows"] = row_items
+    response["truncated"] = (not rows_content.all_fetched) or truncated
+    return response
 
 
 def transform_rows(
@@ -197,17 +210,29 @@ def create_first_rows_response(
         )
     ]
     row_items, truncated = create_truncated_row_items(
-        rows=transformed_rows,
+        rows=deepcopy(transformed_rows) if features == AGENT_TRACES_FEATURES else transformed_rows,
         min_cell_bytes=min_cell_bytes,
         rows_max_bytes=rows_max_bytes - surrounding_json_size,
         rows_min_number=rows_min_number,
         columns_to_keep_untruncated=columns_to_keep_untruncated,
         truncated_columns=rows_content.truncated_columns,
     )
+    response = create_response_with_rows(response_features_only, row_items, rows_content, truncated)
 
-    response = response_features_only
-    response["rows"] = row_items
-    response["truncated"] = (not rows_content.all_fetched) or truncated
+    if features == AGENT_TRACES_FEATURES:
+        row_items_with_trace, truncated_with_trace = create_truncated_row_items(
+            rows=deepcopy(transformed_rows),
+            min_cell_bytes=min_cell_bytes,
+            rows_max_bytes=rows_max_bytes - surrounding_json_size,
+            rows_min_number=rows_min_number,
+            columns_to_keep_untruncated=[*columns_to_keep_untruncated, "trace"],
+            truncated_columns=rows_content.truncated_columns,
+        )
+        response_with_trace = create_response_with_rows(
+            response_features_only, row_items_with_trace, rows_content, truncated_with_trace
+        )
+        if get_json_size(response_with_trace) <= rows_max_bytes:
+            response = response_with_trace
 
     # return the response
     return response
