@@ -220,3 +220,16 @@ Return the secret name where Infisical secrets are loaded
 {{- define "datasetsServer.infisical.secretName" -}}
 {{ include "name" $ }}-secs
 {{- end -}}
+
+{{/*
+Return the name of the ServiceAccount used by the pods.
+- if serviceAccount.create is true, use serviceAccount.name (or the release name)
+- otherwise use serviceAccount.name (or "default")
+*/}}
+{{- define "datasetsServer.serviceAccountName" -}}
+{{- if .Values.serviceAccount.create -}}
+{{- default (include "name" .) .Values.serviceAccount.name -}}
+{{- else -}}
+{{- default "default" .Values.serviceAccount.name -}}
+{{- end -}}
+{{- end -}}

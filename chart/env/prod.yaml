@@ -64,6 +64,13 @@ images:
       useGlobalRegistry: false
       repository: datasets-server-services-webhook
       tag: sha-fb3399a
+serviceAccount:
+  create: true
+  name: ""
+  # eks.amazonaws.com/role-arn annotation is injected at deploy time (private overlay),
+  # not stored in this repo.
+  annotations: {}
+
 secrets:
   infisical:
     enabled: true
@@ -112,6 +119,11 @@ monitoring:
 
 mongodb:
   enabled: false
+
+s3:
+  regionName: "us-east-1"
+  # when true, drop static S3 credentials and rely on the ServiceAccount IRSA role
+  useIrsa: false
 
 common:
   # URL of the HuggingFace Hub
