@@ -128,7 +128,6 @@ def build_index_file(
                     filename=f"{config}/{split_directory}/{parquet_file}",
                     hf_token=hf_token,
                     cache_dir=cache_folder,
-                    resume_download=False,
                 )
             )
         )

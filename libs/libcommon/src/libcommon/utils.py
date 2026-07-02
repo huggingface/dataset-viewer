@@ -16,7 +16,7 @@ import orjson
 import pandas as pd
 import pytz
 from dateutil import parser
-from huggingface_hub import constants, hf_hub_download
+from huggingface_hub import hf_hub_download
 from requests.exceptions import ReadTimeout
 
 from libcommon.exceptions import DatasetInBlockListError
@@ -291,10 +291,8 @@ def download_file_from_hub(
     hf_token: Optional[str] = None,
     cache_dir: Optional[StrPath] = None,
     force_download: bool = False,
-    resume_download: bool = False,
 ) -> str:
-    logging.debug(f"Using {constants.HF_HUB_ENABLE_HF_TRANSFER} for hf_transfer")
-    retry_on: list[type[Exception]] = [RuntimeError] if constants.HF_HUB_ENABLE_HF_TRANSFER else [ReadTimeout]
+    retry_on: list[type[Exception]] = [RuntimeError, ReadTimeout]
     retry_download_hub_file = retry(on=retry_on, sleeps=HF_HUB_HTTP_ERROR_RETRY_SLEEPS)(hf_hub_download)
     return retry_download_hub_file(
         repo_type=repo_type,
@@ -302,9 +300,7 @@ def download_file_from_hub(
         repo_id=repo_id,
         filename=filename,
         local_dir=Path(local_dir) if local_dir is not None else None,
-        local_dir_use_symlinks=False,
         token=hf_token,
         force_download=force_download,
         cache_dir=Path(cache_dir) if cache_dir is not None else None,
-        resume_download=resume_download,
     )

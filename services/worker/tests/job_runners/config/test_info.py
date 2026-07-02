@@ -59,9 +59,7 @@ CONFIG_INFO_1 = {
     "builder_name": "dataset_ok",
     "config_name": "config_1",
     "version": {"version_str": "0.0.0", "major": 0, "minor": 0, "patch": 0},
-    "download_size": 11594722,
     "dataset_size": 20387232,
-    "size_in_bytes": 31981954,
 }
 
 CONFIG_INFO_2 = {
@@ -94,9 +92,7 @@ CONFIG_INFO_2 = {
     "builder_name": "dataset_ok",
     "config_name": "config_2",
     "version": {"version_str": "0.0.0", "major": 0, "minor": 0, "patch": 0},
-    "download_size": 9912422,
     "dataset_size": 6912,
-    "size_in_bytes": 9919334,
 }
 
 DATASET_INFO_OK = {

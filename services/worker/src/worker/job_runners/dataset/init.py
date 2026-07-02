@@ -2,6 +2,7 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
+import posixpath
 from collections.abc import Iterator
 from typing import Literal, Optional, overload
 
@@ -13,6 +14,7 @@ from datasets.exceptions import DatasetNotFoundError
 from datasets.load import dataset_module_factory, get_dataset_builder_class
 from datasets.packaged_modules.parquet.parquet import Parquet
 from datasets.utils.py_utils import asdict
+from datasets.utils.file_utils import is_relative_path
 from huggingface_hub import HfFileSystem
 from huggingface_hub.utils import HfHubHTTPError
 from libcommon.dtos import CachedJob
@@ -41,6 +43,7 @@ from worker.job_runners.config.parquet_and_info import retry_get_features_num_ex
 from worker.job_runners.config.split_names import ConfigSplitNamesJobRunner, SplitsList, FullSplitItem
 from worker.job_runners.config.parquet import ConfigParquetJobRunner, ConfigParquetResponse, SplitHubFile
 from worker.job_runners.config.parquet_metadata import ConfigParquetMetadataJobRunner, ConfigParquetMetadataResponse, create_parquet_metadata_dir, StrPath, DATASET_SEPARATOR, ParquetFileMetadataItem
+from worker.utils import resolve_hf_path
 
 
 try:
@@ -164,6 +167,7 @@ def compute_init_responses(
         `DatasetConfigNamesResponse`: An object with the list of config names.
     """
     logging.info(f"compute 'dataset-init' for {dataset=}")
+    repo_dir = f"hf://datasets/{dataset}"
     dataset_init_response: DatasetInitResponse = {"successes": [], "failed": []}
     HfFileSystem.clear_instance_cache()
     fs = HfFileSystem(endpoint=hf_endpoint, token=hf_token)
@@ -185,7 +189,23 @@ def compute_init_responses(
         raise ConfigNamesError("Cannot get the config names for the dataset.", cause=err) from err
 
     default_config_name: Optional[str] = None
+    repo_dir_with_commit_hash = repo_dir + f"@{dataset_module.hash}"
     builder_cls = get_dataset_builder_class(dataset_module)
+
+    # Safety checks
+    for builder_config in builder_cls.builder_configs.values():
+        data_files = builder_config.data_files
+        if data_files is not None:
+            for split in data_files:
+                for data_file in data_files[split]:
+                    resolved_data_file = resolve_hf_path(
+                        posixpath.join(dataset_module.builder_kwargs["base_path"], data_file)
+                        if is_relative_path(data_file)
+                        else data_file
+                    )
+                    if not resolved_data_file.startswith(repo_dir_with_commit_hash + "/"):
+                        raise ValueError(f"Data files don't belong to {repo_dir}")
+
     config_names = list(builder_cls.builder_configs.keys())
     if "config_name" in dataset_module.builder_kwargs and isinstance(
         dataset_module.builder_kwargs["config_name"], str

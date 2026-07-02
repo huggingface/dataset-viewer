@@ -6,6 +6,7 @@ from copy import deepcopy
 from typing import Literal
 
 import pytest
+from datasets.table import embed_table_storage
 
 from libcommon.cloudfront import CloudFrontSigner
 from libcommon.constants import MAX_NUM_ROWS_PER_PAGE
@@ -119,6 +120,7 @@ def test_prepare_urls_in_first_rows_in_place(
 ) -> None:
     dataset_fixture = datasets_fixtures[dataset_name]
     dataset = dataset_fixture.dataset
+    dataset = dataset.with_format("arrow").map(embed_table_storage)
 
     first_rows = create_first_rows_response(
         dataset=dataset_name,
@@ -178,6 +180,7 @@ def test_prepare_urls_in_first_rows_in_place_with_truncated_cells(
 ) -> None:
     dataset_fixture = datasets_fixtures[dataset_name]
     dataset = dataset_fixture.dataset
+    dataset = dataset.with_format("arrow").map(embed_table_storage)
 
     first_rows = create_first_rows_response(
         dataset=dataset_name,

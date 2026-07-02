@@ -14,7 +14,6 @@ import polars as pl
 import pyarrow.parquet as pq
 from datasets import DownloadConfig, Features
 from datasets.streaming import xopen
-from PIL import Image
 from tqdm.contrib.concurrent import thread_map
 
 from libcommon.exceptions import (
@@ -735,12 +734,12 @@ class AudioColumn(MediaColumn):
         if example is None:
             return None
 
-        from torchcodec.decoders import AudioDecoder
+        from torchcodec.decoders import AudioDecoder  # type: ignore[attr-defined]
 
         with MediaColumn.open(example, hf_token=hf_token) as f:
-            duration = AudioDecoder(f).metadata.duration_seconds_from_header if f else None
-        if not isinstance(duration, float):
-            raise StatisticsComputationError("Failed to get the audio duration for the header.")
+            duration = AudioDecoder(f).metadata.duration_seconds_from_header if f else None  # type: ignore[arg-type]
+        if not isinstance(duration, (int, float)):
+            raise StatisticsComputationError(f"Failed to get the audio duration for the header {example=}")
         return duration
 
     @classmethod
@@ -757,11 +756,11 @@ class VideoColumn(MediaColumn):
         if example is None:
             return None
 
-        from torchcodec.decoders import VideoDecoder
+        from torchcodec.decoders import VideoDecoder  # type: ignore[attr-defined]
 
         with MediaColumn.open(example, hf_token=hf_token) as f:
-            duration = VideoDecoder(f).metadata.duration_seconds_from_header if f else None
-        if not isinstance(duration, float):
+            duration = VideoDecoder(f).metadata.duration_seconds_from_header if f else None  # type: ignore[arg-type]
+        if not isinstance(duration, (int, float)):
             raise StatisticsComputationError("Failed to get the video duration for the header.")
         return duration
 
@@ -788,6 +787,8 @@ class ImageColumn(MediaColumn):
             return None, None
         with MediaColumn.open(example, hf_token=hf_token) as f:
             if f:
+                from PIL import Image
+
                 image = Image.open(f)
                 return image.size
             else:

@@ -19,10 +19,10 @@ Install [pyenv](https://github.com/pyenv/pyenv):
 $ curl https://pyenv.run | bash
 ```
 
-Install Python 3.12.11:
+Install Python 3.14.5:
 
 ```bash
-$ pyenv install 3.12.11
+$ pyenv install 3.14.5
 ```
 
 Check that the expected local version of Python is used:
@@ -30,7 +30,7 @@ Check that the expected local version of Python is used:
 ```bash
 $ cd services/worker
 $ python --version
-Python 3.12.11
+Python 3.14.5
 ```
 
 Install Poetry with [pipx](https://pipx.pypa.io/stable/installation/):
@@ -49,11 +49,11 @@ poetry@2.1.4 --version
 Set the Python version to use with Poetry:
 
 ```bash
-poetry env use 3.12.11
+poetry env use 3.14.5
 ```
 or
 ```bash
-poetry@2.1.4 env use 3.12.11
+poetry@2.1.4 env use 3.14.5
 ```
 
 Install the dependencies:
@@ -92,10 +92,10 @@ eval "$(pyenv init -)"
 
 Logout and login again.
 
-Install Python 3.12.11:
+Install Python 3.14.5:
 
 ```bash
-$ pyenv install 3.12.11
+$ pyenv install 3.14.5
 ```
 
 Check that the expected local version of Python is used:
@@ -103,7 +103,7 @@ Check that the expected local version of Python is used:
 ```bash
 $ cd services/worker
 $ python --version
-Python 3.12.11
+Python 3.14.5
 ```
 
 Install Poetry with [pipx](https://pipx.pypa.io/stable/installation/):
@@ -135,11 +135,11 @@ $ source $HOME/.cargo/env
 Set the python version to use with poetry:
 
 ```bash
-poetry env use 3.12.11
+poetry env use 3.14.5
 ```
 or
 ```bash
-poetry@2.1.4 env use 3.12.11
+poetry@2.1.4 env use 3.14.5
 ```
 
 Install the dependencies:
@@ -188,8 +188,8 @@ If you use pyenv:
 
 ```bash
 cd libs/libcommon/
-pyenv install 3.12.11
-pyenv local 3.12.11
+pyenv install 3.14.5
+pyenv local 3.14.5
 poetry env use python3.9
 ```
 

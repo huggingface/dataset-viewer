@@ -7,10 +7,22 @@ from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
+from datasets import load_dataset
 from pytest import TempPathFactory
 
-from .constants import DATA, DATA_JSON, NORMAL_USER, NORMAL_USER_TOKEN
+from .constants import CI_HUB_ENDPOINT, CI_URL_TEMPLATE, DATA, DATA_JSON, NORMAL_USER, NORMAL_USER_TOKEN
 from .utils import poll, tmp_dataset
+
+
+@pytest.fixture(scope="session", autouse=True)
+def monkeypatch_session() -> Iterator[pytest.MonkeyPatch]:
+    mp = pytest.MonkeyPatch()
+    mp.setattr("huggingface_hub.constants.HUGGINGFACE_CO_URL_TEMPLATE", CI_URL_TEMPLATE)
+    # ^ see https://github.com/huggingface/datasets/pull/5196#issuecomment-1322191056
+    mp.setattr("datasets.config.HF_ENDPOINT", CI_HUB_ENDPOINT)
+    mp.setattr("datasets.config.HF_UPDATE_DOWNLOAD_COUNTS", False)
+    yield mp
+    mp.undo()
 
 
 @pytest.fixture(autouse=True, scope="session")
@@ -79,6 +91,19 @@ def normal_user_images_public_dataset() -> Iterator[str]:
             "metadata.csv": str(Path(__file__).resolve().parent / "data" / "images" / "metadata.csv"),
         },
     ) as dataset:
+        yield dataset
+
+
+@pytest.fixture(scope="session")
+def normal_user_images_public_parquet_dataset() -> Iterator[str]:
+    with tmp_dataset(
+        namespace=NORMAL_USER,
+        token=NORMAL_USER_TOKEN,
+        files={},
+    ) as dataset:
+        ds_path = str(Path(__file__).resolve().parent / "data" / "images")
+        ds = load_dataset(ds_path, split="train", keep_in_memory=True)
+        ds.push_to_hub(dataset, token=NORMAL_USER_TOKEN)
         yield dataset
 
 

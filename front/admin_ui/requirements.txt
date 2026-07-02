@@ -1,4 +1,4 @@
-gradio>=4.19.2,<5
+gradio>=6.17.3,<7
 altair==5.0.1
 aiobotocore==2.7.0
 botocore==1.31.64

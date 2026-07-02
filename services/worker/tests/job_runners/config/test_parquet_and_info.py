@@ -38,6 +38,7 @@ from worker.job_runners.config.parquet_and_info import (
     _is_too_big_from_datasets,
     _is_too_big_from_hub,
     create_commits,
+    disallow_embed_local_files,
     fill_builder_info,
     get_delete_operations,
     get_urlpaths_in_gen_kwargs,
@@ -948,3 +949,18 @@ def test_track_reads_zip_file(text_file: str, zip_file: str) -> None:
             assert len(f.read()) == expected_output_size
             assert "file://" + zip_file in tracker.files
             assert tracker.files["file://" + zip_file]["read"] != expected_output_size
+
+
+def test_disallow_embed_local_files(text_file: str, tmp_path: Path) -> None:
+    def local_files_generator() -> Iterator[dict[str, str]]:
+        yield {"image": text_file}
+
+    features = Features({"image": Image()})
+    cache_dir = str(tmp_path / "test_disallow_embed_local_files")
+    builder = ParametrizedGeneratorBasedBuilder(
+        generator=local_files_generator, cache_dir=cache_dir, features=features
+    )
+    with disallow_embed_local_files():
+        builder.download_and_prepare(file_format="parquet")
+        table = pq.read_table(list(Path(cache_dir).rglob("*.parquet"))[0])
+        assert table.to_pydict() == {"image": [{"bytes": None, "path": text_file}]}

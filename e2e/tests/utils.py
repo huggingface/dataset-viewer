@@ -10,6 +10,7 @@ from contextlib import contextmanager, suppress
 from pathlib import Path
 from typing import Any, Optional
 
+import httpx
 import requests
 from huggingface_hub.hf_api import HfApi
 from huggingface_hub.utils import hf_raise_for_status
@@ -25,8 +26,8 @@ SEARCH_UVICORN_PORT = os.environ.get("SEARCH_UVICORN_PORT", "8083")
 WORKER_UVICORN_PORT = os.environ.get("WORKER_UVICORN_PORT", "8086")
 WEBHOOK_UVICORN_PORT = os.environ.get("WEBHOOK_UVICORN_PORT", "8087")
 E2E_ADMIN_USER_TOKEN = os.environ.get("E2E_ADMIN_USER_TOKEN", "")
-INTERVAL = 1
-MAX_DURATION = 10 * 60
+INTERVAL = 5
+MAX_DURATION = 3 * 60
 URL = f"http://localhost:{PORT_REVERSE_PROXY}"
 ADMIN_URL = f"http://localhost:{ADMIN_UVICORN_PORT}"
 API_URL = f"http://localhost:{API_UVICORN_PORT}"
@@ -213,7 +214,7 @@ def tmp_dataset(
         )
     if repo_settings:
         path = f"{hf_api.endpoint}/api/datasets/{dataset}/settings"
-        r = requests.put(
+        r = httpx.put(
             path,
             headers=hf_api._build_hf_headers(),
             json=repo_settings,

@@ -477,9 +477,7 @@ def create_dataset_info_response_for_csv(dataset: str, config: str) -> Any:
         "dataset_name": dataset_name,
         "version": {"version_str": "0.0.0", "major": 0, "minor": 0, "patch": 0},
         "splits": {"train": {"name": "train", "num_bytes": 96, "num_examples": 4, "dataset_name": dataset_name}},
-        "download_size": 55,
         "dataset_size": 96,
-        "size_in_bytes": 151,
     }
 
 
@@ -640,10 +638,10 @@ def create_parquet_and_info_response(
     }
 
 
-CSV_PARQUET_SIZE = 1730
-PARTIAL_CSV_PARQUET_SIZE = 5806
-AUDIO_PARQUET_SIZE = 16477
-BIG_PARQUET_FILE = 18418
+CSV_PARQUET_SIZE = 1736
+PARTIAL_CSV_PARQUET_SIZE = 5808
+AUDIO_PARQUET_SIZE = 16479
+BIG_PARQUET_FILE = 18420
 
 DATA_cols = {
     "col_1": {"_type": "Value", "dtype": "int64"},

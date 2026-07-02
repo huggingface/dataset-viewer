@@ -11,7 +11,7 @@ on:
 env:
   # required to get access to use a cached poetry venv in "/home/runner/.cache/pypoetry/virtualenvs"
   POETRY_VIRTUALENVS_IN_PROJECT: false
-  python-version: "3.12.11"
+  python-version: "3.14.5"
   poetry-version: "2.1.4"
 jobs:
   code-quality:
@@ -32,7 +32,7 @@ jobs:
           cache-dependency-path: |
             ${{ inputs.working-directory }}/poetry.lock
       - name: Install packages
-        run: sudo apt update; sudo apt install -y ffmpeg libavcodec-extra libsndfile1
+        run: sudo apt update; sudo apt install -y ffmpeg libavcodec-extra libsndfile1 libjpeg-dev zlib1g-dev
       - name: Verify consistency of poetry.lock with pyproject.toml
         run: poetry check
       - name: Install dependencies

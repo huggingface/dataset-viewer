@@ -6,11 +6,11 @@ description = "Admin interface for the dataset viewer"
 authors = ["Quentin Lhoest <quentin@huggingface.co>"]
 
 [tool.poetry.dependencies]
-python = "3.12.11"
-gradio = "^4.19.2"
+python = "3.14.5"
+gradio = "^6.17.3"
 libcommon = {path = "../../libs/libcommon", develop = true}
 matplotlib = "^3.7.0"
-pygraphviz = "~1.10"
+pygraphviz = "^1.14"
 requests = "^2.32.2"
 
 [build-system]

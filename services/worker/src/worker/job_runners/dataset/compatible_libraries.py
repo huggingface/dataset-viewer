@@ -415,6 +415,11 @@ LANCE_CODE = """import lance
 ds = {function}("{uri}")"""
 
 
+LEROBOT_CODE = """from lerobot.datasets import LeRobotDataset
+{comment}
+dataset = LeRobotDataset("{dataset}")"""
+
+
 def _init_empty_loading_codes(
     builder_configs: list[BuilderConfig], with_simplified_data_files: bool = False
 ) -> list[LoadingCode]:
@@ -797,6 +802,35 @@ def get_compatible_libraries_for_lance(
     return compatible_libraries
 
 
+def get_compatible_libraries_for_lerobot(
+    dataset: str, hf_token: Optional[str], login_required: bool
+) -> list[CompatibleLibrary]:
+    fs = HfFileSystem(token=hf_token)
+    try:
+        dataset_readme_content = fs.read_text(f"hf://datasets/{dataset}/{datasets.config.REPOCARD_FILENAME}")
+    except FileNotFoundError:
+        return []
+    dataset_card_data = DatasetCard(dataset_readme_content).data
+    tags = getattr(dataset_card_data, "tags", None) or []
+    if not any(isinstance(tag, str) and tag.lower() == "lerobot" for tag in tags):
+        return []
+    comment = LOGIN_COMMENT if login_required else ""
+    return [
+        {
+            "language": "python",
+            "library": "lerobot",
+            "function": "LeRobotDataset",
+            "loading_codes": [
+                {
+                    "config_name": "default",
+                    "arguments": {},
+                    "code": LEROBOT_CODE.format(dataset=dataset, comment=comment),
+                }
+            ],
+        }
+    ]
+
+
 get_compatible_library_for_builder: dict[str, Callable[[str, Optional[str], bool], list[CompatibleLibrary]]] = {
     "webdataset": get_compatible_libraries_for_webdataset,
     "json": get_compatible_libraries_for_json,
@@ -878,6 +912,8 @@ def compute_compatible_libraries_response(
         libraries.append(
             get_mlcroissant_compatible_library(dataset, infos, login_required=login_required, partial=partial)
         )
+        # lerobot library (identified by the "LeRobot" tag in the dataset card, not by the builder/format)
+        libraries += get_compatible_libraries_for_lerobot(dataset, hf_token, login_required)
 
     # Optimized Parquet
     if "parquet" in formats:
