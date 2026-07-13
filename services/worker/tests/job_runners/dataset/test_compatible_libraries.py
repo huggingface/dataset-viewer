@@ -410,7 +410,7 @@ def mock_hffs(tmp_path_factory: TempPathFactory) -> Iterator[fsspec.AbstractFile
     class MockHfFileSystem(DirFileSystem):  # type: ignore[misc]
         protocol = "hf"
 
-        def __init__(self, path: str = str(hf), target_protocol: str = "file", **kwargs: Any) -> None:
+        def __init__(self, path: str = str(hf), target_protocol: str = "local", **kwargs: Any) -> None:
             super().__init__(path=path, target_protocol=target_protocol, **kwargs)
             self.logged_in = kwargs.get("token") != "no_token"
 

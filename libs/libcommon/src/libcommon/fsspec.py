@@ -1,5 +1,5 @@
 from fsspec.registry import known_implementations
 
 for name in list(known_implementations):
-    if name not in ["hf", "s3", "zip", "file"]:
+    if name not in ["hf", "s3", "zip", "file", "local"]:
         del known_implementations[name]
