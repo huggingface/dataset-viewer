@@ -27,6 +27,10 @@ spec:
     metadata:
       labels: {{ include "labels.worker" (merge (dict "workerValues" .workerValues) $ ) | nindent 8 }}
     spec:
+      # Workers process untrusted user datasets and never call the Kubernetes
+      # API, so they should not carry an in-cluster credential. Disabling
+      # ServiceAccount-token automount removes it from the blast radius.
+      automountServiceAccountToken: false
       terminationGracePeriodSeconds: {{ default 30 .workerValues.terminationGracePeriodSeconds }}
       {{- include "dnsConfig" . | nindent 6 }}
       {{- include "image.imagePullSecrets" . | nindent 6 }}
@@ -37,5 +41,8 @@ spec:
       tolerations: {{ toYaml .workerValues.tolerations | nindent 8 }}
       volumes:
         {{ include "volumeParquetMetadata" . | nindent 8 }}
-      securityContext: {{ include "securityContext" . | nindent 8 }}
+      securityContext:
+        {{- include "securityContext" . | nindent 8 }}
+        seccompProfile:
+          type: RuntimeDefault
 {{- end -}}

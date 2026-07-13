@@ -43,6 +43,9 @@
   {{ include "volumeMountParquetMetadataRW" . | nindent 2 }}
   securityContext:
     allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+      - ALL
   resources: {{ toYaml .workerValues.resources | nindent 4 }}
   readinessProbe:
     failureThreshold: {{ if .workerValues.readinessProbe }}{{ .workerValues.readinessProbe.failureThreshold | default 30 }}{{ else }}30{{ end }}
