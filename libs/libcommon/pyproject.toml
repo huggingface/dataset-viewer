@@ -16,7 +16,7 @@ datasets = { git = "https://github.com/huggingface/datasets", rev = "06fcc085fcd
 duckdb = "^1.5.3"
 environs = "^14.3.0"
 filelock = "^3.18.0"
-fsspec = {version = "2024.3.1", extras = ["s3"]}
+fsspec = {version = "2024.6.0", extras = ["s3"]}
 huggingface-hub = "^1.18.0"
 libviewer = { path = "../libviewer", develop = true }
 mongo-types = "0.15.1"
@@ -36,7 +36,7 @@ pymongoarrow = "^1.10.0"
 pymupdf = "^1.26.1"
 pymongo = { extras = ["srv"], version = "^4.15.1" }
 pytz = "^2020.1"
-s3fs = "2024.3.1"  # Aligned with fsspec[s3] version
+s3fs = "2024.6.0"  # Aligned with fsspec[s3] version
 soundfile = ">=0.12.1"
 starlette-prometheus = "^0.9.0"
 teich = { git = "https://github.com/lhoestq/teich", rev = "b18cb66dc7fbb2c0d59bee761b236273aeecccc5" }  # to fix traces streaming
