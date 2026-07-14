@@ -9,10 +9,10 @@ from pathlib import Path
 from typing import Optional
 from unittest.mock import patch
 
+import httpx
 import pytest
 from huggingface_hub.hf_api import DatasetInfo, HfApi
 from huggingface_hub.utils import HfHubHTTPError
-from requests import Response
 
 from libcommon.constants import CONFIG_SPLIT_NAMES_KIND, DATASET_CONFIG_NAMES_KIND, TAG_NFAA_SYNONYMS
 from libcommon.dtos import JobResult
@@ -223,9 +223,11 @@ def test_update_disabled_dataset_raises_way_2(
 ) -> None:
     dataset = "this-dataset-is-disabled"
 
-    response = Response()
-    response.status_code = 403
-    response.headers["X-Error-Message"] = "Access to this resource is disabled."
+    response = httpx.Response(
+        status_code=403,
+        headers={"X-Error-Message": "Access to this resource is disabled."},
+        request=httpx.Request("GET", "dummy-url"),
+    )
     with patch(
         "libcommon.operations.get_dataset_info",
         raise_exception=HfHubHTTPError("some message", response=response),

@@ -1,7 +1,7 @@
 # Multi-stage Dockerfile for all dataset-viewer services and jobs
 # Build with: docker build --target <service_name> -t <tag> .
 
-ARG PYTHON_VERSION=3.12.11
+ARG PYTHON_VERSION=3.14.5
 FROM python:${PYTHON_VERSION}-slim AS viewer
 
 # Install Rust and minimal build deps
@@ -28,11 +28,12 @@ FROM python:${PYTHON_VERSION}-slim AS libcommon
 
 # System dependencies
 RUN apt-get update \
-    && apt-get install -y unzip wget procps htop ffmpeg libavcodec-extra libsndfile1 \
+    && apt-get install -y unzip wget procps htop ffmpeg libavcodec-extra libsndfile1 libjpeg-dev zlib1g-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Common environment variables
 ARG POETRY_VERSION=2.1.4
+ENV USER=app
 ENV PYTHONFAULTHANDLER=1 \
     PYTHONUNBUFFERED=1 \
     PYTHONHASHSEED=random \

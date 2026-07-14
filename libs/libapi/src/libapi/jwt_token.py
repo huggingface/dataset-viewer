@@ -235,9 +235,7 @@ def get_jwt_public_keys(
 READ_PERMISSIONS = ["repo.content.read", "repo.content.write", "repo.read", "repo.write"]
 
 
-def validate_jwt(
-    dataset: str, token: Any, public_keys: list[str], algorithm: str, verify_exp: Optional[bool] = True
-) -> None:
+def validate_jwt(dataset: str, token: Any, public_keys: list[str], algorithm: str, verify_exp: bool = True) -> None:
     """
     Check if the JWT is valid for the dataset.
 
@@ -253,7 +251,7 @@ def validate_jwt(
         token (`Any`): the JWT token to decode
         public_keys (`list[str]`): the public keys to use to decode the JWT token. They are tried in order.
         algorithm (`str`): the algorithm to use to decode the JWT token
-        verify_exp (`bool`, *optional*): whether to verify the expiration of the JWT token. Default to True.
+        verify_exp (`bool`): whether to verify the expiration of the JWT token. Default to True.
 
     Raise:
         JWTInvalidSignature: if the signature verification failed
@@ -266,12 +264,13 @@ def validate_jwt(
     """
     for public_key in public_keys:
         logging.debug(f"Trying to decode the JWT with key #{public_keys.index(public_key)}: {public_key}.")
+        options = jwt.types.Options(require=["exp", "sub", "permissions"], verify_exp=verify_exp)
         try:
             decoded = jwt.decode(
                 jwt=token,
                 key=public_key,
                 algorithms=[algorithm],
-                options={"require": ["exp", "sub", "permissions"], "verify_exp": verify_exp},
+                options=options,
             )
             logging.debug(f"Decoded JWT is: '{public_key}'.")
             break

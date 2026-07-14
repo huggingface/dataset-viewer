@@ -197,7 +197,6 @@ def compute_descriptive_statistics_response(
             hf_token=hf_token,
             cache_dir=local_parquet_directory,
             force_download=True,
-            resume_download=False,
         )
 
     local_parquet_split_directory = Path(local_parquet_directory) / config / split_directory

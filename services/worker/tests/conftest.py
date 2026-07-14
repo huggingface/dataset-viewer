@@ -50,7 +50,7 @@ def statistics_cache_directory(app_config: AppConfig) -> StrPath:
 @fixture(scope="session", autouse=True)
 def monkeypatch_session() -> Iterator[MonkeyPatch]:
     mp = MonkeyPatch()
-    mp.setattr("huggingface_hub.file_download.HUGGINGFACE_CO_URL_TEMPLATE", CI_URL_TEMPLATE)
+    mp.setattr("huggingface_hub.constants.HUGGINGFACE_CO_URL_TEMPLATE", CI_URL_TEMPLATE)
     # ^ see https://github.com/huggingface/datasets/pull/5196#issuecomment-1322191056
     mp.setattr("datasets.config.HF_ENDPOINT", CI_HUB_ENDPOINT)
     mp.setattr("datasets.config.HF_UPDATE_DOWNLOAD_COUNTS", False)
@@ -62,7 +62,7 @@ def monkeypatch_session() -> Iterator[MonkeyPatch]:
 def use_hub_prod_endpoint() -> Iterator[MonkeyPatch]:
     mp = MonkeyPatch()
     mp.setattr(
-        "huggingface_hub.file_download.HUGGINGFACE_CO_URL_TEMPLATE",
+        "huggingface_hub.constants.HUGGINGFACE_CO_URL_TEMPLATE",
         "https://huggingface.co/{repo_id}/resolve/{revision}/{filename}",
     )
     # ^ see https://github.com/huggingface/datasets/pull/5196#issuecomment-1322191056

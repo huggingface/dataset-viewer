@@ -90,7 +90,7 @@ async def transform_rows(
     if require_storage_embed(features):
         # Use multithreading to parallelize image/audio/video files uploads.
         # Also multithreading is ok to convert audio data
-        # (we use pydub which might spawn one ffmpeg process per conversion, which releases the GIL)
+        # (we use torchcodec which which releases the GIL)
         desc = f"_transform_row for {dataset}"
         _thread_map = partial(thread_map, desc=desc, total=len(rows))
         return await anyio.to_thread.run_sync(_thread_map, fn, enumerate(rows))
