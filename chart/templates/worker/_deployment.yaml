@@ -27,9 +27,12 @@ spec:
     metadata:
       labels: {{ include "labels.worker" (merge (dict "workerValues" .workerValues) $ ) | nindent 8 }}
     spec:
+      serviceAccountName: {{ include "datasetsServer.serviceAccountName" . }}
       # Workers process untrusted user datasets and never call the Kubernetes
       # API, so they should not carry an in-cluster credential. Disabling
       # ServiceAccount-token automount removes it from the blast radius.
+      # IRSA's web-identity token is injected by the EKS pod-identity webhook
+      # via its own projected volume, so it is unaffected by this setting.
       automountServiceAccountToken: false
       terminationGracePeriodSeconds: {{ default 30 .workerValues.terminationGracePeriodSeconds }}
       {{- include "dnsConfig" . | nindent 6 }}

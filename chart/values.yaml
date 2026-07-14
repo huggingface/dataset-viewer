@@ -89,6 +89,19 @@ log:
 
 # --- common parameters ---
 
+# Kubernetes ServiceAccount used by all pods.
+# To enable IRSA (IAM Roles for Service Accounts), set:
+#   serviceAccount.create: true
+#   serviceAccount.annotations."eks.amazonaws.com/role-arn": "arn:aws:iam::<account-id>:role/<role-name>"
+# and set s3.useIrsa: true so static AWS credentials are no longer injected.
+serviceAccount:
+  # if true, a ServiceAccount is created; otherwise the existing one named below (or "default") is used
+  create: false
+  # name of the ServiceAccount; defaults to the release name when empty
+  name: ""
+  # annotations added to the ServiceAccount, e.g. the IRSA role ARN
+  annotations: {}
+
 secrets:
   infisical:
     enabled: false
@@ -234,6 +247,7 @@ configNames:
 
 s3:
   regionName: "us-east-1"
+  useIrsa: false
 
 cloudfront:
   # CloudFront expiration delay in seconds, for the signed URLs
