@@ -394,7 +394,7 @@ version = "1.41.5"
 description = "The AWS SDK for Python"
 optional = false
 python-versions = ">=3.9"
-groups = ["dev"]
+groups = ["main", "dev"]
 files = [
     {file = "boto3-1.41.5-py3-none-any.whl", hash = "sha256:bb278111bfb4c33dca8342bda49c9db7685e43debbfa00cc2a5eb854dd54b745"},
     {file = "boto3-1.41.5.tar.gz", hash = "sha256:bc7806bee681dfdff2fe2b74967b107a56274f1e66ebe4d20dc8eee1ea408d17"},
@@ -1862,7 +1862,7 @@ psutil = "^7.1.0"
 pyarrow = "^22.0.0"
 pydantic = "^2.13.4"
 pylance = "^1.0.4"
-pymongo = {version = "^4.15.1", extras = ["srv"]}
+pymongo = {version = "^4.15.1", extras = ["aws", "srv"]}
 pymongoarrow = "^1.10.0"
 pymupdf = "^1.26.1"
 pytz = "^2020.1"
@@ -4307,6 +4307,7 @@ files = [
 
 [package.dependencies]
 dnspython = ">=2.6.1,<3.0.0"
+pymongo-auth-aws = {version = ">=1.1.0,<2.0.0", optional = true, markers = "extra == \"aws\""}
 
 [package.extras]
 aws = ["pymongo-auth-aws (>=1.1.0,<2.0.0)"]
@@ -4317,6 +4318,25 @@ ocsp = ["certifi (>=2023.7.22) ; os_name == \"nt\" or sys_platform == \"darwin\"
 snappy = ["python-snappy (>=0.6.0)"]
 test = ["importlib-metadata (>=7.0) ; python_version < \"3.13\"", "pytest (>=8.2)", "pytest-asyncio (>=0.24.0)"]
 zstd = ["backports-zstd (>=1.0.0) ; python_version < \"3.14\""]
+
+[[package]]
+name = "pymongo-auth-aws"
+version = "1.3.0"
+description = "MONGODB-AWS authentication support for PyMongo"
+optional = false
+python-versions = ">=3.8"
+groups = ["main"]
+files = [
+    {file = "pymongo_auth_aws-1.3.0-py3-none-any.whl", hash = "sha256:367f6d853da428a02e9e450422756133715d40f8141f47ae5d98f139a88c0ce5"},
+    {file = "pymongo_auth_aws-1.3.0.tar.gz", hash = "sha256:d0fa893958dc525ca29f601c34f2ca73c860f66bc6511ec0a7da6eb7ea44e94f"},
+]
+
+[package.dependencies]
+boto3 = "*"
+botocore = "*"
+
+[package.extras]
+test = ["dnspython (>=2.6.1)", "pymongo", "pytest"]
 
 [[package]]
 name = "pymongoarrow"
@@ -4954,7 +4974,7 @@ version = "0.15.0"
 description = "An Amazon S3 Transfer Manager"
 optional = false
 python-versions = ">=3.9"
-groups = ["dev"]
+groups = ["main", "dev"]
 files = [
     {file = "s3transfer-0.15.0-py3-none-any.whl", hash = "sha256:6f8bf5caa31a0865c4081186689db1b2534cef721d104eb26101de4b9d6a5852"},
     {file = "s3transfer-0.15.0.tar.gz", hash = "sha256:d36fac8d0e3603eff9b5bfa4282c7ce6feb0301a633566153cbd0b93d11d8379"},
