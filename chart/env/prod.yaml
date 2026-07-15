@@ -22,48 +22,48 @@ images:
       registry: huggingface
       useGlobalRegistry: false
       repository: datasets-server-jobs-mongodb_migration
-      tag: sha-fb3399a
+      tag: sha-536c82a
     cacheMaintenance:
       registry: huggingface
       useGlobalRegistry: false
       repository: datasets-server-jobs-cache_maintenance
-      tag: sha-fb3399a
+      tag: sha-536c82a
   services:
     admin:
       registry: huggingface
       useGlobalRegistry: false
       repository: datasets-server-services-admin
-      tag: sha-fb3399a
+      tag: sha-536c82a
     api:
       registry: huggingface
       useGlobalRegistry: false
       repository: datasets-server-services-api
-      tag: sha-fb3399a
+      tag: sha-536c82a
     rows:
       registry: huggingface
       useGlobalRegistry: false
       repository: datasets-server-services-rows
-      tag: sha-fb3399a
+      tag: sha-536c82a
     search:
       registry: huggingface
       useGlobalRegistry: false
       repository: datasets-server-services-search
-      tag: sha-fb3399a
+      tag: sha-536c82a
     sseApi:
       registry: huggingface
       useGlobalRegistry: false
       repository: datasets-server-services-sse-api
-      tag: sha-fb3399a
+      tag: sha-536c82a
     worker:
       registry: huggingface
       useGlobalRegistry: false
       repository: datasets-server-services-worker
-      tag: sha-fb3399a
+      tag: sha-536c82a
     webhook:
       registry: huggingface
       useGlobalRegistry: false
       repository: datasets-server-services-webhook
-      tag: sha-fb3399a
+      tag: sha-536c82a
 serviceAccount:
   create: true
   name: ""
