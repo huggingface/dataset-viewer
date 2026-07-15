@@ -255,7 +255,9 @@ def get_jwt_public_keys(
             try:
                 remote_keys = parse_jwt_public_keys_json(payload=payload, algorithm=algorithm)
             except ValueError as err:
-                raise RuntimeError(f"Failed to parse the JWT public keys from {public_key_url}: {err.args[0]}") from err
+                raise RuntimeError(
+                    f"Failed to parse the JWT public keys from {public_key_url}: {err.args[0]}"
+                ) from err
             if not remote_keys:
                 raise RuntimeError(
                     f"None of the JWT public keys published at {public_key_url} could be parsed. Check that the"
