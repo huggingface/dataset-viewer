@@ -105,31 +105,6 @@ def _key_to_pem(key: SupportedKey, algorithm: SupportedAlgorithm) -> str:
     # ^ we assume that the key contains UTF-8 encoded bytes, which is why we use type ignore for mypy
 
 
-def parse_jwt_public_key_json(payload: Any, algorithm: SupportedAlgorithm) -> str:
-    """
-    Parse the payload (JSON format) to extract the public key, validating that it's a public key, and that it is
-    compatible with the algorithm
-
-    Args:
-        keys (`Any`): the JSON to parse. It must be a list of keys in JWK format
-        algorithm (`SupportedAlgorithm`): the algorithm the key should implement
-
-    Raises:
-        [`RuntimeError`]: if the payload is not compatible with the algorithm, or if the key is not public
-        [`ValueError`]: if the input is not a list
-
-    Returns:
-        `str`: the public key in PEM format
-    """
-    if not isinstance(payload, list) or not payload:
-        raise ValueError("Payload must be a list of JWK formatted keys.")
-    try:
-        key = algorithm.from_jwk(payload[0])
-    except (jwt.InvalidKeyError, KeyError) as err:
-        raise RuntimeError(f"Failed to parse JWT key: {err.args[0]}") from err
-    return _key_to_pem(key, algorithm)
-
-
 def parse_jwt_public_keys_json(payload: Any, algorithm: SupportedAlgorithm) -> list[str]:
     """
     Parse the payload (JSON format) to extract the public keys, validating that they are public keys, and that

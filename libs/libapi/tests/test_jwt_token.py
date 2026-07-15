@@ -23,7 +23,6 @@ from libapi.exceptions import (
 from libapi.jwt_token import (
     create_algorithm,
     get_jwt_public_keys,
-    parse_jwt_public_key_json,
     parse_jwt_public_key_pem,
     parse_jwt_public_keys_json,
     validate_jwt,
@@ -64,22 +63,6 @@ another_algorithm_public_key_json_payload = {
     "use": "enc",
     "kid": "1",
 }
-
-
-@pytest.mark.parametrize(
-    "payload,expected_pem,expectation",
-    [
-        ([], None, pytest.raises(ValueError)),
-        (eddsa_public_key_json_payload, None, pytest.raises(ValueError)),
-        ([another_algorithm_public_key_json_payload], None, pytest.raises(RuntimeError)),
-        ([eddsa_public_key_json_payload], eddsa_public_key_pem, does_not_raise()),
-    ],
-)
-def test_parse_jwt_public_key_json(payload: Any, expected_pem: str, expectation: Any) -> None:
-    with expectation:
-        pem = parse_jwt_public_key_json(algorithm=algorithm_eddsa, payload=payload)
-        if expected_pem:
-            assert pem == expected_pem
 
 
 @pytest.mark.parametrize(
