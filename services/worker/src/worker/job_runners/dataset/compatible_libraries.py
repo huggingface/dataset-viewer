@@ -50,6 +50,14 @@ from worker.dtos import (
 )
 from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunnerWithDatasetsCache
 
+try:
+    from libviewer._internal import is_optimized_parquet_from_hub
+
+    HAS_LIBVIEWER = True
+except ImportError:
+    HAS_LIBVIEWER = False
+    logging.warning("libviewer is not installed. Rust-based content-defined chunking detection will be unavailable.")
+
 BASE_PATTERNS_WITH_SEPARATOR = [
     pattern
     for pattern in datasets.data_files.KEYWORDS_IN_FILENAME_BASE_PATTERNS
@@ -854,7 +862,7 @@ get_format_for_builder: dict[str, DatasetFormat] = {
 
 
 def compute_compatible_libraries_response(
-    dataset: str, hf_token: Optional[str] = None
+    dataset: str, hf_token: Optional[str] = None, hf_endpoint: str = "https://huggingface.co"
 ) -> DatasetCompatibleLibrariesResponse:
     """
     Get the response of 'dataset-compatible-libraries' for one specific dataset on huggingface.co.
@@ -922,7 +930,7 @@ def compute_compatible_libraries_response(
             polars_libraries
             and polars_libraries[0]["loading_codes"]
             and is_optimized_parquet_from_first_polars_loading_code(
-                dataset, polars_libraries[0]["loading_codes"][0], hf_token
+                dataset, polars_libraries[0]["loading_codes"][0], hf_token, hf_endpoint
             )
         ):
             formats.append("optimized-parquet")
@@ -940,7 +948,7 @@ def compute_compatible_libraries_response(
 
 
 def is_optimized_parquet_from_first_polars_loading_code(
-    dataset: str, loading_code: LoadingCode, hf_token: Optional[str]
+    dataset: str, loading_code: LoadingCode, hf_token: Optional[str], hf_endpoint: str
 ) -> bool:
     """Check if parquet files use content-defined chunking by checking page sizes.
 
@@ -949,8 +957,9 @@ def is_optimized_parquet_from_first_polars_loading_code(
     1. Page index is present (offset_index available)
     2. At least 50% of columns have variable page sizes
 
-    This is more robust than checking for the 'content_defined_chunking' metadata key
-    which is only added by the `datasets` library.
+    First checks for pyarrow-specific metadata key, then falls back to
+    Rust-based page size variability detection for other tools.
+    Uses opendal range requests to only read the parquet footer (~8KB) from hub.
     """
     if (
         "splits" not in loading_code["arguments"]
@@ -960,30 +969,23 @@ def is_optimized_parquet_from_first_polars_loading_code(
         return False
     first_split_pattern = next(iter(loading_code["arguments"]["splits"].values()))
     if isinstance(first_split_pattern, str):
-        fs = HfFileSystem(token=hf_token)
-        parquet_files = fs.glob(f"datasets/{dataset}/{first_split_pattern}")
-        if parquet_files:
-            first_parquet_file = parquet_files[0]
-            # Use libviewer's Rust implementation if available
-            try:
-                from libviewer._internal import is_content_defined_chunked_parquet
+        # Construct hf:// URL for opendal range requests (reads only ~8KB footer)
+        hf_url = f"hf://datasets/{dataset}/{first_split_pattern}"
 
-                with fs.open(first_parquet_file, "rb") as f:
-                    file_bytes = f.read()
-                return bool(is_content_defined_chunked_parquet(file_bytes))
-            except ImportError:
-                pass  # Fall back to pyarrow implementation
-            except Exception:
-                pass  # Fall back to pyarrow implementation
-
-        # Fallback to pyarrow implementation
-        fs = HfFileSystem(token=hf_token)
-        parquet_files = fs.glob(f"datasets/{dataset}/{first_split_pattern}")
-        if parquet_files:
-            first_parquet_file = parquet_files[0]
-            with fs.open(first_parquet_file, "rb") as f:
+        # First check pyarrow-specific metadata key
+        try:
+            fs = HfFileSystem(token=hf_token, endpoint_url=hf_endpoint)
+            parquet_path = f"datasets/{dataset}/{first_split_pattern}"
+            with fs.open(parquet_path, "rb") as f:
                 with pq.ParquetFile(f) as pf:
-                    return _check_page_index_with_pyarrow(pf.metadata)
+                    if b"use_content_defined_chunking" in pf.metadata.metadata:
+                        return True
+        except Exception:
+            pass  # Fall through to Rust detection
+
+        # Fall back to Rust-based CDC detection (page size variability)
+        if HAS_LIBVIEWER:
+            return bool(is_optimized_parquet_from_hub(hf_url, hf_token, hf_endpoint))
     return False
 
 

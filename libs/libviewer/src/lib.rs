@@ -7,7 +7,7 @@ use pyo3::prelude::*;
 use pyo3::types::PyBytes;
 
 use crate::dataset::{Dataset, DatasetError};
-use crate::parquet::is_content_defined_chunked_from_bytes;
+use crate::parquet::{is_content_defined_chunked, is_content_defined_chunked_from_bytes, read_metadata_from_hub};
 
 const DEFAULT_SCAN_SIZE_LIMIT: u64 = 1024 * 1024 * 1024; // 1 GiB
 
@@ -30,6 +30,22 @@ fn is_content_defined_chunked_parquet(metadata_bytes: &Bound<'_, PyBytes>) -> Py
     // Use our existing detection logic
     Ok(is_content_defined_chunked_from_bytes(metadata_bytes.as_bytes())
         .map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()))?)
+}
+
+#[pyfunction]
+fn is_optimized_parquet_from_hub(
+    hf_path: &str,
+    hf_token: Option<String>,
+    hf_endpoint: Option<String>,
+) -> PyResult<bool> {
+    // Use opendal to read only the parquet footer via range requests
+    // This is much more efficient than downloading the full file
+    pyo3_async_runtimes::tokio::get_runtime().block_on(async {
+        read_metadata_from_hub(hf_path, hf_token.as_deref(), hf_endpoint.as_deref())
+            .await
+            .map(|metadata| is_content_defined_chunked(&metadata))
+            .map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()))
+    })
 }
 
 #[derive(Debug, Clone, IntoPyObject, FromPyObject)]
@@ -139,5 +155,6 @@ fn dv(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyDataset>()?;
     m.add("PyDatasetError", m.py().get_type::<PyDatasetError>())?;
     m.add_function(wrap_pyfunction!(is_content_defined_chunked_parquet, m)?)?;
+    m.add_function(wrap_pyfunction!(is_optimized_parquet_from_hub, m)?)?;
     Ok(())
 }

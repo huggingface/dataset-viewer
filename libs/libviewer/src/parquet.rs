@@ -258,3 +258,107 @@ pub fn is_content_defined_chunked_from_bytes(
     // Use our existing detection logic
     Ok(is_content_defined_chunked(&metadata))
 }
+
+/// Reads parquet metadata from an hf:// URL using opendal's Huggingface backend (XET).
+/// Only reads the parquet footer (~8KB) instead of downloading the full file.
+pub async fn read_metadata_from_hub(
+    path: &str,
+    hf_token: Option<&str>,
+    hf_endpoint: Option<&str>,
+) -> std::result::Result<Arc<ParquetMetaData>, ParquetError> {
+    if !path.starts_with("hf://datasets/") {
+        return Err(ParquetError::General("Invalid hf:// URL".to_string()));
+    }
+
+    let rest = &path["hf://datasets/".len()..];
+
+    // Parse hf://datasets/<repo_id>[@<revision>]/<file_path>
+    // where repo_id = <username>/<dataset_name>
+    let (repo_id, revision, file_path) = if let Some(at_idx) = rest.find('@') {
+        // Has revision: <repo_id>@<revision>/<file_path>
+        let repo_id_candidate = &rest[..at_idx];
+        if !repo_id_candidate.contains('/') {
+            return Err(ParquetError::General(
+                "repo_id must be in 'username/dataset_name' format".to_string(),
+            ));
+        }
+
+        let after_at = &rest[at_idx + 1..];
+        let slash_idx = after_at.find('/').ok_or_else(|| {
+            ParquetError::General(
+                "missing '/' after revision (expected format: <repo_id>@<revision>/<file_path>)".to_string(),
+            )
+        })?;
+
+        let rev = &after_at[..slash_idx];
+        let fpath = &after_at[slash_idx + 1..];
+
+        if rev.is_empty() || fpath.is_empty() {
+            return Err(ParquetError::General(
+                "revision and file_path must not be empty".to_string(),
+            ));
+        }
+
+        (repo_id_candidate, rev, fpath)
+    } else {
+        // No revision: <repo_id>/<file_path>
+        // repo_id contains one '/' so we need the SECOND slash
+        let first_slash = rest.find('/').ok_or_else(|| {
+            ParquetError::General("repo_id is missing".to_string())
+        })?;
+
+        let second_slash = rest[first_slash + 1..]
+            .find('/')
+            .map(|i| i + first_slash + 1)
+            .ok_or_else(|| {
+                ParquetError::General("file_path is missing".to_string())
+            })?;
+
+        let repo_id = &rest[..second_slash];
+        let file_path = &rest[second_slash + 1..];
+
+        if file_path.is_empty() {
+            return Err(ParquetError::General(
+                "file_path must not be empty".to_string(),
+            ));
+        }
+
+        (repo_id, "main", file_path)
+    };
+
+    let endpoint = hf_endpoint.unwrap_or("https://huggingface.co");
+    let mut builder = opendal::services::Huggingface::default()
+        .repo_type("dataset")
+        .repo_id(&repo_id)
+        .revision(&revision)
+        .endpoint(endpoint);
+
+    if let Some(token) = hf_token {
+        builder = builder.token(token);
+    }
+
+    let operator = opendal::Operator::new(builder)
+        .map_err(|e| ParquetError::General(format!("opendal: {}", e)))?
+        .finish();
+    let store = Arc::new(object_store_opendal::OpendalStore::new(operator));
+
+    let obj: Path = file_path.into();
+
+    // Use ParquetObjectReader from the parquet crate to handle footer reading via range requests
+    let file_size = store.head(&obj).await.map_err(|e| ParquetError::General(format!("head: {}", e)))?.size as u64;
+    let mut object_reader = ParquetObjectReader::new(store, obj)
+        .with_file_size(file_size)
+        .with_preload_offset_index(true);
+
+    // Try loading with offset index, fall back to suffix requests if it fails
+    let mut metadata_reader = ParquetMetaDataReader::new()
+        .with_column_index_policy(PageIndexPolicy::Skip)
+        .with_offset_index_policy(PageIndexPolicy::Optional);
+
+    if metadata_reader.try_load_via_suffix(&mut object_reader).await.is_err() {
+        metadata_reader = metadata_reader.with_offset_index_policy(PageIndexPolicy::Skip);
+        metadata_reader.try_load_via_suffix(&mut object_reader).await?;
+    }
+
+    Ok(Arc::new(metadata_reader.finish()?))
+}

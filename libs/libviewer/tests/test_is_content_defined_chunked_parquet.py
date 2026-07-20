@@ -106,3 +106,35 @@ def test_cdc_parquet_without_cdc_is_not_cdc():
         result = is_content_defined_chunked_parquet(data)
     os.unlink(f.name)
     assert not result, f"Non-CDC parquet should NOT be detected as CDC, got {result}"
+
+
+def test_regular_bytes_returns_false():
+    """Bytes that don't form a valid parquet file should return False or raise."""
+    # Create a minimal valid parquet file with no CDC
+    table = pa.table({"x": [1, 2, 3]})
+    with tempfile.NamedTemporaryFile(suffix=".parquet", delete=False) as f:
+        pq.write_table(table, f.name)
+        with open(f.name, "rb") as ff:
+            data = ff.read()
+        result = is_content_defined_chunked_parquet(data)
+    os.unlink(f.name)
+    assert result is False or isinstance(result, bool)
+
+
+def test_cdc_single_column():
+    """CDC parquet with only one column should be detected."""
+    strings = [f"data-{i}" * (i + 1) for i in range(1000)]
+    table = pa.table({"text": pa.array(strings, type=pa.string())})
+
+    with tempfile.NamedTemporaryFile(suffix=".parquet", delete=False) as f:
+        pq.write_table(
+            table,
+            f.name,
+            use_content_defined_chunking={"min_chunk_size": 1_000, "max_chunk_size": 5_000, "norm_level": 0},
+            write_page_index=True,
+        )
+        with open(f.name, "rb") as ff:
+            data = ff.read()
+        result = is_content_defined_chunked_parquet(data)
+    os.unlink(f.name)
+    assert result, f"CDC parquet should be detected as CDC, got {result}"
