@@ -1,4 +1,5 @@
 """Tests for libviewer CDC detection function."""
+
 import tempfile
 import os
 import pyarrow as pa
@@ -12,10 +13,12 @@ SEED = 42
 
 def test_regular_parquet_is_not_cdc():
     """Regular integer-only parquet files should NOT be detected as CDC."""
-    table = pa.table({
-        "a": list(range(5000)),
-        "b": list(range(5000, 10000)),
-    })
+    table = pa.table(
+        {
+            "a": list(range(5000)),
+            "b": list(range(5000, 10000)),
+        }
+    )
     with tempfile.NamedTemporaryFile(suffix=".parquet", delete=False) as f:
         pq.write_table(table, f.name, write_page_index=True)
         with open(f.name, "rb") as ff:
@@ -78,7 +81,11 @@ def test_cdc_parquet_with_multiple_row_groups():
         pq.write_table(
             table,
             f.name,
-            use_content_defined_chunking={"min_chunk_size": 2_500, "max_chunk_size": 10_000, "norm_level": 0},
+            use_content_defined_chunking={
+                "min_chunk_size": 2_500,
+                "max_chunk_size": 10_000,
+                "norm_level": 0,
+            },
             write_page_index=True,
         )
         with open(f.name, "rb") as ff:
@@ -130,7 +137,11 @@ def test_cdc_single_column():
         pq.write_table(
             table,
             f.name,
-            use_content_defined_chunking={"min_chunk_size": 1_000, "max_chunk_size": 5_000, "norm_level": 0},
+            use_content_defined_chunking={
+                "min_chunk_size": 1_000,
+                "max_chunk_size": 5_000,
+                "norm_level": 0,
+            },
             write_page_index=True,
         )
         with open(f.name, "rb") as ff:
