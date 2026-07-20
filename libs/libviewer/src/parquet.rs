@@ -330,8 +330,8 @@ pub async fn read_metadata_from_hub(
     let endpoint = hf_endpoint.unwrap_or("https://huggingface.co");
     let mut builder = opendal::services::Huggingface::default()
         .repo_type("dataset")
-        .repo_id(&repo_id)
-        .revision(&revision)
+        .repo_id(repo_id)
+        .revision(revision)
         .endpoint(endpoint);
 
     if let Some(token) = hf_token {

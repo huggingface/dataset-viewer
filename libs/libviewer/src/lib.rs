@@ -30,10 +30,8 @@ impl From<DatasetError> for PyErr {
 #[pyfunction]
 fn is_content_defined_chunked_parquet(metadata_bytes: &Bound<'_, PyBytes>) -> PyResult<bool> {
     // Use our existing detection logic
-    Ok(
-        is_content_defined_chunked_from_bytes(metadata_bytes.as_bytes())
-            .map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()))?,
-    )
+    is_content_defined_chunked_from_bytes(metadata_bytes.as_bytes())
+        .map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()))
 }
 
 #[pyfunction]
