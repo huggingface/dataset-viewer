@@ -7,7 +7,9 @@ use pyo3::prelude::*;
 use pyo3::types::PyBytes;
 
 use crate::dataset::{Dataset, DatasetError};
-use crate::parquet::{is_content_defined_chunked, is_content_defined_chunked_from_bytes, read_metadata_from_hub};
+use crate::parquet::{
+    is_content_defined_chunked, is_content_defined_chunked_from_bytes, read_metadata_from_hub,
+};
 
 const DEFAULT_SCAN_SIZE_LIMIT: u64 = 1024 * 1024 * 1024; // 1 GiB
 
@@ -28,8 +30,10 @@ impl From<DatasetError> for PyErr {
 #[pyfunction]
 fn is_content_defined_chunked_parquet(metadata_bytes: &Bound<'_, PyBytes>) -> PyResult<bool> {
     // Use our existing detection logic
-    Ok(is_content_defined_chunked_from_bytes(metadata_bytes.as_bytes())
-        .map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()))?)
+    Ok(
+        is_content_defined_chunked_from_bytes(metadata_bytes.as_bytes())
+            .map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()))?,
+    )
 }
 
 #[pyfunction]

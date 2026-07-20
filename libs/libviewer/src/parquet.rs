@@ -213,7 +213,9 @@ pub fn is_content_defined_chunked(metadata: &ParquetMetaData) -> bool {
 
 /// Checks if page sizes vary within a column chunk.
 /// Returns true if there's significant variation (> 5% coefficient of variation).
-fn is_variable_page_size(page_locations: &[parquet::file::page_index::offset_index::PageLocation]) -> bool {
+fn is_variable_page_size(
+    page_locations: &[parquet::file::page_index::offset_index::PageLocation],
+) -> bool {
     if page_locations.len() <= 1 {
         // Single page - can't determine variation
         return false;
@@ -286,7 +288,8 @@ pub async fn read_metadata_from_hub(
         let after_at = &rest[at_idx + 1..];
         let slash_idx = after_at.find('/').ok_or_else(|| {
             ParquetError::General(
-                "missing '/' after revision (expected format: <repo_id>@<revision>/<file_path>)".to_string(),
+                "missing '/' after revision (expected format: <repo_id>@<revision>/<file_path>)"
+                    .to_string(),
             )
         })?;
 
@@ -303,16 +306,14 @@ pub async fn read_metadata_from_hub(
     } else {
         // No revision: <repo_id>/<file_path>
         // repo_id contains one '/' so we need the SECOND slash
-        let first_slash = rest.find('/').ok_or_else(|| {
-            ParquetError::General("repo_id is missing".to_string())
-        })?;
+        let first_slash = rest
+            .find('/')
+            .ok_or_else(|| ParquetError::General("repo_id is missing".to_string()))?;
 
         let second_slash = rest[first_slash + 1..]
             .find('/')
             .map(|i| i + first_slash + 1)
-            .ok_or_else(|| {
-                ParquetError::General("file_path is missing".to_string())
-            })?;
+            .ok_or_else(|| ParquetError::General("file_path is missing".to_string()))?;
 
         let repo_id = &rest[..second_slash];
         let file_path = &rest[second_slash + 1..];
@@ -345,7 +346,11 @@ pub async fn read_metadata_from_hub(
     let obj: Path = file_path.into();
 
     // Use ParquetObjectReader from the parquet crate to handle footer reading via range requests
-    let file_size = store.head(&obj).await.map_err(|e| ParquetError::General(format!("head: {}", e)))?.size as u64;
+    let file_size = store
+        .head(&obj)
+        .await
+        .map_err(|e| ParquetError::General(format!("head: {}", e)))?
+        .size as u64;
     let mut object_reader = ParquetObjectReader::new(store, obj)
         .with_file_size(file_size)
         .with_preload_offset_index(true);
@@ -355,9 +360,15 @@ pub async fn read_metadata_from_hub(
         .with_column_index_policy(PageIndexPolicy::Skip)
         .with_offset_index_policy(PageIndexPolicy::Optional);
 
-    if metadata_reader.try_load_via_suffix(&mut object_reader).await.is_err() {
+    if metadata_reader
+        .try_load_via_suffix(&mut object_reader)
+        .await
+        .is_err()
+    {
         metadata_reader = metadata_reader.with_offset_index_policy(PageIndexPolicy::Skip);
-        metadata_reader.try_load_via_suffix(&mut object_reader).await?;
+        metadata_reader
+            .try_load_via_suffix(&mut object_reader)
+            .await?;
     }
 
     Ok(Arc::new(metadata_reader.finish()?))

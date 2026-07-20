@@ -980,8 +980,8 @@ def is_optimized_parquet_from_first_polars_loading_code(
                 with pq.ParquetFile(f) as pf:
                     if b"use_content_defined_chunking" in pf.metadata.metadata:
                         return True
-        except Exception:
-            pass  # Fall through to Rust detection
+        except Exception as e:
+            logging.debug("Failed to check pyarrow metadata: %s", e)
 
         # Fall back to Rust-based CDC detection (page size variability)
         if HAS_LIBVIEWER:
