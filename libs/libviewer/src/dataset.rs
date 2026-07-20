@@ -9,7 +9,6 @@ use object_store::ObjectStore;
 use object_store_opendal::OpendalStore;
 use opendal::services::Huggingface;
 use opendal::Operator;
-use parquet::file::metadata::ParquetMetaData;
 use thiserror::Error;
 use tokio::task;
 use url::Url;
@@ -44,14 +43,14 @@ pub enum DatasetError {
     JoinError(#[from] tokio::task::JoinError),
 }
 
-type Result<T, E = DatasetError> = std::result::Result<T, E>;
+type Result<T> = std::result::Result<T, DatasetError>;
 
 #[derive(Debug)]
 struct ParquetScan {
     file: IndexedFile,
     limit: u64,
     offset: u64,
-    metadata: Arc<ParquetMetaData>,
+    metadata: Arc<parquet::file::metadata::ParquetMetaData>,
 }
 
 impl ParquetScan {
@@ -73,7 +72,7 @@ impl ParquetScan {
     }
 }
 
-fn store_from_uri(uri: &str) -> Result<Arc<dyn ObjectStore>, DatasetError> {
+fn store_from_uri(uri: &str) -> Result<Arc<dyn ObjectStore>> {
     let url = Url::parse(uri)?;
     let (store, prefix) = object_store::parse_url(&url)?;
     let store = PrefixStore::new(store, prefix);

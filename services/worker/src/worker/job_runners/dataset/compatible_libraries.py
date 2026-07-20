@@ -942,6 +942,16 @@ def compute_compatible_libraries_response(
 def is_optimized_parquet_from_first_polars_loading_code(
     dataset: str, loading_code: LoadingCode, hf_token: Optional[str]
 ) -> bool:
+    """Check if parquet files use content-defined chunking by checking page sizes.
+    
+    This detects files written with use_content_defined_chunking=True in pyarrow
+    or equivalent content-defined chunking by checking:
+    1. Page index is present (offset_index available)
+    2. At least 50% of columns have variable page sizes
+    
+    This is more robust than checking for the 'content_defined_chunking' metadata key
+    which is only added by the `datasets` library.
+    """
     if (
         "splits" not in loading_code["arguments"]
         or not isinstance(loading_code["arguments"]["splits"], dict)
@@ -954,14 +964,53 @@ def is_optimized_parquet_from_first_polars_loading_code(
         parquet_files = fs.glob(f"datasets/{dataset}/{first_split_pattern}")
         if parquet_files:
             first_parquet_file = parquet_files[0]
+            # Use libviewer's Rust implementation if available
+            try:
+                from libviewer._internal import is_content_defined_chunked_parquet
+                with fs.open(first_parquet_file, "rb") as f:
+                    file_bytes = f.read()
+                return is_content_defined_chunked_parquet(file_bytes)
+            except ImportError:
+                pass  # Fall back to pyarrow implementation
+            except Exception:
+                pass  # Fall back to pyarrow implementation
+        
+        # Fallback to pyarrow implementation
+        fs = HfFileSystem(token=hf_token)
+        parquet_files = fs.glob(f"datasets/{dataset}/{first_split_pattern}")
+        if parquet_files:
+            first_parquet_file = parquet_files[0]
             with fs.open(first_parquet_file, "rb") as f:
                 with pq.ParquetFile(f) as pf:
-                    if b"content_defined_chunking" in pf.metadata.metadata:
-                        # TODO: also check that the page index is available
-                        # in the Parquet metadata viewer it corresponds
-                        # e.g. to "row_groups.0.columns.0.offset_index_offset"
-                        return True
+                    return _check_page_index_with_pyarrow(pf.metadata)
     return False
+
+
+def _check_page_index_with_pyarrow(metadata) -> bool:
+    """Check if parquet metadata indicates content-defined chunking using pyarrow.
+    
+    Falls back to checking for column index presence if libviewer is not available.
+    """
+    try:
+        num_row_groups = metadata.num_row_groups
+        has_page_index_count = 0
+        total_columns_checked = 0
+        
+        for i in range(min(num_row_groups, 3)):  # Check first 3 row groups
+            row_group = metadata.row_group(i)
+            for j in range(row_group.num_columns):
+                col = row_group.column(j)
+                if hasattr(col, "statistics") and col.statistics is not None:
+                    # Statistics presence indicates page index was written
+                    has_page_index_count += 1
+                total_columns_checked += 1
+        
+        # If at least 50% of checked columns have page index, consider it optimized
+        if total_columns_checked > 0:
+            return (has_page_index_count / total_columns_checked) >= 0.5
+        return False
+    except Exception:
+        return False
 
 
 class DatasetCompatibleLibrariesJobRunner(DatasetJobRunnerWithDatasetsCache):

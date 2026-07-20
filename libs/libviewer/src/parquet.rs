@@ -157,3 +157,104 @@ pub fn read_batch_stream(
             .build()?;
     Ok(batch_stream)
 }
+
+/// Checks if a parquet file is written with content-defined chunking (CDC).
+///
+/// CDC parquet files have variable-sized pages (not fixed 1MB blocks),
+/// which enables more efficient data transfers and storage.
+///
+/// Detection criteria:
+/// 1. Page index must be present (offset_index available)
+/// 2. At least one column must have multiple pages with variable sizes
+/// 3. Page sizes must vary significantly (not all the same within ~5% tolerance)
+///
+/// This is more robust than checking for the `content_defined_chunking` metadata key
+/// which is only added by the `datasets` library.
+pub fn is_content_defined_chunked(metadata: &ParquetMetaData) -> bool {
+    // Check if offset index is present (indicates page index was written)
+    let offset_index = match metadata.offset_index() {
+        Some(idx) => idx,
+        None => return false,
+    };
+
+    let mut variable_size_columns = 0;
+
+    // Iterate through row groups and columns
+    for row_group_offset_index in offset_index.iter() {
+        for column_offset_index in row_group_offset_index.iter() {
+            let page_locations = column_offset_index.page_locations();
+
+            if page_locations.is_empty() {
+                continue;
+            }
+
+            // Check if page sizes vary within this column
+            if is_variable_page_size(page_locations) {
+                variable_size_columns += 1;
+            }
+        }
+    }
+
+    // A file is considered content-defined chunked if:
+    // - It has at least one column with variable page sizes
+    // - AND at least 50% of columns have variable sizes (to handle edge cases)
+    if metadata.num_row_groups() == 0 {
+        return false;
+    }
+    let num_columns = metadata.row_group(0).num_columns();
+
+    if num_columns == 0 {
+        return false;
+    }
+
+    let ratio = variable_size_columns as f64 / num_columns as f64;
+    ratio >= 0.5
+}
+
+/// Checks if page sizes vary within a column chunk.
+/// Returns true if there's significant variation (> 5% coefficient of variation).
+fn is_variable_page_size(page_locations: &[parquet::file::page_index::offset_index::PageLocation]) -> bool {
+    if page_locations.len() <= 1 {
+        // Single page - can't determine variation
+        return false;
+    }
+
+    let sizes: Vec<i32> = page_locations
+        .iter()
+        .map(|pl| pl.compressed_page_size)
+        .collect();
+
+    // Calculate average size
+    let avg_size = sizes.iter().sum::<i32>() as f64 / sizes.len() as f64;
+
+    if avg_size == 0.0 {
+        return false;
+    }
+
+    // Calculate coefficient of variation
+    let variance = sizes
+        .iter()
+        .map(|s| ((*s as f64) - avg_size).powi(2))
+        .sum::<f64>()
+        / sizes.len() as f64;
+    let std_dev = variance.sqrt();
+    let cv = std_dev / avg_size;
+
+    // If coefficient of variation > 5%, consider it variable
+    cv > 0.05
+}
+
+/// Checks if a parquet file has content-defined chunking from raw bytes.
+///
+/// This is a wrapper around `is_content_defined_chunked` that parses the metadata from bytes.
+pub fn is_content_defined_chunked_from_bytes(
+    metadata_bytes: &[u8],
+) -> std::result::Result<bool, ParquetError> {
+    // Parse the Parquet metadata using the parquet crate's ParquetMetaDataReader
+    let metadata = ParquetMetaDataReader::new()
+        .with_offset_index_policy(PageIndexPolicy::Optional)
+        .parse_and_finish(&Bytes::from(metadata_bytes.to_vec()))?;
+
+    // Use our existing detection logic
+    Ok(is_content_defined_chunked(&metadata))
+}
