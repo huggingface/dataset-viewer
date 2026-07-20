@@ -41,12 +41,12 @@ def prepare_and_clean_mongo(app_config: AppConfig) -> None:
 
 GetJobRunner = Callable[[str, AppConfig], DatasetCompatibleLibrariesJobRunner]
 
-PARQUET_DATASET = "parquet-dataset"
-PARQUET_DATASET_LOGIN_REQUIRED = "parquet-dataset-login_required"
-WEBDATASET_DATASET = "webdataset-dataset"
-LANCE_DATASET = "lance-dataset"
-LEROBOT_DATASET = "lerobot-dataset"
-ERROR_DATASET = "error-dataset"
+PARQUET_DATASET = "dummy/parquet-dataset"
+PARQUET_DATASET_LOGIN_REQUIRED = "dummy/parquet-dataset-login_required"
+WEBDATASET_DATASET = "dummy/webdataset-dataset"
+LANCE_DATASET = "dummy/lance-dataset"
+LEROBOT_DATASET = "dummy/lerobot-dataset"
+ERROR_DATASET = "dummy/error-dataset"
 
 UPSTREAM_RESPONSE_INFO_PARQUET: UpstreamResponse = UpstreamResponse(
     kind="dataset-info",
@@ -98,7 +98,7 @@ UPSTREAM_RESPONSE_INFO_ERROR: UpstreamResponse = UpstreamResponse(
 )
 EXPECTED_PARQUET = (
     {
-        "formats": ["parquet", "optimized-parquet"],
+        "formats": ["parquet"],
         "libraries": [
             {
                 "function": "load_dataset",
@@ -108,7 +108,7 @@ EXPECTED_PARQUET = (
                     {
                         "config_name": "default",
                         "arguments": {},
-                        "code": ('from datasets import load_dataset\n\nds = load_dataset("parquet-dataset")'),
+                        "code": ('from datasets import load_dataset\n\nds = load_dataset("dummy/parquet-dataset")'),
                     }
                 ],
             },
@@ -129,7 +129,7 @@ EXPECTED_PARQUET = (
                             "import pandas as pd\n"
                             "\n"
                             "splits = {'train': 'train.parquet', 'test': 'test.parquet'}\n"
-                            'df = pd.read_parquet("hf://datasets/parquet-dataset/" + splits["train"])'
+                            'df = pd.read_parquet("hf://datasets/dummy/parquet-dataset/" + splits["train"])'
                         ),
                     }
                 ],
@@ -146,7 +146,7 @@ EXPECTED_PARQUET = (
                         "splits = {'train': 'train.parquet', 'test': "
                         "'test.parquet'}\n"
                         "df = "
-                        'pl.read_parquet("hf://datasets/parquet-dataset/" '
+                        'pl.read_parquet("hf://datasets/dummy/parquet-dataset/" '
                         '+ splits["train"])',
                         "config_name": "default",
                     }
@@ -164,7 +164,7 @@ EXPECTED_PARQUET = (
                             "from mlcroissant "
                             "import Dataset\n"
                             "\n"
-                            'ds = Dataset(jsonld="https://huggingface.co/api/datasets/parquet-dataset/croissant")\n'
+                            'ds = Dataset(jsonld="https://huggingface.co/api/datasets/dummy/parquet-dataset/croissant")\n'
                             'records = ds.records("default")'
                         ),
                     }
@@ -177,7 +177,7 @@ EXPECTED_PARQUET = (
 
 EXPECTED_PARQUET_LOGIN_REQUIRED = (
     {
-        "formats": ["parquet", "optimized-parquet"],
+        "formats": ["parquet"],
         "libraries": [
             {
                 "function": "load_dataset",
@@ -188,7 +188,7 @@ EXPECTED_PARQUET_LOGIN_REQUIRED = (
                         "config_name": "default",
                         "arguments": {},
                         "code": (
-                            f'from datasets import load_dataset\n{LOGIN_COMMENT}\nds = load_dataset("parquet-dataset-login_required")'
+                            f'from datasets import load_dataset\n{LOGIN_COMMENT}\nds = load_dataset("dummy/parquet-dataset-login_required")'
                         ),
                     }
                 ],
@@ -210,7 +210,7 @@ EXPECTED_PARQUET_LOGIN_REQUIRED = (
                             "import pandas as pd\n"
                             f"{LOGIN_COMMENT}\n"
                             "splits = {'train': 'train.parquet', 'test': 'test.parquet'}\n"
-                            'df = pd.read_parquet("hf://datasets/parquet-dataset-login_required/" + splits["train"])'
+                            'df = pd.read_parquet("hf://datasets/dummy/parquet-dataset-login_required/" + splits["train"])'
                         ),
                     }
                 ],
@@ -229,7 +229,7 @@ EXPECTED_PARQUET_LOGIN_REQUIRED = (
                         "splits = {'train': 'train.parquet', 'test': "
                         "'test.parquet'}\n"
                         "df = "
-                        'pl.read_parquet("hf://datasets/parquet-dataset-login_required/" '
+                        'pl.read_parquet("hf://datasets/dummy/parquet-dataset-login_required/" '
                         '+ splits["train"])',
                         "config_name": "default",
                     }
@@ -249,7 +249,7 @@ EXPECTED_PARQUET_LOGIN_REQUIRED = (
                             "from mlcroissant import Dataset\n"
                             f"{LOGIN_COMMENT}\n"
                             "headers = build_hf_headers()  # handles authentication\n"
-                            'jsonld = requests.get("https://huggingface.co/api/datasets/parquet-dataset-login_required/croissant", headers=headers).json()\n'
+                            'jsonld = requests.get("https://huggingface.co/api/datasets/dummy/parquet-dataset-login_required/croissant", headers=headers).json()\n'
                             "ds = Dataset(jsonld=jsonld)\n"
                             'records = ds.records("default")'
                         ),
@@ -272,7 +272,7 @@ EXPECTED_LANCE = (
                     {
                         "config_name": "default",
                         "arguments": {},
-                        "code": ('from datasets import load_dataset\n\nds = load_dataset("lance-dataset")'),
+                        "code": ('from datasets import load_dataset\n\nds = load_dataset("dummy/lance-dataset")'),
                     }
                 ],
             },
@@ -284,7 +284,7 @@ EXPECTED_LANCE = (
                     {
                         "config_name": "default",
                         "arguments": {},
-                        "code": ('import lance\n\nds = lance.dataset("hf://datasets/lance-dataset")'),
+                        "code": ('import lance\n\nds = lance.dataset("hf://datasets/dummy/lance-dataset")'),
                     }
                 ],
             },
@@ -299,7 +299,7 @@ EXPECTED_LANCE = (
                         "code": (
                             "from mlcroissant import Dataset\n"
                             "\n"
-                            'ds = Dataset(jsonld="https://huggingface.co/api/datasets/lance-dataset/croissant")\n'
+                            'ds = Dataset(jsonld="https://huggingface.co/api/datasets/dummy/lance-dataset/croissant")\n'
                             'records = ds.records("default")'
                         ),
                     }
@@ -322,7 +322,7 @@ EXPECTED_WEBDATASET = (
                     {
                         "config_name": "default",
                         "arguments": {},
-                        "code": ('from datasets import load_dataset\n\nds = load_dataset("webdataset-dataset")'),
+                        "code": ('from datasets import load_dataset\n\nds = load_dataset("dummy/webdataset-dataset")'),
                     }
                 ],
             },
@@ -339,7 +339,7 @@ EXPECTED_WEBDATASET = (
                             "from huggingface_hub import HfFileSystem, get_token, hf_hub_url\n"
                             "\n"
                             "fs = HfFileSystem()\n"
-                            'files = [fs.resolve_path(path) for path in fs.glob("hf://datasets/webdataset-dataset/**/*.tar")]\n'
+                            'files = [fs.resolve_path(path) for path in fs.glob("hf://datasets/dummy/webdataset-dataset/**/*.tar")]\n'
                             'urls = [hf_hub_url(file.repo_id, file.path_in_repo, repo_type="dataset") for file in files]\n'
                             "urls = f\"pipe: curl -s -L -H 'Authorization:Bearer {get_token()}' {'::'.join(urls)}\"\n"
                             "\n"
@@ -359,7 +359,7 @@ EXPECTED_WEBDATASET = (
                         "code": (
                             "from mlcroissant import Dataset\n"
                             "\n"
-                            'ds = Dataset(jsonld="https://huggingface.co/api/datasets/webdataset-dataset/croissant")\n'
+                            'ds = Dataset(jsonld="https://huggingface.co/api/datasets/dummy/webdataset-dataset/croissant")\n'
                             'records = ds.records("default")'
                         ),
                     }
@@ -536,7 +536,9 @@ def test_compute_lerobot(
             {
                 "config_name": "default",
                 "arguments": {},
-                "code": ('from lerobot.datasets import LeRobotDataset\n\ndataset = LeRobotDataset("lerobot-dataset")'),
+                "code": (
+                    'from lerobot.datasets import LeRobotDataset\n\ndataset = LeRobotDataset("dummy/lerobot-dataset")'
+                ),
             }
         ],
     }

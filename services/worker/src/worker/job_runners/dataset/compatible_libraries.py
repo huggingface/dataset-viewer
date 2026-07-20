@@ -985,7 +985,10 @@ def is_optimized_parquet_from_first_polars_loading_code(
 
         # Fall back to Rust-based CDC detection (page size variability)
         if HAS_LIBVIEWER:
-            return bool(is_optimized_parquet_from_hub(hf_url, hf_token, hf_endpoint))
+            try:
+                return bool(is_optimized_parquet_from_hub(hf_url, hf_token, hf_endpoint))
+            except Exception as e:
+                logging.debug("Failed to check Rust CDC detection: %s", e)
     return False
 
 
