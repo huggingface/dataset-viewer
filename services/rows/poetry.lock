@@ -1447,7 +1447,7 @@ pillow = "^12.2.0"
 polars = "1.39.3"
 psutil = "^7.1.0"
 pyarrow = "^22.0.0"
-pydantic = "^2.13.4"
+pydantic = "^2.12.5"
 pylance = "^1.0.4"
 pymongo = {version = "^4.15.1", extras = ["aws", "srv"]}
 pymongoarrow = "^1.10.0"
