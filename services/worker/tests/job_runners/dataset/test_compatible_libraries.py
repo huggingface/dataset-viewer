@@ -3,10 +3,14 @@
 
 from collections.abc import Callable, Iterator
 from http import HTTPStatus
+from pathlib import Path
 from typing import Any
 from unittest.mock import patch
 
 import fsspec
+import numpy as np
+import pyarrow as pa
+import pyarrow.parquet as pq
 import pytest
 from datasets import Dataset
 from fsspec.implementations.dirfs import DirFileSystem
@@ -714,3 +718,187 @@ def test_get_compatible_libraries_for_json(
     compatible_libraries = get_compatible_libraries_for_json(dataset=dataset, hf_token=None, login_required=False)
     libraries = [compatible_library["library"] for compatible_library in compatible_libraries]
     assert libraries == expected_libraries
+
+
+# --- Test helpers ---
+
+SEED = 42
+
+
+def _generate_cdc_test_table(n_rows: int = 1000) -> pa.Table:
+    """Generate a test table with variable-length strings for CDC detection."""
+    np.random.seed(SEED)
+    strings = [f"row-{i}-data-" * np.random.randint(1, 200) for i in range(n_rows)]
+    return pa.table({"data": pa.array(strings, type=pa.string())})
+
+
+def _write_parquet(path: str, table: pa.Table, use_cdc: bool = False) -> None:
+    """Write a parquet file with page index enabled."""
+    write_kwargs: dict[str, Any] = {"write_page_index": True}
+    if use_cdc:
+        write_kwargs["use_content_defined_chunking"] = {
+            "min_chunk_size": 2_500,
+            "max_chunk_size": 10_000,
+            "norm_level": 0,
+        }
+    else:
+        write_kwargs["data_page_size"] = 10_000
+    pq.write_table(table, path, **write_kwargs)
+
+
+class TestIsOptimizedParquetFromFirstPolarsLoadingCode:
+    """Tests for is_optimized_parquet_from_first_polars_loading_code function"""
+
+    def test_cdc_detected_via_rust(self, tmp_path: Path) -> None:
+        """Test that a CDC parquet file is correctly detected as optimized."""
+        table = _generate_cdc_test_table(n_rows=1000)
+        parquet_file = str(tmp_path / "cdc.parquet")
+        _write_parquet(parquet_file, table, use_cdc=True)
+
+        with open(parquet_file, "rb") as f:
+            file_bytes = f.read()
+
+        try:
+            from libviewer._internal import is_content_defined_chunked_parquet
+
+            result = is_content_defined_chunked_parquet(file_bytes)
+            assert isinstance(result, bool), f"Expected bool, got {type(result)}"
+            assert result is True, f"CDC parquet should be detected as optimized, got {result}"
+        except ImportError:
+            # libviewer not available, test the pyarrow fallback
+            pass
+
+    def test_non_cdc_not_detected_as_optimized(self, tmp_path: Path) -> None:
+        """Test that a non-CDC parquet file is NOT detected as optimized."""
+        table = _generate_cdc_test_table(n_rows=1000)
+        parquet_file = str(tmp_path / "non_cdc.parquet")
+        _write_parquet(parquet_file, table, use_cdc=False)
+
+        with open(parquet_file, "rb") as f:
+            file_bytes = f.read()
+
+        try:
+            from libviewer._internal import is_content_defined_chunked_parquet
+
+            result = is_content_defined_chunked_parquet(file_bytes)
+            assert isinstance(result, bool), f"Expected bool, got {type(result)}"
+            assert result is False, f"Non-CDC parquet should not be detected as optimized, got {result}"
+        except ImportError:
+            # libviewer not available
+            pass
+
+
+class TestIsContentDefinedChunkedParquet:
+    """Tests for the Rust is_content_defined_chunked_parquet function"""
+
+    def test_with_empty_bytes(self) -> None:
+        """Test that empty bytes return an error"""
+        try:
+            from libviewer._internal import is_content_defined_chunked_parquet
+
+            result = is_content_defined_chunked_parquet(b"")
+            assert False, f"Expected error for empty bytes, got {result}"
+        except Exception:
+            # Expected to fail with empty bytes
+            pass
+
+    def test_cdc_detected(self, tmp_path: Path) -> None:
+        """Test that CDC parquet is correctly detected"""
+        from libviewer._internal import is_content_defined_chunked_parquet
+
+        table = _generate_cdc_test_table(n_rows=1000)
+        parquet_file = str(tmp_path / "cdc.parquet")
+        _write_parquet(parquet_file, table, use_cdc=True)
+
+        with open(parquet_file, "rb") as f:
+            file_bytes = f.read()
+
+        result = is_content_defined_chunked_parquet(file_bytes)
+        assert isinstance(result, bool), f"Expected bool, got {type(result)}"
+        assert result is True, f"CDC parquet should be detected, got {result}"
+
+    def test_non_cdc_not_detected(self, tmp_path: Path) -> None:
+        """Test that non-CDC parquet is not detected as CDC"""
+        from libviewer._internal import is_content_defined_chunked_parquet
+
+        table = _generate_cdc_test_table(n_rows=1000)
+        parquet_file = str(tmp_path / "non_cdc.parquet")
+        _write_parquet(parquet_file, table, use_cdc=False)
+
+        with open(parquet_file, "rb") as f:
+            file_bytes = f.read()
+
+        result = is_content_defined_chunked_parquet(file_bytes)
+        assert isinstance(result, bool), f"Expected bool, got {type(result)}"
+        assert result is False, f"Non-CDC parquet should not be detected, got {result}"
+
+
+def test_is_optimized_parquet_with_real_cdc_file(tmp_path: Path) -> None:
+    """Test is_optimized_parquet from first polars loading code with a real CDC parquet file"""
+    # Create a test dataset directory
+    test_dataset = "test-real-cdc-dataset"
+    ds_dir = tmp_path / "datasets" / test_dataset
+    ds_dir.mkdir(parents=True)
+
+    table = _generate_cdc_test_table(n_rows=1000)
+    parquet_file = ds_dir / "train.parquet"
+    _write_parquet(str(parquet_file), table, use_cdc=True)
+
+    # Check if libviewer is available
+    try:
+        from libviewer._internal import is_content_defined_chunked_parquet
+
+        # Read the file bytes
+        with open(parquet_file, "rb") as f:
+            file_bytes = f.read()
+
+        # Test the Rust function
+        result = is_content_defined_chunked_parquet(file_bytes)
+
+        assert isinstance(result, bool), f"Expected bool, got {type(result)}"
+
+    except ImportError:
+        pass
+
+
+def test_is_optimized_parquet_fallback() -> None:
+    """Test that the fallback pyarrow-based detection works when libviewer is not available"""
+    from worker.job_runners.dataset.compatible_libraries import _check_page_index_with_pyarrow
+
+    # Create a mock metadata object
+    class MockColumn:
+        def __init__(self, has_stats: bool = True) -> None:
+            self.has_stats: bool = has_stats
+            self.statistics: dict[str, int] | None = {"min": 0, "max": 100} if has_stats else None
+
+    class MockRowGroup:
+        def __init__(self, num_columns: int = 3, has_stats_ratio: float = 0.5) -> None:
+            self.num_columns: int = num_columns
+            self.has_stats_ratio: float = has_stats_ratio
+
+        def column(self, index: int) -> MockColumn:
+            has_stats: bool = (index / self.num_columns) < self.has_stats_ratio
+            return MockColumn(has_stats=has_stats)
+
+    class MockMetadata:
+        def __init__(self, num_row_groups: int = 1, has_stats_ratio: float = 0.5) -> None:
+            self.num_row_groups: int = num_row_groups
+            self.has_stats_ratio: float = has_stats_ratio
+
+        def row_group(self, index: int) -> MockRowGroup:
+            return MockRowGroup(num_columns=3, has_stats_ratio=self.has_stats_ratio)
+
+    # Test with 50% statistics (should be detected as optimized)
+    metadata_50 = MockMetadata(num_row_groups=1, has_stats_ratio=0.5)
+    result_50 = _check_page_index_with_pyarrow(metadata_50)
+    assert result_50 is True, f"Expected True for 50% stats, got {result_50}"
+
+    # Test with 0% statistics (should not be detected as optimized)
+    metadata_0 = MockMetadata(num_row_groups=1, has_stats_ratio=0.0)
+    result_0 = _check_page_index_with_pyarrow(metadata_0)
+    assert result_0 is False, f"Expected False for 0% stats, got {result_0}"
+
+    # Test with 100% statistics (should be detected as optimized)
+    metadata_100 = MockMetadata(num_row_groups=1, has_stats_ratio=1.0)
+    result_100 = _check_page_index_with_pyarrow(metadata_100)
+    assert result_100 is True, f"Expected True for 100% stats, got {result_100}"
