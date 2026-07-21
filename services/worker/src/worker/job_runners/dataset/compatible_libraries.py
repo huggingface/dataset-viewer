@@ -10,7 +10,6 @@ from typing import Any, Callable, Optional
 
 import datasets.config
 import datasets.data_files
-import pyarrow.parquet as pq
 import yaml
 from datasets import BuilderConfig, DownloadConfig, Features
 from datasets.data_files import (
@@ -972,51 +971,12 @@ def is_optimized_parquet_from_first_polars_loading_code(
         # Construct hf:// URL for opendal range requests (reads only ~8KB footer)
         hf_url = f"hf://datasets/{dataset}/{first_split_pattern}"
 
-        # First check pyarrow-specific metadata key
-        try:
-            fs = HfFileSystem(token=hf_token, endpoint_url=hf_endpoint)
-            parquet_path = f"datasets/{dataset}/{first_split_pattern}"
-            with fs.open(parquet_path, "rb") as f:
-                with pq.ParquetFile(f) as pf:
-                    if b"use_content_defined_chunking" in pf.metadata.metadata:
-                        return True
-        except Exception as e:
-            logging.debug("Failed to check pyarrow metadata: %s", e)
-
-        # Fall back to Rust-based CDC detection (page size variability)
         if HAS_LIBVIEWER:
             try:
                 return bool(is_optimized_parquet_from_hub(hf_url, hf_token, hf_endpoint))
             except Exception as e:
-                logging.debug("Failed to check Rust CDC detection: %s", e)
+                logging.warning("Failed to check Rust CDC detection: %s", e)
     return False
-
-
-def _check_page_index_with_pyarrow(metadata: Any) -> bool:
-    """Check if parquet metadata indicates content-defined chunking using pyarrow.
-
-    Falls back to checking for column index presence if libviewer is not available.
-    """
-    try:
-        num_row_groups = metadata.num_row_groups
-        has_page_index_count = 0
-        total_columns_checked = 0
-
-        for i in range(min(num_row_groups, 3)):  # Check first 3 row groups
-            row_group = metadata.row_group(i)
-            for j in range(row_group.num_columns):
-                col = row_group.column(j)
-                if hasattr(col, "statistics") and col.statistics is not None:
-                    # Statistics presence indicates page index was written
-                    has_page_index_count += 1
-                total_columns_checked += 1
-
-        # If at least 50% of checked columns have page index, consider it optimized
-        if total_columns_checked > 0:
-            return (has_page_index_count / total_columns_checked) >= 0.5
-        return False
-    except Exception:
-        return False
 
 
 class DatasetCompatibleLibrariesJobRunner(DatasetJobRunnerWithDatasetsCache):

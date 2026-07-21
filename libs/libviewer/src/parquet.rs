@@ -163,14 +163,21 @@ pub fn read_batch_stream(
 /// CDC parquet files have variable-sized pages (not fixed 1MB blocks),
 /// which enables more efficient data transfers and storage.
 ///
-/// Detection criteria:
-/// 1. Page index must be present (offset_index available)
-/// 2. At least one column must have multiple pages with variable sizes
-/// 3. Page sizes must vary significantly (not all the same within ~5% tolerance)
-///
-/// This is more robust than checking for the `content_defined_chunking` metadata key
-/// which is only added by the `datasets` library.
+/// Detection criteria (checked in order):
+/// 1. Check for pyarrow-specific `use_content_defined_chunking` metadata key
+/// 2. Page index must be present (offset_index available)
+/// 3. At least one column must have multiple pages with variable sizes
+/// 4. Page sizes must vary significantly (not all the same within ~5% tolerance)
 pub fn is_content_defined_chunked(metadata: &ParquetMetaData) -> bool {
+    // First, check for pyarrow-specific metadata marker
+    if let Some(file_metadata) = metadata.file_metadata().key_value_metadata() {
+        for kv in file_metadata.iter() {
+            if kv.key == "use_content_defined_chunking" {
+                return true;
+            }
+        }
+    }
+
     // Check if offset index is present (indicates page index was written)
     let offset_index = match metadata.offset_index() {
         Some(idx) => idx,
