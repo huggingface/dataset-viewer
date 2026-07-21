@@ -28,7 +28,7 @@ from worker.job_runners.config.config_job_runner import ConfigJobRunner
 from worker.utils import hffs_parquet_url, retry_on_arrow_invalid_open_file
 
 try:
-    import libviewer as lv  # type: ignore
+    import libviewer as lv
 except ImportError:
     pass
 
