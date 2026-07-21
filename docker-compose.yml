@@ -47,7 +47,7 @@ x-service-env: &service-env
 
 services:
   reverse-proxy:
-    image: docker.io/nginx:1.25.3
+    image: docker.io/nginx:1.27.0
     volumes:
       - ./services/reverse-proxy/nginx-templates/:/etc/nginx/templates:ro
       - storage:${STORAGE_DIRECTORY}:ro
