@@ -9,6 +9,7 @@ from datasets import get_dataset_split_names
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
 from libcommon.dtos import FullSplitItem
 from libcommon.exceptions import (
+    DatasetWithArrowFilesNotSupportedError,
     DatasetWithScriptNotSupportedError,
     DatasetWithTooManySplitsError,
     EmptyDatasetError,
@@ -19,6 +20,7 @@ from libcommon.simple_cache import CachedArtifactError, CachedArtifactNotFoundEr
 
 from worker.dtos import CompleteJobResult, SplitsList
 from worker.job_runners.config.config_job_runner import ConfigJobRunnerWithDatasetsCache
+from worker.utils import safe_inspect
 
 
 def compute_split_names_from_streaming_response(
@@ -51,6 +53,8 @@ def compute_split_names_from_streaming_response(
           If the list of splits could not be obtained using the datasets library.
         [~`libcommon.exceptions.DatasetWithScriptNotSupportedError`]:
             If the dataset has a dataset script.
+        [~`libcommon.exceptions.DatasetWithArrowFilesNotSupportedError`]:
+            If the dataset has Arrow IPC files (temporarily not supported).
         [~`libcommon.exceptions.SplitNamesFromStreamingError`]:
             If the split names could not be obtained using the datasets library.
         [~`libcommon.exceptions.DatasetWithTooManySplitsError`]:
@@ -61,16 +65,19 @@ def compute_split_names_from_streaming_response(
     """
     logging.info(f"compute 'config-split-names' using streaming for {dataset=} {config=}")
     try:
-        split_name_items: list[FullSplitItem] = [
-            {"dataset": dataset, "config": config, "split": str(split)}
-            for split in get_dataset_split_names(
-                path=dataset,
-                config_name=config,
-                token=hf_token,
-            )
-        ]
+        with safe_inspect:
+            split_name_items: list[FullSplitItem] = [
+                {"dataset": dataset, "config": config, "split": str(split)}
+                for split in get_dataset_split_names(
+                    path=dataset,
+                    config_name=config,
+                    token=hf_token,
+                )
+            ]
     except _EmptyDatasetError as err:
         raise EmptyDatasetError("The dataset is empty.", cause=err) from err
+    except DatasetWithArrowFilesNotSupportedError:
+        raise
     except Exception as err:
         if isinstance(err, ValueError) and "trust_remote_code" in str(err):
             raise DatasetWithScriptNotSupportedError from err
