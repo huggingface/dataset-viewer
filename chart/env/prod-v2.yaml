@@ -1,0 +1,61 @@
+# Temporary override layered OVER env/prod.yaml (valueFiles: [env/prod.yaml, env/prod-v2.yaml])
+# for the parallel deploy of datasets-server on the dedicated datasets-prod-us-east-1 cluster
+# (ArgoCD app "datasets-server-prod-v2"), while production traffic still hits hub-prod.
+# Removed at the network cutover.
+#
+# Only two kinds of change here — everything else is inherited from prod.yaml:
+#   1. Rename the ALBs so they don't collide with hub-prod's (ALB names are unique per region).
+#   2. Disable the singleton cron jobs so they don't double-run against the SHARED prod mongo.
+#
+# NOT changed on purpose:
+#   - Workers: they pull from the same atomic mongo queue as hub-prod, so a job is processed
+#     exactly once regardless of which cluster's worker grabs it (extra capacity, not double work).
+#   - mongodbMigration: same image tag as prod => migrations already applied => re-run is a no-op.
+#   - external-dns hostname annotations are left in place but inert (external-dns is disabled on
+#     this cluster until the cutover).
+
+# --- 1. ALB renames (avoid name collision with hub-datasets-server-prod / -int) ---
+# Public ALB (CloudFront origin at cutover):
+ingress:
+  annotations:
+    alb.ingress.kubernetes.io/load-balancer-name: "datasets-server-prod"
+
+# Internal ALB (/api/private, control-plane) — shared across services via the ingress group,
+# so the name must be overridden on every service that defines ingressInternal.
+admin:
+  ingressInternal:
+    annotations:
+      alb.ingress.kubernetes.io/load-balancer-name: "datasets-server-prod-int"
+api:
+  ingressInternal:
+    annotations:
+      alb.ingress.kubernetes.io/load-balancer-name: "datasets-server-prod-int"
+rows:
+  ingressInternal:
+    annotations:
+      alb.ingress.kubernetes.io/load-balancer-name: "datasets-server-prod-int"
+search:
+  ingressInternal:
+    annotations:
+      alb.ingress.kubernetes.io/load-balancer-name: "datasets-server-prod-int"
+sseApi:
+  ingressInternal:
+    annotations:
+      alb.ingress.kubernetes.io/load-balancer-name: "datasets-server-prod-int"
+webhook:
+  ingressInternal:
+    annotations:
+      alb.ingress.kubernetes.io/load-balancer-name: "datasets-server-prod-int"
+
+# --- 2. Disable singleton cron jobs (hub-prod owns these; avoid double enqueue / post /
+#        duplicate metric series against the shared prod mongo) ---
+backfill:
+  enabled: false
+backfillRetryableErrors:
+  enabled: false
+postMessages:
+  enabled: false
+queueMetricsCollector:
+  enabled: false
+cacheMetricsCollector:
+  enabled: false
