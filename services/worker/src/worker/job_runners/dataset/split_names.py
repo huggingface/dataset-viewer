@@ -2,6 +2,7 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
+from collections.abc import Iterator
 from http import HTTPStatus
 
 from libcommon.constants import CONFIG_SPLIT_NAMES_KIND
@@ -104,6 +105,6 @@ class DatasetSplitNamesJobRunner(DatasetJobRunner):
     def get_job_type() -> str:
         return "dataset-split-names"
 
-    def compute(self) -> JobResult:
+    def compute(self) -> Iterator[JobResult]:
         response_content, progress = compute_dataset_split_names_response(dataset=self.dataset)
-        return JobResult(response_content, progress=progress)
+        yield JobResult(response_content, progress=progress)

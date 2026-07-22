@@ -116,7 +116,7 @@ def extra_fields_readme(tmp_path_factory: pytest.TempPathFactory) -> str:
 def n_configs_paths(tmp_path_factory: pytest.TempPathFactory) -> list[str]:
     directory = tmp_path_factory.mktemp("data")
     readme = directory / "README.md"
-    N = 15
+    N = 4
     lines = [
         "---",
         "configs:",

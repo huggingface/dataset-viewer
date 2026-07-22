@@ -5,7 +5,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import Any, Literal, Optional, TypedDict, Union
 
-from libcommon.dtos import FullConfigItem, FullSplitItem, SplitHubFile, SplitItem
+from libcommon.dtos import CachedJob, FullConfigItem, FullSplitItem, SplitHubFile, SplitItem
 
 
 class JobRunnerInfo(TypedDict):
@@ -43,11 +43,11 @@ class DatasetSplitNamesResponse(TypedDict):
     failed: list[FailedConfigItem]
 
 
-class PreviousJob(TypedDict):
-    dataset: str
-    config: Optional[str]
-    split: Optional[Union[str, None]]
-    kind: str
+@dataclass
+class ShortcutJobResult(JobResult):
+    job: CachedJob
+    content: Mapping[str, Any]
+    progress: float = field(init=False, default=1.0)
 
 
 class OptUrl(TypedDict):
@@ -241,8 +241,8 @@ class DatasetConfigNamesResponse(TypedDict):
 
 class DatasetInfoResponse(TypedDict):
     dataset_info: dict[str, Any]
-    pending: list[PreviousJob]
-    failed: list[PreviousJob]
+    pending: list[CachedJob]
+    failed: list[CachedJob]
     partial: bool
 
 
@@ -254,7 +254,7 @@ class IsValidResponse(TypedDict):
     statistics: bool
 
 
-DatasetLibrary = Literal["mlcroissant", "webdataset", "datasets", "pandas", "dask", "polars", "lance"]
+DatasetLibrary = Literal["mlcroissant", "webdataset", "datasets", "pandas", "dask", "polars", "lance", "lerobot"]
 DatasetFormat = Literal[
     "json",
     "csv",
@@ -322,8 +322,8 @@ class DatasetFiletypesResponse(TypedDict):
 
 class DatasetParquetResponse(TypedDict):
     parquet_files: list[SplitHubFile]
-    pending: list[PreviousJob]
-    failed: list[PreviousJob]
+    pending: list[CachedJob]
+    failed: list[CachedJob]
     partial: bool
 
 
@@ -344,6 +344,11 @@ class DatasetSizeContent(TypedDict):
 
 class DatasetSizeResponse(TypedDict):
     size: DatasetSizeContent
-    pending: list[PreviousJob]
-    failed: list[PreviousJob]
+    pending: list[CachedJob]
+    failed: list[CachedJob]
     partial: bool
+
+
+class DatasetInitResponse(TypedDict):
+    successes: list[CachedJob]
+    failed: list[CachedJob]

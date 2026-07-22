@@ -2,6 +2,7 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
+from collections.abc import Iterator
 from typing import Optional
 
 from datasets import (
@@ -108,8 +109,8 @@ class DatasetConfigNamesJobRunner(DatasetJobRunnerWithDatasetsCache):
     def get_job_type() -> str:
         return "dataset-config-names"
 
-    def compute(self) -> CompleteJobResult:
-        return CompleteJobResult(
+    def compute(self) -> Iterator[CompleteJobResult]:
+        yield CompleteJobResult(
             compute_config_names_response(
                 dataset=self.dataset,
                 hf_token=self.app_config.common.hf_token,

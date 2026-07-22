@@ -59,9 +59,7 @@ CONFIG_INFO_1 = {
     "builder_name": "dataset_ok",
     "config_name": "config_1",
     "version": {"version_str": "0.0.0", "major": 0, "minor": 0, "patch": 0},
-    "download_size": 11594722,
     "dataset_size": 20387232,
-    "size_in_bytes": 31981954,
 }
 
 CONFIG_INFO_2 = {
@@ -94,9 +92,7 @@ CONFIG_INFO_2 = {
     "builder_name": "dataset_ok",
     "config_name": "config_2",
     "version": {"version_str": "0.0.0", "major": 0, "minor": 0, "patch": 0},
-    "download_size": 9912422,
     "dataset_size": 6912,
-    "size_in_bytes": 9919334,
 }
 
 DATASET_INFO_OK = {
@@ -206,10 +202,10 @@ def test_compute(
     job_runner.pre_compute()
     if should_raise:
         with pytest.raises(Exception) as e:
-            job_runner.compute()
+            list(job_runner.compute())
         assert e.typename == expected_error_code
     else:
-        assert job_runner.compute().content == expected_content
+        assert list(job_runner.compute())[0].content == expected_content
     job_runner.post_compute()
 
 
@@ -218,5 +214,5 @@ def test_doesnotexist(app_config: AppConfig, get_job_runner: GetJobRunner) -> No
     job_runner = get_job_runner(dataset, config, app_config)
     job_runner.pre_compute()
     with pytest.raises(CachedArtifactNotFoundError):
-        job_runner.compute()
+        list(job_runner.compute())
     job_runner.post_compute()

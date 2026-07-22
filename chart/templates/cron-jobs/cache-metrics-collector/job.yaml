@@ -16,6 +16,7 @@ spec:
       template:
         spec:
           restartPolicy: OnFailure
+          serviceAccountName: {{ include "datasetsServer.serviceAccountName" . }}
           {{- include "dnsConfig" . | nindent 10 }}
           {{- include "image.imagePullSecrets" . | nindent 6 }}
           nodeSelector: {{ toYaml .Values.cacheMetricsCollector.nodeSelector | nindent 12 }}

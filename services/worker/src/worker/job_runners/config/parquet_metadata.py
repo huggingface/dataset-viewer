@@ -2,6 +2,7 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
+from collections.abc import Iterator
 from typing import Optional
 
 from libcommon.constants import DATASET_SEPARATOR, PARQUET_REVISION
@@ -27,7 +28,7 @@ from worker.job_runners.config.config_job_runner import ConfigJobRunner
 from worker.utils import hffs_parquet_url, retry_on_arrow_invalid_open_file
 
 try:
-    import libviewer as lv  # type: ignore
+    import libviewer as lv
 except ImportError:
     pass
 
@@ -221,8 +222,8 @@ class ConfigParquetMetadataJobRunner(ConfigJobRunner):
         self.data_store = data_store
         self.parquet_metadata_directory = parquet_metadata_directory
 
-    def compute(self) -> CompleteJobResult:
-        return CompleteJobResult(
+    def compute(self) -> Iterator[CompleteJobResult]:
+        yield CompleteJobResult(
             compute_parquet_metadata_response(
                 dataset=self.dataset,
                 config=self.config,

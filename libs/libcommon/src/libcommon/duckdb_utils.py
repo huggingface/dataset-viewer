@@ -572,6 +572,39 @@ def key_sql(value: str) -> str:
     return '"' + value.replace('"', '""') + '"'
 
 
+DUCKDB_MAGIC_NUMBER = b"DUCK"
+"""DuckDB file format magic number, found at bytes 8-11."""
+DUCKDB_MIN_FILE_SIZE = 16
+"""Minimum file size for a DuckDB database (header + at least some data pages)."""
+
+
+def validate_duckdb_file(database: str) -> bool:
+    """Check if a file is a valid DuckDB database.
+
+    Uses magic number check (bytes 8-11 must be 'DUCK') and a minimal size check.
+    This is a fast pre-flight check that doesn't require opening the database.
+
+    Args:
+        database: Path to the DuckDB database file.
+
+    Returns:
+        True if the file appears to be a valid DuckDB database, False otherwise.
+    """
+    try:
+        path = Path(database)
+        if not path.exists():
+            return False
+        file_size = path.stat().st_size
+        if file_size < DUCKDB_MIN_FILE_SIZE:
+            return False
+        with open(path, "rb") as f:
+            f.seek(8)  # Magic number is at bytes 8-11
+            magic = f.read(4)
+        return magic == DUCKDB_MAGIC_NUMBER
+    except (OSError, IOError):
+        return False
+
+
 def duckdb_connect(
     database: Optional[str] = None,
     extensions_directory: Optional[str] = None,
@@ -586,12 +619,44 @@ def duckdb_connect(
     tmp_subprocess_job_database_field_ids: Optional[list[int]] = None,
     **kwargs: Any,
 ) -> duckdb.DuckDBPyConnection:
-    """In-memory session with the current database attached with read-only and fts extension"""
+    """In-memory session with the current database attached with read-only and fts extension
+
+    For read-only connections, the database file is validated before attachment.
+    If validation fails, the file is removed and an OSError is raised.
+    """
     con = duckdb.connect(":memory:", **kwargs)
     if database is not None:
-        con.execute(
-            (ATTACH_READ_ONLY_DATABASE if read_only else ATTACH_DATABASE).format(database=varchar_sql(database))
-        )
+        if read_only:
+            # Validate the file before attempting to attach it.
+            # This prevents the "not a valid DuckDB database file" IO Error
+            # when the file exists but is corrupted (e.g., from an interrupted index build).
+            if not validate_duckdb_file(database):
+                # Clean up the corrupted file so it can be rebuilt
+                try:
+                    Path(database).unlink(missing_ok=True)
+                except OSError:
+                    pass
+                raise OSError(
+                    f"The DuckDB database file is invalid or corrupted: {database}. "
+                    "It has been removed and will need to be rebuilt."
+                )
+        try:
+            con.execute(
+                (ATTACH_READ_ONLY_DATABASE if read_only else ATTACH_DATABASE).format(database=varchar_sql(database))
+            )
+        except duckdb.IOException as err:
+            # Even after magic check, DuckDB may reject a corrupted file.
+            # Clean it up and raise so the caller can trigger a rebuild.
+            if read_only:
+                try:
+                    Path(database).unlink(missing_ok=True)
+                except OSError:
+                    pass
+                raise OSError(
+                    f"The DuckDB database file is invalid or corrupted: {database}. "
+                    "It has been removed and will need to be rebuilt."
+                ) from err
+            raise
         allowed_paths = [Path(database), *(allowed_paths or [])]
     if tmp_job_aggregation_database is not None:
         con.execute(

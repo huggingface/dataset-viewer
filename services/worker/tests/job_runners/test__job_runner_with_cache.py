@@ -2,7 +2,7 @@
 # Copyright 2023 The HuggingFace Authors.
 
 import random
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from pathlib import Path
 from typing import Optional
 
@@ -23,8 +23,8 @@ class DummyJobRunner(JobRunnerWithCache):
     def get_job_type() -> str:
         return "dummy-job-runner"
 
-    def compute(self) -> CompleteJobResult:
-        return CompleteJobResult({"col1": "a" * 200})
+    def compute(self) -> Iterator[CompleteJobResult]:
+        yield CompleteJobResult({"col1": "a" * 200})
 
 
 GetJobRunner = Callable[[str, Optional[str], Optional[str], AppConfig], DummyJobRunner]

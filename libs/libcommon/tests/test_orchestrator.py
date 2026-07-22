@@ -9,8 +9,10 @@ from libcommon.dtos import JobOutput, JobResult, Priority, Status
 from libcommon.orchestrator import (
     AfterJobPlan,
     finish_job,
+    get_failed_runs,
     has_pending_ancestor_jobs,
     remove_dataset,
+    save_job_result,
     set_revision,
 )
 from libcommon.processing_graph import Artifact, ProcessingGraph
@@ -92,7 +94,7 @@ def test_after_job_plan(
     after_job_plan = AfterJobPlan(
         processing_graph=processing_graph,
         job_info=job_info,
-        failed_runs=0,
+        shortcut_jobs_by_key={},
     )
     if len(artifacts_to_create):
         assert after_job_plan.as_response() == [f"CreateJobs,{len(artifacts_to_create)}"]
@@ -124,7 +126,7 @@ def test_after_job_plan_delete() -> None:
     after_job_plan = AfterJobPlan(
         processing_graph=PROCESSING_GRAPH_PARALLEL,
         job_info=job_info,
-        failed_runs=0,
+        shortcut_jobs_by_key={},
     )
     assert after_job_plan.as_response() == ["CreateJobs,1", "DeleteWaitingJobs,1"]
 
@@ -180,16 +182,8 @@ def test_finish_job(
         ),
         duration=1,
     )
-    finish_job(job_result=job_result, processing_graph=processing_graph)
 
-    assert JobDocument.objects(dataset=DATASET_NAME).count() == len(artifacts_to_create)
-
-    done_job = JobDocument.objects(dataset=DATASET_NAME, status=Status.STARTED)
-    assert done_job.count() == 0
-
-    waiting_jobs = JobDocument.objects(dataset=DATASET_NAME, status=Status.WAITING)
-    assert waiting_jobs.count() == len(artifacts_to_create)
-    assert {job.type for job in waiting_jobs} == {Artifact.parse_id(artifact)[4] for artifact in artifacts_to_create}
+    save_job_result(job_result, failed_runs=0)
 
     assert CachedResponseDocument.objects(dataset=DATASET_NAME).count() == 1
     cached_response = CachedResponseDocument.objects(dataset=DATASET_NAME).first()
@@ -201,6 +195,17 @@ def test_finish_job(
     assert cached_response.progress == 1.0
     assert cached_response.job_runner_version == JOB_RUNNER_VERSION
     assert cached_response.dataset_git_revision == REVISION_NAME
+
+    finish_job(job_info=job_result["job_info"], shortcut_jobs_by_key={}, processing_graph=processing_graph)
+
+    assert JobDocument.objects(dataset=DATASET_NAME).count() == len(artifacts_to_create)
+
+    done_job = JobDocument.objects(dataset=DATASET_NAME, status=Status.STARTED)
+    assert done_job.count() == 0
+
+    waiting_jobs = JobDocument.objects(dataset=DATASET_NAME, status=Status.WAITING)
+    assert waiting_jobs.count() == len(artifacts_to_create)
+    assert {job.type for job in waiting_jobs} == {Artifact.parse_id(artifact)[4] for artifact in artifacts_to_create}
 
 
 @pytest.mark.parametrize(
@@ -239,7 +244,8 @@ def test_finish_job_priority_update(
     # update the priority of the started job before it finishes
     JobDocument(dataset=DATASET_NAME, pk=job_info["job_id"]).update(priority=Priority.HIGH)
     # then finish
-    finish_job(job_result=job_result, processing_graph=processing_graph)
+    save_job_result(job_result, failed_runs=0)
+    finish_job(job_info=job_info, shortcut_jobs_by_key={}, processing_graph=processing_graph)
 
     assert JobDocument.objects(dataset=DATASET_NAME).count() == len(artifacts_to_create)
 
@@ -428,7 +434,9 @@ def run_job(revision: str, http_status: HTTPStatus) -> None:
         ),
         duration=1,
     )
-    finish_job(job_result=job_result, processing_graph=PROCESSING_GRAPH_GENEALOGY)
+    failed_runs = get_failed_runs(job_info)
+    save_job_result(job_result, failed_runs=failed_runs)
+    finish_job(job_info=job_info, shortcut_jobs_by_key={}, processing_graph=PROCESSING_GRAPH_GENEALOGY)
     # clear generated jobs when finishing jobs
     Queue().delete_dataset_waiting_jobs(DATASET_NAME)
 
@@ -455,8 +463,8 @@ def test_upsert_response_failed_runs() -> None:
 
     # overwrite cache record with failed result and new revision
     run_job(second_revision, HTTPStatus.INTERNAL_SERVER_ERROR)
-    assert_failed_runs(0)
+    assert_failed_runs(1)
 
     # overwrite cache record with success result and new revision
     run_job(second_revision, HTTPStatus.OK)
-    assert_failed_runs(0)
+    assert_failed_runs(1)

@@ -168,7 +168,7 @@ def test_compute(
 ) -> None:
     job_runner = get_job_runner(dataset, app_config_prod)
     job_runner.pre_compute()
-    response = job_runner.compute()
+    response = list(job_runner.compute())[0]
     job_runner.post_compute()
     content = response.content
     assert content["filetypes"] == filetypes

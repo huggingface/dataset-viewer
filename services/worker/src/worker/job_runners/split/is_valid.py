@@ -2,6 +2,7 @@
 # Copyright 2023 The HuggingFace Authors.
 
 import logging
+from collections.abc import Iterator
 
 from datasets import Features
 from libcommon.constants import (
@@ -18,7 +19,7 @@ from libcommon.simple_cache import (
 )
 
 from worker.config import AppConfig
-from worker.dtos import CompleteJobResult, IsValidResponse, JobResult
+from worker.dtos import CompleteJobResult, IsValidResponse
 from worker.job_runners.split.split_job_runner import SplitJobRunner
 
 
@@ -96,5 +97,5 @@ class SplitIsValidJobRunner(SplitJobRunner):
             app_config=app_config,
         )
 
-    def compute(self) -> JobResult:
-        return CompleteJobResult(compute_is_valid_response(dataset=self.dataset, config=self.config, split=self.split))
+    def compute(self) -> Iterator[CompleteJobResult]:
+        yield CompleteJobResult(compute_is_valid_response(dataset=self.dataset, config=self.config, split=self.split))

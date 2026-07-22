@@ -4,14 +4,16 @@
 
 import functools
 import logging
+from collections.abc import Iterator
 from pathlib import Path
 from typing import Optional
 
 import anyio
-from datasets import IterableDataset, get_dataset_config_info, load_dataset
+from datasets import IterableDataset, get_dataset_config_info
 from libcommon.constants import MAX_NUM_ROWS_PER_PAGE
 from libcommon.dtos import JobInfo, RowsContent, SplitFirstRowsResponse
 from libcommon.exceptions import (
+    DatasetWithArrowFilesNotSupportedError,
     DatasetWithScriptNotSupportedError,
     FeaturesError,
     InfoError,
@@ -28,7 +30,7 @@ from libcommon.viewer_utils.rows import create_first_rows_response
 from worker.config import AppConfig, FirstRowsConfig
 from worker.dtos import CompleteJobResult
 from worker.job_runners.split.split_job_runner import SplitJobRunnerWithDatasetsCache
-from worker.utils import get_rows_or_raise, raise_if_long_column_name
+from worker.utils import get_rows_or_raise, raise_if_long_column_name, safe_inspect, safe_load_dataset
 
 
 def compute_first_rows_from_parquet_response(
@@ -159,7 +161,6 @@ def compute_first_rows_from_streaming_response(
     rows_max_number: int,
     rows_min_number: int,
     columns_max_number: int,
-    max_size_fallback: Optional[int] = None,
 ) -> SplitFirstRowsResponse:
     """
     Get the response of 'split-first-rows' using streaming for one specific split of a dataset from huggingface.co.
@@ -187,9 +188,6 @@ def compute_first_rows_from_streaming_response(
             The minimum number of rows of the response.
         columns_max_number (`int`):
             The maximum number of columns supported.
-        max_size_fallback (`int`, *optional*): **DEPRECATED**
-            The maximum number of bytes of the split to fallback to normal mode if the streaming mode fails.
-            This argument is now hard-coded to 100MB, and will be removed in a future version.
 
     Raises:
         [~`libcommon.exceptions.SplitNotFoundError`]:
@@ -214,6 +212,8 @@ def compute_first_rows_from_streaming_response(
           If the split rows could not be obtained using the datasets library in normal mode.
         [~`libcommon.exceptions.DatasetWithScriptNotSupportedError`]:
             If the dataset has a dataset script.
+        [~`libcommon.exceptions.DatasetWithArrowFilesNotSupportedError`]:
+            If the dataset has Arrow IPC files (temporarily not supported).
         [~`libcommon.exceptions.TooLongColumnNameError`]:
             If one of the columns' name is too long (> 500 characters)
 
@@ -223,7 +223,10 @@ def compute_first_rows_from_streaming_response(
     logging.info(f"compute 'split-first-rows' from streaming for {dataset=} {config=} {split=}")
     # get the features
     try:
-        info = get_dataset_config_info(path=dataset, config_name=config, token=hf_token)
+        with safe_inspect:
+            info = get_dataset_config_info(path=dataset, config_name=config, token=hf_token)
+    except DatasetWithArrowFilesNotSupportedError:
+        raise
     except Exception as err:
         if isinstance(err, ValueError) and "trust_remote_code" in str(err):
             raise DatasetWithScriptNotSupportedError from err
@@ -234,7 +237,7 @@ def compute_first_rows_from_streaming_response(
     if not info.features:
         try:
             # https://github.com/huggingface/datasets/blob/f5826eff9b06ab10dba1adfa52543341ef1e6009/src/datasets/iterable_dataset.py#L1255
-            iterable_dataset = load_dataset(
+            iterable_dataset = safe_load_dataset(
                 path=dataset,
                 name=config,
                 split=split,
@@ -247,6 +250,8 @@ def compute_first_rows_from_streaming_response(
             if not isinstance(iterable_dataset, IterableDataset):
                 raise TypeError("load_dataset should return an IterableDataset.")
             features = iterable_dataset.features
+        except DatasetWithArrowFilesNotSupportedError:
+            raise
         except Exception as err:
             if isinstance(err, ValueError) and "trust_remote_code" in str(err):
                 raise DatasetWithScriptNotSupportedError from err
@@ -266,8 +271,6 @@ def compute_first_rows_from_streaming_response(
             dataset=dataset,
             config=config,
             split=split,
-            info=info,
-            max_size_fallback=max_size_fallback,
             rows_max_number=rows_max_number,
             token=hf_token,
         )
@@ -314,9 +317,9 @@ class SplitFirstRowsJobRunner(SplitJobRunnerWithDatasetsCache):
         self.parquet_metadata_directory = parquet_metadata_directory
         self.storage_client = storage_client
 
-    def compute(self) -> CompleteJobResult:
+    def compute(self) -> Iterator[CompleteJobResult]:
         try:
-            return CompleteJobResult(
+            yield CompleteJobResult(
                 compute_first_rows_from_parquet_response(
                     dataset=self.dataset,
                     revision=self.dataset_git_revision,
@@ -344,8 +347,10 @@ class SplitFirstRowsJobRunner(SplitJobRunnerWithDatasetsCache):
                 f"Cannot compute 'split-first-rows' from parquet for {self.dataset=} {self.config=}. "
                 f"Trying to compute it using streaming."
             )
-            pass
-        return CompleteJobResult(
+        else:
+            # If the parquet path succeeded, return early to avoid trying the streaming path
+            return
+        yield CompleteJobResult(
             compute_first_rows_from_streaming_response(
                 dataset=self.dataset,
                 revision=self.dataset_git_revision,

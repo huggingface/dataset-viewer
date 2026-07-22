@@ -62,8 +62,12 @@ def test_graph() -> None:
                 "dataset-size",
                 "dataset-is-valid",
             ],
-            [],
-            [],
+            [
+                "dataset-init",
+            ],
+            [
+                "dataset-init",
+            ],
         ),
         (
             "config-parquet-and-info",
@@ -73,7 +77,10 @@ def test_graph() -> None:
                 "config-size",
             ],
             ["dataset-config-names"],
-            ["dataset-config-names"],
+            [
+                "dataset-config-names",
+                "dataset-init",
+            ],
         ),
         (
             "config-split-names",
@@ -84,7 +91,7 @@ def test_graph() -> None:
                 "config-is-valid",
             ],
             ["dataset-config-names", "config-info"],
-            ["dataset-config-names", "config-parquet-and-info", "config-info"],
+            ["dataset-config-names", "dataset-init", "config-parquet-and-info", "config-info"],
         ),
         (
             "dataset-split-names",
@@ -97,6 +104,7 @@ def test_graph() -> None:
             ],
             [
                 "dataset-config-names",
+                "dataset-init",
                 "config-parquet-and-info",
                 "config-info",
                 "config-split-names",
@@ -109,6 +117,7 @@ def test_graph() -> None:
             [
                 "config-parquet",
                 "dataset-config-names",
+                "dataset-init",
                 "config-split-names",
                 "config-parquet-and-info",
                 "config-parquet-metadata",
@@ -119,49 +128,49 @@ def test_graph() -> None:
             "config-parquet",
             ["config-parquet-metadata", "dataset-parquet"],
             ["config-parquet-and-info"],
-            ["dataset-config-names", "config-parquet-and-info"],
+            ["dataset-config-names", "dataset-init", "config-parquet-and-info"],
         ),
         (
             "config-parquet-metadata",
             ["split-first-rows", "split-is-valid", "split-descriptive-statistics", "split-presidio-scan"],
             ["config-parquet"],
-            ["dataset-config-names", "config-parquet-and-info", "config-parquet"],
+            ["dataset-config-names", "dataset-init", "config-parquet-and-info", "config-parquet"],
         ),
         (
             "dataset-parquet",
             [],
             ["dataset-config-names", "config-parquet"],
-            ["dataset-config-names", "config-parquet-and-info", "config-parquet"],
+            ["dataset-config-names", "dataset-init", "config-parquet-and-info", "config-parquet"],
         ),
         (
             "config-info",
             ["dataset-info", "config-split-names"],
             ["config-parquet-and-info"],
-            ["dataset-config-names", "config-parquet-and-info"],
+            ["dataset-config-names", "dataset-init", "config-parquet-and-info"],
         ),
         (
             "dataset-info",
             ["dataset-compatible-libraries", "dataset-modalities", "dataset-croissant-crumbs"],
             ["dataset-config-names", "config-info"],
-            ["dataset-config-names", "config-parquet-and-info", "config-info"],
+            ["dataset-config-names", "dataset-init", "config-parquet-and-info", "config-info"],
         ),
         (
             "config-size",
             ["split-is-valid", "dataset-size"],
             ["config-parquet-and-info"],
-            ["dataset-config-names", "config-parquet-and-info"],
+            ["dataset-config-names", "dataset-init", "config-parquet-and-info"],
         ),
         (
             "dataset-size",
             ["dataset-hub-cache"],
             ["dataset-config-names", "config-size"],
-            ["dataset-config-names", "config-parquet-and-info", "config-size"],
+            ["dataset-config-names", "dataset-init", "config-parquet-and-info", "config-size"],
         ),
         (
             "dataset-compatible-libraries",
             ["dataset-hub-cache"],
             ["dataset-info"],
-            ["dataset-config-names", "config-parquet-and-info", "config-info", "dataset-info"],
+            ["dataset-config-names", "dataset-init", "config-parquet-and-info", "config-info", "dataset-info"],
         ),
         (
             "dataset-modalities",
@@ -176,6 +185,7 @@ def test_graph() -> None:
                 "dataset-config-names",
                 "dataset-filetypes",
                 "dataset-info",
+                "dataset-init",
                 "split-first-rows",
                 "split-image-url-columns",
             ],
@@ -189,6 +199,7 @@ def test_graph() -> None:
             ],
             [
                 "dataset-config-names",
+                "dataset-init",
                 "config-parquet-and-info",
                 "config-info",
                 "config-parquet",
@@ -207,6 +218,7 @@ def test_graph() -> None:
             ["split-first-rows"],
             [
                 "dataset-config-names",
+                "dataset-init",
                 "config-split-names",
                 "config-info",
                 "config-parquet-and-info",
@@ -221,6 +233,7 @@ def test_graph() -> None:
             ["split-image-url-columns"],
             [
                 "dataset-config-names",
+                "dataset-init",
                 "config-split-names",
                 "config-info",
                 "config-parquet-and-info",
@@ -236,6 +249,7 @@ def test_graph() -> None:
             ["split-opt-in-out-urls-scan"],
             [
                 "dataset-config-names",
+                "dataset-init",
                 "config-split-names",
                 "split-first-rows",
                 "config-info",
@@ -252,6 +266,7 @@ def test_graph() -> None:
             ["split-opt-in-out-urls-count", "config-split-names"],
             [
                 "dataset-config-names",
+                "dataset-init",
                 "config-split-names",
                 "split-first-rows",
                 "config-info",
@@ -269,6 +284,7 @@ def test_graph() -> None:
             ["config-opt-in-out-urls-count", "dataset-config-names"],
             [
                 "dataset-config-names",
+                "dataset-init",
                 "config-split-names",
                 "split-first-rows",
                 "config-info",
@@ -290,6 +306,7 @@ def test_graph() -> None:
                 "config-parquet-and-info",
                 "config-parquet-metadata",
                 "dataset-config-names",
+                "dataset-init",
             ],
         ),
         (
@@ -303,6 +320,7 @@ def test_graph() -> None:
                 "config-parquet-metadata",
                 "config-split-names",
                 "dataset-config-names",
+                "dataset-init",
                 "dataset-split-names",
                 "split-presidio-scan",
             ],
@@ -316,6 +334,7 @@ def test_graph() -> None:
                 "config-parquet",
                 "config-parquet-and-info",
                 "dataset-config-names",
+                "dataset-init",
             ],
         ),
         (
@@ -333,6 +352,7 @@ def test_graph() -> None:
                 "dataset-config-names",
                 "dataset-filetypes",
                 "dataset-info",
+                "dataset-init",
                 "dataset-is-valid",
                 "dataset-compatible-libraries",
                 "dataset-modalities",
@@ -355,6 +375,7 @@ def test_graph() -> None:
                 "config-info",
                 "config-size",
                 "dataset-config-names",
+                "dataset-init",
                 "split-first-rows",
                 "split-descriptive-statistics",
             ],
@@ -371,6 +392,7 @@ def test_graph() -> None:
                 "config-info",
                 "config-size",
                 "dataset-config-names",
+                "dataset-init",
                 "split-first-rows",
                 "split-descriptive-statistics",
                 "split-is-valid",
@@ -380,13 +402,17 @@ def test_graph() -> None:
             "dataset-croissant-crumbs",
             [],
             ["dataset-info"],
-            ["dataset-config-names", "config-parquet-and-info", "config-info", "dataset-info"],
+            ["dataset-config-names", "dataset-init", "config-parquet-and-info", "config-info", "dataset-info"],
         ),
         (
             "dataset-filetypes",
             ["dataset-modalities"],
-            [],
-            [],
+            [
+                "dataset-init",
+            ],
+            [
+                "dataset-init",
+            ],
         ),
     ],
 )
@@ -397,5 +423,5 @@ def test_default_graph_steps(
 
 
 def test_default_graph_first_steps() -> None:
-    roots = ["dataset-config-names", "dataset-filetypes"]
+    roots = ["dataset-init"]
     assert_lists_are_equal(processing_graph.get_first_processing_steps(), roots)

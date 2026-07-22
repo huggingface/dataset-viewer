@@ -93,14 +93,14 @@ class WorkerExecutor:
         web_app_executor.start()  # blocking until socket connection is established
         self.executors.append(web_app_executor)
 
-        loop = asyncio.get_event_loop()
+        loop = asyncio.new_event_loop()
         loop.add_signal_handler(signal.SIGTERM, partial(self.sigterm_stop, web_app_executor=web_app_executor))
 
         logging.info("Starting heartbeat.")
         loop.create_task(every(self.heartbeat, seconds=self.heartbeat_interval_seconds))
         loop.create_task(
             every(
-                self.kill_zombies,
+                self.kill_stuck_jobs,
                 seconds=(
                     self.kill_zombies_interval_seconds * 0.5,
                     self.kill_zombies_interval_seconds * 1.5,
@@ -132,7 +132,20 @@ class WorkerExecutor:
     def sigterm_stop(self, web_app_executor: TCPExecutor) -> None:
         logging.error("Executor received SIGTERM")
         logging.error("Web app was not running" if not self.is_webapp_alive(web_app_executor) else "Reason unknown")
-        self.stop()
+        # Mark the current job as terminated so kill_stuck_jobs() can identify SIGTERM-caused crashes
+        # and notify the worker loop process that sigterm was received so it can stop with a "sigterm" file
+        worker_state = self.get_state()
+        if worker_state and worker_state["current_job_info"]:
+            job_id = worker_state["current_job_info"]["job_id"]
+            try:
+                Queue().set_terminated(job_id=job_id)
+                with open(os.path.join(os.path.dirname(self.state_file_path), "sigterm"), "wb"):
+                    pass
+                logging.info("Marked job %s as terminated (SIGTERM received).", job_id)
+            except Exception as error:
+                logging.warning("Failed to mark job %s as terminated: %s", job_id, error)
+        # Do not call self.stop() here - the signal handler returns and the event loop continues.
+        # The kill_terminated_jobs() task will detect the terminated job once the SIGKILL timeout is reached.
 
     def stop(self) -> None:
         for executor in self.executors:
@@ -164,15 +177,21 @@ class WorkerExecutor:
                 # Don't stop since the AfterJobPlan may be running
                 # self.stop()
 
-    def kill_zombies(self) -> None:
+    def kill_stuck_jobs(self) -> None:
+        """Detect and kill stuck jobs: both zombies (crashed) and terminated (SIGTERM but didn't finish)."""
         queue = Queue()
-        zombies = queue.get_zombies(max_seconds_without_heartbeat=self.max_seconds_without_heartbeat_for_zombies)
-        message = "Job manager crashed while running this job (missing heartbeats)."
-        for zombie in zombies:
-            job_runner = self.job_runner_factory.create_job_runner(zombie)
-            job_manager = JobManager(job_info=zombie, app_config=self.app_config, job_runner=job_runner)
-            job_manager.set_crashed(message=message)
-            logging.info(f"Killing zombie. Job info = {zombie}")
+        stuck = queue.get_stuck_jobs(max_seconds_without_heartbeat=self.max_seconds_without_heartbeat_for_zombies)
+        for job_info, reason in stuck:
+            job_runner = self.job_runner_factory.create_job_runner(job_info)
+            job_manager = JobManager(job_info=job_info, app_config=self.app_config, job_runner=job_runner)
+            if reason == "terminated":
+                message = (
+                    "Job has been terminated due to a temporary spike in resource usage and may be restarted later."
+                )
+            else:
+                message = "Job manager crashed while running this job (missing heartbeats)."
+            job_manager.set_stuck(message=message, reason=reason)
+            logging.info(f"Killing {reason} job. Job info = {job_info}")
 
     def kill_long_job(self, worker_loop_executor: OutputExecutor) -> None:
         worker_state = self.get_state()

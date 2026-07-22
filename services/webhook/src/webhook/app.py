@@ -1,6 +1,8 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+from contextlib import asynccontextmanager
+
 import uvicorn
 from libapi.config import UvicornConfig
 from libapi.routes.healthcheck import healthcheck_endpoint
@@ -93,7 +95,16 @@ def create_app_with_config(app_config: AppConfig) -> Starlette:
         # ^ called by the Hub webhooks
     ]
 
-    return Starlette(routes=routes, middleware=middleware, on_shutdown=[resource.release for resource in resources])
+    @asynccontextmanager
+    async def lifespan(_app: Starlette):  # type: ignore[no-untyped-def]
+        # Starlette 1.0 removed on_shutdown in favor of the ASGI lifespan protocol.
+        try:
+            yield
+        finally:
+            for resource in resources:
+                resource.release()
+
+    return Starlette(routes=routes, middleware=middleware, lifespan=lifespan)
 
 
 def start() -> None:

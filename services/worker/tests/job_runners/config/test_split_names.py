@@ -5,10 +5,11 @@ from collections.abc import Callable
 from dataclasses import replace
 from http import HTTPStatus
 from typing import Any, Optional
+from unittest.mock import patch
 
 import pytest
 from libcommon.dtos import Priority
-from libcommon.exceptions import CustomError, PreviousStepFormatError
+from libcommon.exceptions import CustomError, DatasetWithArrowFilesNotSupportedError, PreviousStepFormatError
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import (
     CachedArtifactError,
@@ -20,6 +21,7 @@ from worker.config import AppConfig
 from worker.job_runners.config.split_names import (
     ConfigSplitNamesJobRunner,
     compute_split_names_from_info_response,
+    compute_split_names_from_streaming_response,
 )
 from worker.resources import LibrariesResource
 
@@ -210,12 +212,12 @@ def test_compute_split_names_from_streaming_response(
 
     job_runner.pre_compute()
     if error_code is None:
-        result = job_runner.compute().content
+        result = list(job_runner.compute())[0].content
         assert result == expected_configs_response
         return
 
     with pytest.raises(CustomError) as exc_info:
-        job_runner.compute()
+        list(job_runner.compute())
     job_runner.post_compute()
 
     assert exc_info.value.code == error_code
@@ -235,7 +237,18 @@ def test_compute(app_config: AppConfig, get_job_runner: GetJobRunner, hub_public
     config, _ = get_default_config_split()
     job_runner = get_job_runner(dataset, config, app_config)
     job_runner.pre_compute()
-    response = job_runner.compute()
+    response = list(job_runner.compute())[0]
     job_runner.post_compute()
     content = response.content
     assert len(content["splits"]) == 1
+
+
+def test_compute_split_names_from_streaming_response_preserves_arrow_files_error() -> None:
+    with (
+        patch(
+            "worker.job_runners.config.split_names.get_dataset_split_names",
+            side_effect=DatasetWithArrowFilesNotSupportedError(),
+        ),
+        pytest.raises(DatasetWithArrowFilesNotSupportedError),
+    ):
+        compute_split_names_from_streaming_response(dataset="namespace/dataset", config="default", max_number=10)

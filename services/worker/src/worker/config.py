@@ -48,6 +48,9 @@ WORKER_KILL_ZOMBIES_INTERVAL_SECONDS = 10 * 60
 WORKER_MAX_JOB_DURATION_SECONDS = 20 * 60
 WORKER_MAX_LOAD_PCT = 70
 WORKER_MAX_MEMORY_PCT = 80
+# Max system (node) memory (%) - if reached, sleeps until it comes back under the limit.
+# Checks the NODE's total RAM to prevent system-wide memory pressure that triggers K8s eviction.
+WORKER_MAX_SYSTEM_MEMORY_PCT = 80
 WORKER_MAX_MISSING_HEARTBEATS = 5
 WORKER_SLEEP_SECONDS = 15
 WORKER_STATE_FILE_PATH = None
@@ -65,6 +68,7 @@ class WorkerConfig:
     max_job_duration_seconds: float = WORKER_MAX_JOB_DURATION_SECONDS
     max_load_pct: int = WORKER_MAX_LOAD_PCT
     max_memory_pct: int = WORKER_MAX_MEMORY_PCT
+    max_system_memory_pct: int = WORKER_MAX_SYSTEM_MEMORY_PCT
     max_missing_heartbeats: int = WORKER_MAX_MISSING_HEARTBEATS
     sleep_seconds: float = WORKER_SLEEP_SECONDS
     state_file_path: Optional[str] = WORKER_STATE_FILE_PATH
@@ -96,6 +100,10 @@ class WorkerConfig:
                 ),
                 max_load_pct=env.int(name="MAX_LOAD_PCT", default=WORKER_MAX_LOAD_PCT),
                 max_memory_pct=env.int(name="MAX_MEMORY_PCT", default=WORKER_MAX_MEMORY_PCT),
+                max_system_memory_pct=env.int(
+                    name="MAX_SYSTEM_MEMORY_PCT",
+                    default=WORKER_MAX_SYSTEM_MEMORY_PCT,
+                ),
                 max_missing_heartbeats=env.int(name="MAX_MISSING_HEARTBEATS", default=WORKER_MAX_MISSING_HEARTBEATS),
                 sleep_seconds=env.float(name="SLEEP_SECONDS", default=WORKER_SLEEP_SECONDS),
                 state_file_path=env.str(
@@ -274,11 +282,13 @@ class NumbaConfig:
 
 
 CONFIG_NAMES_MAX_NUMBER = 4_000
+CONFIG_NAMES_MAX_NUMBER_FOR_INIT = 10
 
 
 @dataclass(frozen=True)
 class ConfigNamesConfig:
     max_number: int = CONFIG_NAMES_MAX_NUMBER
+    max_number_for_init: int = CONFIG_NAMES_MAX_NUMBER_FOR_INIT
 
     @classmethod
     def from_env(cls) -> "ConfigNamesConfig":
@@ -286,6 +296,7 @@ class ConfigNamesConfig:
         with env.prefixed("CONFIG_NAMES_"):
             return cls(
                 max_number=env.int(name="MAX_NUMBER", default=CONFIG_NAMES_MAX_NUMBER),
+                max_number_for_init=env.int(name="MAX_NUMBER_FOR_INIT", default=CONFIG_NAMES_MAX_NUMBER_FOR_INIT),
             )
 
 

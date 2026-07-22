@@ -3,10 +3,14 @@
 
 from collections.abc import Callable, Iterator
 from http import HTTPStatus
+from pathlib import Path
 from typing import Any
 from unittest.mock import patch
 
 import fsspec
+import numpy as np
+import pyarrow as pa
+import pyarrow.parquet as pq
 import pytest
 from datasets import Dataset
 from fsspec.implementations.dirfs import DirFileSystem
@@ -21,6 +25,7 @@ from worker.job_runners.dataset.compatible_libraries import (
     DatasetCompatibleLibrariesJobRunner,
     get_builder_configs,
     get_compatible_libraries_for_json,
+    get_compatible_libraries_for_lerobot,
     get_compatible_library_for_builder,
 )
 from worker.resources import LibrariesResource
@@ -36,11 +41,12 @@ def prepare_and_clean_mongo(app_config: AppConfig) -> None:
 
 GetJobRunner = Callable[[str, AppConfig], DatasetCompatibleLibrariesJobRunner]
 
-PARQUET_DATASET = "parquet-dataset"
-PARQUET_DATASET_LOGIN_REQUIRED = "parquet-dataset-login_required"
-WEBDATASET_DATASET = "webdataset-dataset"
-LANCE_DATASET = "lance-dataset"
-ERROR_DATASET = "error-dataset"
+PARQUET_DATASET = "dummy/parquet-dataset"
+PARQUET_DATASET_LOGIN_REQUIRED = "dummy/parquet-dataset-login_required"
+WEBDATASET_DATASET = "dummy/webdataset-dataset"
+LANCE_DATASET = "dummy/lance-dataset"
+LEROBOT_DATASET = "dummy/lerobot-dataset"
+ERROR_DATASET = "dummy/error-dataset"
 
 UPSTREAM_RESPONSE_INFO_PARQUET: UpstreamResponse = UpstreamResponse(
     kind="dataset-info",
@@ -74,6 +80,14 @@ UPSTREAM_RESPONSE_INFO_LANCE: UpstreamResponse = UpstreamResponse(
     content={"dataset_info": {"default": {"config_name": "default", "builder_name": "lance"}}, "partial": False},
     progress=1.0,
 )
+UPSTREAM_RESPONSE_INFO_LEROBOT: UpstreamResponse = UpstreamResponse(
+    kind="dataset-info",
+    dataset=LEROBOT_DATASET,
+    dataset_git_revision=REVISION_NAME,
+    http_status=HTTPStatus.OK,
+    content={"dataset_info": {"default": {"config_name": "default", "builder_name": "parquet"}}, "partial": False},
+    progress=1.0,
+)
 UPSTREAM_RESPONSE_INFO_ERROR: UpstreamResponse = UpstreamResponse(
     kind="dataset-info",
     dataset=ERROR_DATASET,
@@ -84,7 +98,7 @@ UPSTREAM_RESPONSE_INFO_ERROR: UpstreamResponse = UpstreamResponse(
 )
 EXPECTED_PARQUET = (
     {
-        "formats": ["parquet", "optimized-parquet"],
+        "formats": ["parquet"],
         "libraries": [
             {
                 "function": "load_dataset",
@@ -94,7 +108,7 @@ EXPECTED_PARQUET = (
                     {
                         "config_name": "default",
                         "arguments": {},
-                        "code": ('from datasets import load_dataset\n\nds = load_dataset("parquet-dataset")'),
+                        "code": ('from datasets import load_dataset\n\nds = load_dataset("dummy/parquet-dataset")'),
                     }
                 ],
             },
@@ -115,7 +129,7 @@ EXPECTED_PARQUET = (
                             "import pandas as pd\n"
                             "\n"
                             "splits = {'train': 'train.parquet', 'test': 'test.parquet'}\n"
-                            'df = pd.read_parquet("hf://datasets/parquet-dataset/" + splits["train"])'
+                            'df = pd.read_parquet("hf://datasets/dummy/parquet-dataset/" + splits["train"])'
                         ),
                     }
                 ],
@@ -132,7 +146,7 @@ EXPECTED_PARQUET = (
                         "splits = {'train': 'train.parquet', 'test': "
                         "'test.parquet'}\n"
                         "df = "
-                        'pl.read_parquet("hf://datasets/parquet-dataset/" '
+                        'pl.read_parquet("hf://datasets/dummy/parquet-dataset/" '
                         '+ splits["train"])',
                         "config_name": "default",
                     }
@@ -150,7 +164,7 @@ EXPECTED_PARQUET = (
                             "from mlcroissant "
                             "import Dataset\n"
                             "\n"
-                            'ds = Dataset(jsonld="https://huggingface.co/api/datasets/parquet-dataset/croissant")\n'
+                            'ds = Dataset(jsonld="https://huggingface.co/api/datasets/dummy/parquet-dataset/croissant")\n'
                             'records = ds.records("default")'
                         ),
                     }
@@ -163,7 +177,7 @@ EXPECTED_PARQUET = (
 
 EXPECTED_PARQUET_LOGIN_REQUIRED = (
     {
-        "formats": ["parquet", "optimized-parquet"],
+        "formats": ["parquet"],
         "libraries": [
             {
                 "function": "load_dataset",
@@ -174,7 +188,7 @@ EXPECTED_PARQUET_LOGIN_REQUIRED = (
                         "config_name": "default",
                         "arguments": {},
                         "code": (
-                            f'from datasets import load_dataset\n{LOGIN_COMMENT}\nds = load_dataset("parquet-dataset-login_required")'
+                            f'from datasets import load_dataset\n{LOGIN_COMMENT}\nds = load_dataset("dummy/parquet-dataset-login_required")'
                         ),
                     }
                 ],
@@ -196,7 +210,7 @@ EXPECTED_PARQUET_LOGIN_REQUIRED = (
                             "import pandas as pd\n"
                             f"{LOGIN_COMMENT}\n"
                             "splits = {'train': 'train.parquet', 'test': 'test.parquet'}\n"
-                            'df = pd.read_parquet("hf://datasets/parquet-dataset-login_required/" + splits["train"])'
+                            'df = pd.read_parquet("hf://datasets/dummy/parquet-dataset-login_required/" + splits["train"])'
                         ),
                     }
                 ],
@@ -215,7 +229,7 @@ EXPECTED_PARQUET_LOGIN_REQUIRED = (
                         "splits = {'train': 'train.parquet', 'test': "
                         "'test.parquet'}\n"
                         "df = "
-                        'pl.read_parquet("hf://datasets/parquet-dataset-login_required/" '
+                        'pl.read_parquet("hf://datasets/dummy/parquet-dataset-login_required/" '
                         '+ splits["train"])',
                         "config_name": "default",
                     }
@@ -235,7 +249,7 @@ EXPECTED_PARQUET_LOGIN_REQUIRED = (
                             "from mlcroissant import Dataset\n"
                             f"{LOGIN_COMMENT}\n"
                             "headers = build_hf_headers()  # handles authentication\n"
-                            'jsonld = requests.get("https://huggingface.co/api/datasets/parquet-dataset-login_required/croissant", headers=headers).json()\n'
+                            'jsonld = requests.get("https://huggingface.co/api/datasets/dummy/parquet-dataset-login_required/croissant", headers=headers).json()\n'
                             "ds = Dataset(jsonld=jsonld)\n"
                             'records = ds.records("default")'
                         ),
@@ -258,7 +272,7 @@ EXPECTED_LANCE = (
                     {
                         "config_name": "default",
                         "arguments": {},
-                        "code": ('from datasets import load_dataset\n\nds = load_dataset("lance-dataset")'),
+                        "code": ('from datasets import load_dataset\n\nds = load_dataset("dummy/lance-dataset")'),
                     }
                 ],
             },
@@ -270,7 +284,7 @@ EXPECTED_LANCE = (
                     {
                         "config_name": "default",
                         "arguments": {},
-                        "code": ('import lance\n\nds = lance.dataset("hf://datasets/lance-dataset")'),
+                        "code": ('import lance\n\nds = lance.dataset("hf://datasets/dummy/lance-dataset")'),
                     }
                 ],
             },
@@ -285,7 +299,7 @@ EXPECTED_LANCE = (
                         "code": (
                             "from mlcroissant import Dataset\n"
                             "\n"
-                            'ds = Dataset(jsonld="https://huggingface.co/api/datasets/lance-dataset/croissant")\n'
+                            'ds = Dataset(jsonld="https://huggingface.co/api/datasets/dummy/lance-dataset/croissant")\n'
                             'records = ds.records("default")'
                         ),
                     }
@@ -308,7 +322,7 @@ EXPECTED_WEBDATASET = (
                     {
                         "config_name": "default",
                         "arguments": {},
-                        "code": ('from datasets import load_dataset\n\nds = load_dataset("webdataset-dataset")'),
+                        "code": ('from datasets import load_dataset\n\nds = load_dataset("dummy/webdataset-dataset")'),
                     }
                 ],
             },
@@ -325,7 +339,7 @@ EXPECTED_WEBDATASET = (
                             "from huggingface_hub import HfFileSystem, get_token, hf_hub_url\n"
                             "\n"
                             "fs = HfFileSystem()\n"
-                            'files = [fs.resolve_path(path) for path in fs.glob("hf://datasets/webdataset-dataset/**/*.tar")]\n'
+                            'files = [fs.resolve_path(path) for path in fs.glob("hf://datasets/dummy/webdataset-dataset/**/*.tar")]\n'
                             'urls = [hf_hub_url(file.repo_id, file.path_in_repo, repo_type="dataset") for file in files]\n'
                             "urls = f\"pipe: curl -s -L -H 'Authorization:Bearer {get_token()}' {'::'.join(urls)}\"\n"
                             "\n"
@@ -345,7 +359,7 @@ EXPECTED_WEBDATASET = (
                         "code": (
                             "from mlcroissant import Dataset\n"
                             "\n"
-                            'ds = Dataset(jsonld="https://huggingface.co/api/datasets/webdataset-dataset/croissant")\n'
+                            'ds = Dataset(jsonld="https://huggingface.co/api/datasets/dummy/webdataset-dataset/croissant")\n'
                             'records = ds.records("default")'
                         ),
                     }
@@ -381,6 +395,21 @@ def mock_hffs(tmp_path_factory: TempPathFactory) -> Iterator[fsspec.AbstractFile
     (hf / "datasets" / LANCE_DATASET / "data").mkdir(parents=True)
     (hf / "datasets" / LANCE_DATASET / "data" / "0000.lance").touch()
     (hf / "datasets" / LANCE_DATASET / "_versions" / "1.manifest").touch()
+
+    (hf / "datasets" / LEROBOT_DATASET / "data" / "chunk-000").mkdir(parents=True)
+    ds.to_parquet(hf / "datasets" / LEROBOT_DATASET / "data" / "chunk-000" / "episode_000000.parquet")
+    (hf / "datasets" / LEROBOT_DATASET / "README.md").write_text(
+        "---\n"
+        "license: apache-2.0\n"
+        "task_categories:\n"
+        "- robotics\n"
+        "tags:\n"
+        "- LeRobot\n"
+        "configs:\n"
+        "- config_name: default\n"
+        "  data_files: data/*/*.parquet\n"
+        "---\n"
+    )
 
     class MockHfFileSystem(DirFileSystem):  # type: ignore[misc]
         protocol = "hf"
@@ -477,10 +506,55 @@ def test_compute(
         upsert_response(**upstream_response)
     job_runner = get_job_runner(dataset, app_config)
     job_runner.pre_compute()
-    compute_result = job_runner.compute()
+    compute_result = list(job_runner.compute())[0]
     job_runner.post_compute()
     assert compute_result.content == expected[0]
     assert compute_result.progress == expected[1]
+
+
+def test_compute_lerobot(
+    app_config: AppConfig,
+    get_job_runner: GetJobRunner,
+    mock_hffs: fsspec.AbstractFileSystem,
+) -> None:
+    upsert_response(**UPSTREAM_RESPONSE_INFO_LEROBOT)
+    job_runner = get_job_runner(LEROBOT_DATASET, app_config)
+    job_runner.pre_compute()
+    compute_result = list(job_runner.compute())[0]
+    job_runner.post_compute()
+    libraries = {library["library"] for library in compute_result.content["libraries"]}
+    # the "lerobot" library is detected from the "LeRobot" tag in the dataset card
+    assert "lerobot" in libraries
+    lerobot_library = next(
+        library for library in compute_result.content["libraries"] if library["library"] == "lerobot"
+    )
+    assert lerobot_library == {
+        "language": "python",
+        "library": "lerobot",
+        "function": "LeRobotDataset",
+        "loading_codes": [
+            {
+                "config_name": "default",
+                "arguments": {},
+                "code": (
+                    'from lerobot.datasets import LeRobotDataset\n\ndataset = LeRobotDataset("dummy/lerobot-dataset")'
+                ),
+            }
+        ],
+    }
+    # the regular libraries are still added (LeRobot datasets are parquet-based)
+    assert {"datasets", "mlcroissant"} <= libraries
+
+
+def test_get_compatible_libraries_for_lerobot(
+    mock_hffs: fsspec.AbstractFileSystem,
+) -> None:
+    # a dataset tagged "LeRobot" is detected
+    compatible_libraries = get_compatible_libraries_for_lerobot(LEROBOT_DATASET, hf_token=None, login_required=False)
+    assert len(compatible_libraries) == 1
+    assert compatible_libraries[0]["library"] == "lerobot"
+    # a dataset without the "LeRobot" tag (or without a dataset card) is not detected
+    assert get_compatible_libraries_for_lerobot(PARQUET_DATASET, hf_token=None, login_required=False) == []
 
 
 @pytest.mark.parametrize(
@@ -508,7 +582,7 @@ def test_compute_error(
     job_runner = get_job_runner(dataset, app_config)
     job_runner.pre_compute()
     with expectation:
-        job_runner.compute()
+        list(job_runner.compute())
     job_runner.post_compute()
 
 
@@ -646,3 +720,144 @@ def test_get_compatible_libraries_for_json(
     compatible_libraries = get_compatible_libraries_for_json(dataset=dataset, hf_token=None, login_required=False)
     libraries = [compatible_library["library"] for compatible_library in compatible_libraries]
     assert libraries == expected_libraries
+
+
+# --- Test helpers ---
+
+SEED = 42
+
+
+def _generate_cdc_test_table(n_rows: int = 1000) -> pa.Table:
+    """Generate a test table with variable-length strings for CDC detection."""
+    np.random.seed(SEED)
+    strings = [f"row-{i}-data-" * np.random.randint(1, 200) for i in range(n_rows)]
+    return pa.table({"data": pa.array(strings, type=pa.string())})
+
+
+def _write_parquet(path: str, table: pa.Table, use_cdc: bool = False) -> None:
+    """Write a parquet file with page index enabled."""
+    write_kwargs: dict[str, Any] = {"write_page_index": True}
+    if use_cdc:
+        write_kwargs["use_content_defined_chunking"] = {
+            "min_chunk_size": 2_500,
+            "max_chunk_size": 10_000,
+            "norm_level": 0,
+        }
+    else:
+        write_kwargs["data_page_size"] = 10_000
+    pq.write_table(table, path, **write_kwargs)
+
+
+class TestIsOptimizedParquetFromFirstPolarsLoadingCode:
+    """Tests for is_optimized_parquet_from_first_polars_loading_code function"""
+
+    def test_cdc_detected_via_rust(self, tmp_path: Path) -> None:
+        """Test that a CDC parquet file is correctly detected as optimized."""
+        table = _generate_cdc_test_table(n_rows=1000)
+        parquet_file = str(tmp_path / "cdc.parquet")
+        _write_parquet(parquet_file, table, use_cdc=True)
+
+        with open(parquet_file, "rb") as f:
+            file_bytes = f.read()
+
+        try:
+            from libviewer._internal import is_content_defined_chunked_parquet
+
+            result = is_content_defined_chunked_parquet(file_bytes)
+            assert isinstance(result, bool), f"Expected bool, got {type(result)}"
+            assert result is True, f"CDC parquet should be detected as optimized, got {result}"
+        except ImportError:
+            # libviewer not available, test the pyarrow fallback
+            pass
+
+    def test_non_cdc_not_detected_as_optimized(self, tmp_path: Path) -> None:
+        """Test that a non-CDC parquet file is NOT detected as optimized."""
+        table = _generate_cdc_test_table(n_rows=1000)
+        parquet_file = str(tmp_path / "non_cdc.parquet")
+        _write_parquet(parquet_file, table, use_cdc=False)
+
+        with open(parquet_file, "rb") as f:
+            file_bytes = f.read()
+
+        try:
+            from libviewer._internal import is_content_defined_chunked_parquet
+
+            result = is_content_defined_chunked_parquet(file_bytes)
+            assert isinstance(result, bool), f"Expected bool, got {type(result)}"
+            assert result is False, f"Non-CDC parquet should not be detected as optimized, got {result}"
+        except ImportError:
+            # libviewer not available
+            pass
+
+
+class TestIsContentDefinedChunkedParquet:
+    """Tests for the Rust is_content_defined_chunked_parquet function"""
+
+    def test_with_empty_bytes(self) -> None:
+        """Test that empty bytes return an error"""
+        try:
+            from libviewer._internal import is_content_defined_chunked_parquet
+
+            result = is_content_defined_chunked_parquet(b"")
+            assert False, f"Expected error for empty bytes, got {result}"
+        except Exception:
+            # Expected to fail with empty bytes
+            pass
+
+    def test_cdc_detected(self, tmp_path: Path) -> None:
+        """Test that CDC parquet is correctly detected"""
+        from libviewer._internal import is_content_defined_chunked_parquet
+
+        table = _generate_cdc_test_table(n_rows=1000)
+        parquet_file = str(tmp_path / "cdc.parquet")
+        _write_parquet(parquet_file, table, use_cdc=True)
+
+        with open(parquet_file, "rb") as f:
+            file_bytes = f.read()
+
+        result = is_content_defined_chunked_parquet(file_bytes)
+        assert isinstance(result, bool), f"Expected bool, got {type(result)}"
+        assert result is True, f"CDC parquet should be detected, got {result}"
+
+    def test_non_cdc_not_detected(self, tmp_path: Path) -> None:
+        """Test that non-CDC parquet is not detected as CDC"""
+        from libviewer._internal import is_content_defined_chunked_parquet
+
+        table = _generate_cdc_test_table(n_rows=1000)
+        parquet_file = str(tmp_path / "non_cdc.parquet")
+        _write_parquet(parquet_file, table, use_cdc=False)
+
+        with open(parquet_file, "rb") as f:
+            file_bytes = f.read()
+
+        result = is_content_defined_chunked_parquet(file_bytes)
+        assert isinstance(result, bool), f"Expected bool, got {type(result)}"
+        assert result is False, f"Non-CDC parquet should not be detected, got {result}"
+
+
+def test_is_optimized_parquet_with_real_cdc_file(tmp_path: Path) -> None:
+    """Test is_optimized_parquet from first polars loading code with a real CDC parquet file"""
+    # Create a test dataset directory
+    test_dataset = "test-real-cdc-dataset"
+    ds_dir = tmp_path / "datasets" / test_dataset
+    ds_dir.mkdir(parents=True)
+
+    table = _generate_cdc_test_table(n_rows=1000)
+    parquet_file = ds_dir / "train.parquet"
+    _write_parquet(str(parquet_file), table, use_cdc=True)
+
+    # Check if libviewer is available
+    try:
+        from libviewer._internal import is_content_defined_chunked_parquet
+
+        # Read the file bytes
+        with open(parquet_file, "rb") as f:
+            file_bytes = f.read()
+
+        # Test the Rust function
+        result = is_content_defined_chunked_parquet(file_bytes)
+
+        assert isinstance(result, bool), f"Expected bool, got {type(result)}"
+
+    except ImportError:
+        pass

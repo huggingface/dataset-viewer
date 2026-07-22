@@ -189,6 +189,9 @@ class JobDocument(Document):
     created_at = DateTimeField(required=True)
     started_at = DateTimeField()
     last_heartbeat = DateTimeField()
+    # Time at which the worker process received SIGTERM for this job (set by the executor signal handler)
+    # If set and the job is still running, it means SIGKILL arrived before the job could finish
+    terminated_at = DateTimeField()
 
     def to_dict(self) -> JobDict:
         return {
@@ -915,30 +918,69 @@ class Queue:
         # no need to update metrics since it is just the last_heartbeat
         job.update(last_heartbeat=get_datetime())
 
-    def get_zombies(self, max_seconds_without_heartbeat: float) -> list[JobInfo]:
-        """Get the zombie jobs.
-        It returns jobs without recent heartbeats, which means they crashed at one point and became zombies.
-        Usually `max_seconds_without_heartbeat` is a factor of the time between two heartbeats.
+    def set_terminated(self, job_id: str) -> None:
+        """Mark a job as terminated (SIGTERM was sent to the worker running this job).
+        This is set by the executor signal handler when SIGTERM is received.
+        """
+        try:
+            job = self.get_job_with_id(job_id)
+            job.update(terminated_at=get_datetime())
+        except DoesNotExist:
+            logging.debug(f"Cannot set terminated for job {job_id}: job does not exist.")
+
+    def get_stuck_jobs(self, max_seconds_without_heartbeat: float) -> list[tuple["JobInfo", str]]:
+        """Get started jobs that are stuck: either missing heartbeats (crashed) or terminated but still running.
+
+        This is a single query that identifies both zombie jobs (crashed, no heartbeats) and
+        terminated-but-still-running jobs (SIGTERM received but didn't finish before SIGKILL).
+
+        Args:
+            max_seconds_without_heartbeat: maximum seconds since last heartbeat before considering a job stuck.
 
         Returns:
-            `list[JobInfo]`: an array of the zombie job infos.
+            `list[tuple[JobInfo, str]]`: list of (job_info, reason) tuples.
+                reason is either "missing heartbeats" (crashed) or "terminated" (SIGTERM received but didn't finish).
         """
         started_jobs = JobDocument.objects(status=Status.STARTED)
         if max_seconds_without_heartbeat <= 0:
             return []
-        zombies = [
-            job
-            for job in started_jobs
-            if (
+        now = get_datetime()
+        stuck: list[tuple["JobInfo", str]] = []
+        for job in started_jobs:
+            # Check for terminated jobs (SIGTERM received but still running)
+            if job.terminated_at is not None:
+                if (
+                    job.last_heartbeat is not None
+                    and now >= pytz.UTC.localize(job.terminated_at) + timedelta(seconds=max_seconds_without_heartbeat)
+                ) or (
+                    job.last_heartbeat is None
+                    and now >= pytz.UTC.localize(job.terminated_at) + timedelta(seconds=max_seconds_without_heartbeat)
+                ):
+                    stuck.append((job.info(), "terminated"))
+            # Check for zombie jobs (missing heartbeats, no SIGTERM)
+            elif (
                 job.last_heartbeat is not None
-                and get_datetime()
-                >= pytz.UTC.localize(job.last_heartbeat) + timedelta(seconds=max_seconds_without_heartbeat)
-            )
-            or (
+                and now >= pytz.UTC.localize(job.last_heartbeat) + timedelta(seconds=max_seconds_without_heartbeat)
+            ) or (
                 job.last_heartbeat is None
                 and job.started_at is not None
-                and get_datetime()
-                >= pytz.UTC.localize(job.started_at) + timedelta(seconds=max_seconds_without_heartbeat)
-            )
+                and now >= pytz.UTC.localize(job.started_at) + timedelta(seconds=max_seconds_without_heartbeat)
+            ):
+                stuck.append((job.info(), "missing heartbeats"))
+        return stuck
+
+    def get_zombies(self, max_seconds_without_heartbeat: float) -> list["JobInfo"]:
+        """Deprecated: use get_stuck_jobs instead."""
+        return [
+            job_info
+            for job_info, reason in self.get_stuck_jobs(max_seconds_without_heartbeat)
+            if reason == "missing heartbeats"
         ]
-        return [zombie.info() for zombie in zombies]
+
+    def get_terminated_jobs(self, max_seconds_after_termination: float) -> list["JobInfo"]:
+        """Deprecated: use get_stuck_jobs instead."""
+        return [
+            job_info
+            for job_info, reason in self.get_stuck_jobs(max_seconds_after_termination)
+            if reason == "terminated"
+        ]

@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2023 The HuggingFace Authors.
 
+from collections.abc import Iterator
 from http import HTTPStatus
 from typing import Optional
 
@@ -27,8 +28,8 @@ class DummySplitJobRunner(SplitJobRunner):
     def get_job_type() -> str:
         return "/dummy"
 
-    def compute(self) -> CompleteJobResult:
-        return CompleteJobResult({"key": "value"})
+    def compute(self) -> Iterator[CompleteJobResult]:
+        yield CompleteJobResult({"key": "value"})
 
 
 @pytest.mark.parametrize("config,split", [(None, None), (None, "split"), ("config", None)])

@@ -2,6 +2,7 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
+from collections.abc import Iterator
 
 from libcommon.exceptions import PreviousStepFormatError
 from libcommon.simple_cache import get_previous_step_or_raise
@@ -110,5 +111,5 @@ class ConfigSizeJobRunner(ConfigJobRunner):
     def get_job_type() -> str:
         return "config-size"
 
-    def compute(self) -> CompleteJobResult:
-        return CompleteJobResult(compute_config_size_response(dataset=self.dataset, config=self.config))
+    def compute(self) -> Iterator[CompleteJobResult]:
+        yield CompleteJobResult(compute_config_size_response(dataset=self.dataset, config=self.config))

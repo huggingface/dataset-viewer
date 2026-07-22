@@ -27,6 +27,7 @@ from worker.job_runners.dataset.croissant_crumbs import DatasetCroissantCrumbsJo
 from worker.job_runners.dataset.filetypes import DatasetFiletypesJobRunner
 from worker.job_runners.dataset.hub_cache import DatasetHubCacheJobRunner
 from worker.job_runners.dataset.info import DatasetInfoJobRunner
+from worker.job_runners.dataset.init import DatasetInitJobRunner
 from worker.job_runners.dataset.is_valid import DatasetIsValidJobRunner
 from worker.job_runners.dataset.modalities import DatasetModalitiesJobRunner
 from worker.job_runners.dataset.opt_in_out_urls_count import (
@@ -78,6 +79,12 @@ class JobRunnerFactory(BaseJobRunnerFactory):
 
     def _create_job_runner(self, job_info: JobInfo) -> JobRunner:
         job_type = job_info["type"]
+        if job_type == DatasetInitJobRunner.get_job_type():
+            return DatasetInitJobRunner(
+                job_info=job_info,
+                app_config=self.app_config,
+                hf_datasets_cache=self.hf_datasets_cache,
+            )
         if job_type == DatasetConfigNamesJobRunner.get_job_type():
             return DatasetConfigNamesJobRunner(
                 job_info=job_info,

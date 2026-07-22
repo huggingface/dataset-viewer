@@ -2,6 +2,7 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
+from collections.abc import Iterator
 from http import HTTPStatus
 
 from datasets import Audio, Features, Image, LargeList, List, Pdf, Translation, TranslationVariableLanguages, Value
@@ -383,6 +384,5 @@ class DatasetModalitiesJobRunner(DatasetJobRunner):
     def get_job_type() -> str:
         return "dataset-modalities"
 
-    def compute(self) -> CompleteJobResult:
-        response_content = compute_modalities_response(dataset=self.dataset)
-        return CompleteJobResult(response_content)
+    def compute(self) -> Iterator[CompleteJobResult]:
+        yield CompleteJobResult(compute_modalities_response(dataset=self.dataset))

@@ -297,10 +297,10 @@ def test_compute_libviewer(
 
     if should_raise:
         with pytest.raises(Exception) as e:
-            job_runner.compute()
+            list(job_runner.compute())
         assert e.type.__name__ == expected_error_code
     else:
-        content = job_runner.compute().content
+        content = list(job_runner.compute())[0].content
         assert content == expected_content
 
         assert content["parquet_files_metadata"]

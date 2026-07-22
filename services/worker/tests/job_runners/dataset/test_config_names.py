@@ -56,7 +56,7 @@ def test_compute(app_config: AppConfig, hub_public_csv: str, get_job_runner: Get
     dataset = hub_public_csv
     job_runner = get_job_runner(dataset, app_config)
     job_runner.pre_compute()
-    response = job_runner.compute()
+    response = list(job_runner.compute())[0]
     job_runner.post_compute()
     content = response.content
     assert len(content["config_names"]) == 1
@@ -85,7 +85,7 @@ def test_compute_too_many_configs(
         with patch("worker.job_runners.dataset.config_names.get_dataset_default_config_name", return_value=None):
             if error_code:
                 with pytest.raises(CustomError) as exc_info:
-                    job_runner.compute()
+                    list(job_runner.compute())
                 assert exc_info.value.code == error_code
             else:
                 assert job_runner.compute() is not None
@@ -140,12 +140,12 @@ def test_compute_splits_response(
     )
     job_runner.pre_compute()
     if error_code is None:
-        result = job_runner.compute().content
+        result = list(job_runner.compute())[0].content
         assert result == expected_configs_response
         return
 
     with pytest.raises(CustomError) as exc_info:
-        job_runner.compute()
+        list(job_runner.compute())
     job_runner.post_compute()
     assert exc_info.value.code == error_code
     assert exc_info.value.cause_exception == cause

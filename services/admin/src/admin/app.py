@@ -1,6 +1,8 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+from contextlib import asynccontextmanager
+
 import uvicorn
 from libapi.utils import EXPOSED_HEADERS
 from libcommon.log import init_logging
@@ -187,10 +189,19 @@ def create_app() -> Starlette:
             ]
         )
 
+    @asynccontextmanager
+    async def lifespan(_app: Starlette):  # type: ignore[no-untyped-def]
+        # Starlette 1.0 removed on_shutdown in favor of the ASGI lifespan protocol.
+        try:
+            yield
+        finally:
+            for resource in resources:
+                resource.release()
+
     return Starlette(
         routes=routes,
         middleware=middleware,
-        on_shutdown=[resource.release for resource in resources],
+        lifespan=lifespan,
     )
 
 

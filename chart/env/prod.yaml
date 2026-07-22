@@ -64,6 +64,13 @@ images:
       useGlobalRegistry: false
       repository: datasets-server-services-webhook
       tag: sha-fb3399a
+serviceAccount:
+  create: true
+  name: ""
+  # eks.amazonaws.com/role-arn annotation is injected at deploy time (private overlay),
+  # not stored in this repo.
+  annotations: {}
+
 secrets:
   infisical:
     enabled: true
@@ -112,6 +119,11 @@ monitoring:
 
 mongodb:
   enabled: false
+
+s3:
+  regionName: "us-east-1"
+  # when true, drop static S3 credentials and rely on the ServiceAccount IRSA role
+  useIrsa: false
 
 common:
   # URL of the HuggingFace Hub
@@ -438,7 +450,7 @@ sseApi:
   service:
     type: NodePort
   ingress:
-    enabled: true
+    enabled: false
     annotations:
       alb.ingress.kubernetes.io/group.order: "4"
       alb.ingress.kubernetes.io/target-node-labels: role-datasets-server=true
@@ -460,12 +472,15 @@ sseApi:
 
 workers:
   - deployName: "heavy"
+    terminationGracePeriodSeconds: 120
     prometheusMultiprocDirectory: "/tmp"
     uvicornHostname: "0.0.0.0"
     uvicornNumWorkers: "1"
     uvicornPort: 8080
     workerDifficultyMax: 100
     workerDifficultyMin: 70
+    maxMemoryPct: 60
+    maxSystemMemoryPct: 80
     nodeSelector:
       role-datasets-server-worker: "true"
     tolerations:
@@ -489,12 +504,15 @@ workers:
         cpu: 8
         memory: "44Gi"
   - deployName: "medium"
+    terminationGracePeriodSeconds: 60
     prometheusMultiprocDirectory: "/tmp"
     uvicornHostname: "0.0.0.0"
     uvicornNumWorkers: "1"
     uvicornPort: 8080
     workerDifficultyMax: 70
     workerDifficultyMin: 40
+    maxMemoryPct: 70
+    maxSystemMemoryPct: 80
     nodeSelector:
       role-datasets-server-worker: "true"
     tolerations:
@@ -518,12 +536,15 @@ workers:
         cpu: 2
         memory: "14Gi"
   - deployName: "light"
+    terminationGracePeriodSeconds: 30
     prometheusMultiprocDirectory: "/tmp"
     uvicornHostname: "0.0.0.0"
     uvicornNumWorkers: "1"
     uvicornPort: 8080
     workerDifficultyMax: 40
     workerDifficultyMin: 0
+    maxMemoryPct: 0
+    maxSystemMemoryPct: 0
     # Increased probe timeouts for light workers due to limited resources
     startupProbe:
       failureThreshold: 120
