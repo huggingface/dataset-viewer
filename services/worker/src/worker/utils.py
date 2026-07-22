@@ -30,6 +30,7 @@ from datasets import (
     load_dataset,
 )
 from datasets.features.features import decode_nested_example
+from datasets.packaged_modules.arrow.arrow import Arrow
 from datasets.utils.file_utils import SINGLE_FILE_COMPRESSION_EXTENSION_TO_PROTOCOL, is_relative_path
 from huggingface_hub import HfFileSystem, HfFileSystemFile
 from huggingface_hub.errors import RepositoryNotFoundError
@@ -39,6 +40,7 @@ from libcommon.dtos import RowsContent
 from libcommon.exceptions import (
     ConfigNotFoundError,
     DatasetNotFoundError,
+    DatasetWithArrowFilesNotSupportedError,
     DatasetWithScriptNotSupportedError,
     PreviousStepFormatError,
     SplitNotFoundError,
@@ -400,6 +402,8 @@ def safe_load_dataset_builder(
     builder_cls = get_dataset_builder_class(dataset_module, dataset_name=dataset_name)
 
     # Safety checks
+    if issubclass(builder_cls, Arrow):
+        raise DatasetWithArrowFilesNotSupportedError()
     config_data_files = builder_cls.builder_configs[name].data_files
     if config_data_files is not None:
         for split in config_data_files:
