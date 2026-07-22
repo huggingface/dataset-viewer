@@ -154,6 +154,8 @@ def get_rows_or_raise(
             token=token,
             column_names=column_names,
         )
+    except DatasetWithArrowFilesNotSupportedError:
+        raise
     except Exception as err:
         if isinstance(err, ValueError) and "trust_remote_code" in str(err):
             raise DatasetWithScriptNotSupportedError from err
@@ -376,7 +378,7 @@ def safe_load_dataset_builder(
         raise ValueError(f"Invalid dataset: {path}")
     for key in kwargs:
         if key == "download_mode":
-            if kwargs[key] != DownloadMode.REUSE_DATASET_IF_EXISTS:
+            if kwargs[key] is not None and kwargs[key] != DownloadMode.REUSE_DATASET_IF_EXISTS:
                 raise ValueError(f"not supported in safe_load_dataset_builder: {key}")
         elif kwargs[key] is not None:
             raise ValueError(f"not supported in safe_load_dataset_builder: {key}")
@@ -427,6 +429,11 @@ def safe_load_dataset_builder(
     )
 
     return builder_instance
+
+
+# `datasets.inspect` binds `load_dataset_builder` at import time, so `datasets.load` is not the
+# right patch target for `get_dataset_config_info` and `get_dataset_split_names`
+safe_inspect = patch("datasets.inspect.load_dataset_builder", safe_load_dataset_builder)
 
 
 @overload
