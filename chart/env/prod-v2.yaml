@@ -3,14 +3,22 @@
 # (ArgoCD app "datasets-server-prod-v2"), while production traffic still hits hub-prod.
 # Removed at the network cutover.
 #
-# Only two kinds of change here — everything else is inherited from prod.yaml:
+# Changes here — everything else is inherited from prod.yaml:
 #   1. Rename the ALBs so they don't collide with hub-prod's (ALB names are unique per region).
 #   2. Disable the singleton cron jobs so they don't double-run against the SHARED prod mongo.
+#   3. Hold ALL workers back (workers: []).
+#   4. Disable the mongodbMigration pre-upgrade hook (mongodbMigration.enabled: false).
 #
-# NOT changed on purpose:
-#   - Workers: they pull from the same atomic mongo queue as hub-prod, so a job is processed
-#     exactly once regardless of which cluster's worker grabs it (extra capacity, not double work).
-#   - mongodbMigration: same image tag as prod => migrations already applied => re-run is a no-op.
+# Why workers/migration are held back (differs from the original "shared atomic queue" plan): the
+# parquet-metadata EFS on this cluster is a READ-ONLY EFS-replication destination until the
+# cutover, so a worker here cannot write cache artifacts — it would only error real jobs in the
+# shared prod mongo queue; and the migration hook would run against the shared prod mongo. Both
+# restored at cutover.
+#
+# NOT set here (kept out of this open-source repo): the ServiceAccount's
+# eks.amazonaws.com/role-arn (mongo IRSA) is injected in the private ArgoCD Application in
+# infra-deployments, so the AWS account id is not stored in this repo.
+#
 #   - external-dns hostname annotations are left in place but inert (external-dns is disabled on
 #     this cluster until the cutover).
 
@@ -58,4 +66,16 @@ postMessages:
 queueMetricsCollector:
   enabled: false
 cacheMetricsCollector:
+  enabled: false
+
+# --- 3. Hold ALL workers back (read-only replica EFS + shared prod queue) ---
+# Empty list => the worker deployment/hpa/podmonitor templates (which `range .Values.workers`)
+# render nothing. TODO(cutover): remove this override to restore workers once the EFS is writable.
+# (The SA's mongo IRSA role-arn annotation is injected in the private infra-deployments app.)
+workers: []
+
+# --- 4. Disable the mongodbMigration pre-upgrade hook ---
+# It would otherwise run migrations against the SHARED prod mongo on every sync.
+# TODO(cutover): re-enable (remove this) when this cluster takes over.
+mongodbMigration:
   enabled: false
