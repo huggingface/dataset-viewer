@@ -308,6 +308,9 @@ discussions:
 # --- jobs (pre-install/upgrade hooks) ---
 
 mongodbMigration:
+  # Whether to run the mongo migration pre-upgrade hook. Disable e.g. for a parallel deploy that
+  # shares an already-migrated prod mongo.
+  enabled: true
   # Name of the mongo db database used for storing the migrations history
   mongoDatabase: "datasets_server_maintenance"
 
