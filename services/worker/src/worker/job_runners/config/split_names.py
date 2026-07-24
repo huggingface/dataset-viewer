@@ -9,7 +9,6 @@ from datasets import get_dataset_split_names
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
 from libcommon.dtos import FullSplitItem
 from libcommon.exceptions import (
-    DatasetWithArrowFilesNotSupportedError,
     DatasetWithScriptNotSupportedError,
     DatasetWithTooManySplitsError,
     EmptyDatasetError,
@@ -53,8 +52,6 @@ def compute_split_names_from_streaming_response(
           If the list of splits could not be obtained using the datasets library.
         [~`libcommon.exceptions.DatasetWithScriptNotSupportedError`]:
             If the dataset has a dataset script.
-        [~`libcommon.exceptions.DatasetWithArrowFilesNotSupportedError`]:
-            If the dataset has Arrow IPC files (temporarily not supported).
         [~`libcommon.exceptions.SplitNamesFromStreamingError`]:
             If the split names could not be obtained using the datasets library.
         [~`libcommon.exceptions.DatasetWithTooManySplitsError`]:
@@ -76,8 +73,6 @@ def compute_split_names_from_streaming_response(
             ]
     except _EmptyDatasetError as err:
         raise EmptyDatasetError("The dataset is empty.", cause=err) from err
-    except DatasetWithArrowFilesNotSupportedError:
-        raise
     except Exception as err:
         if isinstance(err, ValueError) and "trust_remote_code" in str(err):
             raise DatasetWithScriptNotSupportedError from err
