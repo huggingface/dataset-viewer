@@ -5,11 +5,10 @@ from collections.abc import Callable
 from dataclasses import replace
 from http import HTTPStatus
 from typing import Any, Optional
-from unittest.mock import patch
 
 import pytest
 from libcommon.dtos import Priority
-from libcommon.exceptions import CustomError, DatasetWithArrowFilesNotSupportedError, PreviousStepFormatError
+from libcommon.exceptions import CustomError, PreviousStepFormatError
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import (
     CachedArtifactError,
@@ -21,7 +20,6 @@ from worker.config import AppConfig
 from worker.job_runners.config.split_names import (
     ConfigSplitNamesJobRunner,
     compute_split_names_from_info_response,
-    compute_split_names_from_streaming_response,
 )
 from worker.resources import LibrariesResource
 
@@ -241,14 +239,3 @@ def test_compute(app_config: AppConfig, get_job_runner: GetJobRunner, hub_public
     job_runner.post_compute()
     content = response.content
     assert len(content["splits"]) == 1
-
-
-def test_compute_split_names_from_streaming_response_preserves_arrow_files_error() -> None:
-    with (
-        patch(
-            "worker.job_runners.config.split_names.get_dataset_split_names",
-            side_effect=DatasetWithArrowFilesNotSupportedError(),
-        ),
-        pytest.raises(DatasetWithArrowFilesNotSupportedError),
-    ):
-        compute_split_names_from_streaming_response(dataset="namespace/dataset", config="default", max_number=10)
