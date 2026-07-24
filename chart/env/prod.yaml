@@ -392,10 +392,10 @@ rows:
   resources:
     requests:
       cpu: 1
-      memory: "6500Mi"
+      memory: "8192Mi"
     limits:
       cpu: 4
-      memory: "6500Mi"
+      memory: "8192Mi"
 
 search:
   # Number of uvicorn workers for running the application
