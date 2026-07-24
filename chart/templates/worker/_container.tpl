@@ -24,6 +24,9 @@
     value: {{ .workerValues.workerDifficultyMin | quote }}
   - name: ROWS_INDEX_MAX_ARROW_DATA_IN_MEMORY
     value: {{ .Values.rowsIndex.maxArrowDataInMemory | quote }}
+  - name: HF_HOME
+    value: "/tmp/hf"
+    # ^ensure the temporary files are created in /tmp, which is writable
   # prometheus
   - name: PROMETHEUS_MULTIPROC_DIR
     value:  {{ .workerValues.prometheusMultiprocDirectory | quote }}
