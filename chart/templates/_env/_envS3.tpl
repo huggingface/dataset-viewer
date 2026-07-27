@@ -4,7 +4,10 @@
 {{- define "envS3" -}}
 - name: S3_REGION_NAME
   value: {{ .Values.s3.regionName | quote }}
+- name: S3_USE_IRSA
+  value: {{ .Values.s3.useIrsa | quote }}
 {{- if not .Values.s3.useIrsa }}
+{{- if not (and .Values.secrets.infisical.csi.enabled .Values.secrets.s3.accessKeyId.fromSecret) }}
 - name: S3_ACCESS_KEY_ID
   {{- if .Values.secrets.s3.accessKeyId.fromSecret }}
   valueFrom:
@@ -15,6 +18,8 @@
   {{- else }}
   value: {{ .Values.secrets.s3.accessKeyId.value | quote }}
   {{- end }}
+{{- end }}
+{{- if not (and .Values.secrets.infisical.csi.enabled .Values.secrets.s3.secretAccessKey.fromSecret) }}
 - name: S3_SECRET_ACCESS_KEY
   {{- if .Values.secrets.s3.secretAccessKey.fromSecret }}
   valueFrom:
@@ -25,5 +30,6 @@
   {{- else }}
   value: {{ .Values.secrets.s3.secretAccessKey.value | quote }}
   {{- end }}
+{{- end }}
 {{- end }}
 {{- end -}}

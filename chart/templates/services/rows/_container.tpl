@@ -13,6 +13,7 @@
   {{ include "envCache" . | nindent 2 }}
   {{ include "envParquetMetadata" . | nindent 2 }}
   {{ include "envQueue" . | nindent 2 }}
+  {{ include "envSecrets" . | nindent 2 }}
   {{ include "envCommon" . | nindent 2 }}
   {{ include "envHf" . | nindent 2 }}
   {{ include "envLog" . | nindent 2 }}
@@ -35,6 +36,7 @@
   - name: ROWS_INDEX_MAX_ARROW_DATA_IN_MEMORY
     value: {{ .Values.rowsIndex.maxArrowDataInMemory | quote }}
   volumeMounts:
+    {{ include "datasetsServer.csi.volumeMount" . | nindent 2 }}
   {{ include "volumeMountParquetMetadataRO" . | nindent 2 }}
   securityContext:
     allowPrivilegeEscalation: false

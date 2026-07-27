@@ -5,6 +5,7 @@
 - name: "{{ include "name" . }}-queue-metrics-collector"
   image: {{ include "jobs.cacheMaintenance.image" . }}
   imagePullPolicy: {{ .Values.images.pullPolicy }}
+  {{- include "datasetsServer.csi.volumeMountBlock" . | nindent 2 }}
   securityContext:
     allowPrivilegeEscalation: false
   resources: {{ toYaml .Values.queueMetricsCollector.resources | nindent 4 }}
@@ -12,6 +13,7 @@
     {{ include "envLog" . | nindent 2 }}
     {{ include "envCache" . | nindent 2 }}
     {{ include "envQueue" . | nindent 2 }}
+    {{ include "envSecrets" . | nindent 2 }}
     {{ include "envCommon" . | nindent 2 }}
   - name: CACHE_MAINTENANCE_ACTION
     value: {{ .Values.queueMetricsCollector.action | quote }}

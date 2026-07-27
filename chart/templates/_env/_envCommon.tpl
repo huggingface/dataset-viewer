@@ -8,6 +8,7 @@
   value: {{ include "datasetsServer.hub.url" . }}
 - name: HF_ENDPOINT # see https://github.com/huggingface/datasets/pull/5196#issuecomment-1322191411
   value: {{ include "datasetsServer.hub.url" . }}
+{{- if not (and .Values.secrets.infisical.csi.enabled .Values.secrets.appHfToken.fromSecret) }}
 - name: COMMON_HF_TOKEN
   {{- if .Values.secrets.appHfToken.fromSecret }}
   valueFrom:
@@ -18,6 +19,7 @@
   {{- else }}
   value: {{ .Values.secrets.appHfToken.value }}
   {{- end }}
+{{- end }}
 {{- end -}}
 
 {{- define "datasetServer.mongo.url" -}}

@@ -14,6 +14,7 @@ from libcommon.config import (
     QueueConfig,
     S3Config,
 )
+from libcommon.secrets import resolve_secret
 
 DISCUSSIONS_BOT_ASSOCIATED_USER_NAME = None
 DISCUSSIONS_BOT_TOKEN = None
@@ -34,7 +35,7 @@ class DiscussionsConfig:
                 bot_associated_user_name=env.str(
                     name="BOT_ASSOCIATED_USER_NAME", default=DISCUSSIONS_BOT_ASSOCIATED_USER_NAME
                 ),
-                bot_token=env.str(name="BOT_TOKEN", default=DISCUSSIONS_BOT_TOKEN),
+                bot_token=resolve_secret(env, "BOT_TOKEN", "PARQUET_CONVERTER_HF_TOKEN", DISCUSSIONS_BOT_TOKEN),
                 parquet_revision=env.str(name="PARQUET_REVISION", default=DISCUSSIONS_PARQUET_REVISION),
             )
 

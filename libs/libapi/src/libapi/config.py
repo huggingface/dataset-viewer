@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 from environs import Env
+from libcommon.secrets import resolve_secret, resolve_secret_list
 
 API_UVICORN_HOSTNAME = "localhost"
 API_UVICORN_NUM_WORKERS = 2
@@ -61,12 +62,15 @@ class ApiConfig:
                 external_auth_url=external_auth_url,
                 hf_auth_path=hf_auth_path,
                 hf_jwt_public_key_url=env.str(name="HF_JWT_PUBLIC_KEY_URL", default=API_HF_JWT_PUBLIC_KEY_URL),
-                hf_jwt_additional_public_keys=env.list(
-                    name="HF_JWT_ADDITIONAL_PUBLIC_KEYS", default=API_HF_JWT_ADDITIONAL_PUBLIC_KEYS.copy()
+                hf_jwt_additional_public_keys=resolve_secret_list(
+                    env,
+                    "HF_JWT_ADDITIONAL_PUBLIC_KEYS",
+                    "API_HF_JWT_ADDITIONAL_PUBLIC_KEYS",
+                    API_HF_JWT_ADDITIONAL_PUBLIC_KEYS.copy(),
                 ),
                 hf_jwt_algorithm=env.str(name="HF_JWT_ALGORITHM", default=API_HF_JWT_ALGORITHM),
                 hf_timeout_seconds=env.float(name="HF_TIMEOUT_SECONDS", default=API_HF_TIMEOUT_SECONDS),
-                hf_webhook_secret=env.str(name="HF_WEBHOOK_SECRET", default=API_HF_WEBHOOK_SECRET),
+                hf_webhook_secret=resolve_secret(env, "HF_WEBHOOK_SECRET", "WEBHOOK_SECRET", API_HF_WEBHOOK_SECRET),
                 max_age_long=env.int(name="MAX_AGE_LONG", default=API_MAX_AGE_LONG),
                 max_age_short=env.int(name="MAX_AGE_SHORT", default=API_MAX_AGE_SHORT),
             )

@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 
 from environs import Env
 from libcommon.config import CacheConfig, LogConfig, QueueConfig
+from libcommon.secrets import resolve_secret
 
 DATABASE_MIGRATIONS_MONGO_DATABASE = "dataset_viewer_maintenance"
 DATABASE_MIGRATIONS_MONGO_URL = "mongodb://localhost:27017"
@@ -21,7 +22,7 @@ class DatabaseMigrationsConfig:
         with env.prefixed("DATABASE_MIGRATIONS_"):
             return cls(
                 mongo_database=env.str(name="MONGO_DATABASE", default=DATABASE_MIGRATIONS_MONGO_DATABASE),
-                mongo_url=env.str(name="MONGO_URL", default=DATABASE_MIGRATIONS_MONGO_URL),
+                mongo_url=resolve_secret(env, "MONGO_URL", "MONGO_URL", DATABASE_MIGRATIONS_MONGO_URL),
             )
 
 

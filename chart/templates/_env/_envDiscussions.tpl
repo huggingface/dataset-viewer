@@ -4,6 +4,7 @@
 {{- define "envDiscussions" -}}
 - name: DISCUSSIONS_BOT_ASSOCIATED_USER_NAME
   value: {{ .Values.discussions.botAssociatedUserName | quote }}
+{{- if not (and .Values.secrets.infisical.csi.enabled .Values.secrets.appParquetConverterHfToken.fromSecret) }}
 - name: DISCUSSIONS_BOT_TOKEN
   {{- if .Values.secrets.appParquetConverterHfToken.fromSecret }}
   valueFrom:
@@ -15,6 +16,7 @@
   value: {{ .Values.secrets.appParquetConverterHfToken.value }}
   {{- end }}
   # ^ we use the same token (dataset viewer bot) for discussions and for uploading parquet files
+{{- end }}
 - name: DISCUSSIONS_PARQUET_REVISION
   value: {{ .Values.parquetAndInfo.targetRevision | quote }}
 {{- end -}}
