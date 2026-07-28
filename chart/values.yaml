@@ -129,6 +129,12 @@ secrets:
       enabled: false
       # Name the provider is registered under with the CSI driver.
       provider: "infisical"
+      # How the provider authenticates to Infisical. "kubernetes" makes Infisical validate each pod's
+      # service account token by calling TokenReview against this cluster's API server, which it refuses
+      # when the endpoint resolves to a private address. "aws" signs with the provider's own IRSA role
+      # instead and needs nothing reachable, so it is the default here. It is also the provider's default
+      # that has to be overridden: left unset, the parameter falls back to "kubernetes".
+      authMethod: "aws"
       # ID of the Infisical machine identity, and the project id. Injected at deploy time (private
       # overlay) along with secrets.infisical.url, since none of them are stored in this repo.
       identityId: ""
