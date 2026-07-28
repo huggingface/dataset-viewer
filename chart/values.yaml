@@ -121,10 +121,7 @@ secrets:
     # It requires, none of which live in this repo:
     #   - the Secrets Store CSI Driver and the Infisical provider installed on the cluster
     #   - an Infisical machine identity the provider is configured to authenticate with
-    #
-    # When the provider supports it, windowDuration bounds how long after a container starts its
-    # secrets stay readable; the files are served empty afterwards. Leave it empty to keep them
-    # readable for the pod's whole life.
+    #   - a provider build supporting windowDuration, if the read window below is to be enforced
     csi:
       enabled: false
       # Name the provider is registered under with the CSI driver.
@@ -139,7 +136,20 @@ secrets:
       # overlay) along with secrets.infisical.url, since none of them are stored in this repo.
       identityId: ""
       projectId: ""
-      windowDuration: ""
+      # How long after a container starts its secrets stay readable. Past it the provider serves empty
+      # files and stops calling Infisical, so the values never leave the platform rather than being
+      # fetched and withheld. A restart reopens the window, since a restarted container needs its secrets
+      # again and the kubelet replays nothing on its behalf.
+      #
+      # Measured from container start, not pod creation, and enforced at the granularity of the driver's
+      # rotation poll, so the files actually blank up to one interval later (60s as deployed). The
+      # application reads them once at startup and keeps them in memory, so this does not affect a running
+      # process: what it removes is the ability to read them again hours later. Five minutes leaves room
+      # for a slow init container or a restart cascade; going under a minute buys little against the poll
+      # interval and makes the effective window unpredictable.
+      #
+      # Empty keeps them readable for the pod's whole life.
+      windowDuration: "5m"
       mountPath: "/mnt/secrets"
       # Which Infisical secrets each workload mounts, so a pod only ever holds what it needs rather
       # than everything in the project. Each name lands as a file of the same name in mountPath.
