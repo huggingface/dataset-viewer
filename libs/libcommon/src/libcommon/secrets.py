@@ -29,7 +29,10 @@ from typing import Optional, overload
 from environs import Env
 
 SECRETS_DIR = ""
-SECRETS_TIMEOUT_SECONDS = 30.0
+# Has to exceed the CSI driver's rotation poll interval, 60s as deployed. A container that restarts after
+# its read window closed comes back to blank files and only gets them refilled on the driver's next poll,
+# so a timeout shorter than one interval can expire before the refill and crash-loop the pod.
+SECRETS_TIMEOUT_SECONDS = 90.0
 SECRETS_POLL_INTERVAL_SECONDS = 1.0
 
 
