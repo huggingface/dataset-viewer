@@ -542,7 +542,7 @@ def fill_builder_info(
             builder.info.splits.add(SplitInfo(split, num_bytes=0, num_examples=0))
 
         logging.info(
-            f"{sum(len(split_files) for split_files in data_files.values())} parquet files are ready for copy."
+            f"Counted rows of {sum(len(split_files) for split_files in data_files.values())} parquet files."
         )
 
 
@@ -1363,6 +1363,7 @@ def compute_config_parquet_and_info_response(
             logging.info(f"{len(parquet_operations)} parquet files to copy for {dataset=} {config=}.")
             with patch("huggingface_hub.hf_file_system.http_backoff", http_backoff_with_timeout):
                 fill_builder_info(builder, hf_endpoint=hf_endpoint, hf_token=hf_token)
+                logging.info(f"{len(parquet_operations)} parquet files are ready to be free-copied for {dataset=} {config=}.")
         else:
             # stream_convert_to_parquet disallows embedding local files for safety
             logging.info(f"{dataset=} {config=} is not in parquet, converting it using streaming")
