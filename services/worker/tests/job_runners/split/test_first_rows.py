@@ -19,7 +19,7 @@ from libcommon.simple_cache import upsert_response
 from libcommon.storage import StrPath
 from libcommon.storage_client import StorageClient
 from libcommon.utils import get_json_size
-from libviewer import Dataset as OriginalDataset  # type: ignore
+from libviewer import Dataset as OriginalDataset
 
 from worker.config import AppConfig
 from worker.job_runners.split.first_rows import SplitFirstRowsJobRunner

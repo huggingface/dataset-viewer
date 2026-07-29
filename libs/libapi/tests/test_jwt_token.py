@@ -23,8 +23,8 @@ from libapi.exceptions import (
 from libapi.jwt_token import (
     create_algorithm,
     get_jwt_public_keys,
-    parse_jwt_public_key_json,
     parse_jwt_public_key_pem,
+    parse_jwt_public_keys_json,
     validate_jwt,
 )
 
@@ -66,19 +66,34 @@ another_algorithm_public_key_json_payload = {
 
 
 @pytest.mark.parametrize(
-    "payload,expected_pem,expectation",
+    "payload,expected_pems,expectation",
     [
         ([], None, pytest.raises(ValueError)),
         (eddsa_public_key_json_payload, None, pytest.raises(ValueError)),
-        ([another_algorithm_public_key_json_payload], None, pytest.raises(RuntimeError)),
-        ([eddsa_public_key_json_payload], eddsa_public_key_pem, does_not_raise()),
+        # a single incompatible key yields no keys (no error)
+        ([another_algorithm_public_key_json_payload], [], does_not_raise()),
+        # a single valid key
+        ([eddsa_public_key_json_payload], [eddsa_public_key_pem], does_not_raise()),
+        # the kid member is ignored
+        ([{**eddsa_public_key_json_payload, "kid": "key-1"}], [eddsa_public_key_pem], does_not_raise()),
+        # key rotation: a valid key followed by an incompatible key -> only the valid one is returned
+        (
+            [eddsa_public_key_json_payload, another_algorithm_public_key_json_payload],
+            [eddsa_public_key_pem],
+            does_not_raise(),
+        ),
+        # key rotation: an incompatible key followed by a valid key -> only the valid one is returned
+        (
+            [another_algorithm_public_key_json_payload, eddsa_public_key_json_payload],
+            [eddsa_public_key_pem],
+            does_not_raise(),
+        ),
     ],
 )
-def test_parse_jwt_public_key_json(payload: Any, expected_pem: str, expectation: Any) -> None:
+def test_parse_jwt_public_keys_json(payload: Any, expected_pems: list[str], expectation: Any) -> None:
     with expectation:
-        pem = parse_jwt_public_key_json(algorithm=algorithm_eddsa, payload=payload)
-        if expected_pem:
-            assert pem == expected_pem
+        pems = parse_jwt_public_keys_json(algorithm=algorithm_eddsa, payload=payload)
+        assert pems == expected_pems
 
 
 eddsa_public_key_pem_with_bad_linebreaks = (
@@ -154,6 +169,13 @@ def test_get_jwt_public_keys_from_env(keys_env_var: str, expected_keys: list[str
             [eddsa_public_key_json_payload],
             [public_key_pem_ok, other_public_key_pem, eddsa_public_key_pem],
             [eddsa_public_key_pem, public_key_pem_ok, other_public_key_pem, eddsa_public_key_pem],
+            does_not_raise(),
+        ),
+        # key rotation: the Hub publishes two keys (new + old during transition). Both valid keys are loaded.
+        (
+            [eddsa_public_key_json_payload, {**eddsa_public_key_json_payload, "kid": "rotated-key"}],
+            [],
+            [eddsa_public_key_pem, eddsa_public_key_pem],
             does_not_raise(),
         ),
     ],
@@ -246,6 +268,25 @@ def assert_jwt(
 )
 def test_validate_jwt_public_keys(public_keys: list[str], expectation: Any) -> None:
     assert_jwt(encode_jwt(payload_ok), expectation, public_keys=public_keys)
+
+
+def encode_jwt_with_kid(payload: dict[str, Any], kid: str) -> str:
+    return jwt.encode(payload, private_key_pem_ok, algorithm=algorithm_ok, headers={"kid": kid})
+
+
+@pytest.mark.parametrize(
+    "public_keys,kid,expectation",
+    [
+        # token with a kid header, verified against keys without kid info -> still works (kid is ignored)
+        ([public_key_pem_ok], "key-1", does_not_raise()),
+        # token with a kid header, signed by the second key -> works (all keys are tried)
+        ([other_public_key_pem, public_key_pem_ok], "key-1", does_not_raise()),
+        # token with a kid header, no matching key -> fails
+        ([other_public_key_pem], "key-1", pytest.raises(JWTInvalidSignature)),
+    ],
+)
+def test_validate_jwt_with_kid_header(public_keys: list[str], kid: str, expectation: Any) -> None:
+    assert_jwt(encode_jwt_with_kid(payload_ok, kid), expectation, public_keys=public_keys)
 
 
 @pytest.mark.parametrize(

@@ -26,6 +26,7 @@ spec:
     metadata:
       labels: {{ include "labels.sseApi" . | nindent 8 }}
     spec:
+      serviceAccountName: {{ include "datasetsServer.serviceAccountName" . }}
       {{- include "dnsConfig" . | nindent 6 }}
       {{- include "image.imagePullSecrets" . | nindent 6 }}
       containers: {{ include "containerSseApi" . | nindent 8 }}

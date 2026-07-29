@@ -157,3 +157,226 @@ pub fn read_batch_stream(
             .build()?;
     Ok(batch_stream)
 }
+
+/// Checks if a parquet file is written with content-defined chunking (CDC).
+///
+/// CDC parquet files have variable-sized pages (not fixed 1MB blocks),
+/// which enables more efficient data transfers and storage.
+///
+/// Detection criteria (checked in order):
+/// 1. Check for pyarrow-specific `use_content_defined_chunking` metadata key
+/// 2. Page index must be present (offset_index available)
+/// 3. At least one column must have multiple pages with variable sizes
+/// 4. Page sizes must vary significantly (not all the same within ~5% tolerance)
+pub fn is_content_defined_chunked(metadata: &ParquetMetaData) -> bool {
+    // First, check for pyarrow-specific metadata marker
+    if let Some(file_metadata) = metadata.file_metadata().key_value_metadata() {
+        for kv in file_metadata.iter() {
+            if kv.key == "use_content_defined_chunking" {
+                return true;
+            }
+        }
+    }
+
+    // Check if offset index is present (indicates page index was written)
+    let offset_index = match metadata.offset_index() {
+        Some(idx) => idx,
+        None => return false,
+    };
+
+    let mut variable_size_columns = 0;
+
+    // Iterate through row groups and columns
+    for row_group_offset_index in offset_index.iter() {
+        for column_offset_index in row_group_offset_index.iter() {
+            let page_locations = column_offset_index.page_locations();
+
+            if page_locations.is_empty() {
+                continue;
+            }
+
+            // Check if page sizes vary within this column
+            if is_variable_page_size(page_locations) {
+                variable_size_columns += 1;
+            }
+        }
+    }
+
+    // A file is considered content-defined chunked if:
+    // - It has at least one column with variable page sizes
+    // - AND at least 50% of columns have variable sizes (to handle edge cases)
+    if metadata.num_row_groups() == 0 {
+        return false;
+    }
+    let num_columns = metadata.row_group(0).num_columns();
+
+    if num_columns == 0 {
+        return false;
+    }
+
+    let ratio = variable_size_columns as f64 / num_columns as f64;
+    ratio >= 0.5
+}
+
+/// Checks if page sizes vary within a column chunk.
+/// Returns true if there's significant variation (> 5% coefficient of variation).
+fn is_variable_page_size(
+    page_locations: &[parquet::file::page_index::offset_index::PageLocation],
+) -> bool {
+    if page_locations.len() <= 1 {
+        // Single page - can't determine variation
+        return false;
+    }
+
+    let sizes: Vec<i32> = page_locations
+        .iter()
+        .map(|pl| pl.compressed_page_size)
+        .collect();
+
+    // Calculate average size
+    let avg_size = sizes.iter().sum::<i32>() as f64 / sizes.len() as f64;
+
+    if avg_size == 0.0 {
+        return false;
+    }
+
+    // Calculate coefficient of variation
+    let variance = sizes
+        .iter()
+        .map(|s| ((*s as f64) - avg_size).powi(2))
+        .sum::<f64>()
+        / sizes.len() as f64;
+    let std_dev = variance.sqrt();
+    let cv = std_dev / avg_size;
+
+    // If coefficient of variation > 5%, consider it variable
+    cv > 0.05
+}
+
+/// Checks if a parquet file has content-defined chunking from raw bytes.
+///
+/// This is a wrapper around `is_content_defined_chunked` that parses the metadata from bytes.
+pub fn is_content_defined_chunked_from_bytes(
+    metadata_bytes: &[u8],
+) -> std::result::Result<bool, ParquetError> {
+    // Parse the Parquet metadata using the parquet crate's ParquetMetaDataReader
+    let metadata = ParquetMetaDataReader::new()
+        .with_offset_index_policy(PageIndexPolicy::Optional)
+        .parse_and_finish(&Bytes::from(metadata_bytes.to_vec()))?;
+
+    // Use our existing detection logic
+    Ok(is_content_defined_chunked(&metadata))
+}
+
+/// Reads parquet metadata from an hf:// URL using opendal's Huggingface backend (XET).
+/// Only reads the parquet footer (~8KB) instead of downloading the full file.
+pub async fn read_metadata_from_hub(
+    path: &str,
+    hf_token: Option<&str>,
+    hf_endpoint: Option<&str>,
+) -> std::result::Result<Arc<ParquetMetaData>, ParquetError> {
+    if !path.starts_with("hf://datasets/") {
+        return Err(ParquetError::General("Invalid hf:// URL".to_string()));
+    }
+
+    let rest = &path["hf://datasets/".len()..];
+
+    // Parse hf://datasets/<repo_id>[@<revision>]/<file_path>
+    // where repo_id = <username>/<dataset_name>
+    let (repo_id, revision, file_path) = if let Some(at_idx) = rest.find('@') {
+        // Has revision: <repo_id>@<revision>/<file_path>
+        let repo_id_candidate = &rest[..at_idx];
+        if !repo_id_candidate.contains('/') {
+            return Err(ParquetError::General(
+                "repo_id must be in 'username/dataset_name' format".to_string(),
+            ));
+        }
+
+        let after_at = &rest[at_idx + 1..];
+        let slash_idx = after_at.find('/').ok_or_else(|| {
+            ParquetError::General(
+                "missing '/' after revision (expected format: <repo_id>@<revision>/<file_path>)"
+                    .to_string(),
+            )
+        })?;
+
+        let rev = &after_at[..slash_idx];
+        let fpath = &after_at[slash_idx + 1..];
+
+        if rev.is_empty() || fpath.is_empty() {
+            return Err(ParquetError::General(
+                "revision and file_path must not be empty".to_string(),
+            ));
+        }
+
+        (repo_id_candidate, rev, fpath)
+    } else {
+        // No revision: <repo_id>/<file_path>
+        // repo_id contains one '/' so we need the SECOND slash
+        let first_slash = rest
+            .find('/')
+            .ok_or_else(|| ParquetError::General("repo_id is missing".to_string()))?;
+
+        let second_slash = rest[first_slash + 1..]
+            .find('/')
+            .map(|i| i + first_slash + 1)
+            .ok_or_else(|| ParquetError::General("file_path is missing".to_string()))?;
+
+        let repo_id = &rest[..second_slash];
+        let file_path = &rest[second_slash + 1..];
+
+        if file_path.is_empty() {
+            return Err(ParquetError::General(
+                "file_path must not be empty".to_string(),
+            ));
+        }
+
+        (repo_id, "main", file_path)
+    };
+
+    let endpoint = hf_endpoint.unwrap_or("https://huggingface.co");
+    let mut builder = opendal::services::Huggingface::default()
+        .repo_type("dataset")
+        .repo_id(repo_id)
+        .revision(revision)
+        .endpoint(endpoint);
+
+    if let Some(token) = hf_token {
+        builder = builder.token(token);
+    }
+
+    let operator = opendal::Operator::new(builder)
+        .map_err(|e| ParquetError::General(format!("opendal: {}", e)))?
+        .finish();
+    let store = Arc::new(object_store_opendal::OpendalStore::new(operator));
+
+    let obj: Path = file_path.into();
+
+    // Use ParquetObjectReader from the parquet crate to handle footer reading via range requests
+    let file_size = store
+        .head(&obj)
+        .await
+        .map_err(|e| ParquetError::General(format!("head: {}", e)))?
+        .size as u64;
+    let mut object_reader = ParquetObjectReader::new(store, obj)
+        .with_file_size(file_size)
+        .with_preload_offset_index(true);
+
+    // Try loading with offset index, fall back to suffix requests if it fails
+    let mut metadata_reader = ParquetMetaDataReader::new()
+        .with_column_index_policy(PageIndexPolicy::Skip)
+        .with_offset_index_policy(PageIndexPolicy::Optional);
+
+    if metadata_reader
+        .try_load_via_suffix(&mut object_reader)
+        .await
+        .is_err()
+    {
+        metadata_reader = metadata_reader.with_offset_index_policy(PageIndexPolicy::Skip);
+        metadata_reader
+            .try_load_via_suffix(&mut object_reader)
+            .await?;
+    }
+
+    Ok(Arc::new(metadata_reader.finish()?))
+}

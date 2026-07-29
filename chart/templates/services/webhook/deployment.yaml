@@ -26,6 +26,7 @@ spec:
     metadata:
       labels: {{ include "labels.webhook" . | nindent 8 }}
     spec:
+      serviceAccountName: {{ include "datasetsServer.serviceAccountName" . }}
       {{- include "dnsConfig" . | nindent 6 }}
       {{- include "image.imagePullSecrets" . | nindent 6 }}
       containers: {{ include "containerWebhook" . | nindent 8 }}

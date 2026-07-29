@@ -4,6 +4,7 @@
 {{- define "envS3" -}}
 - name: S3_REGION_NAME
   value: {{ .Values.s3.regionName | quote }}
+{{- if not .Values.s3.useIrsa }}
 - name: S3_ACCESS_KEY_ID
   {{- if .Values.secrets.s3.accessKeyId.fromSecret }}
   valueFrom:
@@ -24,4 +25,5 @@
   {{- else }}
   value: {{ .Values.secrets.s3.secretAccessKey.value | quote }}
   {{- end }}
+{{- end }}
 {{- end -}}

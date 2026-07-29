@@ -24,6 +24,9 @@
     value: {{ .workerValues.workerDifficultyMin | quote }}
   - name: ROWS_INDEX_MAX_ARROW_DATA_IN_MEMORY
     value: {{ .Values.rowsIndex.maxArrowDataInMemory | quote }}
+  - name: HF_HOME
+    value: "/tmp/hf"
+    # ^ensure the temporary files are created in /tmp, which is writable
   # prometheus
   - name: PROMETHEUS_MULTIPROC_DIR
     value:  {{ .workerValues.prometheusMultiprocDirectory | quote }}
@@ -43,6 +46,9 @@
   {{ include "volumeMountParquetMetadataRW" . | nindent 2 }}
   securityContext:
     allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+      - ALL
   resources: {{ toYaml .workerValues.resources | nindent 4 }}
   readinessProbe:
     failureThreshold: {{ if .workerValues.readinessProbe }}{{ .workerValues.readinessProbe.failureThreshold | default 30 }}{{ else }}30{{ end }}

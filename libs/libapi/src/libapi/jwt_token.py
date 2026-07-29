@@ -105,29 +105,33 @@ def _key_to_pem(key: SupportedKey, algorithm: SupportedAlgorithm) -> str:
     # ^ we assume that the key contains UTF-8 encoded bytes, which is why we use type ignore for mypy
 
 
-def parse_jwt_public_key_json(payload: Any, algorithm: SupportedAlgorithm) -> str:
+def parse_jwt_public_keys_json(payload: Any, algorithm: SupportedAlgorithm) -> list[str]:
     """
-    Parse the payload (JSON format) to extract the public key, validating that it's a public key, and that it is
-    compatible with the algorithm
+    Parse the payload (JSON format) to extract the public keys, validating that they are public keys, and that
+    they are compatible with the algorithm. All the keys in the list are parsed, so that key rotation works: several
+    keys can be published at the same time (the new one and the previous one, during a transition period).
 
     Args:
-        keys (`Any`): the JSON to parse. It must be a list of keys in JWK format
-        algorithm (`SupportedAlgorithm`): the algorithm the key should implement
+        payload (`Any`): the JSON to parse. It must be a list of keys in JWK format
+        algorithm (`SupportedAlgorithm`): the algorithm the keys should implement
 
     Raises:
-        [`RuntimeError`]: if the payload is not compatible with the algorithm, or if the key is not public
-        [`ValueError`]: if the input is not a list
+        [`ValueError`]: if the input is not a list, or if it's empty
 
     Returns:
-        `str`: the public key in PEM format
+        `list[str]`: the list of public keys in PEM format. Keys that fail to parse or are not compatible with the
+            algorithm are skipped, with a warning. If all the keys fail, an empty list is returned.
     """
     if not isinstance(payload, list) or not payload:
         raise ValueError("Payload must be a list of JWK formatted keys.")
-    try:
-        key = algorithm.from_jwk(payload[0])
-    except (jwt.InvalidKeyError, KeyError) as err:
-        raise RuntimeError(f"Failed to parse JWT key: {err.args[0]}") from err
-    return _key_to_pem(key, algorithm)
+    keys: list[str] = []
+    for index, jwk in enumerate(payload):
+        try:
+            key = algorithm.from_jwk(jwk)
+            keys.append(_key_to_pem(key, algorithm))
+        except (jwt.InvalidKeyError, KeyError) as err:
+            logging.warning(f"Failed to parse JWT key #{index} from the public key URL: {err.args[0]}")
+    return keys
 
 
 def parse_jwt_public_key_pem(payload: str, algorithm: SupportedAlgorithm) -> str:
@@ -191,9 +195,11 @@ def get_jwt_public_keys(
     Get the public keys to use to decode the JWT token.
 
     The keys can be created by two mechanisms:
-    - one key can be fetched from the public_key_url (must be in JWK format, ie. JSON)
+    - one or more keys can be fetched from the public_key_url (must be in JWK format, ie. JSON). All the keys published
+      at this URL are loaded, so that key rotation works: during a transition period the Hub can publish both the new
+      key and the previous one, and tokens signed by either will be accepted.
     - additional keys can be provided as a list of PEM formatted keys
-    All of these keys are then converted to PEM format (PKCS#8) and returned as a list. The remote key is first.
+    All of these keys are then converted to PEM format (PKCS#8) and returned as a list. The remote keys are first.
     The keys must be compatible with the algorithm.
 
     Args:
@@ -221,7 +227,18 @@ def get_jwt_public_keys(
                 url=public_key_url,
                 hf_timeout_seconds=timeout_seconds,
             )
-            keys.append(parse_jwt_public_key_json(payload=payload, algorithm=algorithm))
+            try:
+                remote_keys = parse_jwt_public_keys_json(payload=payload, algorithm=algorithm)
+            except ValueError as err:
+                raise RuntimeError(
+                    f"Failed to parse the JWT public keys from {public_key_url}: {err.args[0]}"
+                ) from err
+            if not remote_keys:
+                raise RuntimeError(
+                    f"None of the JWT public keys published at {public_key_url} could be parsed. Check that the"
+                    f" algorithm ({algorithm_name}) is compatible with the published keys."
+                )
+            keys.extend(remote_keys)
         if additional_public_keys:
             keys.extend(
                 parse_jwt_public_key_pem(payload=payload, algorithm=algorithm) for payload in additional_public_keys
@@ -262,8 +279,8 @@ def validate_jwt(dataset: str, token: Any, public_keys: list[str], algorithm: st
         JWTInvalidClaimRead: if the 'read' claim in JWT payload is invalid
         UnexpectedApiError: if another error occurred while decoding the JWT
     """
-    for public_key in public_keys:
-        logging.debug(f"Trying to decode the JWT with key #{public_keys.index(public_key)}: {public_key}.")
+    for key_index, public_key in enumerate(public_keys):
+        logging.debug(f"Trying to decode the JWT with key #{key_index}: {public_key}.")
         options = jwt.types.Options(require=["exp", "sub", "permissions"], verify_exp=verify_exp)
         try:
             decoded = jwt.decode(
@@ -275,7 +292,7 @@ def validate_jwt(dataset: str, token: Any, public_keys: list[str], algorithm: st
             logging.debug(f"Decoded JWT is: '{public_key}'.")
             break
         except jwt.exceptions.InvalidSignatureError as e:
-            if public_key == public_keys[-1]:
+            if key_index == len(public_keys) - 1:
                 raise JWTInvalidSignature(
                     "The JWT signature verification failed. Check the signing key and the algorithm.", e
                 ) from e

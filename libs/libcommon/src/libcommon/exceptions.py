@@ -83,6 +83,7 @@ CacheableErrorCode = Literal[
     "DatasetGenerationCastError",
     "DatasetInBlockListError",
     "DatasetNotFoundError",
+    "DatasetWithArrowFilesNotSupportedError",
     "DatasetWithScriptNotSupportedError",
     "DatasetWithTooComplexDataFilesPatternsError",
     "DatasetWithTooManyConfigsError",
@@ -539,6 +540,14 @@ class DatasetWithScriptNotSupportedError(CacheableError):
 
 class NotSupportedError(CacheableError):
     pass
+
+
+class DatasetWithArrowFilesNotSupportedError(NotSupportedError):
+    """Datasets with Arrow IPC files are temporarily not supported."""
+
+    def __init__(self, message: str = "", cause: Optional[BaseException] = None):
+        message = message or "Datasets with Arrow IPC files are temporarily unavailable in the dataset viewer."
+        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "DatasetWithArrowFilesNotSupportedError", cause, False)
 
 
 class NotSupportedDisabledRepositoryError(NotSupportedError):
