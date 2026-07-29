@@ -5,12 +5,14 @@
 - name: "{{ include "name" . }}-backfill"
   image: {{ include "jobs.cacheMaintenance.image" . }}
   imagePullPolicy: {{ .Values.images.pullPolicy }}
+  {{- include "datasetsServer.csi.volumeMountBlock" . | nindent 2 }}
   securityContext:
     allowPrivilegeEscalation: false
   resources: {{ toYaml .Values.backfill.resources | nindent 4 }}
   env:
     {{ include "envCache" . | nindent 2 }}
     {{ include "envQueue" . | nindent 2 }}
+    {{ include "envSecrets" . | nindent 2 }}
     {{ include "envCommon" . | nindent 2 }}
     {{ include "envS3" . | nindent 2 }}
     {{ include "envAssets" . | nindent 2 }}

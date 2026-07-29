@@ -3,11 +3,11 @@
 
 from contextlib import asynccontextmanager
 
-import uvicorn
 from libapi.config import UvicornConfig
 from libapi.routes.healthcheck import healthcheck_endpoint
 from libapi.routes.metrics import create_metrics_endpoint
 from libapi.utils import EXPOSED_HEADERS
+from libapi.uvicorn import run as serve
 from libcommon.cloudfront import get_cloudfront_signer
 from libcommon.log import init_logging
 from libcommon.resources import CacheMongoResource, QueueMongoResource, Resource
@@ -109,10 +109,9 @@ def create_app_with_config(app_config: AppConfig) -> Starlette:
 
 def start() -> None:
     uvicorn_config = UvicornConfig.from_env()
-    uvicorn.run(
+    serve(
         "app:create_app",
         host=uvicorn_config.hostname,
         port=uvicorn_config.port,
-        factory=True,
         workers=uvicorn_config.num_workers,
     )

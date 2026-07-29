@@ -16,6 +16,7 @@ from libcommon.config import (
     RowsIndexConfig,
     S3Config,
 )
+from libcommon.secrets import resolve_secret
 
 WORKER_UVICORN_HOSTNAME = "localhost"
 WORKER_UVICORN_NUM_WORKERS = 2
@@ -193,7 +194,9 @@ class OptInOutUrlsScanConfig:
                     default=OPT_IN_OUT_URLS_SCAN_MAX_REQUESTS_PER_SECOND,
                 ),
                 rows_max_number=env.int(name="ROWS_MAX_NUMBER", default=OPT_IN_OUT_URLS_SCAN_ROWS_MAX_NUMBER),
-                spawning_token=env.str(name="SPAWNING_TOKEN", default=OPT_IN_OUT_URLS_SCAN_SPAWNING_TOKEN),
+                spawning_token=resolve_secret(
+                    env, "SPAWNING_TOKEN", "SPAWNING_TOKEN", OPT_IN_OUT_URLS_SCAN_SPAWNING_TOKEN
+                ),
                 spawning_url=env.str(name="SPAWNING_URL", default=OPT_IN_OUT_URLS_SCAN_SPAWNING_URL),
                 urls_number_per_batch=env.int(
                     name="URLS_NUMBER_PER_BATCH",

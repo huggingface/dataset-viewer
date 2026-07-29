@@ -14,6 +14,7 @@ orjson = "^3.9.15"
 pyjwt = { extras = ["crypto"], version = "^2.6.0" }
 # CVE-2026-48710 / GHSA-86qp-5c8j-p5mr: Host header poisoning of request.url.path; fixed in 1.0.1.
 starlette = ">=1.0.1,<2.0"
+uvicorn = "^0.30.1"
 starlette-prometheus = "^0.9.0"
 
 [tool.poetry.group.dev.dependencies]

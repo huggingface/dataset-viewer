@@ -3,8 +3,8 @@
 
 from contextlib import asynccontextmanager
 
-import uvicorn
 from libapi.utils import EXPOSED_HEADERS
+from libapi.uvicorn import run as serve
 from libcommon.log import init_logging
 from libcommon.processing_graph import processing_graph
 from libcommon.resources import CacheMongoResource, QueueMongoResource, Resource
@@ -207,10 +207,9 @@ def create_app() -> Starlette:
 
 def start() -> None:
     uvicorn_config = UvicornConfig.from_env()
-    uvicorn.run(
+    serve(
         "app:create_app",
         host=uvicorn_config.hostname,
         port=uvicorn_config.port,
-        factory=True,
         workers=uvicorn_config.num_workers,
     )

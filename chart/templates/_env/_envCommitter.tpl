@@ -2,6 +2,7 @@
 # Copyright 2022 The HuggingFace Authors.
 
 {{- define "envCommitter" -}}
+{{- if not (and .Values.secrets.infisical.csi.enabled .Values.secrets.appParquetConverterHfToken.fromSecret) }}
 - name: COMMITTER_HF_TOKEN
   {{- if .Values.secrets.appParquetConverterHfToken.fromSecret }}
   valueFrom:
@@ -12,4 +13,5 @@
   {{- else }}
   value: {{ .Values.secrets.appParquetConverterHfToken.value }}
   {{- end }}
+{{- end }}
 {{- end -}}

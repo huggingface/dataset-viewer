@@ -6,6 +6,7 @@
   value: {{ .Values.hf.authPath | quote }}
 - name: API_HF_JWT_PUBLIC_KEY_URL
   value: {{ .Values.hf.jwtPublicKeyUrl | quote }}
+{{- if not (and .Values.secrets.infisical.csi.enabled .Values.secrets.hfJwtAdditionalPublicKeys.fromSecret) }}
 - name: API_HF_JWT_ADDITIONAL_PUBLIC_KEYS
   {{- if .Values.secrets.hfJwtAdditionalPublicKeys.fromSecret }}
   valueFrom:
@@ -16,10 +17,12 @@
   {{- else }}
   value: {{ .Values.secrets.hfJwtAdditionalPublicKeys.value | quote }}
   {{- end }}
+{{- end }}
 - name: API_HF_JWT_ALGORITHM
   value: {{ .Values.hf.jwtAlgorithm | quote }}
 - name: API_HF_TIMEOUT_SECONDS
   value: {{ .Values.hf.timeoutSeconds | quote }}
+{{- if not (and .Values.secrets.infisical.csi.enabled .Values.secrets.hfWebhookSecret.fromSecret) }}
 - name: API_HF_WEBHOOK_SECRET
   {{- if .Values.secrets.hfWebhookSecret.fromSecret }}
   valueFrom:
@@ -30,4 +33,5 @@
   {{- else }}
   value: {{ .Values.secrets.hfWebhookSecret.value | quote }}
   {{- end }}
+{{- end }}
 {{- end -}}

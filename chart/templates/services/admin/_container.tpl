@@ -9,6 +9,7 @@
   {{ include "envCache" . | nindent 2 }}
   {{ include "envS3" . | nindent 2 }}
   {{ include "envQueue" . | nindent 2 }}
+  {{ include "envSecrets" . | nindent 2 }}
   {{ include "envCommon" . | nindent 2 }}
   {{ include "envLog" . | nindent 2 }}
   # storage
@@ -39,6 +40,7 @@
   - name: ADMIN_UVICORN_PORT
     value: {{ .Values.admin.uvicornPort | quote }}
   volumeMounts:
+    {{ include "datasetsServer.csi.volumeMount" . | nindent 2 }}
   {{ include "volumeMountParquetMetadataRO" . | nindent 2 }}
   securityContext:
     allowPrivilegeEscalation: false
