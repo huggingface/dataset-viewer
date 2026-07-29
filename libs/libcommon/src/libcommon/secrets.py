@@ -78,6 +78,22 @@ def _read_directory(directory: Path) -> dict[str, str]:
     return secrets
 
 
+_inherited: Optional[Mapping[str, str]] = None
+
+
+def inherit_secrets(secrets: Mapping[str, str]) -> None:
+    """Adopt secrets a parent process read, instead of reading the mount.
+
+    For children started after the read window closed. A uvicorn worker that dies is respawned into a
+    fresh interpreter, hours into the pod's life, and would find the files blank: the window reopens on a
+    container restart, and respawning a worker is not one. The parent read them while it was open, so it
+    hands them down rather than sending the child to a mount that has stopped answering.
+    """
+    global _inherited
+    _inherited = MappingProxyType(dict(secrets))
+    get_secrets.cache_clear()
+
+
 @lru_cache(maxsize=1)
 def get_secrets() -> Mapping[str, str]:
     """Return the mounted secrets, read once per process.
@@ -85,6 +101,9 @@ def get_secrets() -> Mapping[str, str]:
     Empty when no directory is configured, which is the case for local development, the tests and the
     e2e suite: the config classes then keep reading their environment variables as before.
     """
+    if _inherited is not None:
+        return _inherited
+
     config = SecretsConfig.from_env()
     if not config.enabled:
         return MappingProxyType({})

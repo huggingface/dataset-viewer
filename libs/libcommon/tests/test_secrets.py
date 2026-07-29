@@ -10,12 +10,22 @@ import pytest
 from environs import Env
 from pytest import MonkeyPatch
 
+import libcommon.secrets as secrets_module
 from libcommon.config import S3Config
-from libcommon.secrets import SecretsConfig, SecretsError, get_secrets, resolve_secret, resolve_secret_list
+from libcommon.secrets import (
+    SecretsConfig,
+    SecretsError,
+    get_secrets,
+    inherit_secrets,
+    resolve_secret,
+    resolve_secret_list,
+)
 
 
 @pytest.fixture(autouse=True)
-def clear_secrets_cache() -> Iterator[None]:
+def clear_secrets_cache(monkeypatch: MonkeyPatch) -> Iterator[None]:
+    # _inherited short-circuits get_secrets, so leaving it set would silently pass it to every later test.
+    monkeypatch.setattr(secrets_module, "_inherited", None)
     get_secrets.cache_clear()
     yield
     get_secrets.cache_clear()
@@ -125,3 +135,18 @@ def test_never_writes_the_secrets_to_the_environment(mount: Path) -> None:
     assert get_secrets()["WEBHOOK_SECRET"] == "s3cr3t"  # nosec
     assert "WEBHOOK_SECRET" not in os.environ
     assert "s3cr3t" not in os.environ.values()
+
+
+def test_inherited_secrets_win_over_an_unreadable_mount(monkeypatch: MonkeyPatch, tmp_path: Path) -> None:
+    """A respawned uvicorn worker adopts what its parent read, and never touches the blanked mount."""
+    monkeypatch.setenv("SECRETS_DIR", str(tmp_path / "not-mounted"))
+    get_secrets.cache_clear()
+    inherit_secrets({"MONGO_URL": "mongodb://from-the-parent"})
+    assert get_secrets()["MONGO_URL"] == "mongodb://from-the-parent"
+
+
+def test_inherited_secrets_are_a_copy() -> None:
+    handed_down = {"HF_TOKEN": "hf_x"}
+    inherit_secrets(handed_down)
+    handed_down["HF_TOKEN"] = "mutated"
+    assert get_secrets()["HF_TOKEN"] == "hf_x"
