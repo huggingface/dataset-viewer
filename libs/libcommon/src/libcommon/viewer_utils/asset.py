@@ -245,12 +245,8 @@ def create_video_file(
     # dataset_git_revision of cache responses when the data will be accessed.
     # This is useful to allow moving files to a newer revision without having
     # to modify the cached rows content.
-    if "path" in encoded_video and isinstance(encoded_video["path"], str) and "://" in encoded_video["path"]:
-        # in general video files are stored in the dataset repository, we can just get the URL
-        # (`datasets` doesn't embed the video bytes in Parquet when the file is already on HF)
-        object_path = encoded_video["path"].replace(revision, DATASET_GIT_REVISION_PLACEHOLDER)
-    elif "bytes" in encoded_video and isinstance(encoded_video["bytes"], bytes):
-        # (rare and not very important) otherwise we attempt to upload video data from webdataset/parquet files but don't process them
+    if "bytes" in encoded_video and isinstance(encoded_video["bytes"], bytes):
+        # (rare and not very important) we attempt to upload video data from webdataset/parquet files but don't process them
         object_path = storage_client.generate_object_path(
             dataset=dataset,
             revision=DATASET_GIT_REVISION_PLACEHOLDER,
@@ -264,6 +260,15 @@ def create_video_file(
         if storage_client.overwrite or not storage_client.exists(path):
             with storage_client._fs.open(storage_client.get_full_path(path), "wb") as f:
                 f.write(encoded_video["bytes"])
+    elif (
+        encoded_video.get("bytes") is None
+        and "path" in encoded_video
+        and isinstance(encoded_video["path"], str)
+        and encoded_video["path"].startswith(f"hf://datasets/{dataset}@")
+    ):
+        # in general video files are stored in the dataset repository, we can just get the URL
+        # (`datasets` doesn't embed the video bytes in Parquet when the file is already on HF)
+        object_path = encoded_video["path"].replace(revision, DATASET_GIT_REVISION_PLACEHOLDER)
     else:
         raise ValueError("The video cell doesn't contain a valid path or bytes")
     src = storage_client.get_url(object_path, revision=revision)
