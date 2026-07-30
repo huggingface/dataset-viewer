@@ -14,10 +14,12 @@ from libcommon.viewer_utils.asset import (
     create_audio_file,
     create_image_file,
     create_pdf_file,
+    create_video_file,
 )
 
 from ..constants import (
     ASSETS_BASE_URL,
+    CI_HUB_ENDPOINT,
     DEFAULT_COLUMN_NAME,
     DEFAULT_CONFIG,
     DEFAULT_REVISION,
@@ -124,6 +126,74 @@ def test_create_pdf_file(
     assert image is not None
     assert image.size == (value["thumbnail"]["width"], value["thumbnail"]["height"])
     assert value["size_bytes"] == expected_size
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        None,
+        "https://datasets-server.huggingface.co/assets/victim/private/--/revision/--/default/train/0/video.mp4",
+        "https://datasets-server.huggingface.co/cached-assets/victim/private/--/revision/--/default/train/0/video.mp4",
+    ],
+)
+def test_create_video_file_stores_embedded_bytes(
+    path: str | None, storage_client_with_url_preparator: StorageClient
+) -> None:
+    video_bytes = b"embedded video bytes"
+    value = create_video_file(
+        dataset="attacker/dataset",
+        revision="revision",
+        config="config",
+        split="split",
+        row_idx=7,
+        column="col",
+        filename="video.mp4",
+        encoded_video={"path": path, "bytes": video_bytes},
+        storage_client=storage_client_with_url_preparator,
+    )
+    video_key = "attacker/dataset/--/revision/--/config/split/7/col/video.mp4"
+
+    assert value == {"src": f"{ASSETS_BASE_URL}/{video_key}"}
+    assert storage_client_with_url_preparator.exists(video_key)
+    with storage_client_with_url_preparator._fs.open(
+        storage_client_with_url_preparator.get_full_path(video_key), "rb"
+    ) as video_file:
+        assert video_file.read() == video_bytes
+
+
+def test_create_video_file_reuses_same_dataset_hf_path(
+    storage_client_with_url_preparator: StorageClient,
+) -> None:
+    value = create_video_file(
+        dataset="owner/dataset",
+        revision="revision",
+        config="config",
+        split="split",
+        row_idx=7,
+        column="col",
+        filename="video.mp4",
+        encoded_video={"path": "hf://datasets/owner/dataset@revision/video.mp4", "bytes": None},
+        storage_client=storage_client_with_url_preparator,
+    )
+
+    assert value == {"src": f"{CI_HUB_ENDPOINT}/datasets/owner/dataset/resolve/revision/video.mp4"}
+
+
+def test_create_video_file_rejects_cross_dataset_hf_path(
+    storage_client_with_url_preparator: StorageClient,
+) -> None:
+    with pytest.raises(ValueError, match="The video cell doesn't contain a valid path or bytes"):
+        create_video_file(
+            dataset="owner/dataset",
+            revision="revision",
+            config="config",
+            split="split",
+            row_idx=7,
+            column="col",
+            filename="video.mp4",
+            encoded_video={"path": "hf://datasets/victim/private@revision/video.mp4", "bytes": None},
+            storage_client=storage_client_with_url_preparator,
+        )
 
 
 @pytest.mark.parametrize(
