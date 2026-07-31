@@ -5,14 +5,13 @@ import logging
 from unittest.mock import MagicMock, patch
 
 import pytest
-from libcommon.dtos import CachedJob, SplitHubFile
+from libcommon.dtos import SplitHubFile
 
 from worker.config import AppConfig
 from worker.dtos import (
     ConfigParquetAndInfoResponse,
     ConfigParquetMetadataResponse,
     ConfigParquetResponse,
-    JobResult,
     ParquetFileMetadataItem,
     ShortcutJobResult,
 )
@@ -88,18 +87,14 @@ class TestDatasetInitJobRunner:
             )(),
         )
 
-    def test_compute_returns_config_names_result(
-        self, job_info: dict, app_config: AppConfig
-    ) -> None:
+    def test_compute_returns_config_names_result(self, job_info: dict, app_config: AppConfig) -> None:
         """Test that DatasetInitJobRunner.compute returns config names."""
         with patch(
             "worker.job_runners.dataset.init.compute_init_responses",
             return_value=iter(
                 [
                     ShortcutJobResult(
-                        content=DatasetConfigNamesResponse(
-                            config_names=[{"dataset": "test", "config": "default"}]
-                        ),
+                        content=DatasetConfigNamesResponse(config_names=[{"dataset": "test", "config": "default"}]),
                         job={
                             "dataset": "test",
                             "kind": "dataset-config-names",
@@ -119,9 +114,7 @@ class TestDatasetInitJobRunner:
             assert len(results) == 1
             assert isinstance(results[0], ShortcutJobResult)
 
-    def test_compute_for_parquet_dataset_returns_all_shortcuts(
-        self, job_info: dict, app_config: AppConfig
-    ) -> None:
+    def test_compute_for_parquet_dataset_returns_all_shortcuts(self, job_info: dict, app_config: AppConfig) -> None:
         """Test that DatasetInitJobRunner.compute returns all shortcuts for parquet datasets."""
         with patch(
             "worker.job_runners.dataset.init.compute_init_responses",
@@ -147,17 +140,14 @@ class TestComputeInitResponsesShortcuts:
     def hf_token(self) -> str:
         return "hf_test_token"
 
-    def test_init_returns_config_names_shortcut(
-        self, hf_endpoint: str, hf_token: str
-    ) -> None:
+    def test_init_returns_config_names_shortcut(self, hf_endpoint: str, hf_token: str) -> None:
         """Verify dataset-init returns config names shortcut."""
         from datasets.packaged_modules.csv.csv import Csv as CsvBuilder
 
-        with patch(
-            "worker.job_runners.dataset.init.dataset_module_factory"
-        ) as mock_factory, patch(
-            "worker.job_runners.dataset.init.get_dataset_builder_class"
-        ) as mock_builder_cls:
+        with (
+            patch("worker.job_runners.dataset.init.dataset_module_factory") as mock_factory,
+            patch("worker.job_runners.dataset.init.get_dataset_builder_class") as mock_builder_cls,
+        ):
             mock_module = MagicMock()
             mock_module.hash = "abc123"
             mock_module.builder_kwargs = {}
@@ -194,32 +184,25 @@ class TestComputeInitResponsesShortcuts:
             assert config_names_result is not None
             assert "config_names" in config_names_result.content
 
-    def test_init_returns_all_shortcuts_for_parquet_dataset(
-        self, hf_endpoint: str, hf_token: str
-    ) -> None:
+    def test_init_returns_all_shortcuts_for_parquet_dataset(self, hf_endpoint: str, hf_token: str) -> None:
         """Verify dataset-init returns all shortcuts for parquet datasets."""
-        from datasets.packaged_modules.parquet.parquet import Parquet as ParquetBuilder
 
-        with patch(
-            "worker.job_runners.dataset.init.dataset_module_factory"
-        ) as mock_factory, patch(
-            "worker.job_runners.dataset.init.get_dataset_builder_class"
-        ) as mock_builder_cls, patch(
-            "worker.job_runners.dataset.init.HfFileSystem"
-        ) as mock_fs_class, patch(
-            "worker.job_runners.dataset.init.resolve_hf_path"
-        ) as mock_resolve_hf_path, patch(
-            "worker.job_runners.dataset.init.is_relative_path"
-        ) as mock_is_relative:
+        with (
+            patch("worker.job_runners.dataset.init.dataset_module_factory") as mock_factory,
+            patch("worker.job_runners.dataset.init.get_dataset_builder_class") as mock_builder_cls,
+            patch("worker.job_runners.dataset.init.HfFileSystem") as mock_fs_class,
+            patch("worker.job_runners.dataset.init.resolve_hf_path") as mock_resolve_hf_path,
+            patch("worker.job_runners.dataset.init.is_relative_path") as mock_is_relative,
+        ):
             # Mock is_relative_path to return False (so the data_file is used directly)
             mock_is_relative.return_value = False
-            
+
             # Mock resolve_hf_path to return correct paths that pass the safety check
             def resolve_path(path: str) -> str:
                 return f"hf://datasets/test-dataset@abc123/{path.split('/')[-1]}"
-            
+
             mock_resolve_hf_path.side_effect = resolve_path
-            
+
             # Mock dataset module
             mock_module = MagicMock()
             mock_module.hash = "abc123"
@@ -231,22 +214,20 @@ class TestComputeInitResponsesShortcuts:
 
             # Use a mock builder class
             mock_cls = MagicMock()
-            mock_cls.builder_configs = {
-                "default": MagicMock(data_files={"train": ["data.parquet"]})
-            }
+            mock_cls.builder_configs = {"default": MagicMock(data_files={"train": ["data.parquet"]})}
             mock_cls.DEFAULT_CONFIG_NAME = "default"
-            
+
             # Set up the builder instance mock with proper info structure
-            from datasets.info import DatasetInfo
+
             from datasets.features import Features
+            from datasets.info import DatasetInfo
             from datasets.splits import SplitDict, SplitInfo
-            from dataclasses import asdict as dataclass_asdict
 
             # Create a real DatasetInfo object that asdict can handle
             mock_features = Features({"text": {"dtype": "string", "_type": "Value"}})
             split_dict = SplitDict()
             split_dict.add(SplitInfo("train", num_bytes=10000, num_examples=100))
-            
+
             mock_info = DatasetInfo()
             mock_info.builder_name = "parquet"
             mock_info.dataset_name = "test-dataset"
@@ -277,33 +258,46 @@ class TestComputeInitResponsesShortcuts:
             }
             mock_fs._strip_protocol.return_value = "hf://datasets/test-dataset/data.parquet"
             mock_fs.url.return_value = "https://huggingface.co/test-dataset/resolve/main/data.parquet"
-            mock_fs.resolve_path.return_value = MagicMock(
-                revision="main", path_in_repo="data.parquet"
-            )
+            mock_fs.resolve_path.return_value = MagicMock(revision="main", path_in_repo="data.parquet")
             mock_fs_class.return_value = mock_fs
 
-            with patch(
-                "worker.job_runners.dataset.init.issubclass", return_value=True
-            ), patch(
-                "worker.job_runners.dataset.init.retry_get_features_num_examples_size_and_num_bytes",
-                return_value=(MagicMock(), 100, 1000, 5000),
-            ), patch(
-                "worker.job_runners.dataset.init.get_file_sizes",
-                return_value={"hf://datasets/test-dataset/data.parquet": 1000},
-            ), patch(
-                "worker.job_runners.dataset.init.fill_builder_info",
+            with (
+                patch("worker.job_runners.dataset.init.issubclass", return_value=True),
+                patch(
+                    "worker.job_runners.dataset.init.retry_get_features_num_examples_size_and_num_bytes",
+                    return_value=({"text": {"dtype": "string", "_type": "Value"}}, 100, 1000, 5000),
+                ),
+                patch(
+                    "worker.job_runners.dataset.init.get_file_sizes",
+                    return_value={"hf://datasets/test-dataset/data.parquet": 1000},
+                ),
+                patch(
+                    "worker.job_runners.dataset.init.fill_builder_info",
+                ),
+                patch(
+                    "worker.job_runners.dataset.init.compute_first_rows_from_parquet_response",
+                    return_value={
+                        "dataset": "test-dataset",
+                        "config": "default",
+                        "split": "train",
+                        "features": [{"name": "text", "dtype": "string"}],
+                        "rows": [],
+                        "truncated": False,
+                    },
+                ),
             ):
                 with patch(
                     "worker.job_runners.dataset.init.create_parquet_metadata_dir",
                     return_value=(None, "metadata-path"),
                 ):
                     # Mock libviewer.Dataset
-                    with patch(
-                        "worker.job_runners.dataset.init.lv", autospec=True
-                    ) as mock_lv:
+                    with patch("worker.job_runners.dataset.init.lv", autospec=True) as mock_lv:
                         mock_dataset = MagicMock()
                         mock_dataset.sync_index.return_value = []
                         mock_lv.Dataset.return_value = mock_dataset
+
+                        # Create a mock storage client
+                        mock_storage_client = MagicMock()
 
                         results = list(
                             compute_init_responses(  # type: ignore
@@ -320,6 +314,14 @@ class TestComputeInitResponsesShortcuts:
                                 data_store=None,
                                 parquet_metadata_directory="/tmp/metadata",
                                 max_parallelism=1,
+                                hf_datasets_cache="/tmp/cache",
+                                storage_client=mock_storage_client,
+                                rows_index_max_arrow_data_in_memory=50_000_000,
+                                first_rows_columns_max_number=100,
+                                first_rows_max_bytes=200_000,
+                                first_rows_min_cell_bytes=100,
+                                first_rows_min_number=0,
+                                first_rows_max_number=3,
                             )
                         )
 
@@ -332,6 +334,38 @@ class TestComputeInitResponsesShortcuts:
 
                         assert split_names_result is not None
                         assert "splits" in split_names_result.content
+
+                        # Verify all expected shortcuts are returned
+                        shortcut_kinds = []
+                        for result in results:
+                            if isinstance(result, ShortcutJobResult):
+                                shortcut_kinds.append(result.job["kind"])
+
+                        expected_kinds = [
+                            "dataset-config-names",
+                            "config-split-names",
+                            "config-parquet",
+                            "config-parquet-metadata",
+                            "config-parquet-and-info",
+                            "config-info",
+                            "config-size",
+                            "split-is-valid",
+                            "split-first-rows",
+                        ]
+                        assert set(shortcut_kinds) == set(expected_kinds)
+
+                        # Count split-is-valid occurrences
+                        split_is_valid_results = [
+                            result
+                            for result in results
+                            if isinstance(result, ShortcutJobResult) and result.job["kind"] == "split-is-valid"
+                        ]
+                        assert len(split_is_valid_results) == 2
+                        # Both should have preview=True (second one updated after split-first-rows succeeds)
+                        for r in split_is_valid_results:
+                            assert r.content["preview"] is True
+                            assert r.content["viewer"] is True
+                            assert r.content["filter"] is True
 
 
 class TestParquetFileMetadataItem:
@@ -477,9 +511,7 @@ class TestJobResultProgress:
     def test_config_names_progress_is_complete(self) -> None:
         """Test that config-names shortcut result has progress=1.0."""
         result = ShortcutJobResult(
-            content=DatasetConfigNamesResponse(
-                config_names=[{"dataset": "test", "config": "default"}]
-            ),
+            content=DatasetConfigNamesResponse(config_names=[{"dataset": "test", "config": "default"}]),
             job={
                 "dataset": "test",
                 "kind": "dataset-config-names",
@@ -492,11 +524,15 @@ class TestJobResultProgress:
     def test_split_names_progress_is_complete(self) -> None:
         """Test that split-names shortcut result has progress=1.0."""
         result = ShortcutJobResult(
-            content=SplitsList(splits=[FullSplitItem(
-                dataset="test",
-                config="default",
-                split="train",
-            )]),
+            content=SplitsList(
+                splits=[
+                    FullSplitItem(
+                        dataset="test",
+                        config="default",
+                        split="train",
+                    )
+                ]
+            ),
             job={
                 "dataset": "test",
                 "kind": "config-split-names",
