@@ -25,6 +25,7 @@ from mongoengine.fields import (
     StringField,
 )
 from mongoengine.queryset.queryset import QuerySet
+from pymongo.read_preferences import ReadPreference
 from pymongoarrow.api import Schema, find_pandas_all
 
 from libcommon.constants import (
@@ -602,11 +603,19 @@ def get_previous_step_or_raise(
 
 
 def get_all_datasets() -> set[str]:
-    return set(CachedResponseDocument.objects().distinct("dataset"))
+    # only used to build the backfill candidate list, which is re-checked per dataset against the primary
+    return set(
+        CachedResponseDocument.objects().read_preference(ReadPreference.SECONDARY_PREFERRED).distinct("dataset")
+    )
 
 
 def get_datasets_with_retryable_errors() -> set[str]:
-    return set(CachedResponseDocument.objects(error_code__in=ERROR_CODES_TO_RETRY).distinct("dataset"))
+    # only used to build the backfill candidate list, which is re-checked per dataset against the primary
+    return set(
+        CachedResponseDocument.objects(error_code__in=ERROR_CODES_TO_RETRY)
+        .read_preference(ReadPreference.SECONDARY_PREFERRED)
+        .distinct("dataset")
+    )
 
 
 def is_successful_response(kind: str, dataset: str, config: Optional[str] = None, split: Optional[str] = None) -> bool:
@@ -648,7 +657,9 @@ def get_responses_count_by_kind_status_and_error_code() -> EntriesTotalByKindSta
     """
     return {
         (metric["kind"], metric["http_status"], metric["error_code"]): metric["total"]
-        for metric in CachedResponseDocument.objects().aggregate(
+        for metric in CachedResponseDocument.objects()
+        .read_preference(ReadPreference.SECONDARY_PREFERRED)
+        .aggregate(
             [
                 {"$sort": {"kind": 1, "http_status": 1, "error_code": 1}},
                 {
@@ -736,7 +747,9 @@ def get_cache_reports(kind: str, cursor: Optional[str], limit: int) -> CacheRepo
             raise InvalidCursor("Invalid cursor.") from err
     if limit <= 0:
         raise InvalidLimit("Invalid limit.")
-    objects = list(queryset.order_by("+id").exclude("content").limit(limit))
+    objects = list(
+        queryset.read_preference(ReadPreference.SECONDARY_PREFERRED).order_by("+id").exclude("content").limit(limit)
+    )
     return {
         "cache_reports": [
             {
@@ -769,7 +782,11 @@ def get_outdated_split_full_names_for_step(kind: str, current_version: int) -> l
 
 
 def get_dataset_responses_without_content_for_kind(kind: str, dataset: str) -> list[CacheReport]:
-    responses = CachedResponseDocument.objects(kind=kind, dataset=dataset).exclude("content")
+    responses = (
+        CachedResponseDocument.objects(kind=kind, dataset=dataset)
+        .read_preference(ReadPreference.SECONDARY_PREFERRED)
+        .exclude("content")
+    )
     return [
         {
             "kind": response.kind,
@@ -833,7 +850,7 @@ def get_cache_reports_with_content(kind: str, cursor: Optional[str], limit: int)
             raise InvalidCursor("Invalid cursor.") from err
     if limit <= 0:
         raise InvalidLimit("Invalid limit.")
-    objects = list(queryset.order_by("+id").limit(limit))
+    objects = list(queryset.read_preference(ReadPreference.SECONDARY_PREFERRED).order_by("+id").limit(limit))
     return {
         "cache_reports_with_content": [
             {
@@ -953,7 +970,9 @@ def get_datasets_with_last_updated_kind(kind: str, days: int) -> list[str]:
         str(dataset["datasets"])
         for dataset in CachedResponseDocument.objects(
             kind=kind, http_status=HTTPStatus.OK, updated_at__gt=get_datetime(days=days)
-        ).aggregate(pipeline)
+        )
+        .read_preference(ReadPreference.SECONDARY_PREFERRED)
+        .aggregate(pipeline)
     ]
 
 

@@ -20,6 +20,7 @@ from mongoengine import Document
 from mongoengine.errors import DoesNotExist
 from mongoengine.fields import DateTimeField, EnumField, IntField, StringField
 from mongoengine.queryset.queryset import QuerySet
+from pymongo.read_preferences import ReadPreference
 from pymongoarrow.api import Schema, find_pandas_all
 
 from libcommon.constants import (
@@ -824,7 +825,9 @@ class Queue:
 
         return {
             (metric["job_type"], metric["status"], metric["dataset_status"]): metric["total"]
-            for metric in JobDocument.objects().aggregate(
+            for metric in JobDocument.objects()
+            .read_preference(ReadPreference.SECONDARY_PREFERRED)
+            .aggregate(
                 [
                     # NOTE: Removed unnecessary $sort before $group - was causing COLLSCAN
                     {
@@ -869,13 +872,19 @@ class Queue:
         return {
             WorkerSize.heavy.name: JobDocument.objects(
                 dataset__nin=blocked_datasets, difficulty__lte=100, difficulty__gt=70
-            ).count(),
+            )
+            .read_preference(ReadPreference.SECONDARY_PREFERRED)
+            .count(),
             WorkerSize.medium.name: JobDocument.objects(
                 dataset__nin=blocked_datasets, difficulty__lte=70, difficulty__gt=40
-            ).count(),
+            )
+            .read_preference(ReadPreference.SECONDARY_PREFERRED)
+            .count(),
             WorkerSize.light.name: JobDocument.objects(
                 dataset__nin=blocked_datasets, difficulty__lte=40, difficulty__gt=0
-            ).count(),
+            )
+            .read_preference(ReadPreference.SECONDARY_PREFERRED)
+            .count(),
         }
 
     def get_dump_with_status(self, status: Status, job_type: str) -> list[JobDict]:
@@ -888,7 +897,12 @@ class Queue:
         Returns:
             `list[JobDict]`: a list of jobs with the given status and the given type
         """
-        return [d.to_dict() for d in JobDocument.objects(status=status.value, type=job_type)]
+        return [
+            d.to_dict()
+            for d in JobDocument.objects(status=status.value, type=job_type).read_preference(
+                ReadPreference.SECONDARY_PREFERRED
+            )
+        ]
 
     def get_dump_by_pending_status(self, job_type: str) -> DumpByPendingStatus:
         """Get the dump of the jobs by pending status for a given job type.
@@ -907,7 +921,12 @@ class Queue:
         Returns:
             `list[JobDict]`: an array of the pending jobs for the dataset and the given job type
         """
-        return [d.to_dict() for d in JobDocument.objects(type=job_type, dataset=dataset)]
+        return [
+            d.to_dict()
+            for d in JobDocument.objects(type=job_type, dataset=dataset).read_preference(
+                ReadPreference.SECONDARY_PREFERRED
+            )
+        ]
 
     def heartbeat(self, job_id: str) -> None:
         """Update the job `last_heartbeat` field with the current date.
