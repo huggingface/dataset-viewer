@@ -1408,6 +1408,7 @@ orjson = "^3.9.15"
 pyjwt = {version = "^2.6.0", extras = ["crypto"]}
 starlette = ">=1.0.1,<2.0"
 starlette-prometheus = "^0.9.0"
+uvicorn = "^0.30.1"
 
 [package.source]
 type = "directory"
@@ -1448,7 +1449,7 @@ polars = "1.39.3"
 psutil = "^7.1.0"
 pyarrow = "^22.0.0"
 pydantic = "^2.12.5"
-pylance = "^1.0.4"
+pylance = "^9.0.1"
 pymongo = {version = "^4.15.1", extras = ["aws", "srv"]}
 pymongoarrow = "^1.10.0"
 pymupdf = "^1.26.1"
@@ -3415,30 +3416,31 @@ crypto = ["cryptography (>=3.4.0)"]
 
 [[package]]
 name = "pylance"
-version = "1.0.4"
+version = "9.0.1"
 description = "python wrapper for Lance columnar format"
 optional = false
-python-versions = ">=3.9"
+python-versions = ">=3.10"
 groups = ["main"]
 files = [
-    {file = "pylance-1.0.4-cp39-abi3-macosx_11_0_arm64.whl", hash = "sha256:00f0dd1677e7eaec625626a054ddd340dbbcdaf915638c5aae6b2c950a571855"},
-    {file = "pylance-1.0.4-cp39-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:7341a96b6a3952aad399581818d2e2f8ad426d6248498dbb7fb12f235eded8af"},
-    {file = "pylance-1.0.4-cp39-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:7b42f72ce1cf8158adaa7b444d98328b8009683641dd7be58678c7236edbd8be"},
-    {file = "pylance-1.0.4-cp39-abi3-manylinux_2_28_aarch64.whl", hash = "sha256:8f9512087f0fd024f18a4500e62fc27f05b02d92740faed5b9cd140ffadaff82"},
-    {file = "pylance-1.0.4-cp39-abi3-manylinux_2_28_x86_64.whl", hash = "sha256:3f208682b476a0eacb20a44b6fa5c4e67a32ab76cf3199a7bf5f95fecad32020"},
-    {file = "pylance-1.0.4-cp39-abi3-win_amd64.whl", hash = "sha256:64cd1818adb4b5aa141aff3dce99e5db26d033628cdd84192c5d880acc93454b"},
+    {file = "pylance-9.0.1-cp310-abi3-macosx_11_0_arm64.whl", hash = "sha256:951718d675a0819d994a47d650899a40d6a2a4b05f4546481c8c909738e643e9"},
+    {file = "pylance-9.0.1-cp310-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:e848de293a31663cd25f0f3d7304fe5bef44ce68bb950452bb91ac1f7b7096a4"},
+    {file = "pylance-9.0.1-cp310-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:353e4fa6d9a49ab98b16709482cf8943f73f2ce0fea3d63ea5872a8891b4e870"},
+    {file = "pylance-9.0.1-cp310-abi3-manylinux_2_28_aarch64.whl", hash = "sha256:fb77aff57d44228cf038366d1edd5f5857b411ba3acea7efd0319a9d5f8bb9e7"},
+    {file = "pylance-9.0.1-cp310-abi3-manylinux_2_28_x86_64.whl", hash = "sha256:7a8b32eecf5b99e9195512924154a1a55e39f3a9832f8c13fe6c6b74511033bb"},
+    {file = "pylance-9.0.1-cp310-abi3-win_amd64.whl", hash = "sha256:46fad09c7056267b5be42d573e1dada41bdcd7f7a67ede02fbcf86612b5de263"},
 ]
 
 [package.dependencies]
-lance-namespace = ">=0.4.5"
+lance-namespace = ">=0.8.5,<0.9"
 numpy = ">=1.22"
 pyarrow = ">=14"
 
 [package.extras]
 benchmarks = ["pytest-benchmark"]
-dev = ["pyright", "ruff (==0.4.1)"]
+dev = ["pyright", "ruff (==0.11.2)"]
 geo = ["geoarrow-rust-core", "geoarrow-rust-io"]
-tests = ["boto3", "datafusion (>=50.1)", "datasets", "duckdb", "ml-dtypes", "pandas", "pillow", "polars[pandas,pyarrow]", "psutil", "pytest", "tensorflow ; sys_platform == \"linux\"", "tqdm"]
+otel = ["opentelemetry-api", "opentelemetry-sdk"]
+tests = ["boto3", "datafusion (>=54,<55)", "datasets (==4.4.0)", "duckdb (>=1.5.0,<1.6.0)", "ml-dtypes", "pandas", "pillow", "polars[pandas,pyarrow]", "psutil", "pytest", "tqdm"]
 torch = ["torch (>=2.0)"]
 
 [[package]]
