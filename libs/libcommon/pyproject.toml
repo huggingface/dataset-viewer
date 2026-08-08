@@ -33,7 +33,7 @@ pyarrow = "^22.0.0"
 pydantic = "^2.12.5"
 pylance = "^1.0.4"
 pymongoarrow = "^1.10.0"
-pymupdf = "^1.26.1"
+pymupdf = "^1.28.2"
 pymongo = { extras = ["srv", "aws"], version = "^4.15.1" }
 pytz = "^2020.1"
 s3fs = "2024.6.0"  # Aligned with fsspec[s3] version
