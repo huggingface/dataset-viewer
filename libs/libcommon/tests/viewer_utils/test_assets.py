@@ -2,6 +2,7 @@ import os.path
 from collections.abc import Mapping
 from pathlib import Path
 
+import pymupdf
 import pytest
 import validators  # type: ignore
 from pdfplumber import open
@@ -126,6 +127,10 @@ def test_create_pdf_file(
     assert image is not None
     assert image.size == (value["thumbnail"]["width"], value["thumbnail"]["height"])
     assert value["size_bytes"] == expected_size
+
+
+def test_fixed_mupdf_version() -> None:
+    assert pymupdf.mupdf_version_tuple >= (1, 28, 0)
 
 
 @pytest.mark.parametrize(
