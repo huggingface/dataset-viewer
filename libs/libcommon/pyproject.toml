@@ -13,7 +13,7 @@ appdirs = "^1.4.4"
 async-lru = "^2.0.5"
 cryptography = "^43.0.1"
 datasets = { git = "https://github.com/huggingface/datasets", rev = "06fcc085fcdd22fc5cc741954f6187dd879543b6" }
-duckdb = "^1.5.3"
+duckdb = "^1.5.5"
 environs = "^14.3.0"
 filelock = "^3.18.0"
 fsspec = {version = "2024.6.0", extras = ["s3"]}
@@ -33,7 +33,7 @@ pyarrow = "^22.0.0"
 pydantic = "^2.12.5"
 pylance = "^9.0.1"
 pymongoarrow = "^1.10.0"
-pymupdf = "^1.26.1"
+pymupdf = "^1.28.2"
 pymongo = { extras = ["srv", "aws"], version = "^4.15.1" }
 pytz = "^2020.1"
 s3fs = "2024.6.0"  # Aligned with fsspec[s3] version
