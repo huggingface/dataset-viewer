@@ -3,7 +3,7 @@ from pathlib import Path
 
 
 def cli_all_projects() -> None:
-    all_projects_dir = Path(__file__).resolve().parents[-5]
+    all_projects_dir = Path(__file__).resolve().parents[4]
     projects = [
         p
         for d in all_projects_dir.glob("*")
