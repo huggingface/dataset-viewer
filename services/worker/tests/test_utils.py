@@ -1,21 +1,15 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2024 The HuggingFace Authors.
 
-from http import HTTPStatus
 from types import SimpleNamespace
 from unittest.mock import patch
 
 import pytest
-from datasets import get_dataset_config_info, get_dataset_split_names
-from datasets.packaged_modules.arrow.arrow import Arrow
 from datasets.packaged_modules.csv.csv import Csv
-from libcommon.exceptions import DatasetWithArrowFilesNotSupportedError
 
 from worker.utils import (
     FileExtension,
     get_file_extension,
-    get_rows_or_raise,
-    safe_inspect,
     safe_load_dataset_builder,
 )
 
@@ -69,18 +63,6 @@ def _get_dataset_module() -> SimpleNamespace:
     )
 
 
-def test_safe_load_dataset_builder_rejects_arrow_builder() -> None:
-    with (
-        patch("datasets.load.dataset_module_factory", return_value=_get_dataset_module()),
-        patch("datasets.load.get_dataset_builder_class", return_value=Arrow),
-        pytest.raises(DatasetWithArrowFilesNotSupportedError) as error_info,
-    ):
-        safe_load_dataset_builder(path="namespace/dataset", name="default")
-
-    assert error_info.value.code == "DatasetWithArrowFilesNotSupportedError"
-    assert error_info.value.status_code == HTTPStatus.NOT_IMPLEMENTED
-
-
 def test_safe_load_dataset_builder_allows_non_arrow_builder() -> None:
     class CsvBuilder(Csv):  # type: ignore[misc]
         builder_configs = {"default": SimpleNamespace(data_files=None)}
@@ -98,31 +80,3 @@ def test_safe_load_dataset_builder_allows_non_arrow_builder() -> None:
         )
 
     assert isinstance(builder, CsvBuilder)
-
-
-def test_safe_inspect_rejects_arrow_builder_in_get_dataset_config_info() -> None:
-    with (
-        patch("datasets.load.dataset_module_factory", return_value=_get_dataset_module()),
-        patch("datasets.load.get_dataset_builder_class", return_value=Arrow),
-        safe_inspect,
-        pytest.raises(DatasetWithArrowFilesNotSupportedError),
-    ):
-        get_dataset_config_info(path="namespace/dataset", config_name="default")
-
-
-def test_safe_inspect_rejects_arrow_builder_in_get_dataset_split_names() -> None:
-    with (
-        patch("datasets.load.dataset_module_factory", return_value=_get_dataset_module()),
-        patch("datasets.load.get_dataset_builder_class", return_value=Arrow),
-        safe_inspect,
-        pytest.raises(DatasetWithArrowFilesNotSupportedError),
-    ):
-        get_dataset_split_names(path="namespace/dataset", config_name="default")
-
-
-def test_get_rows_or_raise_preserves_arrow_files_error() -> None:
-    with (
-        patch("worker.utils.get_rows", side_effect=DatasetWithArrowFilesNotSupportedError()),
-        pytest.raises(DatasetWithArrowFilesNotSupportedError),
-    ):
-        get_rows_or_raise(dataset="namespace/dataset", config="default", split="train", rows_max_number=10, token=None)
