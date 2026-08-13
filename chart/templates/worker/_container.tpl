@@ -9,6 +9,7 @@
   {{ include "envAssets" . | nindent 2 }}
   {{ include "envS3" . | nindent 2 }}
   {{ include "envCache" . | nindent 2 }}
+  {{ include "envSecrets" . | nindent 2 }}
   {{ include "envCommon" . | nindent 2 }}
   {{ include "envLog" . | nindent 2 }}
   {{ include "envNumba" . | nindent 2 }}
@@ -24,6 +25,9 @@
     value: {{ .workerValues.workerDifficultyMin | quote }}
   - name: ROWS_INDEX_MAX_ARROW_DATA_IN_MEMORY
     value: {{ .Values.rowsIndex.maxArrowDataInMemory | quote }}
+  - name: HF_HOME
+    value: "/tmp/hf"
+    # ^ensure the temporary files are created in /tmp, which is writable
   # prometheus
   - name: PROMETHEUS_MULTIPROC_DIR
     value:  {{ .workerValues.prometheusMultiprocDirectory | quote }}
@@ -40,6 +44,7 @@
   - name: WORKER_MAX_SYSTEM_MEMORY_PCT
     value: {{ .workerValues.maxSystemMemoryPct | default .Values.worker.maxSystemMemoryPct | quote }}
   volumeMounts:
+    {{ include "datasetsServer.csi.volumeMount" . | nindent 2 }}
   {{ include "volumeMountParquetMetadataRW" . | nindent 2 }}
   securityContext:
     allowPrivilegeEscalation: false

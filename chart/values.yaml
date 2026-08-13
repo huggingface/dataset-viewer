@@ -104,6 +104,8 @@ serviceAccount:
 
 secrets:
   infisical:
+    # if true, the Infisical operator syncs the secrets into a Kubernetes Secret, and every pod reads
+    # them through `valueFrom.secretKeyRef` environment variables.
     enabled: false
     env: ""
     project: "datasets-server-n5x-l"
@@ -111,6 +113,67 @@ secrets:
     resyncInterval: 60
     operatorSecretName: "datasets-server-operator-secrets"
     operatorSecretNamespace: "datasets-server"
+    # CSI mode: each pod mounts only the secrets it needs as files in a tmpfs volume, and reads them
+    # once at startup into process memory. No Kubernetes Secret is created and nothing is injected in
+    # the environment. It supersedes the operator mode above, which should be disabled when this is on.
+    #
+    # The node's CSI provider is what talks to Infisical, so the pods hold no credential of their own.
+    # It requires, none of which live in this repo:
+    #   - the Secrets Store CSI Driver and the Infisical provider installed on the cluster
+    #   - an Infisical machine identity the provider is configured to authenticate with
+    #   - a provider build supporting windowDuration, if the read window below is to be enforced
+    csi:
+      enabled: false
+      # Name the provider is registered under with the CSI driver.
+      provider: "infisical"
+      # How the provider authenticates to Infisical. "kubernetes" makes Infisical validate each pod's
+      # service account token by calling TokenReview against this cluster's API server, which it refuses
+      # when the endpoint resolves to a private address. "aws" signs with the provider's own IRSA role
+      # instead and needs nothing reachable, so it is the default here. It is also the provider's default
+      # that has to be overridden: left unset, the parameter falls back to "kubernetes".
+      authMethod: "aws"
+      # ID of the Infisical machine identity, and the project id. Injected at deploy time (private
+      # overlay) along with secrets.infisical.url, since none of them are stored in this repo.
+      identityId: ""
+      projectId: ""
+      # How long after a container starts its secrets stay readable. Past it the provider serves empty
+      # files and stops calling Infisical, so the values never leave the platform rather than being
+      # fetched and withheld. A restart reopens the window, since a restarted container needs its secrets
+      # again and the kubelet replays nothing on its behalf.
+      #
+      # Measured from container start, not pod creation, and enforced at the granularity of the driver's
+      # rotation poll, so the files actually blank up to one interval later (60s as deployed). The
+      # application reads them once at startup and keeps them in memory, so this does not affect a running
+      # process: what it removes is the ability to read them again hours later. Five minutes leaves room
+      # for a slow init container or a restart cascade; going under a minute buys little against the poll
+      # interval and makes the effective window unpredictable.
+      #
+      # Empty keeps them readable for the pod's whole life.
+      windowDuration: "5m"
+      mountPath: "/mnt/secrets"
+      # Which Infisical secrets each workload mounts, so a pod only ever holds what it needs rather
+      # than everything in the project. Each name lands as a file of the same name in mountPath.
+      # This list is the blast radius of a compromised pod, so it is meant to be read and audited.
+      workloads:
+        admin: [MONGO_URL, HF_TOKEN, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY]
+        api: [MONGO_URL, HF_TOKEN, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, CLOUDFRONT_KEY_PAIR_ID,
+              CLOUDFRONT_PRIVATE_KEY, API_HF_JWT_ADDITIONAL_PUBLIC_KEYS]
+        rows: [MONGO_URL, HF_TOKEN, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, CLOUDFRONT_KEY_PAIR_ID,
+               CLOUDFRONT_PRIVATE_KEY, API_HF_JWT_ADDITIONAL_PUBLIC_KEYS]
+        search: [MONGO_URL, HF_TOKEN, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, CLOUDFRONT_KEY_PAIR_ID,
+                 CLOUDFRONT_PRIVATE_KEY, API_HF_JWT_ADDITIONAL_PUBLIC_KEYS]
+        sse-api: [MONGO_URL, HF_TOKEN, API_HF_JWT_ADDITIONAL_PUBLIC_KEYS]
+        webhook: [MONGO_URL, HF_TOKEN, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, CLOUDFRONT_KEY_PAIR_ID,
+                  CLOUDFRONT_PRIVATE_KEY, WEBHOOK_SECRET, API_HF_JWT_ADDITIONAL_PUBLIC_KEYS,
+                  PARQUET_CONVERTER_HF_TOKEN]
+        worker: [MONGO_URL, HF_TOKEN, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY,
+                 PARQUET_CONVERTER_HF_TOKEN, SPAWNING_TOKEN]
+        backfill: [MONGO_URL, HF_TOKEN, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY]
+        backfill-retryable-errors: [MONGO_URL, HF_TOKEN, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY]
+        cache-metrics-collector: [MONGO_URL, HF_TOKEN]
+        queue-metrics-collector: [MONGO_URL, HF_TOKEN]
+        post-messages: [MONGO_URL, HF_TOKEN, PARQUET_CONVERTER_HF_TOKEN]
+        mongodb-migration: [MONGO_URL]
   mongoUrl:
     fromSecret: false
     secretName: "mongo-url"

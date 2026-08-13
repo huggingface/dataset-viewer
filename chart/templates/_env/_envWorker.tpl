@@ -51,6 +51,7 @@
   value: {{ .Values.optInOutUrlsScan.maxRequestsPerSecond | quote }}
 - name: OPT_IN_OUT_URLS_SCAN_ROWS_MAX_NUMBER
   value: {{ .Values.optInOutUrlsScan.rowsMaxNumber | quote }}
+{{- if not (and .Values.secrets.infisical.csi.enabled .Values.secrets.spawningToken.fromSecret) }}
 - name: OPT_IN_OUT_URLS_SCAN_SPAWNING_TOKEN
   {{- if .Values.secrets.spawningToken.fromSecret }}
   valueFrom:
@@ -61,6 +62,7 @@
   {{- else }}
   value: {{ .Values.secrets.spawningToken.value }}
   {{- end }}
+{{- end }}
 - name: OPT_IN_OUT_URLS_SCAN_URLS_NUMBER_PER_BATCH
   value: {{ .Values.optInOutUrlsScan.urlsNumberPerBatch | quote }}
 - name: OPT_IN_OUT_URLS_SCAN_SPAWNING_URL

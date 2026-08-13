@@ -22,6 +22,7 @@ spec:
       serviceAccountName: {{ include "datasetsServer.serviceAccountName" . }}
       {{- include "dnsConfig" . | nindent 6 }}
       {{- include "image.imagePullSecrets" . | nindent 6 }}
+      {{- include "datasetsServer.csi.volumeBlock" (dict "context" $ "workload" "mongodb-migration") | nindent 6 }}
       containers: {{ include "containerMongodbMigration" . | nindent 8 }}
       nodeSelector: {{ toYaml .Values.mongodbMigration.nodeSelector | nindent 8 }}
       tolerations: {{ toYaml .Values.mongodbMigration.tolerations | nindent 8 }}

@@ -21,6 +21,7 @@ spec:
           {{- include "image.imagePullSecrets" . | nindent 6 }}
           nodeSelector: {{ toYaml .Values.backfill.nodeSelector | nindent 12 }}
           tolerations: {{ toYaml .Values.backfill.tolerations | nindent 12 }}
+          {{- include "datasetsServer.csi.volumeBlock" (dict "context" $ "workload" "backfill") | nindent 10 }}
           containers: {{ include "containerBackfill" . | nindent 12 }}
           securityContext: {{ include "securityContext" . | nindent 12 }}
 {{- end}}

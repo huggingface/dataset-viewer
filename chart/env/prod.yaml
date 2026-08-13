@@ -270,12 +270,12 @@ ingress:
         - "datasets-server.huggingface.co"
   annotations:
     alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:us-east-1:707930574880:certificate/134d1ed3-7ac1-481d-b2e4-31e17fbacb28
-    alb.ingress.kubernetes.io/load-balancer-name: "hub-datasets-server-prod"
+    alb.ingress.kubernetes.io/load-balancer-name: "datasets-server-prod"
     alb.ingress.kubernetes.io/tags: "Env=prod,Project=datasets-server,Terraform=true"
     alb.ingress.kubernetes.io/target-node-labels: role-datasets-server=true
     alb.ingress.kubernetes.io/healthcheck-path: "/healthcheck"
     alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80, "HTTPS": 443}]'
-    alb.ingress.kubernetes.io/scheme: "internet-facing"
+    alb.ingress.kubernetes.io/scheme: "internal"
     alb.ingress.kubernetes.io/group.name: "datasets-server"
     kubernetes.io/ingress.class: "alb"
     alb.ingress.kubernetes.io/group.order: "100"
@@ -313,7 +313,7 @@ admin:
     annotations:
       external-dns.alpha.kubernetes.io/hostname: "internal.datasets-server.huggingface.co"
       alb.ingress.kubernetes.io/scheme: "internal"
-      alb.ingress.kubernetes.io/load-balancer-name: "hub-datasets-server-prod-int"
+      alb.ingress.kubernetes.io/load-balancer-name: "datasets-server-prod-int"
       alb.ingress.kubernetes.io/group.name: "datasets-server-internal"
   resources:
     requests:
@@ -351,7 +351,7 @@ api:
     annotations:
       external-dns.alpha.kubernetes.io/hostname: "internal.datasets-server.huggingface.co"
       alb.ingress.kubernetes.io/scheme: "internal"
-      alb.ingress.kubernetes.io/load-balancer-name: "hub-datasets-server-prod-int"
+      alb.ingress.kubernetes.io/load-balancer-name: "datasets-server-prod-int"
       alb.ingress.kubernetes.io/group.name: "datasets-server-internal"
   resources:
     requests:
@@ -387,15 +387,15 @@ rows:
       external-dns.alpha.kubernetes.io/hostname: "internal.datasets-server.huggingface.co"
       alb.ingress.kubernetes.io/group.order: "2"
       alb.ingress.kubernetes.io/scheme: "internal"
-      alb.ingress.kubernetes.io/load-balancer-name: "hub-datasets-server-prod-int"
+      alb.ingress.kubernetes.io/load-balancer-name: "datasets-server-prod-int"
       alb.ingress.kubernetes.io/group.name: "datasets-server-internal"
   resources:
     requests:
       cpu: 1
-      memory: "6500Mi"
+      memory: "8192Mi"
     limits:
       cpu: 4
-      memory: "6500Mi"
+      memory: "8192Mi"
 
 search:
   # Number of uvicorn workers for running the application
@@ -425,7 +425,7 @@ search:
       external-dns.alpha.kubernetes.io/hostname: "internal.datasets-server.huggingface.co"
       alb.ingress.kubernetes.io/group.order: "3"
       alb.ingress.kubernetes.io/scheme: "internal"
-      alb.ingress.kubernetes.io/load-balancer-name: "hub-datasets-server-prod-int"
+      alb.ingress.kubernetes.io/load-balancer-name: "datasets-server-prod-int"
       alb.ingress.kubernetes.io/group.name: "datasets-server-internal"
   resources:
     requests:
@@ -460,7 +460,7 @@ sseApi:
       external-dns.alpha.kubernetes.io/hostname: "internal.datasets-server.huggingface.co"
       alb.ingress.kubernetes.io/group.order: "4"
       alb.ingress.kubernetes.io/scheme: "internal"
-      alb.ingress.kubernetes.io/load-balancer-name: "hub-datasets-server-prod-int"
+      alb.ingress.kubernetes.io/load-balancer-name: "datasets-server-prod-int"
       alb.ingress.kubernetes.io/group.name: "datasets-server-internal"
   resources:
     requests:
@@ -606,7 +606,7 @@ webhook:
       external-dns.alpha.kubernetes.io/hostname: "internal.datasets-server.huggingface.co"
       alb.ingress.kubernetes.io/group.order: "5"
       alb.ingress.kubernetes.io/scheme: "internal"
-      alb.ingress.kubernetes.io/load-balancer-name: "hub-datasets-server-prod-int"
+      alb.ingress.kubernetes.io/load-balancer-name: "datasets-server-prod-int"
       alb.ingress.kubernetes.io/group.name: "datasets-server-internal"
   resources:
     requests:

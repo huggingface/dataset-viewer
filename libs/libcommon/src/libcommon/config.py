@@ -9,6 +9,8 @@ from typing import Literal, Optional, TypeGuard
 from environs import Env
 from marshmallow.validate import OneOf
 
+from libcommon.secrets import resolve_secret
+
 STORAGE_PROTOCOL_VALUES: list[str] = ["file", "s3"]
 StorageProtocol = Literal["file", "s3"]
 
@@ -51,6 +53,7 @@ class AssetsConfig:
 S3_ACCESS_KEY_ID = None
 S3_SECRET_ACCESS_KEY = None
 S3_REGION_NAME = "us-east-1"
+S3_USE_IRSA = False
 
 
 @dataclass(frozen=True)
@@ -63,9 +66,15 @@ class S3Config:
     def from_env(cls) -> "S3Config":
         env = Env(expand_vars=True)
         with env.prefixed("S3_"):
+            if env.bool(name="USE_IRSA", default=S3_USE_IRSA):
+                # the credentials come from the pod's IAM role, boto3 resolves them on its own and static
+                # keys must not be resolved, otherwise they would take precedence over the role
+                return cls(region_name=env.str(name="REGION_NAME", default=S3_REGION_NAME))
             return cls(
-                access_key_id=env.str(name="ACCESS_KEY_ID", default=S3_ACCESS_KEY_ID),
-                secret_access_key=env.str(name="SECRET_ACCESS_KEY", default=S3_SECRET_ACCESS_KEY),
+                access_key_id=resolve_secret(env, "ACCESS_KEY_ID", "AWS_ACCESS_KEY_ID", S3_ACCESS_KEY_ID),
+                secret_access_key=resolve_secret(
+                    env, "SECRET_ACCESS_KEY", "AWS_SECRET_ACCESS_KEY", S3_SECRET_ACCESS_KEY
+                ),
                 region_name=env.str(name="REGION_NAME", default=S3_REGION_NAME),
             )
 
@@ -120,8 +129,8 @@ class CloudFrontConfig:
         with env.prefixed("CLOUDFRONT_"):
             return cls(
                 expiration_seconds=env.int(name="EXPIRATION_SECONDS", default=CLOUDFRONT_EXPIRATION_SECONDS),
-                key_pair_id=env.str(name="KEY_PAIR_ID", default=CLOUDFRONT_KEY_PAIR_ID),
-                private_key=env.str(name="PRIVATE_KEY", default=CLOUDFRONT_PRIVATE_KEY),
+                key_pair_id=resolve_secret(env, "KEY_PAIR_ID", "CLOUDFRONT_KEY_PAIR_ID", CLOUDFRONT_KEY_PAIR_ID),
+                private_key=resolve_secret(env, "PRIVATE_KEY", "CLOUDFRONT_PRIVATE_KEY", CLOUDFRONT_PRIVATE_KEY),
             )
 
 
@@ -180,7 +189,7 @@ class CommonConfig:
             return cls(
                 blocked_datasets=env.list(name="BLOCKED_DATASETS", default=COMMON_BLOCKED_DATASETS.copy()),
                 hf_endpoint=env.str(name="HF_ENDPOINT", default=COMMON_HF_ENDPOINT),
-                hf_token=env.str(name="HF_TOKEN", default=COMMON_HF_TOKEN),  # nosec
+                hf_token=resolve_secret(env, "HF_TOKEN", "HF_TOKEN", COMMON_HF_TOKEN),  # nosec
             )
 
 
@@ -215,7 +224,7 @@ class CacheConfig:
         with env.prefixed("CACHE_"):
             return cls(
                 mongo_database=env.str(name="MONGO_DATABASE", default=CACHE_MONGO_DATABASE),
-                mongo_url=env.str(name="MONGO_URL", default=CACHE_MONGO_URL),
+                mongo_url=resolve_secret(env, "MONGO_URL", "MONGO_URL", CACHE_MONGO_URL),
             )
 
 
@@ -234,7 +243,7 @@ class QueueConfig:
         with env.prefixed("QUEUE_"):
             return cls(
                 mongo_database=env.str(name="MONGO_DATABASE", default=QUEUE_MONGO_DATABASE),
-                mongo_url=env.str(name="MONGO_URL", default=QUEUE_MONGO_URL),
+                mongo_url=resolve_secret(env, "MONGO_URL", "MONGO_URL", QUEUE_MONGO_URL),
             )
 
 
@@ -250,5 +259,5 @@ class CommitterConfig:
         env = Env(expand_vars=True)
         with env.prefixed("COMMITTER_"):
             return cls(
-                hf_token=env.str(name="HF_TOKEN", default=COMMITTER_HF_TOKEN),
+                hf_token=resolve_secret(env, "HF_TOKEN", "PARQUET_CONVERTER_HF_TOKEN", COMMITTER_HF_TOKEN),
             )

@@ -7,6 +7,7 @@
   imagePullPolicy: {{ .Values.images.pullPolicy }}
   env:
   {{ include "envCache" . | nindent 2 }}
+  {{ include "envSecrets" . | nindent 2 }}
   {{ include "envCommon" . | nindent 2 }}
   {{ include "envHf" . | nindent 2 }}
   {{ include "envLog" . | nindent 2 }}
@@ -20,6 +21,7 @@
     value: {{ .Values.sseApi.uvicornNumWorkers | quote }}
   - name: API_UVICORN_PORT
     value: {{ .Values.sseApi.uvicornPort | quote }}
+  {{- include "datasetsServer.csi.volumeMountBlock" . | nindent 2 }}
   securityContext:
     allowPrivilegeEscalation: false
   readinessProbe:

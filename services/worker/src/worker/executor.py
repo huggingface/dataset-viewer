@@ -67,6 +67,11 @@ class WorkerExecutor:
 
         self.executors: list[Union[OutputExecutor, TCPExecutor]] = []
 
+    # Children read their own secrets from the mounted files rather than inheriting them, and the mount
+    # only serves them while the container is freshly started. So a child that needs secrets may only be
+    # spawned from start(): start_worker_loop is, and when it dies the executor loop ends and the whole
+    # container goes with it, which reopens the window on restart. ensure_webapp respawns its child while
+    # the container lives, which is fine only because the web app reads UvicornConfig and no secret.
     def _create_worker_loop_executor(self) -> OutputExecutor:
         banner = self.state_file_path
         start_worker_loop_command = [
