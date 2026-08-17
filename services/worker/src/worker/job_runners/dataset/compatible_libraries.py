@@ -17,7 +17,6 @@ from datasets.data_files import (
     DataFilesDict,
     DataFilesPatternsDict,
     DataFilesPatternsList,
-    resolve_pattern,
 )
 from datasets.load import (
     create_builder_configs_from_metadata_configs,
@@ -48,6 +47,7 @@ from worker.dtos import (
     LoadingCode,
 )
 from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunnerWithDatasetsCache
+from worker.utils import allow_only_relative_data_files
 
 try:
     from libviewer._internal import is_optimized_parquet_from_hub
@@ -121,41 +121,42 @@ def get_builder_configs(
         pass
     metadata_configs = MetadataConfigs.from_dataset_card_data(dataset_card_data)
     module_path, _ = _PACKAGED_DATASETS_MODULES[module_name]
-    builder_configs, _ = create_builder_configs_from_metadata_configs(
-        module_path,
-        metadata_configs or MetadataConfigs({"default": {}}),
-        base_path=base_path,
-        download_config=download_config,
-        # No need for default_builder_kwargs since we just need the builder config for the data files
-        # default_builder_kwargs=default_builder_kwargs,
-    )
-    for config in builder_configs:
-        data_files = config.data_files.resolve(base_path=base_path, download_config=download_config)
-        if with_simplified_data_files:
-            config.data_files = DataFilesPatternsDict(
-                {
-                    str(split): (
-                        simplify_data_files_patterns(
-                            data_files_patterns=config.data_files[split],
-                            base_path=base_path,
-                            download_config=download_config,
-                            allowed_extensions=_MODULE_TO_EXTENSIONS[module_name],
+    with allow_only_relative_data_files():
+        builder_configs, _ = create_builder_configs_from_metadata_configs(
+            module_path,
+            metadata_configs or MetadataConfigs({"default": {}}),
+            base_path=base_path,
+            download_config=download_config,
+            # No need for default_builder_kwargs since we just need the builder config for the data files
+            # default_builder_kwargs=default_builder_kwargs,
+        )
+        for config in builder_configs:
+            data_files = config.data_files.resolve(base_path=base_path, download_config=download_config)
+            if with_simplified_data_files:
+                config.data_files = DataFilesPatternsDict(
+                    {
+                        str(split): (
+                            simplify_data_files_patterns(
+                                data_files_patterns=config.data_files[split],
+                                base_path=base_path,
+                                download_config=download_config,
+                                allowed_extensions=_MODULE_TO_EXTENSIONS[module_name],
+                            )
                         )
-                    )
-                    for split in data_files
-                }
-            )
-        else:
-            config.data_files = DataFilesDict.from_patterns(
-                config.data_files,
-                base_path=base_path,
-                download_config=download_config,
-                allowed_extensions=_ALL_ALLOWED_EXTENSIONS,
-            )
-            config.data_files = data_files.filter(
-                extensions=_MODULE_TO_EXTENSIONS[module_name] + _MODULE_TO_METADATA_EXTENSIONS[module_name],
-                file_names=_MODULE_TO_METADATA_FILE_NAMES[module_name],
-            )
+                        for split in data_files
+                    }
+                )
+            else:
+                config.data_files = DataFilesDict.from_patterns(
+                    config.data_files,
+                    base_path=base_path,
+                    download_config=download_config,
+                    allowed_extensions=_ALL_ALLOWED_EXTENSIONS,
+                )
+                config.data_files = data_files.filter(
+                    extensions=_MODULE_TO_EXTENSIONS[module_name] + _MODULE_TO_METADATA_EXTENSIONS[module_name],
+                    file_names=_MODULE_TO_METADATA_FILE_NAMES[module_name],
+                )
     return builder_configs
 
 
@@ -189,7 +190,7 @@ def simplify_data_files_patterns(
         if pattern == "**":
             pattern = "**/*"
         try:
-            resolved_data_files = resolve_pattern(
+            resolved_data_files = datasets.data_files.resolve_pattern(
                 pattern, base_path=base_path, download_config=download_config, allowed_extensions=allowed_extensions
             )
         except FileNotFoundError:
@@ -203,7 +204,7 @@ def simplify_data_files_patterns(
                 new_pattern = pattern.replace("[0-9]" * 5 + "*", "*")
                 new_pattern = new_pattern.replace("[0-9]" * 5, "*")
                 try:
-                    re_resolved_data_files = resolve_pattern(
+                    re_resolved_data_files = datasets.data_files.resolve_pattern(
                         new_pattern,
                         base_path=base_path,
                         download_config=download_config,
@@ -228,7 +229,7 @@ def simplify_data_files_patterns(
                             non_word_char = "[0-9]"
                         new_pattern = new_pattern.replace(NON_WORD_GLOB_SEPARATOR, non_word_char, 1)
                     try:
-                        re_resolved_data_files = resolve_pattern(
+                        re_resolved_data_files = datasets.data_files.resolve_pattern(
                             new_pattern,
                             base_path=base_path,
                             download_config=download_config,
@@ -250,7 +251,7 @@ def simplify_data_files_patterns(
                 elif new_pattern.endswith("*"):
                     new_pattern = new_pattern + allowed_extension
                 try:
-                    re_resolved_data_files = resolve_pattern(
+                    re_resolved_data_files = datasets.data_files.resolve_pattern(
                         new_pattern,
                         base_path=base_path,
                         download_config=download_config,
@@ -259,7 +260,7 @@ def simplify_data_files_patterns(
                     # try again by adding a possible compression extension
                     new_pattern += "." + resolved_data_files[0].split(".")[-1]
                     try:
-                        re_resolved_data_files = resolve_pattern(
+                        re_resolved_data_files = datasets.data_files.resolve_pattern(
                             new_pattern,
                             base_path=base_path,
                             download_config=download_config,
