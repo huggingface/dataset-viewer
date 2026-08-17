@@ -52,7 +52,7 @@ from worker.job_runners.config.parquet_and_info import (
 from worker.job_runners.dataset.config_names import DatasetConfigNamesJobRunner
 from worker.resources import LibrariesResource
 
-from ...constants import CI_HUB_ENDPOINT, CI_USER_TOKEN
+from ...constants import CI_HUB_ENDPOINT, CI_URL_TEMPLATE, CI_USER_TOKEN
 from ...fixtures.hub import HubDatasetTest
 from ..utils import REVISION_NAME
 
@@ -496,6 +496,9 @@ def set_hub_ci_env() -> None:
     os.environ["HF_ENDPOINT"] = CI_HUB_ENDPOINT
     datasets.config.HF_ENDPOINT = CI_HUB_ENDPOINT
     huggingface_hub.constants.ENDPOINT = CI_HUB_ENDPOINT
+    # huggingface_hub builds this template from the endpoint at import time, so it still points to
+    # prod in a child process that did not inherit the monkeypatches from `monkeypatch_session`
+    huggingface_hub.constants.HUGGINGFACE_CO_URL_TEMPLATE = CI_URL_TEMPLATE
 
 
 def test_concurrency(
