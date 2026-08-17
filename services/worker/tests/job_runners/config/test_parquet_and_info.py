@@ -461,14 +461,19 @@ class JobRunnerArgs(TypedDict):
 
 
 def launch_job_runner(job_runner_args: JobRunnerArgs) -> CompleteJobResult:
-    from libcommon.resources import CacheMongoResource
+    from libcommon.resources import CacheMongoResource, QueueMongoResource
 
     config = job_runner_args["config"]
     dataset = job_runner_args["dataset"]
     revision = job_runner_args["revision"]
     app_config = job_runner_args["app_config"]
     tmp_path = job_runner_args["tmp_path"]
-    with CacheMongoResource(database=app_config.cache.mongo_database, host=app_config.cache.mongo_url):
+    # the queue connection is required by the git branch lock, and a pool worker only inherits it
+    # from the parent process when it is forked
+    with (
+        CacheMongoResource(database=app_config.cache.mongo_database, host=app_config.cache.mongo_url),
+        QueueMongoResource(database=app_config.queue.mongo_database, host=app_config.queue.mongo_url),
+    ):
         job_runner = ConfigParquetAndInfoJobRunner(
             job_info=JobInfo(
                 job_id=f"job_{config}",
