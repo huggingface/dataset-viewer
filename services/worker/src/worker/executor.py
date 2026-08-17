@@ -26,6 +26,11 @@ from worker.loop import WorkerState
 START_WORKER_LOOP_PATH = start_worker_loop.__file__
 START_WEB_APP_PATH = start_web_app.__file__
 
+# Seconds to wait for the web app to accept connections. It has to cover a cold start on a
+# CPU-throttled worker, where the imports alone can take tens of seconds: timing out here
+# exits the container, so a value that is too low turns a slow start into a crash loop.
+WEB_APP_STARTUP_TIMEOUT_SECONDS = 60
+
 
 async def every(
     func: Callable[..., Optional[Any]],
@@ -85,7 +90,12 @@ class WorkerExecutor:
         logging.info("Starting webapp for /healthcheck and /metrics.")
         start_web_app_command = [sys.executable, START_WEB_APP_PATH]
         uvicorn_config = UvicornConfig.from_env()
-        return TCPExecutor(start_web_app_command, host=uvicorn_config.hostname, port=uvicorn_config.port, timeout=10)
+        return TCPExecutor(
+            start_web_app_command,
+            host=uvicorn_config.hostname,
+            port=uvicorn_config.port,
+            timeout=WEB_APP_STARTUP_TIMEOUT_SECONDS,
+        )
 
     def start(self) -> None:
         if self.executors:

@@ -545,6 +545,14 @@ workers:
     workerDifficultyMin: 0
     maxMemoryPct: 0
     maxSystemMemoryPct: 0
+    # The small CPU request packs a dozen light workers per node, so recreating them all at
+    # once starves their cold start. Roll gradually instead, and keep maxSurge at 0 so the
+    # pool still never exceeds its replica count while rolling, as Recreate guaranteed.
+    strategy:
+      type: RollingUpdate
+      rollingUpdate:
+        maxSurge: 0
+        maxUnavailable: 25%
     # Increased probe timeouts for light workers due to limited resources
     startupProbe:
       failureThreshold: 120
