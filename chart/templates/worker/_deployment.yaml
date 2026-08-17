@@ -22,7 +22,11 @@ spec:
   selector:
     matchLabels: {{ include "labels.worker" (merge (dict "workerValues" .workerValues) $ ) | nindent 6 }}
   strategy:
+    {{- if .workerValues.strategy }}
+    {{- toYaml .workerValues.strategy | nindent 4 }}
+    {{- else }}
     type: Recreate
+    {{- end }}
   template:
     metadata:
       labels: {{ include "labels.worker" (merge (dict "workerValues" .workerValues) $ ) | nindent 8 }}
