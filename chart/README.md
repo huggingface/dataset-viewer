@@ -60,6 +60,12 @@ enabled on the driver. Two consequences worth knowing:
 Local development, the tests and the e2e suite leave both modes off, and the services keep reading
 their usual environment variables.
 
+## Network policy (`networkPolicy.enabled`)
+
+The chart ships an optional egress `NetworkPolicy` for its pods, off by default. Egress is denied except
+DNS and the CIDRs in `networkPolicy.allowedCIDRs`, which is empty here and supplied via the values at
+deploy time. Enabling it without an allow-list leaves the pods with DNS only.
+
 ## Deploy
 
 To deploy, go to https://cd.internal.huggingface.tech/applications.
