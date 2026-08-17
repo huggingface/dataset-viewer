@@ -1,0 +1,44 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 The HuggingFace Authors.
+
+{{- if .Values.networkPolicy.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  labels: {{ include "hf.labels.commons" . | nindent 4 }}
+  name: "{{ include "name" . }}-egress"
+  namespace: {{ .Release.Namespace }}
+spec:
+  podSelector:
+    {{- if .Values.networkPolicy.allNamespacePods }}
+    {}
+    {{- else }}
+    matchLabels: {{ include "hf.labels.commons" . | nindent 6 }}
+    {{- end }}
+  policyTypes:
+    - Egress
+  # Anything not matched below is denied.
+  egress:
+  {{- if or .Values.networkPolicy.allowDNS .Values.networkPolicy.allowedCIDRs .Values.networkPolicy.extraEgress }}
+    {{- if .Values.networkPolicy.allowDNS }}
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    {{- end }}
+    {{- range .Values.networkPolicy.allowedCIDRs }}
+    - to:
+        - ipBlock:
+            cidr: {{ . | quote }}
+    {{- end }}
+    {{- with .Values.networkPolicy.extraEgress }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- else }} []
+  {{- end }}
+{{- end }}

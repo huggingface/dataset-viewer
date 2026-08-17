@@ -225,6 +225,15 @@ persistence:
 monitoring:
   enabled: false
 
+# Optional deny-all egress NetworkPolicy for the pods of the release. The allowed destinations are
+# supplied via these values at deploy time; with the empty default below it denies all egress but DNS.
+networkPolicy:
+  enabled: false
+  allNamespacePods: false
+  allowedCIDRs: []
+  allowDNS: true
+  extraEgress: []
+
 mongodb:
   enabled: true
   nameOverride: datasets-server-mongodb
