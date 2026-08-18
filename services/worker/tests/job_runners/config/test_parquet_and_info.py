@@ -52,7 +52,7 @@ from worker.job_runners.config.parquet_and_info import (
 from worker.job_runners.dataset.config_names import DatasetConfigNamesJobRunner
 from worker.resources import LibrariesResource
 
-from ...constants import CI_HUB_ENDPOINT, CI_USER_TOKEN
+from ...constants import CI_HUB_ENDPOINT, CI_URL_TEMPLATE, CI_USER_TOKEN
 from ...fixtures.hub import HubDatasetTest
 from ..utils import REVISION_NAME
 
@@ -461,14 +461,19 @@ class JobRunnerArgs(TypedDict):
 
 
 def launch_job_runner(job_runner_args: JobRunnerArgs) -> CompleteJobResult:
-    from libcommon.resources import CacheMongoResource
+    from libcommon.resources import CacheMongoResource, QueueMongoResource
 
     config = job_runner_args["config"]
     dataset = job_runner_args["dataset"]
     revision = job_runner_args["revision"]
     app_config = job_runner_args["app_config"]
     tmp_path = job_runner_args["tmp_path"]
-    with CacheMongoResource(database=app_config.cache.mongo_database, host=app_config.cache.mongo_url):
+    # the queue connection is required by the git branch lock, and a pool worker only inherits it
+    # from the parent process when it is forked
+    with (
+        CacheMongoResource(database=app_config.cache.mongo_database, host=app_config.cache.mongo_url),
+        QueueMongoResource(database=app_config.queue.mongo_database, host=app_config.queue.mongo_url),
+    ):
         job_runner = ConfigParquetAndInfoJobRunner(
             job_info=JobInfo(
                 job_id=f"job_{config}",
@@ -496,6 +501,9 @@ def set_hub_ci_env() -> None:
     os.environ["HF_ENDPOINT"] = CI_HUB_ENDPOINT
     datasets.config.HF_ENDPOINT = CI_HUB_ENDPOINT
     huggingface_hub.constants.ENDPOINT = CI_HUB_ENDPOINT
+    # huggingface_hub builds this template from the endpoint at import time, so it still points to
+    # prod in a child process that did not inherit the monkeypatches from `monkeypatch_session`
+    huggingface_hub.constants.HUGGINGFACE_CO_URL_TEMPLATE = CI_URL_TEMPLATE
 
 
 def test_concurrency(
