@@ -801,7 +801,9 @@ PRESIDIO_SCAN_rows = [
 @pytest.fixture
 def hub_responses_does_not_exist() -> HubDatasetTest:
     return {
-        "name": "does_not_exist",
+        # must be a well-formed "namespace/name" repo id: an id without a namespace is rejected as
+        # invalid before any Hub call, so it would not exercise the "does not exist on the Hub" path
+        "name": f"{CI_USER}/does_not_exist",
         "config_names_response": None,
         "splits_response": None,
         "first_rows_response": None,

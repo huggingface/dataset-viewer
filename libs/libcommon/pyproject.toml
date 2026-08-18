@@ -96,6 +96,7 @@ untyped_calls_exclude = "huggingface_hub"
 module = [
     "datasets.*",
     "fitz.*",
+    "lance.*",
     "networkx.*",
     "prometheus_client.*",
     "pyarrow.*",
