@@ -65,4 +65,3 @@ def cache_mongo_resource(cache_mongo_host: str) -> Iterator[CacheMongoResource]:
         yield cache_mongo_resource
         _clean_cache_database()
         cache_mongo_resource.release()
-
