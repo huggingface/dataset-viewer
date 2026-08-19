@@ -11,7 +11,7 @@ aiohttp = "^3.14.1"
 anyio = ">=3.4.0,<5"
 appdirs = "^1.4.4"
 async-lru = "^2.0.5"
-cryptography = "^49.0.0"
+cryptography = "^50.0.0"
 datasets = { git = "https://github.com/huggingface/datasets", rev = "836b82e0544cabf6474b25ade131b4d21e570373" }
 duckdb = "^1.5.5"
 environs = "^14.3.0"
