@@ -22,6 +22,9 @@ on:
       - ".github/workflows/_quality-python.yml"
       - ".github/workflows/_unit-tests-python.yml"
       - "tools/docker-compose-mongo.yml"
+permissions:
+  contents: read
+
 jobs:
   quality:
     uses: ./.github/workflows/_quality-python.yml

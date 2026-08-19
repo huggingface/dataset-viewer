@@ -82,7 +82,7 @@ async def auth_check(
                 )
                 logging.debug(
                     "By-passing the authentication step, because a valid JWT was passed in headers"
-                    f" for dataset {dataset}. JWT was: {jwt_token}"
+                    f" for dataset {dataset}."
                 )
                 return True
         with StepProfiler(method="auth_check", step="prepare parameters"):

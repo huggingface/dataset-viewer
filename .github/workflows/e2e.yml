@@ -32,6 +32,9 @@ on:
       - ".env"
       - "Dockerfile"
       - "docker-compose.yml"
+permissions:
+  contents: read
+
 jobs:
   quality:
     uses: ./.github/workflows/_quality-python.yml

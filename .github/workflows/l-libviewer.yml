@@ -19,6 +19,9 @@ env:
   python-version: "3.12.11"
   poetry-version: "2.1.4"
 
+permissions:
+  contents: read
+
 jobs:
   quality-libviewer:
     runs-on: "ubuntu-latest"
