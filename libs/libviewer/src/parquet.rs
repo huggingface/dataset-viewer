@@ -343,6 +343,8 @@ pub async fn read_metadata_from_hub(
 
     let endpoint = hf_endpoint.unwrap_or("https://huggingface.co");
     let mut builder = opendal::services::Huggingface::default()
+        // upstream opendal defaults to xet downloads; keep the plain HTTP path the fork used
+        .download_mode("http")
         .repo_type("dataset")
         .repo_id(repo_id)
         .revision(revision)
