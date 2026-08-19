@@ -9,26 +9,19 @@ name = "libviewer"
 crate-type = ["cdylib"]
 
 [dependencies]
-arrow = { version = "57", features = ["pyarrow"] }
-bytes = "1.10.1"
+arrow = { version = "59.1", features = ["pyarrow"] }
+bytes = "1.11.1"
 env_logger = "0.11.8"
 futures = "0.3"
 log = "0.4.28"
-object_store = "0.12.0"
-object_store_opendal = "0.54.1"
-opendal = { version = "0.54.1", features = ["services-huggingface"] }
-parquet = { version = "57", features = ["arrow", "async", "object_store"] }
-pyo3 = { version = "^0.26", features = ["extension-module"] }
-pyo3-async-runtimes = { version = "^0.26", features = ["tokio-runtime"] }
-pyo3-log = "0.13.2"
+object_store = "0.13.2"
+object_store_opendal = { git = "https://github.com/apache/opendal", rev = "a13911ca36d72379f1fd58d9eb46938bbe13a654" }
+opendal = { git = "https://github.com/apache/opendal", rev = "a13911ca36d72379f1fd58d9eb46938bbe13a654", features = ["services-huggingface"] }
+parquet = { version = "59.1", features = ["arrow", "async", "object_store"] }
+pyo3 = { version = "^0.29", features = ["extension-module"] }
+pyo3-async-runtimes = { version = "^0.29", features = ["tokio-runtime"] }
+pyo3-log = "0.13.4"
 tempfile = "3.20.0"
 thiserror = "2.0.12"
-thrift = "0.17"
 tokio = "1.45"
 url = "2.5.4"
-
-[patch.crates-io]
-# opendal = { path = "../../../opendal/core" }
-# object_store_opendal = { path = "../../../opendal/integrations/object_store" }
-opendal = { git = "https://github.com/kszucs/opendal", branch = "hf-unconditional-stat-fix" }
-object_store_opendal = { git = "https://github.com/kszucs/opendal", branch = "hf-unconditional-stat-fix" }

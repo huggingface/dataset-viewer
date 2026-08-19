@@ -101,7 +101,11 @@ impl Dataset {
         hf_endpoint: Option<&str>,
     ) -> Result<Self> {
         // Initialize the data store (Huggingface in this case)
-        let mut builder = Huggingface::default().repo_type("dataset").repo_id(name);
+        // upstream opendal defaults to xet downloads; keep the plain HTTP path the fork used
+        let mut builder = Huggingface::default()
+            .download_mode("http")
+            .repo_type("dataset")
+            .repo_id(name);
         if let Some(token) = hf_token {
             builder = builder.token(token);
         }
@@ -111,7 +115,7 @@ impl Dataset {
         if let Some(endpoint) = hf_endpoint {
             builder = builder.endpoint(endpoint);
         }
-        let operator = Operator::new(builder)?.finish();
+        let operator = Operator::new(builder)?;
         let data_store = Arc::new(OpendalStore::new(operator));
 
         // Initialize the metadata store from the given URI, usually a local directory

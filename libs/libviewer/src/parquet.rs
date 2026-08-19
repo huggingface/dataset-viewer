@@ -6,8 +6,12 @@ use std::sync::Arc;
 
 use arrow::record_batch::RecordBatch;
 use object_store::path::Path;
-use object_store::ObjectStore;
+use object_store::{ObjectStore, ObjectStoreExt};
 use parquet::arrow::arrow_reader::{ArrowReaderMetadata, ArrowReaderOptions};
+// ParquetObjectReader is deprecated in parquet 59 in favor of implementing AsyncFileReader
+// directly (https://github.com/apache/arrow-rs/issues/10308); migrating is out of scope for
+// this security bump.
+#[allow(deprecated)]
 use parquet::arrow::async_reader::{AsyncFileReader, ParquetObjectReader};
 use parquet::arrow::ParquetRecordBatchStreamBuilder;
 use parquet::arrow::ProjectionMask;
@@ -80,6 +84,7 @@ pub async fn read_metadata(
     let path = path.into();
 
     // configure the metadata reader with optionally reading the offset index if present
+    #[allow(deprecated)]
     let mut object_reader = ParquetObjectReader::new(store.clone(), path.clone());
     let mut metadata_reader = ParquetMetaDataReader::new()
         .with_column_index_policy(PageIndexPolicy::Skip)
@@ -133,6 +138,7 @@ pub fn read_batch_stream(
     file_size: u64,
 ) -> Result<impl Stream<Item = Result<RecordBatch>>> {
     let path = path.into();
+    #[allow(deprecated)]
     let mut reader = ParquetObjectReader::new(store, path.clone())
         .with_preload_offset_index(false)
         .with_preload_column_index(false);
@@ -142,7 +148,8 @@ pub fn read_batch_stream(
     let limited_reader = LimitedAsyncReader::new(reader, scan_size_limit);
     // the page index configuration here shouldn't matter since the metadata is already
     // read and stored in the ParquetFile struct
-    let reader_options = ArrowReaderOptions::default().with_page_index(true);
+    let reader_options =
+        ArrowReaderOptions::default().with_page_index_policy(PageIndexPolicy::Optional);
     let reader_metadata = ArrowReaderMetadata::try_new(metadata, reader_options)?;
 
     // TODO(kszucs): projection pushdown can be handled here if needed
@@ -336,6 +343,8 @@ pub async fn read_metadata_from_hub(
 
     let endpoint = hf_endpoint.unwrap_or("https://huggingface.co");
     let mut builder = opendal::services::Huggingface::default()
+        // upstream opendal defaults to xet downloads; keep the plain HTTP path the fork used
+        .download_mode("http")
         .repo_type("dataset")
         .repo_id(repo_id)
         .revision(revision)
@@ -346,8 +355,7 @@ pub async fn read_metadata_from_hub(
     }
 
     let operator = opendal::Operator::new(builder)
-        .map_err(|e| ParquetError::General(format!("opendal: {}", e)))?
-        .finish();
+        .map_err(|e| ParquetError::General(format!("opendal: {}", e)))?;
     let store = Arc::new(object_store_opendal::OpendalStore::new(operator));
 
     let obj: Path = file_path.into();
@@ -358,6 +366,7 @@ pub async fn read_metadata_from_hub(
         .await
         .map_err(|e| ParquetError::General(format!("head: {}", e)))?
         .size as u64;
+    #[allow(deprecated)]
     let mut object_reader = ParquetObjectReader::new(store, obj)
         .with_file_size(file_size)
         .with_preload_offset_index(true);
