@@ -62,7 +62,7 @@ pub struct IndexedFile {
     pub metadata_path: String,
 }
 
-#[pyclass(subclass)]
+#[pyclass(subclass, from_py_object)]
 #[derive(Debug, Clone)]
 struct PyDataset {
     /// The wrapped dataset object

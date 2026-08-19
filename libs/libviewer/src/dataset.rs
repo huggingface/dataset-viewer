@@ -111,7 +111,7 @@ impl Dataset {
         if let Some(endpoint) = hf_endpoint {
             builder = builder.endpoint(endpoint);
         }
-        let operator = Operator::new(builder)?.finish();
+        let operator = Operator::new(builder)?;
         let data_store = Arc::new(OpendalStore::new(operator));
 
         // Initialize the metadata store from the given URI, usually a local directory

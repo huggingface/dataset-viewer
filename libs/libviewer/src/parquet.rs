@@ -6,7 +6,7 @@ use std::sync::Arc;
 
 use arrow::record_batch::RecordBatch;
 use object_store::path::Path;
-use object_store::ObjectStore;
+use object_store::{ObjectStore, ObjectStoreExt};
 use parquet::arrow::arrow_reader::{ArrowReaderMetadata, ArrowReaderOptions};
 use parquet::arrow::async_reader::{AsyncFileReader, ParquetObjectReader};
 use parquet::arrow::ParquetRecordBatchStreamBuilder;
@@ -142,7 +142,8 @@ pub fn read_batch_stream(
     let limited_reader = LimitedAsyncReader::new(reader, scan_size_limit);
     // the page index configuration here shouldn't matter since the metadata is already
     // read and stored in the ParquetFile struct
-    let reader_options = ArrowReaderOptions::default().with_page_index(true);
+    let reader_options =
+        ArrowReaderOptions::default().with_page_index_policy(PageIndexPolicy::Optional);
     let reader_metadata = ArrowReaderMetadata::try_new(metadata, reader_options)?;
 
     // TODO(kszucs): projection pushdown can be handled here if needed
@@ -346,8 +347,7 @@ pub async fn read_metadata_from_hub(
     }
 
     let operator = opendal::Operator::new(builder)
-        .map_err(|e| ParquetError::General(format!("opendal: {}", e)))?
-        .finish();
+        .map_err(|e| ParquetError::General(format!("opendal: {}", e)))?;
     let store = Arc::new(object_store_opendal::OpendalStore::new(operator));
 
     let obj: Path = file_path.into();
