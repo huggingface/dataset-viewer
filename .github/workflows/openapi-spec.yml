@@ -16,6 +16,9 @@ on:
       - "docs/source/openapi.json"
       - ".github/workflows/openapi-spec.yml"
       - ".spectral.yml"
+permissions:
+  contents: read
+
 jobs:
   check-openapi-spec-against-spectral:
     name: Run Spectral

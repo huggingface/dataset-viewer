@@ -4,6 +4,10 @@
 name: Launch end-to-end tests
 on:
   workflow_call:
+
+permissions:
+  contents: read
+
 env:
   python-version: 3.14.5
   poetry-version: "2.1.4"
