@@ -3,6 +3,7 @@
 import datetime
 from collections.abc import Mapping
 from typing import Any, Optional, Union
+from unittest.mock import patch
 
 import numpy as np
 import pandas as pd
@@ -27,6 +28,7 @@ from libcommon.statistics_utils import (
     ImageColumn,
     IntColumn,
     ListColumn,
+    MediaColumn,
     StringColumn,
     VideoColumn,
     generate_bins,
@@ -630,3 +632,27 @@ def test_datetime_statistics(
     else:
         assert computed_std == expected_std
     assert computed == expected
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        "http://169.254.169.254/latest/meta-data/",
+        "https://example.org/audio.mp3",
+        "s3://bucket/audio.mp3",
+        "/etc/passwd",
+    ],
+)
+def test_media_column_open_refuses_a_path_outside_of_the_hub(path: str) -> None:
+    with patch("libcommon.statistics_utils.xopen") as xopen:
+        with pytest.raises(ValueError, match="Media file doesn't belong to the Hub"):
+            MediaColumn.open({"bytes": None, "path": path}, hf_token=None)
+    # `xopen` sends a request before it looks the protocol up, so it must not even be reached
+    xopen.assert_not_called()
+
+
+def test_media_column_open_allows_a_hub_path() -> None:
+    path = "hf://datasets/namespace/dataset@revision/audio.mp3"
+    with patch("libcommon.statistics_utils.xopen") as xopen:
+        MediaColumn.open({"bytes": None, "path": path}, hf_token=None)
+    assert xopen.call_args.args[0] == path
