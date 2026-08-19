@@ -26,9 +26,7 @@ REVISION_NAME = "revision"
 
 
 @pytest_asyncio.fixture(scope="function")
-async def app_test(
-    app_config: AppConfig, event_loop: asyncio.events.AbstractEventLoop
-) -> AsyncGenerator[Starlette, None]:
+async def app_test(app_config: AppConfig) -> AsyncGenerator[Starlette, None]:
     app = create_app_with_config(app_config)
     config = uvicorn.Config(app=app, port=5555, log_level="warning", loop="asyncio")  # event_loop)
 
@@ -54,11 +52,6 @@ async def sleep() -> None:
 
 
 APP_HOST = "http://localhost:5555"
-
-
-@pytest.mark.asyncio
-async def test_provided_loop_is_running_loop(event_loop: asyncio.events.AbstractEventLoop) -> None:
-    assert event_loop is asyncio.get_running_loop()
 
 
 @pytest.mark.asyncio
@@ -363,9 +356,8 @@ async def check(client: httpx.AsyncClient, url: str, expected_events: EventsList
 async def test_hub_cache_only_updates(
     client: httpx.AsyncClient,
     cache_mongo_resource: CacheMongoResource,
-    event_loop: asyncio.AbstractEventLoop,
 ) -> None:
-    update_task = event_loop.create_task(update_hub_cache())
+    update_task = asyncio.create_task(update_hub_cache())
 
     try:
         await check(client, f"{APP_HOST}/sse/hub-cache", UPDATE_ONLY_EVENTS)
@@ -388,7 +380,6 @@ async def test_hub_cache_only_updates(
 async def test_hub_cache_only_initialization(
     client: httpx.AsyncClient,
     cache_mongo_resource: CacheMongoResource,
-    event_loop: asyncio.AbstractEventLoop,
     all: str,
     expected_events: EventsList,
 ) -> None:
@@ -408,12 +399,11 @@ async def test_hub_cache_only_initialization(
 async def test_hub_cache_initialization_and_updates(
     client: httpx.AsyncClient,
     cache_mongo_resource: CacheMongoResource,
-    event_loop: asyncio.AbstractEventLoop,
     all: str,
     expected_events: EventsList,
 ) -> None:
     init_hub_cache()
-    update_task = event_loop.create_task(update_hub_cache())
+    update_task = asyncio.create_task(update_hub_cache())
     # ^ We are not testing concurrency between the loop on the initial content and the loop on the updates
     try:
         await check(client, f"{APP_HOST}/sse/hub-cache{all}", expected_events)
