@@ -8,6 +8,10 @@ use arrow::record_batch::RecordBatch;
 use object_store::path::Path;
 use object_store::{ObjectStore, ObjectStoreExt};
 use parquet::arrow::arrow_reader::{ArrowReaderMetadata, ArrowReaderOptions};
+// ParquetObjectReader is deprecated in parquet 59 in favor of implementing AsyncFileReader
+// directly (https://github.com/apache/arrow-rs/issues/10308); migrating is out of scope for
+// this security bump.
+#[allow(deprecated)]
 use parquet::arrow::async_reader::{AsyncFileReader, ParquetObjectReader};
 use parquet::arrow::ParquetRecordBatchStreamBuilder;
 use parquet::arrow::ProjectionMask;
@@ -80,6 +84,7 @@ pub async fn read_metadata(
     let path = path.into();
 
     // configure the metadata reader with optionally reading the offset index if present
+    #[allow(deprecated)]
     let mut object_reader = ParquetObjectReader::new(store.clone(), path.clone());
     let mut metadata_reader = ParquetMetaDataReader::new()
         .with_column_index_policy(PageIndexPolicy::Skip)
@@ -133,6 +138,7 @@ pub fn read_batch_stream(
     file_size: u64,
 ) -> Result<impl Stream<Item = Result<RecordBatch>>> {
     let path = path.into();
+    #[allow(deprecated)]
     let mut reader = ParquetObjectReader::new(store, path.clone())
         .with_preload_offset_index(false)
         .with_preload_column_index(false);
@@ -358,6 +364,7 @@ pub async fn read_metadata_from_hub(
         .await
         .map_err(|e| ParquetError::General(format!("head: {}", e)))?
         .size as u64;
+    #[allow(deprecated)]
     let mut object_reader = ParquetObjectReader::new(store, obj)
         .with_file_size(file_size)
         .with_preload_offset_index(true);
