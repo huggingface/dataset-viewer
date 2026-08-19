@@ -83,7 +83,7 @@ async def test_valid_responses_with_request(httpx_mock: HTTPXMock) -> None:
     url = "https://auth.check"
     organization = "org1"
 
-    httpx_mock.add_callback(method="GET", url=url, callback=request_callback)
+    httpx_mock.add_callback(method="GET", url=url, callback=request_callback, is_reusable=True)
 
     with pytest.raises(ExternalAuthenticatedError):
         await auth_check(

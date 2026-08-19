@@ -1,7 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2023 The HuggingFace Authors.
 
-import asyncio
 from collections.abc import Iterator
 
 import pytest
@@ -67,14 +66,3 @@ def cache_mongo_resource(cache_mongo_host: str) -> Iterator[CacheMongoResource]:
         _clean_cache_database()
         cache_mongo_resource.release()
 
-
-@pytest.fixture(scope="session")
-def event_loop() -> Iterator[asyncio.AbstractEventLoop]:
-    """
-    Create an instance of the default event loop for each test case.
-
-    See https://github.com/pytest-dev/pytest-asyncio/issues/38#issuecomment-264418154
-    """
-    loop = asyncio.get_event_loop_policy().new_event_loop()
-    yield loop
-    loop.close()

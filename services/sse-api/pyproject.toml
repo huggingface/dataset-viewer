@@ -35,6 +35,8 @@ requires = ["poetry-core>=1.0.0"]
 filterwarnings = ["ignore::DeprecationWarning"]
 markers = []
 log_cli = true
+asyncio_default_fixture_loop_scope = "session"
+asyncio_default_test_loop_scope = "session"
 
 [tool.mypy]
 strict = true
