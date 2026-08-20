@@ -169,6 +169,7 @@ ingress:
     alb.ingress.kubernetes.io/healthcheck-path: "/healthcheck"
     alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80, "HTTPS": 443}]'
     alb.ingress.kubernetes.io/scheme: "internet-facing"
+    alb.ingress.kubernetes.io/target-type: "ip"
     alb.ingress.kubernetes.io/group.name: "datasets-server"
     kubernetes.io/ingress.class: "alb"
     alb.ingress.kubernetes.io/group.order: "100"
