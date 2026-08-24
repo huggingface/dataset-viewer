@@ -140,6 +140,8 @@ services:
   search:
     build:
       target: search
+      args:
+        - DUCKDB_INDEX_EXTENSIONS_DIRECTORY=$DUCKDB_INDEX_EXTENSIONS_DIRECTORY
     volumes:
       - storage:${STORAGE_DIRECTORY}
       - parquet-metadata:${PARQUET_METADATA_STORAGE_DIRECTORY}:rw
