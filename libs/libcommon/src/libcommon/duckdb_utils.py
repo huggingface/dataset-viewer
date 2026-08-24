@@ -43,7 +43,7 @@ ATTACH_JOB_AGGREGATION_DATABASE = "ATTACH {database} as tmp;"
 ATTACH_READ_ONLY_JOB_AGGREGATION_DATABASE = "ATTACH IF NOT EXISTS {database} as tmp (READ_ONLY);"
 ATTACH_SUBPROCESS_JOB_DATABASE = "ATTACH {database} as tmp_{rank}_{field_id};"
 ATTACH_READ_ONLY_SUBPROCESS_JOB_DATABASE = "ATTACH IF NOT EXISTS {database} as tmp_{rank}_{field_id} (READ_ONLY);"
-LOAD_FTS_COMMAND = "INSTALL 'fts'; LOAD 'fts';"
+LOAD_FTS_COMMAND = "LOAD 'fts';"
 DISABLE_EXTERNAL_ACCESS_COMMAND = "SET enable_external_access=false;"
 SET_ALLOWED_PATHS_COMMAND = "SET allowed_paths={allowed_paths};"
 LOCK_CONFIG_COMMAND = "SET lock_configuration=true;"
@@ -66,7 +66,6 @@ ALTER_TABLE_BY_ADDING_SEQUENCE_COLUMN = (
     f"ALTER TABLE data ADD COLUMN {ROW_IDX_COLUMN} BIGINT DEFAULT nextval('serial');"
 )
 CREATE_INDEX_ID_COLUMN_COMMANDS = CREATE_SEQUENCE_COMMAND + ALTER_TABLE_BY_ADDING_SEQUENCE_COLUMN
-INSTALL_AND_LOAD_EXTENSION_COMMAND = "INSTALL 'fts'; LOAD 'fts';"
 REPO_TYPE = "dataset"
 # Only some languages are supported, see: https://duckdb.org/docs/extensions/full_text_search.html#pragma-create_fts_index
 STEMMER_MAPPING = {
