@@ -106,7 +106,7 @@ RUN poetry install --no-cache
 # Install libviewer wheel built in the viewer stage
 COPY --from=viewer /tmp/dist /tmp/dist
 RUN pip install /tmp/dist/libviewer-*.whl
-RUN duckdb -c "SET extension_directory = '$DUCKDB_INDEX_EXTENSIONS_DIRECTORY'; INSTALL 'fts';"
+RUN python -c "import duckdb; duckdb.execute(\"SET extension_directory = '$DUCKDB_INDEX_EXTENSIONS_DIRECTORY'; INSTALL 'fts';\")"
 CMD ["poetry", "run", "python", "src/search/main.py"]
 
 # SSE API service
