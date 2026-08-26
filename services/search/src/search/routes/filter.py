@@ -58,28 +58,26 @@ FILTER_COUNT_QUERY = """\
 SQL_INVALID_SYMBOLS = "|".join([";", "--", r"/\*", r"\*/"])
 SQL_INVALID_SYMBOLS_PATTERN = re.compile(rf"(?:{SQL_INVALID_SYMBOLS})", flags=re.IGNORECASE)
 
-SQL_MATCH_NUMBER = r"[0-9][0-9\.]*"
+SQL_MATCH_NUMBER = r"[+-]?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)"
 SQL_MATCH_VARCHAR = r"'([^']|'')*'"  # ' is escaped with ''
 SQL_MATCH_KEY = r'"([^"]|"")+"'  # " is escaped with ""
 SQL_MATCH_COL = rf"{SQL_MATCH_KEY}(\.{SQL_MATCH_KEY})*"  # allow sub-columns
 SQL_MATCH_ARGS = f"({SQL_MATCH_NUMBER}|{SQL_MATCH_VARCHAR}|,| )*"
-SQL_MATCH_FUNC = rf"[a-z_]+\({SQL_MATCH_ARGS}\)"
+SQL_MATCH_FUNC = rf"(?:len|length|lower|replace|upper)\({SQL_MATCH_ARGS}\)"
 SQL_MATCH_TRANSFORMED_COL = rf"\(?{SQL_MATCH_COL}\)?(\.{SQL_MATCH_FUNC})?"
-SQL_MATCH_OP = (
-    r"(=|<|>|!|~|\*| |(like)|(ilike)|(glob)|(similar to)|(is)|(not)|(LIKE)|(ILIKE)|(GLOB)|(SIMILAR TO)|(IS)|(NOT))+"
-)
-SQL_MATCH_BOOL_OR_NULL = r"(true|false|null|NULL)"
+SQL_MATCH_OP = r"(?:=|!=|<>|<=|>=|<|>|~|LIKE|ILIKE|GLOB|SIMILAR TO|IS|IS NOT)"
+SQL_MATCH_BOOL_OR_NULL = r"(?:true|false|null)"
 SQL_MATCH_VAL = f"({SQL_MATCH_NUMBER}|{SQL_MATCH_VARCHAR}|{SQL_MATCH_BOOL_OR_NULL})"
-SQL_MATCH_COND = r"(and|or|AND|OR)"
+SQL_MATCH_COND = r"(?:and|or)"
 SQL_MATCH_EXPR = rf"\(?{SQL_MATCH_TRANSFORMED_COL} ?{SQL_MATCH_OP} ?{SQL_MATCH_VAL}\)?"
-SQL_MATCH_DIRECTION = r"(asc|desc|ASC|DESC)"
+SQL_MATCH_DIRECTION = r"(?:asc|desc)"
 
 SQL_MATCH_WHERE = f"^{SQL_MATCH_EXPR}( {SQL_MATCH_COND} {SQL_MATCH_EXPR})*$"
 SQL_MATCH_ORDERBY = f"^{SQL_MATCH_TRANSFORMED_COL}( {SQL_MATCH_DIRECTION})?$"
 
 SQL_PARAMETER_PATTERNS: dict[Literal["where", "orderby"], re.Pattern[str]] = {
-    "where": re.compile(SQL_MATCH_WHERE),
-    "orderby": re.compile(SQL_MATCH_ORDERBY),
+    "where": re.compile(SQL_MATCH_WHERE, flags=re.IGNORECASE),
+    "orderby": re.compile(SQL_MATCH_ORDERBY, flags=re.IGNORECASE),
 }
 
 logger = logging.getLogger(__name__)
@@ -119,7 +117,14 @@ def create_filter_endpoint(
                     offset = get_request_parameter_offset(request)
                     length = get_request_parameter_length(request)
                     logger.info(
-                        f"/filter, {dataset=}, {config=}, {split=}, {where=}, {orderby=}, {offset=}, {length=}"
+                        "/filter, dataset=%s, config=%s, split=%s, where_length=%d, orderby_length=%d, offset=%d, length=%d",
+                        dataset,
+                        config,
+                        split,
+                        len(where),
+                        len(orderby),
+                        offset,
+                        length,
                     )
                 with StepProfiler(method="filter_endpoint", step="check authentication"):
                     # If auth_check fails, it will raise an exception that will be caught below
@@ -271,6 +276,6 @@ def execute_filter_query(
 
 def validate_query_parameter(parameter_value: str, parameter_name: Literal["where", "orderby"]) -> None:
     if SQL_INVALID_SYMBOLS_PATTERN.search(parameter_value) or (
-        parameter_value and not SQL_PARAMETER_PATTERNS[parameter_name].match(parameter_value)
+        parameter_value and not SQL_PARAMETER_PATTERNS[parameter_name].fullmatch(parameter_value)
     ):
         raise InvalidParameterError(message=f"Parameter '{parameter_name}' contains errors or invalid symbols")

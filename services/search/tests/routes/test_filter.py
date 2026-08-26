@@ -76,6 +76,9 @@ def index_file_location(ds: Dataset) -> Generator[str, None, None]:
         ("where", "\"col\".upper() = 'A'"),
         ("where", '("col"."subcol").upper() = \'A\''),
         ("where", "\"col\".replace('a', 'A') = 'A'"),
+        ("where", "\"col\".lower() = 'a'"),
+        ("where", '"col".len() > 2'),
+        ("where", '"col".length() > 2'),
         ("orderby", ""),
         ("orderby", '"A"'),
         ("orderby", '"A" DESC'),
@@ -108,6 +111,23 @@ def test_validate_query_parameter_raises_on_sql_injection(
     ],
 )
 def test_validate_query_parameter_raises_on_system_functions(
+    parameter_name: Literal["where", "orderby"], parameter_value: str
+) -> None:
+    with pytest.raises(InvalidParameterError):
+        validate_query_parameter(parameter_value, parameter_name)
+
+
+@pytest.mark.parametrize(
+    "parameter_name, parameter_value",
+    [
+        ("where", "\"text\".read_text() = '1'"),
+        ("where", "\"meta\".read_blob('/proc/self/environ') IS NOT NULL"),
+        ("where", "\"col\".getenv('FOO') = 'bar'"),
+        ("where", "\"col\".sniff_csv() = 'a'"),
+        ("orderby", '"col".read_text()'),
+    ],
+)
+def test_validate_query_parameter_raises_on_chained_functions(
     parameter_name: Literal["where", "orderby"], parameter_value: str
 ) -> None:
     with pytest.raises(InvalidParameterError):
