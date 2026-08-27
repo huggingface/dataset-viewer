@@ -21,10 +21,16 @@ x-common-env: &common-env
   CACHED_ASSETS_BASE_URL: ${CACHED_ASSETS_BASE_URL} # <- must be set, no default value. If local, set to work with the reverse-proxy, like http://localhost:${PORT_REVERSE_PROXY-8000}/cached-assets
   CACHED_ASSETS_STORAGE_ROOT: ${CACHED_ASSETS_STORAGE_ROOT}
   CACHED_ASSETS_STORAGE_PROTOCOL: ${CACHED_ASSETS_STORAGE_PROTOCOL}
-  # S3
+  # S3. With S3_USE_IRSA the static pair is ignored and botocore resolves on its
+  # own, from the AWS_* variables below in CI, where the runner assumes a role
+  # over OIDC and its credentials are temporary, hence the session token.
   S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID}
   S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY}
   S3_REGION_NAME: ${S3_REGION_NAME}
+  S3_USE_IRSA: ${S3_USE_IRSA-false}
+  AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID-}
+  AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY-}
+  AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN-}
   # cloudfront (for signed URLs)
   CLOUDFRONT_EXPIRATION_SECONDS: ${CLOUDFRONT_EXPIRATION_SECONDS}
   CLOUDFRONT_KEY_PAIR_ID: ${CLOUDFRONT_KEY_PAIR_ID}

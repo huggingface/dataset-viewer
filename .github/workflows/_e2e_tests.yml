@@ -7,6 +7,8 @@ on:
 
 permissions:
   contents: read
+  # minting the OIDC token the AWS role is assumed with
+  id-token: write
 
 env:
   python-version: 3.14.5
@@ -26,6 +28,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+      - name: Assume the AWS role that writes the test fixtures
+        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a  # v4.3.1
+        with:
+          role-to-assume: arn:aws:iam::707930574880:role/dataset-viewer-e2e
+          aws-region: us-east-1
       - name: Build and launch the services (no cache)
         env:
           ADMIN_UVICORN_NUM_WORKERS: "1"
@@ -66,8 +73,9 @@ jobs:
           CACHED_ASSETS_BASE_URL: "https://datasets-server-test.us.dev.moon.huggingface.tech/cached-assets"
           CACHED_ASSETS_STORAGE_PROTOCOL: "s3"
           CACHED_ASSETS_STORAGE_ROOT: "hf-datasets-server-statics-test/cached-assets"
-          S3_ACCESS_KEY_ID: ${{ secrets.S3_ACCESS_KEY_ID }}
-          S3_SECRET_ACCESS_KEY: ${{ secrets.S3_SECRET_ACCESS_KEY }}
+          # The step above exported AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY and
+          # AWS_SESSION_TOKEN; docker-compose forwards them to the containers.
+          S3_USE_IRSA: "true"
           S3_REGION_NAME: "us-east-1"
           CLOUDFRONT_KEY_PAIR_ID: "K1MTLUUQ6YN2UZ"
           CLOUDFRONT_PRIVATE_KEY: ${{ secrets.CLOUDFRONT_PRIVATE_KEY }}
