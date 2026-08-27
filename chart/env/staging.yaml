@@ -132,6 +132,10 @@ cachedAssets:
   storageRoot: "hf-datasets-server-statics-staging/cached-assets"
   storageProtocol: "s3"
 
+s3:
+  # when true, drop static S3 credentials and rely on the ServiceAccount IRSA role
+  useIrsa: true
+
 # --- jobs (pre-install/upgrade hooks) ---
 
 mongodbMigration:
