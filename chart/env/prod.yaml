@@ -123,7 +123,7 @@ mongodb:
 s3:
   regionName: "us-east-1"
   # when true, drop static S3 credentials and rely on the ServiceAccount IRSA role
-  useIrsa: false
+  useIrsa: true
 
 common:
   # URL of the HuggingFace Hub
