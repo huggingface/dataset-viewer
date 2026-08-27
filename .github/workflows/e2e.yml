@@ -42,4 +42,8 @@ jobs:
       working-directory: e2e
   e2e-tests:
     uses: ./.github/workflows/_e2e_tests.yml
+    permissions:
+      contents: read
+      # a reusable workflow cannot widen this, the caller has to grant it
+      id-token: write
     secrets: inherit
