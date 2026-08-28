@@ -718,7 +718,14 @@ class MediaColumn(Column):
             if example["bytes"] is not None:
                 return io.BytesIO(example["bytes"])
             else:
-                return xopen(example["path"], "rb", download_config=DownloadConfig(token=hf_token))  # type: ignore
+                path = example["path"]
+                if not path.startswith("hf://"):
+                    # The media values that are not embedded in the Parquet files keep the path they
+                    # had in the dataset, which can be any URL. This has to stay before `xopen`:
+                    # `xopen` sends a request through `huggingface_hub` before it looks the protocol
+                    # up in fsspec, so the fsspec allow-list does not cover this path.
+                    raise ValueError(f"Media file doesn't belong to the Hub: {path}")
+                return xopen(path, "rb", download_config=DownloadConfig(token=hf_token))  # type: ignore
         elif isinstance(example, bytes):
             return io.BytesIO(example)
         else:

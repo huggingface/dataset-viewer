@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 from unittest.mock import patch
 
+import datasets.data_files
 import fsspec
 import numpy as np
 import pyarrow as pa
@@ -861,3 +862,33 @@ def test_is_optimized_parquet_with_real_cdc_file(tmp_path: Path) -> None:
 
     except ImportError:
         pass
+
+
+def test_get_builder_configs_guards_the_data_files_resolution() -> None:
+    class RepoWithoutCardFileSystem:
+        def __init__(self, **kwargs: Any) -> None:
+            pass
+
+        def exists(self, path: str, **kwargs: Any) -> bool:  # noqa: ARG002
+            return False
+
+        def read_text(self, path: str, **kwargs: Any) -> str:  # noqa: ARG002
+            raise FileNotFoundError(path)
+
+    def create_builder_configs_from_metadata_configs(*args: Any, **kwargs: Any) -> Any:  # noqa: ARG001
+        # `datasets` resolves the data files patterns from here on, and resolving is what sends the
+        # request, so the guard has to be active by now
+        with pytest.raises(ValueError, match="Data files don't belong to"):
+            datasets.data_files.resolve_pattern(
+                "https://example.org/data.csv", base_path="hf://datasets/namespace/dataset@revision"
+            )
+        return [], None
+
+    with (
+        patch("worker.job_runners.dataset.compatible_libraries.HfFileSystem", RepoWithoutCardFileSystem),
+        patch(
+            "worker.job_runners.dataset.compatible_libraries.create_builder_configs_from_metadata_configs",
+            create_builder_configs_from_metadata_configs,
+        ),
+    ):
+        assert get_builder_configs("namespace/dataset", module_name="csv") == []
