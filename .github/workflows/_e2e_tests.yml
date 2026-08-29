@@ -11,7 +11,7 @@ permissions:
   id-token: write
 
 env:
-  python-version: 3.14.5
+  python-version: 3.12.11
   poetry-version: "2.1.4"
   # required to get access to use a cached poetry venv in "/home/runner/.cache/pypoetry/virtualenvs"
   POETRY_VIRTUALENVS_IN_PROJECT: false
@@ -35,7 +35,7 @@ jobs:
           aws-region: us-east-1
       - name: Build and launch the services (no cache)
         env:
-          ADMIN_UVICORN_NUM_WORKERS: "1"
+          ADMIN_UVICORN_NUM_WORKERS: "2"
           ADMIN_UVICORN_PORT: "8081"
           API_HF_JWT_ALGORITHM: "EdDSA"
           API_HF_JWT_PUBLIC_KEY_URL: "https://hub-ci.huggingface.co/api/keys/jwt"
@@ -45,13 +45,13 @@ jobs:
           # ^ allow hub-ci to be slow to answer
           API_UVICORN_NUM_WORKERS: "2"
           API_UVICORN_PORT: "8080"
-          ROWS_UVICORN_NUM_WORKERS: "1"
+          ROWS_UVICORN_NUM_WORKERS: "2"
           ROWS_UVICORN_PORT: "8082"
-          SEARCH_UVICORN_NUM_WORKERS: "1"
+          SEARCH_UVICORN_NUM_WORKERS: "2"
           SEARCH_UVICORN_PORT: "8083"
-          SSE_API_UVICORN_NUM_WORKERS: "1"
+          SSE_API_UVICORN_NUM_WORKERS: "2"
           SSE_API_UVICORN_PORT: "8085"
-          WEBHOOK_UVICORN_NUM_WORKERS: "1"
+          WEBHOOK_UVICORN_NUM_WORKERS: "2"
           WEBHOOK_UVICORN_PORT: "8087"
           COMMON_HF_ENDPOINT: "https://hub-ci.huggingface.co"
           COMMON_HF_TOKEN: "hf_app_datasets-server_token"
@@ -77,7 +77,7 @@ jobs:
           # AWS_SESSION_TOKEN; docker-compose forwards them to the containers.
           S3_USE_IRSA: "true"
           S3_REGION_NAME: "us-east-1"
-          CLOUDFRONT_KEY_PAIR_ID: "K1MTLUUQ6YN2UZ"
+          CLOUDFRONT_KEY_PAIR_ID: ${{ secrets.CLOUDFRONT_KEY_PAIR_ID }}
           CLOUDFRONT_PRIVATE_KEY: ${{ secrets.CLOUDFRONT_PRIVATE_KEY }}
         run: docker compose up -d --wait --wait-timeout 20
       - name: Install poetry
@@ -95,7 +95,7 @@ jobs:
           poetry install
       - name: End-to-end tests
         env:
-          ADMIN_UVICORN_NUM_WORKERS: "1"
+          ADMIN_UVICORN_NUM_WORKERS: "2"
           ADMIN_UVICORN_PORT: "8081"
           API_HF_JWT_ALGORITHM: "EdDSA"
           API_HF_JWT_PUBLIC_KEY_URL: "https://hub-ci.huggingface.co/api/keys/jwt"
@@ -105,13 +105,13 @@ jobs:
           # ^ allow hub-ci to be slow to answer
           API_UVICORN_NUM_WORKERS: "2"
           API_UVICORN_PORT: "8080"
-          ROWS_UVICORN_NUM_WORKERS: "1"
+          ROWS_UVICORN_NUM_WORKERS: "2"
           ROWS_UVICORN_PORT: "8082"
-          SEARCH_UVICORN_NUM_WORKERS: "1"
+          SEARCH_UVICORN_NUM_WORKERS: "2"
           SEARCH_UVICORN_PORT: "8083"
-          SSE_API_UVICORN_NUM_WORKERS: "1"
+          SSE_API_UVICORN_NUM_WORKERS: "2"
           SSE_API_UVICORN_PORT: "8085"
-          WEBHOOK_UVICORN_NUM_WORKERS: "1"
+          WEBHOOK_UVICORN_NUM_WORKERS: "2"
           WEBHOOK_UVICORN_PORT: "8087"
           COMMON_HF_ENDPOINT: "https://hub-ci.huggingface.co"
           COMMON_HF_TOKEN: "hf_app_datasets-server_token"
