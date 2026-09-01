@@ -737,7 +737,14 @@ class AudioColumn(MediaColumn):
         from torchcodec.decoders import AudioDecoder  # type: ignore[attr-defined]
 
         with MediaColumn.open(example, hf_token=hf_token) as f:
-            duration = AudioDecoder(f).metadata.duration_seconds_from_header if f else None  # type: ignore[arg-type]
+            try:
+                duration = AudioDecoder(f).metadata.duration_seconds_from_header if f else None  # type: ignore[arg-type]
+            except RuntimeError as e:
+                if "SingleStreamDecoder" in str(e):
+                    raise StatisticsComputationError(
+                        "Failed to get the audio duration for the header because of RuntimeError from SingleStreamDecoder"
+                    ) from None
+                raise
         if not isinstance(duration, (int, float)):
             raise StatisticsComputationError(f"Failed to get the audio duration for the header {example=}")
         return duration
@@ -759,7 +766,14 @@ class VideoColumn(MediaColumn):
         from torchcodec.decoders import VideoDecoder  # type: ignore[attr-defined]
 
         with MediaColumn.open(example, hf_token=hf_token) as f:
-            duration = VideoDecoder(f).metadata.duration_seconds_from_header if f else None  # type: ignore[arg-type]
+            try:
+                duration = VideoDecoder(f).metadata.duration_seconds_from_header if f else None  # type: ignore[arg-type]
+            except RuntimeError as e:
+                if "SingleStreamDecoder" in str(e):
+                    raise StatisticsComputationError(
+                        "Failed to get the audio duration for the header because of RuntimeError from SingleStreamDecoder"
+                    ) from None
+                raise
         if not isinstance(duration, (int, float)):
             raise StatisticsComputationError("Failed to get the video duration for the header.")
         return duration
