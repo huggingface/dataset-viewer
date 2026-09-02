@@ -24,6 +24,7 @@ from worker.job_runners.dataset.compatible_libraries import (
     LOGIN_COMMENT,
     DatasetCompatibleLibrariesJobRunner,
     get_builder_configs,
+    get_compatible_libraries_for_environment_tags,
     get_compatible_libraries_for_json,
     get_compatible_libraries_for_lerobot,
     get_compatible_library_for_builder,
@@ -46,6 +47,7 @@ PARQUET_DATASET_LOGIN_REQUIRED = "dummy/parquet-dataset-login_required"
 WEBDATASET_DATASET = "dummy/webdataset-dataset"
 LANCE_DATASET = "dummy/lance-dataset"
 LEROBOT_DATASET = "dummy/lerobot-dataset"
+ENVIRONMENT_DATASET = "dummy/environment-dataset"
 ERROR_DATASET = "dummy/error-dataset"
 
 UPSTREAM_RESPONSE_INFO_PARQUET: UpstreamResponse = UpstreamResponse(
@@ -91,6 +93,14 @@ UPSTREAM_RESPONSE_INFO_LEROBOT: UpstreamResponse = UpstreamResponse(
 UPSTREAM_RESPONSE_INFO_ERROR: UpstreamResponse = UpstreamResponse(
     kind="dataset-info",
     dataset=ERROR_DATASET,
+    dataset_git_revision=REVISION_NAME,
+    http_status=HTTPStatus.INTERNAL_SERVER_ERROR,
+    content={},
+    progress=0.0,
+)
+UPSTREAM_RESPONSE_INFO_ENVIRONMENT_ERROR: UpstreamResponse = UpstreamResponse(
+    kind="dataset-info",
+    dataset=ENVIRONMENT_DATASET,
     dataset_git_revision=REVISION_NAME,
     http_status=HTTPStatus.INTERNAL_SERVER_ERROR,
     content={},
@@ -411,6 +421,11 @@ def mock_hffs(tmp_path_factory: TempPathFactory) -> Iterator[fsspec.AbstractFile
         "---\n"
     )
 
+    (hf / "datasets" / ENVIRONMENT_DATASET).mkdir(parents=True)
+    (hf / "datasets" / ENVIRONMENT_DATASET / "README.md").write_text(
+        "---\ntags:\n- environment\n- Harbor\n- verifiers\n- openenv\n- nemo-gym\n---\n"
+    )
+
     class MockHfFileSystem(DirFileSystem):  # type: ignore[misc]
         protocol = "hf"
 
@@ -555,6 +570,43 @@ def test_get_compatible_libraries_for_lerobot(
     assert compatible_libraries[0]["library"] == "lerobot"
     # a dataset without the "LeRobot" tag (or without a dataset card) is not detected
     assert get_compatible_libraries_for_lerobot(PARQUET_DATASET, hf_token=None, login_required=False) == []
+
+
+def test_get_compatible_libraries_for_environment_tags(
+    mock_hffs: fsspec.AbstractFileSystem,
+) -> None:
+    compatible_libraries = get_compatible_libraries_for_environment_tags(ENVIRONMENT_DATASET, hf_token=None)
+    assert [library["library"] for library in compatible_libraries] == [
+        "harbor",
+        "verifiers",
+        "openenv",
+        "nemo-gym",
+    ]
+    assert compatible_libraries[0]["language"] == "shell"
+    assert f"hf://datasets/{ENVIRONMENT_DATASET}" in compatible_libraries[0]["loading_codes"][0]["code"]
+    assert "HarborTasksetConfig" in compatible_libraries[1]["loading_codes"][0]["code"]
+    assert "AutoEnv.from_env" in compatible_libraries[2]["loading_codes"][0]["code"]
+    assert "gym eval run" in compatible_libraries[3]["loading_codes"][0]["code"]
+    assert get_compatible_libraries_for_environment_tags(LEROBOT_DATASET, hf_token=None) == []
+
+
+def test_compute_environment_libraries_when_dataset_info_fails(
+    app_config: AppConfig,
+    get_job_runner: GetJobRunner,
+    mock_hffs: fsspec.AbstractFileSystem,
+) -> None:
+    upsert_response(**UPSTREAM_RESPONSE_INFO_ENVIRONMENT_ERROR)
+    job_runner = get_job_runner(ENVIRONMENT_DATASET, app_config)
+    job_runner.pre_compute()
+    compute_result = list(job_runner.compute())[0]
+    job_runner.post_compute()
+    assert [library["library"] for library in compute_result.content["libraries"]] == [
+        "harbor",
+        "verifiers",
+        "openenv",
+        "nemo-gym",
+    ]
+    assert compute_result.content["formats"] == []
 
 
 @pytest.mark.parametrize(
