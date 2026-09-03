@@ -51,8 +51,8 @@ markers = [
 
 [tool.mypy]
 strict = true
-# allow calling untyped methods in huggingface_hub (eg: DatasetInfo(...))
-untyped_calls_exclude = "huggingface_hub"
+# allow calling untyped methods in huggingface_hub (eg: DatasetInfo(...)) and pyarrow
+untyped_calls_exclude = ["huggingface_hub", "pyarrow"]
 
 [[tool.mypy.overrides]]
 module = [
@@ -68,6 +68,7 @@ module = [
     "pandas.*",
     "pytz.*",
     "libviewer.*",
+    "vortex.*",
 ]
 ignore_missing_imports = true
 # ^ prometheus_client is now typed, but we use an old version to stick with the other services

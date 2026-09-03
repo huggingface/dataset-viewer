@@ -142,7 +142,9 @@ def truncate_binary_columns(table: pa.Table, max_binary_length: int, features: F
     truncated_column_names: list[str] = []
     for field_idx, field in enumerate(table.schema):  # noqa: F402
         if features[field.name] == Value("binary") and table[field_idx].nbytes > max_binary_length:
-            truncated_array = pc.binary_slice(table[field_idx], 0, max_binary_length // len(table))
+            truncated_array = pc.binary_slice(  # type: ignore[attr-defined]
+                table[field_idx], 0, max_binary_length // len(table)
+            )
             columns[field.name] = truncated_array
             truncated_column_names.append(field.name)
         else:

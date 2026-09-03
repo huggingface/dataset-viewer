@@ -45,6 +45,7 @@ PARQUET_DATASET = "dummy/parquet-dataset"
 PARQUET_DATASET_LOGIN_REQUIRED = "dummy/parquet-dataset-login_required"
 WEBDATASET_DATASET = "dummy/webdataset-dataset"
 LANCE_DATASET = "dummy/lance-dataset"
+VORTEX_DATASET = "dummy/vortex-dataset"
 LEROBOT_DATASET = "dummy/lerobot-dataset"
 ERROR_DATASET = "dummy/error-dataset"
 
@@ -78,6 +79,14 @@ UPSTREAM_RESPONSE_INFO_LANCE: UpstreamResponse = UpstreamResponse(
     dataset_git_revision=REVISION_NAME,
     http_status=HTTPStatus.OK,
     content={"dataset_info": {"default": {"config_name": "default", "builder_name": "lance"}}, "partial": False},
+    progress=1.0,
+)
+UPSTREAM_RESPONSE_INFO_VORTEX: UpstreamResponse = UpstreamResponse(
+    kind="dataset-info",
+    dataset=VORTEX_DATASET,
+    dataset_git_revision=REVISION_NAME,
+    http_status=HTTPStatus.OK,
+    content={"dataset_info": {"default": {"config_name": "default", "builder_name": "vortex"}}, "partial": False},
     progress=1.0,
 )
 UPSTREAM_RESPONSE_INFO_LEROBOT: UpstreamResponse = UpstreamResponse(
@@ -310,6 +319,58 @@ EXPECTED_LANCE = (
     1.0,
 )
 
+EXPECTED_VORTEX = (
+    {
+        "formats": ["vortex"],
+        "libraries": [
+            {
+                "function": "load_dataset",
+                "language": "python",
+                "library": "datasets",
+                "loading_codes": [
+                    {
+                        "config_name": "default",
+                        "arguments": {},
+                        "code": ('from datasets import load_dataset\n\nds = load_dataset("dummy/vortex-dataset")'),
+                    }
+                ],
+            },
+            {
+                "function": "vortex.open",
+                "language": "python",
+                "library": "vortex",
+                "loading_codes": [
+                    {
+                        "config_name": "default",
+                        "arguments": {},
+                        "code": (
+                            'import vortex\n\nvxf = vortex.open("hf://datasets/dummy/vortex-dataset/train.vortex")'
+                        ),
+                    }
+                ],
+            },
+            {
+                "function": "Dataset",
+                "language": "python",
+                "library": "mlcroissant",
+                "loading_codes": [
+                    {
+                        "config_name": "default",
+                        "arguments": {"record_set": "default", "partial": False},
+                        "code": (
+                            "from mlcroissant import Dataset\n"
+                            "\n"
+                            'ds = Dataset(jsonld="https://huggingface.co/api/datasets/dummy/vortex-dataset/croissant")\n'
+                            'records = ds.records("default")'
+                        ),
+                    }
+                ],
+            },
+        ],
+    },
+    1.0,
+)
+
 EXPECTED_WEBDATASET = (
     {
         "formats": ["webdataset"],
@@ -395,6 +456,9 @@ def mock_hffs(tmp_path_factory: TempPathFactory) -> Iterator[fsspec.AbstractFile
     (hf / "datasets" / LANCE_DATASET / "data").mkdir(parents=True)
     (hf / "datasets" / LANCE_DATASET / "data" / "0000.lance").touch()
     (hf / "datasets" / LANCE_DATASET / "_versions" / "1.manifest").touch()
+
+    (hf / "datasets" / VORTEX_DATASET).mkdir(parents=True)
+    (hf / "datasets" / VORTEX_DATASET / "train.vortex").touch()
 
     (hf / "datasets" / LEROBOT_DATASET / "data" / "chunk-000").mkdir(parents=True)
     ds.to_parquet(hf / "datasets" / LEROBOT_DATASET / "data" / "chunk-000" / "episode_000000.parquet")
@@ -491,6 +555,13 @@ def get_job_runner(
                 UPSTREAM_RESPONSE_INFO_LANCE,
             ],
             EXPECTED_LANCE,
+        ),
+        (
+            VORTEX_DATASET,
+            [
+                UPSTREAM_RESPONSE_INFO_VORTEX,
+            ],
+            EXPECTED_VORTEX,
         ),
     ],
 )
