@@ -267,6 +267,7 @@ DatasetLibrary = Literal[
     "verifiers",
     "openenv",
     "nemo-gym",
+    "vortex",
 ]
 DatasetFormat = Literal[
     "json",
@@ -279,6 +280,7 @@ DatasetFormat = Literal[
     "arrow",
     "optimized-parquet",
     "lance",
+    "vortex",
     "agent-traces",
 ]
 ProgrammingLanguage = Literal["python", "shell"]
