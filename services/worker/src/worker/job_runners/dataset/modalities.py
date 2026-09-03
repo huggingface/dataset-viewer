@@ -256,7 +256,7 @@ TEXT_EXTENSIONS = {
 }
 DOCUMENT_EXTENSIONS = {".pdf"}
 
-MULTI_ROWS_EXTENSIONS = {".parquet", ".csv", ".json", ".jsonl", ".arrow"}
+MULTI_ROWS_EXTENSIONS = {".parquet", ".csv", ".json", ".jsonl", ".arrow", ".vortex"}
 ALL_EXTENSIONS = (
     IMAGE_EXTENSIONS
     | AUDIO_EXTENSIONS
