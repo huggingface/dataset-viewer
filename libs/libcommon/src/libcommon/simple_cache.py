@@ -183,7 +183,7 @@ class CachedResponseDocument(Document):
         """
         query = query if query is not None else {}
         collection = cls._get_collection()
-        return find_pandas_all(collection, query, schema=PA_SCHEMA)  # type: ignore
+        return find_pandas_all(collection, query, schema=PA_SCHEMA)
 
 
 DEFAULT_INCREASE_AMOUNT = 1
