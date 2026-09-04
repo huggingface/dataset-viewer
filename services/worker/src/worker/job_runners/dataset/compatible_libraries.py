@@ -913,7 +913,7 @@ def compute_compatible_libraries_response(
         if builder_name in get_compatible_library_for_builder:
             try:
                 libraries += get_compatible_library_for_builder[builder_name](dataset, hf_token, login_required)
-            except NotImplementedError:
+            except (DatasetWithTooComplexDataFilesPatternsError, NotImplementedError):
                 pass
         # mlcroissant library
         libraries.append(

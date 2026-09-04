@@ -15,6 +15,7 @@ import pytest
 from datasets import Dataset
 from fsspec.implementations.dirfs import DirFileSystem
 from libcommon.dtos import Priority
+from libcommon.exceptions import DatasetWithTooComplexDataFilesPatternsError
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import CachedArtifactError, upsert_response
 from pytest import TempPathFactory
@@ -23,6 +24,7 @@ from worker.config import AppConfig
 from worker.job_runners.dataset.compatible_libraries import (
     LOGIN_COMMENT,
     DatasetCompatibleLibrariesJobRunner,
+    compute_compatible_libraries_response,
     get_builder_configs,
     get_compatible_libraries_for_json,
     get_compatible_libraries_for_lerobot,
@@ -47,6 +49,7 @@ WEBDATASET_DATASET = "dummy/webdataset-dataset"
 LANCE_DATASET = "dummy/lance-dataset"
 LEROBOT_DATASET = "dummy/lerobot-dataset"
 ERROR_DATASET = "dummy/error-dataset"
+JSON_DATASET = "dummy/json-dataset"
 
 UPSTREAM_RESPONSE_INFO_PARQUET: UpstreamResponse = UpstreamResponse(
     kind="dataset-info",
@@ -95,6 +98,14 @@ UPSTREAM_RESPONSE_INFO_ERROR: UpstreamResponse = UpstreamResponse(
     http_status=HTTPStatus.INTERNAL_SERVER_ERROR,
     content={},
     progress=0.0,
+)
+UPSTREAM_RESPONSE_INFO_JSON: UpstreamResponse = UpstreamResponse(
+    kind="dataset-info",
+    dataset=JSON_DATASET,
+    dataset_git_revision=REVISION_NAME,
+    http_status=HTTPStatus.OK,
+    content={"dataset_info": {"default": {"config_name": "default", "builder_name": "json"}}, "partial": False},
+    progress=1.0,
 )
 EXPECTED_PARQUET = (
     {
@@ -544,6 +555,24 @@ def test_compute_lerobot(
     }
     # the regular libraries are still added (LeRobot datasets are parquet-based)
     assert {"datasets", "mlcroissant"} <= libraries
+
+
+def test_compute_keeps_core_libraries_when_loading_code_patterns_are_too_complex() -> None:
+    def raise_too_complex_patterns(dataset: str, hf_token: str | None, login_required: bool) -> list[Any]:
+        raise DatasetWithTooComplexDataFilesPatternsError("Failed to simplify json data files pattern")
+
+    with (
+        patch(
+            "worker.job_runners.dataset.compatible_libraries.get_previous_step_or_raise",
+            return_value=UPSTREAM_RESPONSE_INFO_JSON,
+        ),
+        patch("worker.job_runners.dataset.compatible_libraries.HfFileSystem.isdir", return_value=True),
+        patch.dict(get_compatible_library_for_builder, {"json": raise_too_complex_patterns}),
+    ):
+        response = compute_compatible_libraries_response(JSON_DATASET)
+
+    assert response["formats"] == ["json"]
+    assert [library["library"] for library in response["libraries"]] == ["datasets", "mlcroissant"]
 
 
 def test_get_compatible_libraries_for_lerobot(
