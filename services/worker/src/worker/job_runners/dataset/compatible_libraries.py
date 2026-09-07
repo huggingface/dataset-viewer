@@ -35,9 +35,7 @@ from huggingface_hub import DatasetCard, DatasetCardData, HfFileSystem
 from libcommon.constants import LOADING_METHODS_MAX_CONFIGS
 from libcommon.croissant_utils import get_record_set
 from libcommon.exceptions import DatasetWithTooComplexDataFilesPatternsError, PreviousStepFormatError
-from libcommon.simple_cache import (
-    get_previous_step_or_raise,
-)
+from libcommon.simple_cache import CachedArtifactError, get_previous_step_or_raise
 
 from worker.dtos import (
     CompatibleLibrary,
@@ -46,6 +44,7 @@ from worker.dtos import (
     DatasetFormat,
     DatasetLibrary,
     LoadingCode,
+    ProgrammingLanguage,
 )
 from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunnerWithDatasetsCache
 
@@ -425,6 +424,54 @@ ds = {function}("{uri}")"""
 LEROBOT_CODE = """from lerobot.datasets import LeRobotDataset
 {comment}
 dataset = LeRobotDataset("{dataset}")"""
+
+
+HARBOR_CODE = """harbor run \\
+    --dataset hf://datasets/{dataset} \\
+    --agent oracle"""
+
+
+VERIFIERS_CODE = """import verifiers as vf
+
+taskset = vf.HarborTaskset(
+    config=vf.HarborTasksetConfig(
+        dataset="hf://datasets/{dataset}",
+        split="train",
+    )
+)
+env = vf.Env(taskset=taskset, harness=vf.OpenCode())"""
+
+
+OPENENV_CODE = """from openenv import AutoEnv
+
+env = AutoEnv.from_env("{dataset}", trust_remote_code=False)"""
+
+
+NEMO_GYM_CODE = """hf download {dataset} \\
+    --repo-type dataset \\
+    --local-dir environment-dataset
+
+# Select the resource server and agent for this dataset, then run:
+gym eval run \\
+    --input environment-dataset/data/train.jsonl \\
+    --output results/rollouts.jsonl \\
+    --agent <agent>"""
+
+
+ENVIRONMENT_LIBRARY_TAGS: dict[str, DatasetLibrary] = {
+    "harbor": "harbor",
+    "verifiers": "verifiers",
+    "openenv": "openenv",
+    "nemo-gym": "nemo-gym",
+}
+
+
+ENVIRONMENT_LIBRARY_SNIPPETS: dict[DatasetLibrary, tuple[ProgrammingLanguage, str, str]] = {
+    "harbor": ("shell", "harbor run", HARBOR_CODE),
+    "verifiers": ("python", "HarborTaskset", VERIFIERS_CODE),
+    "openenv": ("python", "AutoEnv.from_env", OPENENV_CODE),
+    "nemo-gym": ("shell", "gym eval run", NEMO_GYM_CODE),
+}
 
 
 def _init_empty_loading_codes(
@@ -838,6 +885,34 @@ def get_compatible_libraries_for_lerobot(
     ]
 
 
+def get_compatible_libraries_for_environment_tags(dataset: str, hf_token: Optional[str]) -> list[CompatibleLibrary]:
+    fs = HfFileSystem(token=hf_token)
+    try:
+        dataset_readme_content = fs.read_text(f"hf://datasets/{dataset}/{datasets.config.REPOCARD_FILENAME}")
+    except FileNotFoundError:
+        return []
+    dataset_card_data = DatasetCard(dataset_readme_content).data
+    tags = {tag.lower() for tag in (getattr(dataset_card_data, "tags", None) or []) if isinstance(tag, str)}
+    if "environment" not in tags:
+        return []
+    libraries = [library for tag, library in ENVIRONMENT_LIBRARY_TAGS.items() if tag in tags]
+    return [
+        {
+            "language": ENVIRONMENT_LIBRARY_SNIPPETS[library][0],
+            "library": library,
+            "function": ENVIRONMENT_LIBRARY_SNIPPETS[library][1],
+            "loading_codes": [
+                {
+                    "config_name": "default",
+                    "arguments": {},
+                    "code": ENVIRONMENT_LIBRARY_SNIPPETS[library][2].format(dataset=dataset),
+                }
+            ],
+        }
+        for library in libraries
+    ]
+
+
 get_compatible_library_for_builder: dict[str, Callable[[str, Optional[str], bool], list[CompatibleLibrary]]] = {
     "webdataset": get_compatible_libraries_for_webdataset,
     "json": get_compatible_libraries_for_json,
@@ -883,13 +958,19 @@ def compute_compatible_libraries_response(
     """
     logging.info(f"compute 'dataset-compatible-libraries' for {dataset=}")
 
-    dataset_info_response = get_previous_step_or_raise(kind="dataset-info", dataset=dataset)
-    http_status = dataset_info_response["http_status"]
     login_required = True
     try:
         login_required = not HfFileSystem(token="no_token").isdir("datasets/" + dataset)  # nosec
     except NotImplementedError:  # hfh doesn't implement listing user's datasets
         pass
+    environment_libraries = get_compatible_libraries_for_environment_tags(dataset, hf_token)
+    try:
+        dataset_info_response = get_previous_step_or_raise(kind="dataset-info", dataset=dataset)
+    except CachedArtifactError:
+        if environment_libraries:
+            return DatasetCompatibleLibrariesResponse(libraries=environment_libraries, formats=[])
+        raise
+    http_status = dataset_info_response["http_status"]
     libraries: list[CompatibleLibrary] = []
     formats: list[DatasetFormat] = []
     infos: list[dict[str, Any]] = []
@@ -921,6 +1002,8 @@ def compute_compatible_libraries_response(
         )
         # lerobot library (identified by the "LeRobot" tag in the dataset card, not by the builder/format)
         libraries += get_compatible_libraries_for_lerobot(dataset, hf_token, login_required)
+
+    libraries += environment_libraries
 
     # Optimized Parquet
     if "parquet" in formats:
