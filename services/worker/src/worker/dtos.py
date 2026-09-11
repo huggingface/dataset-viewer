@@ -263,6 +263,7 @@ DatasetLibrary = Literal[
     "polars",
     "lance",
     "lerobot",
+    "fiftyone",
     "harbor",
     "verifiers",
     "openenv",

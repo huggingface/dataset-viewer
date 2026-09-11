@@ -25,6 +25,7 @@ from worker.job_runners.dataset.compatible_libraries import (
     DatasetCompatibleLibrariesJobRunner,
     get_builder_configs,
     get_compatible_libraries_for_environment_tags,
+    get_compatible_libraries_for_fiftyone,
     get_compatible_libraries_for_json,
     get_compatible_libraries_for_lerobot,
     get_compatible_library_for_builder,
@@ -47,6 +48,7 @@ PARQUET_DATASET_LOGIN_REQUIRED = "dummy/parquet-dataset-login_required"
 WEBDATASET_DATASET = "dummy/webdataset-dataset"
 LANCE_DATASET = "dummy/lance-dataset"
 LEROBOT_DATASET = "dummy/lerobot-dataset"
+FIFTYONE_DATASET = "dummy/fiftyone-dataset"
 ENVIRONMENT_DATASET = "dummy/environment-dataset"
 ERROR_DATASET = "dummy/error-dataset"
 
@@ -89,6 +91,14 @@ UPSTREAM_RESPONSE_INFO_LEROBOT: UpstreamResponse = UpstreamResponse(
     http_status=HTTPStatus.OK,
     content={"dataset_info": {"default": {"config_name": "default", "builder_name": "parquet"}}, "partial": False},
     progress=1.0,
+)
+UPSTREAM_RESPONSE_INFO_FIFTYONE_ERROR: UpstreamResponse = UpstreamResponse(
+    kind="dataset-info",
+    dataset=FIFTYONE_DATASET,
+    dataset_git_revision=REVISION_NAME,
+    http_status=HTTPStatus.INTERNAL_SERVER_ERROR,
+    content={},
+    progress=0.0,
 )
 UPSTREAM_RESPONSE_INFO_ERROR: UpstreamResponse = UpstreamResponse(
     kind="dataset-info",
@@ -421,6 +431,10 @@ def mock_hffs(tmp_path_factory: TempPathFactory) -> Iterator[fsspec.AbstractFile
         "---\n"
     )
 
+    (hf / "datasets" / FIFTYONE_DATASET).mkdir(parents=True)
+    (hf / "datasets" / FIFTYONE_DATASET / "fiftyone.yml").write_text("name: dummy-fiftyone-dataset\n")
+    (hf / "datasets" / FIFTYONE_DATASET / "README.md").write_text("---\ntags:\n- fiftyone\n---\n")
+
     (hf / "datasets" / ENVIRONMENT_DATASET).mkdir(parents=True)
     (hf / "datasets" / ENVIRONMENT_DATASET / "README.md").write_text(
         "---\ntags:\n- environment\n- Harbor\n- verifiers\n- openenv\n- nemo-gym\n---\n"
@@ -570,6 +584,65 @@ def test_get_compatible_libraries_for_lerobot(
     assert compatible_libraries[0]["library"] == "lerobot"
     # a dataset without the "LeRobot" tag (or without a dataset card) is not detected
     assert get_compatible_libraries_for_lerobot(PARQUET_DATASET, hf_token=None, login_required=False) == []
+
+
+def test_get_compatible_libraries_for_fiftyone(
+    mock_hffs: fsspec.AbstractFileSystem,
+) -> None:
+    compatible_libraries = get_compatible_libraries_for_fiftyone(FIFTYONE_DATASET, hf_token=None, login_required=False)
+    assert len(compatible_libraries) == 1
+    assert compatible_libraries[0] == {
+        "language": "python",
+        "library": "fiftyone",
+        "function": "load_from_hub",
+        "loading_codes": [
+            {
+                "config_name": "default",
+                "arguments": {},
+                "code": (
+                    "import fiftyone as fo\n"
+                    "import fiftyone.utils.huggingface as fouh\n\n"
+                    'dataset = fouh.load_from_hub("dummy/fiftyone-dataset")\n\n'
+                    "session = fo.launch_app(dataset)"
+                ),
+            }
+        ],
+    }
+    compatible_libraries = get_compatible_libraries_for_fiftyone(LEROBOT_DATASET, hf_token=None, login_required=False)
+    assert len(compatible_libraries) == 1
+    assert compatible_libraries[0]["language"] == "shell"
+    assert compatible_libraries[0]["function"] == "lerobot-dataset-viz"
+    assert "lerobot-dataset-viz" in compatible_libraries[0]["loading_codes"][0]["code"]
+    assert "--display-mode fiftyone" in compatible_libraries[0]["loading_codes"][0]["code"]
+    assert get_compatible_libraries_for_fiftyone(PARQUET_DATASET, hf_token=None, login_required=False) == []
+
+
+def test_compute_fiftyone(
+    app_config: AppConfig,
+    get_job_runner: GetJobRunner,
+    mock_hffs: fsspec.AbstractFileSystem,
+) -> None:
+    upsert_response(**UPSTREAM_RESPONSE_INFO_LEROBOT)
+    job_runner = get_job_runner(LEROBOT_DATASET, app_config)
+    job_runner.pre_compute()
+    compute_result = list(job_runner.compute())[0]
+    job_runner.post_compute()
+    libraries = {library["library"] for library in compute_result.content["libraries"]}
+    assert {"lerobot", "fiftyone"} <= libraries
+
+
+def test_compute_fiftyone_when_dataset_info_fails(
+    app_config: AppConfig,
+    get_job_runner: GetJobRunner,
+    mock_hffs: fsspec.AbstractFileSystem,
+) -> None:
+    upsert_response(**UPSTREAM_RESPONSE_INFO_FIFTYONE_ERROR)
+    job_runner = get_job_runner(FIFTYONE_DATASET, app_config)
+    job_runner.pre_compute()
+    compute_result = list(job_runner.compute())[0]
+    job_runner.post_compute()
+    assert [library["library"] for library in compute_result.content["libraries"]] == ["fiftyone"]
+    assert compute_result.content["formats"] == []
 
 
 def test_get_compatible_libraries_for_environment_tags(

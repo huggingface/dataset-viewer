@@ -426,6 +426,21 @@ LEROBOT_CODE = """from lerobot.datasets import LeRobotDataset
 dataset = LeRobotDataset("{dataset}")"""
 
 
+FIFTYONE_HUB_CODE = """import fiftyone as fo
+import fiftyone.utils.huggingface as fouh
+{comment}
+dataset = fouh.load_from_hub("{dataset}")
+
+session = fo.launch_app(dataset)"""
+
+
+FIFTYONE_LEROBOT_CODE = """pip install 'lerobot[fiftyone]'
+lerobot-dataset-viz \\
+    --repo-id {dataset} \\
+    --episode-index 0 \\
+    --display-mode fiftyone"""
+
+
 HARBOR_CODE = """harbor run \\
     --dataset hf://datasets/{dataset} \\
     --agent oracle"""
@@ -885,6 +900,54 @@ def get_compatible_libraries_for_lerobot(
     ]
 
 
+def get_compatible_libraries_for_fiftyone(
+    dataset: str, hf_token: Optional[str], login_required: bool
+) -> list[CompatibleLibrary]:
+    fs = HfFileSystem(token=hf_token)
+    comment = LOGIN_COMMENT if login_required else ""
+    try:
+        fs.read_text(f"hf://datasets/{dataset}/fiftyone.yml")
+    except FileNotFoundError:
+        pass
+    else:
+        return [
+            {
+                "language": "python",
+                "library": "fiftyone",
+                "function": "load_from_hub",
+                "loading_codes": [
+                    {
+                        "config_name": "default",
+                        "arguments": {},
+                        "code": FIFTYONE_HUB_CODE.format(dataset=dataset, comment=comment),
+                    }
+                ],
+            }
+        ]
+    try:
+        dataset_readme_content = fs.read_text(f"hf://datasets/{dataset}/{datasets.config.REPOCARD_FILENAME}")
+    except FileNotFoundError:
+        return []
+    dataset_card_data = DatasetCard(dataset_readme_content).data
+    tags = getattr(dataset_card_data, "tags", None) or []
+    if not any(isinstance(tag, str) and tag.lower() == "lerobot" for tag in tags):
+        return []
+    return [
+        {
+            "language": "shell",
+            "library": "fiftyone",
+            "function": "lerobot-dataset-viz",
+            "loading_codes": [
+                {
+                    "config_name": "default",
+                    "arguments": {},
+                    "code": FIFTYONE_LEROBOT_CODE.format(dataset=dataset),
+                }
+            ],
+        }
+    ]
+
+
 def get_compatible_libraries_for_environment_tags(dataset: str, hf_token: Optional[str]) -> list[CompatibleLibrary]:
     fs = HfFileSystem(token=hf_token)
     try:
@@ -964,11 +1027,12 @@ def compute_compatible_libraries_response(
     except NotImplementedError:  # hfh doesn't implement listing user's datasets
         pass
     environment_libraries = get_compatible_libraries_for_environment_tags(dataset, hf_token)
+    fiftyone_libraries = get_compatible_libraries_for_fiftyone(dataset, hf_token, login_required)
     try:
         dataset_info_response = get_previous_step_or_raise(kind="dataset-info", dataset=dataset)
     except CachedArtifactError:
-        if environment_libraries:
-            return DatasetCompatibleLibrariesResponse(libraries=environment_libraries, formats=[])
+        if environment_libraries or fiftyone_libraries:
+            return DatasetCompatibleLibrariesResponse(libraries=environment_libraries + fiftyone_libraries, formats=[])
         raise
     http_status = dataset_info_response["http_status"]
     libraries: list[CompatibleLibrary] = []
@@ -1004,6 +1068,7 @@ def compute_compatible_libraries_response(
         libraries += get_compatible_libraries_for_lerobot(dataset, hf_token, login_required)
 
     libraries += environment_libraries
+    libraries += fiftyone_libraries
 
     # Optimized Parquet
     if "parquet" in formats:
