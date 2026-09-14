@@ -2,7 +2,7 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
-from typing import Any, Literal, Optional, TypedDict
+from typing import Any, Literal, Optional, TypedDict, Union
 
 from jsonschema import ValidationError, validate
 from libapi.utils import Endpoint, get_response
@@ -10,6 +10,7 @@ from libcommon.dtos import Priority
 from libcommon.exceptions import CustomError
 from libcommon.operations import delete_dataset, get_current_revision, smart_update_dataset, update_dataset
 from libcommon.prometheus import StepProfiler
+from libcommon.simple_cache import has_dataset_errors
 from libcommon.storage_client import StorageClient
 from starlette.requests import Request
 from starlette.responses import Response
@@ -63,7 +64,7 @@ class MoonWebhookV2Payload(TypedDict):
     repo: MoonWebhookV2PayloadRepo
     scope: str
     updatedRefs: Optional[list[UpdatedRefDict]]
-    updatedConfig: Optional[dict[str, str]]
+    updatedConfig: Optional[dict[str, Union[str, bool]]]
 
 
 def parse_payload(json: Any) -> MoonWebhookV2Payload:
@@ -92,13 +93,19 @@ def process_payload(
         delete_dataset(dataset=dataset, storage_clients=storage_clients)
     elif event in ["add", "update", "move"]:
         revision = payload["repo"].get("headSha")
+        updated_private = (payload.get("updatedConfig") or {}).get("private")
         if (
             event == "update"
             and get_current_revision(dataset) == revision
-            and not (payload.get("updatedConfig") or {}).get("private", False)
+            and not updated_private
+            and not (
+                updated_private is False
+                and revision is not None
+                and has_dataset_errors(dataset=dataset, revision=revision)
+            )
         ):
             # ^ it filters out the webhook calls when the refs/convert/parquet branch is updated
-            # ^ it also filters switching from private to public if the headSha is in the cache (i.e. if the user is PRO/Enterprise)
+            # Also skip private-to-public changes when cached results have no errors.
             logging.warning(
                 f"Webhook revision for {dataset} is the same as the current revision in the db - skipping update."
             )

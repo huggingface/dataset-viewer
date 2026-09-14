@@ -2,10 +2,13 @@
 # Copyright 2022 The HuggingFace Authors.
 
 from collections.abc import Mapping
-from typing import Any
+from http import HTTPStatus
+from typing import Any, Optional, Union
 from unittest.mock import patch
 
 import pytest
+from libcommon.queue.jobs import Queue
+from libcommon.simple_cache import get_cache_count_for_dataset, upsert_response
 
 from webhook.routes.webhook import MoonWebhookV2Payload, parse_payload, process_payload
 
@@ -198,3 +201,98 @@ def test_process_payload(
             process_payload(payload, blocked_datasets=[], hf_endpoint="https://huggingface.co")
             assert mock_delete_dataset.call_count == int(does_update)
             assert mock_update_dataset.call_count == int(does_update)
+
+
+@pytest.mark.parametrize(
+    "updated_config,error_dataset,error_revision,does_update",
+    [
+        ({"private": False}, "webhook-test", "abc", True),
+        ({"private": False}, None, None, False),
+        ({"private": False}, "other-dataset", "abc", False),
+        ({"private": False}, "webhook-test", "old", False),
+        (None, "webhook-test", "abc", False),
+        ({}, "webhook-test", "abc", False),
+        ({"private": True}, None, None, True),
+    ],
+)
+def test_same_revision_visibility_update(
+    updated_config: Optional[dict[str, Union[str, bool]]],
+    error_dataset: Optional[str],
+    error_revision: Optional[str],
+    does_update: bool,
+) -> None:
+    upsert_response(
+        kind="dataset-init",
+        dataset="webhook-test",
+        dataset_git_revision="abc",
+        content={"config_names": [{"dataset": "webhook-test", "config": "default"}]},
+        http_status=HTTPStatus.OK,
+    )
+    upsert_response(
+        kind="config-split-names",
+        dataset="webhook-test",
+        config="default",
+        dataset_git_revision="abc",
+        content={"splits": []},
+        http_status=HTTPStatus.OK,
+    )
+    if error_dataset is not None and error_revision is not None:
+        upsert_response(
+            kind="config-parquet-and-info",
+            dataset=error_dataset,
+            config="default",
+            dataset_git_revision=error_revision,
+            content={"error": "The dataset generation failed"},
+            http_status=HTTPStatus.INTERNAL_SERVER_ERROR,
+            error_code="DatasetGenerationError",
+        )
+    payload: MoonWebhookV2Payload = {
+        "event": "update",
+        "repo": {"type": "dataset", "name": "webhook-test", "headSha": "abc", "private": False},
+        "scope": "repo.config" if updated_config else "repo.content",
+        "updatedConfig": updated_config,
+        "updatedRefs": None,
+        "movedTo": None,
+    }
+    with (
+        patch("webhook.routes.webhook.delete_dataset") as delete,
+        patch("webhook.routes.webhook.update_dataset") as update,
+    ):
+        process_payload(payload, blocked_datasets=[], hf_endpoint="https://huggingface.co")
+        assert delete.call_count == int(does_update)
+        assert update.call_count == int(does_update)
+
+
+def test_public_transition_rebuilds_failed_cache() -> None:
+    dataset = "webhook-test"
+    revision = "abc"
+    upsert_response(
+        kind="dataset-init",
+        dataset=dataset,
+        dataset_git_revision=revision,
+        content={"config_names": []},
+        http_status=HTTPStatus.OK,
+    )
+    upsert_response(
+        kind="config-parquet-and-info",
+        dataset=dataset,
+        config="default",
+        dataset_git_revision=revision,
+        content={"error": "The dataset generation failed"},
+        http_status=HTTPStatus.INTERNAL_SERVER_ERROR,
+        error_code="DatasetGenerationError",
+    )
+    payload: MoonWebhookV2Payload = {
+        "event": "update",
+        "repo": {"type": "dataset", "name": dataset, "headSha": revision, "private": False},
+        "scope": "repo.config",
+        "updatedConfig": {"private": False},
+        "updatedRefs": None,
+        "movedTo": None,
+    }
+    with patch("libcommon.operations.get_latest_dataset_revision_if_supported_or_raise", return_value=revision):
+        process_payload(payload, blocked_datasets=[], hf_endpoint="https://huggingface.co")
+    assert get_cache_count_for_dataset(dataset=dataset) == 0
+    jobs = Queue().get_pending_jobs_df(dataset=dataset)
+    assert not jobs.empty
+    assert set(jobs["revision"]) == {revision}

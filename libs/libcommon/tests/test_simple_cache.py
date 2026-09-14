@@ -34,6 +34,7 @@ from libcommon.simple_cache import (
     get_response_with_details,
     get_response_without_content,
     get_responses_count_by_kind_status_and_error_code,
+    has_dataset_errors,
     is_successful_response,
     upsert_response,
 )
@@ -380,6 +381,32 @@ def test_big_row() -> None:
             content=big_content,
             http_status=HTTPStatus.OK,
         )
+
+
+@pytest.mark.parametrize("status", [HTTPStatus.BAD_REQUEST, HTTPStatus.INTERNAL_SERVER_ERROR])
+def test_has_dataset_errors(status: HTTPStatus) -> None:
+    upsert_response(
+        kind=CACHE_KIND,
+        dataset=DATASET_NAME_A,
+        dataset_git_revision=DATASET_GIT_REVISION_A,
+        content={},
+        http_status=HTTPStatus.OK,
+    )
+    assert not has_dataset_errors(dataset=DATASET_NAME_A, revision=DATASET_GIT_REVISION_A)
+
+    upsert_response(
+        kind=CACHE_KIND,
+        dataset=DATASET_NAME_A,
+        config=CONFIG_NAME_1,
+        split="train",
+        dataset_git_revision=DATASET_GIT_REVISION_B,
+        content=CONTENT_ERROR,
+        http_status=status,
+        error_code="DatasetGenerationError",
+    )
+    assert has_dataset_errors(dataset=DATASET_NAME_A, revision=DATASET_GIT_REVISION_B)
+    assert not has_dataset_errors(dataset=DATASET_NAME_A, revision=DATASET_GIT_REVISION_A)
+    assert not has_dataset_errors(dataset=DATASET_NAME_B, revision=DATASET_GIT_REVISION_B)
 
 
 def test_is_successful_response_two_valid_datasets() -> None:

@@ -618,6 +618,17 @@ def get_datasets_with_retryable_errors() -> set[str]:
     )
 
 
+def has_dataset_errors(dataset: str, revision: str) -> bool:
+    return (
+        CachedResponseDocument.objects(
+            dataset=dataset, dataset_git_revision=revision, http_status__gte=HTTPStatus.BAD_REQUEST
+        )
+        .only("id")
+        .first()
+        is not None
+    )
+
+
 def is_successful_response(kind: str, dataset: str, config: Optional[str] = None, split: Optional[str] = None) -> bool:
     """
     Check if the response is successful.
