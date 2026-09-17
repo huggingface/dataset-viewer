@@ -6,7 +6,7 @@ import logging
 import os
 import posixpath
 from collections.abc import Iterable, Iterator
-from contextlib import ExitStack
+from contextlib import ExitStack, contextmanager
 from dataclasses import dataclass, field
 from fnmatch import fnmatch
 from functools import partial
@@ -29,6 +29,7 @@ from datasets import (
     Json,
     load_dataset,
 )
+from datasets.data_files import resolve_pattern
 from datasets.features.features import decode_nested_example
 from datasets.utils.file_utils import SINGLE_FILE_COMPRESSION_EXTENSION_TO_PROTOCOL, is_relative_path
 from huggingface_hub import HfFileSystem, HfFileSystemFile
@@ -100,6 +101,36 @@ class check_paths_during_decoding:
         traceback: Optional[TracebackType],
     ) -> None:
         return self.exit_stack.close()
+
+
+def _patched_resolve_pattern(
+    pattern: str,
+    base_path: str,
+    allowed_extensions: Optional[list[str]] = None,
+    download_config: Optional[DownloadConfig] = None,
+) -> list[str]:
+    if not is_relative_path(pattern):
+        raise ValueError(f"Data files don't belong to {base_path}")
+    resolved: list[str] = resolve_pattern(
+        pattern, base_path=base_path, allowed_extensions=allowed_extensions, download_config=download_config
+    )
+    return resolved
+
+
+@contextmanager
+def allow_only_relative_data_files() -> Iterator[None]:
+    """Refuse the data files patterns that point outside of the dataset repository.
+
+    `resolve_pattern` is where `datasets` sends the request that resolves a pattern, and the checks
+    on the resolved data files only run once the dataset module is built, i.e. once the request has
+    been sent. A pattern that is not relative to the repository is therefore refused here, before
+    any request.
+
+    `resolve_pattern` also sends a request through `huggingface_hub` before it looks the protocol up
+    in fsspec, so the fsspec allow-list does not cover it either.
+    """
+    with patch("datasets.data_files.resolve_pattern", _patched_resolve_pattern):
+        yield
 
 
 @retry(on=[ConnectionError])
@@ -383,11 +414,12 @@ def safe_load_dataset_builder(
         download_config.token = token
     repo_dir = f"hf://datasets/{path}"
 
-    dataset_module = dataset_module_factory(
-        repo_dir,
-        revision=revision,
-        download_config=download_config,
-    )
+    with allow_only_relative_data_files():
+        dataset_module = dataset_module_factory(
+            repo_dir,
+            revision=revision,
+            download_config=download_config,
+        )
     # Get dataset builder class
     repo_dir_with_commit_hash = repo_dir + f"@{dataset_module.hash}"
     builder_kwargs = dataset_module.builder_kwargs
