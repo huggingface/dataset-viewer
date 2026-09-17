@@ -5,10 +5,6 @@ name: Launch end-to-end tests
 on:
   workflow_call:
 
-permissions:
-  contents: read
-  # minting the OIDC token the AWS role is assumed with
-  id-token: write
 
 env:
   python-version: 3.14.5
@@ -18,8 +14,13 @@ env:
   working-directory: e2e
   replicaset: "rs0"
   mongo-port: 27017
+permissions: {}
+
 jobs:
   e2e-tests:
+    permissions:
+      contents: read
+      id-token: write
     defaults:
       run:
         shell: bash
@@ -65,7 +66,7 @@ jobs:
           MONGO_REPLICASET: ${{ env.replicaset }}
           COMMON_BLOCKED_DATASETS: "DVUser/blocked-*"
           ADMIN_HF_ORGANIZATION: "DVAdminsOrg"
-          E2E_ADMIN_USER_TOKEN: "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"
+          E2E_ADMIN_USER_TOKEN: ${{ secrets.E2E_ADMIN_USER_TOKEN }}
           # the containers need to access S3 and Cloudfront
           ASSETS_BASE_URL: "https://datasets-server-test.us.dev.moon.huggingface.tech/assets"
           ASSETS_STORAGE_PROTOCOL: "s3"
@@ -123,6 +124,6 @@ jobs:
           WORKER_SLEEP_SECONDS: "1"
           COMMON_BLOCKED_DATASETS: "DVUser/blocked-*"
           ADMIN_HF_ORGANIZATION: "DVAdminsOrg"
-          E2E_ADMIN_USER_TOKEN: "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"
+          E2E_ADMIN_USER_TOKEN: ${{ secrets.E2E_ADMIN_USER_TOKEN }}
         run: |
           poetry run python -m pytest -vv -s tests

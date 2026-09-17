@@ -32,20 +32,25 @@ jobs:
         working-directory: ${{ inputs.working-directory }}
     runs-on: "ubuntu-latest"
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Install poetry
-        run: pipx install poetry==${{ env.poetry-version }}
+        env:
+          POETRY_VERSION: ${{ env.poetry-version }}
+        run: pipx install "poetry==${POETRY_VERSION}"
       - name: Use Python
-        uses: actions/setup-python@v7
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: ${{ env.python-version }}
       - name: Install packages
         run: sudo apt update; sudo apt install -y ffmpeg libavcodec-extra libsndfile1 libjpeg-dev zlib1g-dev
       - name: Install dependencies
         # "poetry env use" is required: https://github.com/actions/setup-python/issues/374#issuecomment-1088938718
+        env:
+          PYTHON_VERSION: ${{ env.python-version }}
+          POETRY_ARGS: ${{ inputs.poetry-args }}
         run: |
-          poetry env use "${{ env.python-version }}"
-          poetry install ${{ inputs.poetry-args }}
+          poetry env use "${PYTHON_VERSION}"
+          poetry install ${POETRY_ARGS}
       - name: Launch mongo
         env:
           MONGO_PORT: ${{ env.mongo-port }}
