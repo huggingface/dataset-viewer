@@ -476,11 +476,10 @@ class StringColumn(Column):
             n_unique / n_samples <= MAX_PROPORTION_STRING_LABELS and n_unique <= MAX_NUM_STRING_LABELS
         ) or n_unique <= NUM_BINS
 
-    @staticmethod
-    def is_datetime(data: pl.DataFrame, column_name: str) -> bool:
+    def is_datetime(self, data: pl.DataFrame) -> bool:
         """Check if first 100 non-null samples in a column match datetime format."""
 
-        values = data.filter(pl.col(column_name).is_not_null()).head(100)[column_name].to_list()
+        values = data.filter(pl.col(self.name).is_not_null()).head(100)[self.name].to_list()
         return all(is_datetime(value) for value in values) if len(values) > 0 else False
 
     def compute_transformed_data(
@@ -497,7 +496,7 @@ class StringColumn(Column):
     ) -> Union[CategoricalStatisticsItem, NumericalStatisticsItem, DatetimeStatisticsItem]:
         nan_count, nan_proportion = nan_count_proportion(data, self.name, len(data))
         n_unique = data[self.name].n_unique()
-        if self.is_datetime(data, self.column_name):
+        if self.is_datetime(data):
             try:
                 stats: DatetimeStatisticsItem = DatetimeColumn(self.name).compute_statistics(
                     data,
@@ -574,14 +573,13 @@ class ListColumn(Column):
     def compute_transformed_data(
         self,
         data: pl.DataFrame,
-        transformed_column_name: str,
     ) -> pl.DataFrame:
         return data.select(
             pl.col(self.name),
             pl.when(pl.col(self.name).is_not_null())
             .then(pl.col(self.name).list.len())
             .otherwise(pl.lit(None))  # polars counts len(null) in list type column as 0, while we want to keep null
-            .alias(transformed_column_name),
+            .alias(self.transformed_name),
         )
 
     def _compute_statistics(
@@ -592,8 +590,7 @@ class ListColumn(Column):
         if nan_count == len(data):
             return all_nan_statistics_item(len(data))
 
-        lengths_column_name = self.transformed_name
-        lengths_df = self.compute_transformed_data(data, self.name, lengths_column_name)
+        lengths_df = self.compute_transformed_data(data)
         lengths_stats: NumericalStatisticsItem = self.transform_column.compute_statistics(lengths_df)
 
         return NumericalStatisticsItem(
@@ -623,7 +620,7 @@ class MediaColumn(Column):
         self.repo_id = repo_id
         self.hash = hash
         self.repo_dir = f"hf://datasets/{repo_id}"
-        self.repo_dir_with_commit_hash = self.repo_dir_with_commit_hash + "@" + self.hash
+        self.repo_dir_with_commit_hash = self.repo_dir + "@" + self.hash
 
     def transform(self, example: Optional[Union[bytes, dict[str, Any]]]) -> Any:
         """
@@ -650,7 +647,7 @@ class MediaColumn(Column):
         parquet_paths: list[Path],
     ) -> SupportedStatistics:
         transformed_values = self.compute_transformed_data(
-            parquet_paths, self.name, partial(self.transform, hf_token=self.hf_token)
+            parquet_paths, partial(self.transform)
         )
         nan_count = sum(value is None for value in transformed_values)
         if nan_count == len(transformed_values):
@@ -846,12 +843,12 @@ class DatetimeColumn(Column):
         original_timezone = None
         if isinstance(data[self.name].dtype, pl.String):
             original_timezone = get_timezone(data[self.name][0])
-            datetime_format = self.get_format(data, self.name)
+            datetime_format = self.get_format(data)
             data = data.with_columns(pl.col(self.name).str.to_datetime(format=datetime_format))
 
         min_date: datetime.datetime = data[self.name].min()  # type: ignore   # mypy infers type of datetime column .min() incorrectly
         # compute distribution of time passed from min date in **seconds**
-        timedelta_df = self.compute_transformed_data(data, self.name, self.transformed_name, min_date)
+        timedelta_df = self.compute_transformed_data(data, min_date)
         timedelta_stats: NumericalStatisticsItem = self.transform_column.compute_statistics(
             timedelta_df,
         )

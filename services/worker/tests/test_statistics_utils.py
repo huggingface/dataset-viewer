@@ -310,10 +310,9 @@ def test_class_label_statistics(
     data = datasets["descriptive_statistics"].to_pandas()
     class_label_feature = datasets["descriptive_statistics"].features[column_name]
     expected = count_expected_statistics_for_categorical_column(data[column_name], class_label_feature)
-    computed = ClassLabelColumn(feature_name=column_name).compute_statistics(
-        data=pl.from_pandas(data),
-        feature_dict={"_type": "ClassLabel", "names": class_label_feature.names},
-    )
+    computed = ClassLabelColumn(
+        feature_name=column_name, feature_dict={"_type": "ClassLabel", "names": class_label_feature.names}
+    ).compute_statistics(data=pl.from_pandas(data))
     assert expected == computed
 
 
@@ -400,9 +399,9 @@ def test_audio_statistics(
     dataset_table = datasets["audio_statistics"].data
     dataset_table_embedded = embed_table_storage(dataset_table)  # store audio as bytes instead of paths to files
     pq.write_table(dataset_table_embedded, parquet_filename)
-    computed = AudioColumn(feature_name=column_name, repo_id="dummy/repo", hash="hash").compute_statistics(
-        parquet_paths=[parquet_filename],
-    )
+    computed = AudioColumn(
+        feature_name=column_name, hf_token=None, repo_id="dummy/repo", hash="hash"
+    ).compute_statistics(parquet_paths=[parquet_filename])
     assert computed == expected
 
     # write samples as just bytes, not as struct {"bytes": b"", "path": ""}, to check that this format works too
@@ -411,9 +410,9 @@ def test_audio_statistics(
         {column_name: [open(audio["path"], "rb").read() if audio else None for audio in audios]}
     )
     pq.write_table(pa_table_bytes, parquet_filename)
-    computed = AudioColumn(feature_name=column_name, hf_token=None, repo_id="dummy/repo", hash="hash").compute_statistics(
-        parquet_paths=[parquet_filename],
-    )
+    computed = AudioColumn(
+        feature_name=column_name, hf_token=None, repo_id="dummy/repo", hash="hash"
+    ).compute_statistics(parquet_paths=[parquet_filename])
     assert computed == expected
 
 
@@ -439,9 +438,9 @@ def test_video_statistics(
     dataset_table = datasets["video_statistics"].data
     dataset_table_embedded = embed_table_storage(dataset_table)  # store audio as bytes instead of paths to files
     pq.write_table(dataset_table_embedded, parquet_filename)
-    computed = VideoColumn(feature_name=column_name, repo_id="dummy/repo", hash="hash").compute_statistics(
-        parquet_paths=[parquet_filename],
-    )
+    computed = VideoColumn(
+        feature_name=column_name, hf_token=None, repo_id="dummy/repo", hash="hash"
+    ).compute_statistics(parquet_paths=[parquet_filename])
     assert computed == expected
 
     # write samples as just bytes, not as struct {"bytes": b"", "path": ""}, to check that this format works too
@@ -450,9 +449,9 @@ def test_video_statistics(
         {column_name: [open(video["path"], "rb").read() if video else None for video in videos]}
     )
     pq.write_table(pa_table_bytes, parquet_filename)
-    computed = VideoColumn(feature_name=column_name, repo_id="dummy/repo", hash="hash").compute_statistics(
-        parquet_paths=[parquet_filename],
-    )
+    computed = VideoColumn(
+        feature_name=column_name, hf_token=None, repo_id="dummy/repo", hash="hash"
+    ).compute_statistics(parquet_paths=[parquet_filename])
     assert computed == expected
 
 
@@ -476,9 +475,9 @@ def test_image_statistics(
     dataset_table = datasets["image_statistics"].data
     dataset_table_embedded = embed_table_storage(dataset_table)  # store image as bytes instead of paths to files
     pq.write_table(dataset_table_embedded, parquet_filename)
-    computed = ImageColumn(feature_name=column_name, repo_id="dummy/repo", hash="hash").compute_statistics(
-        parquet_paths=[parquet_filename],
-    )
+    computed = ImageColumn(
+        feature_name=column_name, hf_token=None, repo_id="dummy/repo", hash="hash"
+    ).compute_statistics(parquet_paths=[parquet_filename])
     assert computed == expected
 
     # write samples as just bytes, not as struct {"bytes": b"", "path": ""}, to check that this format works too
@@ -487,9 +486,9 @@ def test_image_statistics(
         {column_name: [open(image["path"], "rb").read() if image else None for image in images]}
     )
     pq.write_table(pa_table_bytes, parquet_filename)
-    computed = ImageColumn(feature_name=column_name, repo_id="dummy/repo", hash="hash").compute_statistics(
-        parquet_paths=[parquet_filename],
-    )
+    computed = ImageColumn(
+        feature_name=column_name, hf_token=None, repo_id="dummy/repo", hash="hash"
+    ).compute_statistics(parquet_paths=[parquet_filename])
     assert computed == expected
 
 

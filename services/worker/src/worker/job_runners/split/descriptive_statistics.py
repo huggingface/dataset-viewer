@@ -98,6 +98,7 @@ def compute_descriptive_statistics_response(
     parquet_revision: str,
     max_split_size_bytes: int,
     parquet_metadata_directory: StrPath,
+    revision: str,
 ) -> SplitDescriptiveStatisticsResponse:
     """
     Get the response of 'split-descriptive-statistics' for one specific split of a dataset from huggingface.co.
@@ -221,40 +222,46 @@ def compute_descriptive_statistics_response(
             if is_list_pa_type(
                 local_parquet_split_directory / split_parquet_files[0]["filename"], dataset_feature_name
             ):
-                return ListColumn(feature_name=dataset_feature_name, n_samples=num_examples)
+                return ListColumn(feature_name=dataset_feature_name)
 
         if isinstance(dataset_feature, dict):
             _type = dataset_feature.get("_type")
             if _type == "ClassLabel":
                 return ClassLabelColumn(
-                    feature_name=dataset_feature_name, n_samples=num_examples, feature_dict=dataset_feature
+                    feature_name=dataset_feature_name, feature_dict=dataset_feature
                 )
 
             if _type == "Audio":
-                return AudioColumn(feature_name=dataset_feature_name, n_samples=num_examples, hf_token=hf_token)
+                return AudioColumn(
+                    feature_name=dataset_feature_name, hf_token=hf_token, repo_id=dataset, hash=revision
+                )
 
             if _type == "Video":
-                return VideoColumn(feature_name=dataset_feature_name, n_samples=num_examples, hf_token=hf_token)
+                return VideoColumn(
+                    feature_name=dataset_feature_name, hf_token=hf_token, repo_id=dataset, hash=revision
+                )
 
             if _type == "Image":
-                return ImageColumn(feature_name=dataset_feature_name, n_samples=num_examples, hf_token=hf_token)
+                return ImageColumn(
+                    feature_name=dataset_feature_name, hf_token=hf_token, repo_id=dataset, hash=revision
+                )
 
             if _type == "Value":
                 dtype = dataset_feature.get("dtype", "")
                 if dtype in INTEGER_DTYPES:
-                    return IntColumn(feature_name=dataset_feature_name, n_samples=num_examples)
+                    return IntColumn(feature_name=dataset_feature_name)
 
                 if dtype in FLOAT_DTYPES:
-                    return FloatColumn(feature_name=dataset_feature_name, n_samples=num_examples)
+                    return FloatColumn(feature_name=dataset_feature_name)
 
                 if dtype in STRING_DTYPES:
-                    return StringColumn(feature_name=dataset_feature_name, n_samples=num_examples)
+                    return StringColumn(feature_name=dataset_feature_name)
 
                 if dtype == "bool":
-                    return BoolColumn(feature_name=dataset_feature_name, n_samples=num_examples)
+                    return BoolColumn(feature_name=dataset_feature_name)
 
                 if dtype.startswith("timestamp"):
-                    return DatetimeColumn(feature_name=dataset_feature_name, n_samples=num_examples)
+                    return DatetimeColumn(feature_name=dataset_feature_name)
         return None
 
     columns: list[SupportedColumns] = []
@@ -346,5 +353,6 @@ class SplitDescriptiveStatisticsJobRunner(SplitJobRunnerWithCache):
                 parquet_revision=self.descriptive_statistics_config.parquet_revision,
                 max_split_size_bytes=self.descriptive_statistics_config.max_split_size_bytes,
                 parquet_metadata_directory=self.parquet_metadata_directory,
+                revision=self.job_info["params"]["revision"],
             )
         )
