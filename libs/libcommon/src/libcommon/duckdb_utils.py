@@ -1,5 +1,4 @@
 import tempfile
-from functools import partial
 from pathlib import Path
 from textwrap import dedent
 from typing import Any, Literal, Optional
@@ -159,9 +158,8 @@ def compute_audio_duration_column(
     hf_token: Optional[str],
 ) -> pl.DataFrame:
     duration_column_name = f"{column_name}.duration"
-    durations = AudioColumn.compute_transformed_data(
-        parquet_paths, column_name, partial(AudioColumn.get_duration, hf_token=hf_token)
-    )
+    column = AudioColumn(feature_name=column_name, hf_token=hf_token)
+    durations = column.compute_transformed_data(parquet_paths, column_name, column.get_duration)
     duration_df = pl.from_dict({duration_column_name: durations})
     if target_df is None:
         return duration_df
@@ -176,9 +174,8 @@ def compute_video_duration_column(
     hf_token: Optional[str],
 ) -> pl.DataFrame:
     duration_column_name = f"{column_name}.duration"
-    durations = VideoColumn.compute_transformed_data(
-        parquet_paths, column_name, partial(VideoColumn.get_duration, hf_token=hf_token)
-    )
+    column = VideoColumn(feature_name=column_name, hf_token=hf_token)
+    durations = column.compute_transformed_data(parquet_paths, column_name, column.get_duration)
     duration_df = pl.from_dict({duration_column_name: durations})
     if target_df is None:
         return duration_df
@@ -192,9 +189,8 @@ def compute_image_width_height_column(
     target_df: Optional[pl.DataFrame],
     hf_token: Optional[str],
 ) -> pl.DataFrame:
-    shapes = ImageColumn.compute_transformed_data(
-        parquet_paths, column_name, partial(ImageColumn.get_shape, hf_token=hf_token)
-    )
+    column = ImageColumn(feature_name=column_name, hf_token=hf_token)
+    shapes = column.compute_transformed_data(parquet_paths, column_name, column.get_shape)
     widths, heights = list(zip(*shapes))
     width_column_name, height_column_name = f"{column_name}.width", f"{column_name}.height"
     shapes_df = pl.from_dict({width_column_name: widths, height_column_name: heights})
