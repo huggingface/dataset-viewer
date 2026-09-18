@@ -4,6 +4,7 @@ import datetime
 import enum
 import io
 import logging
+import posixpath
 from contextlib import nullcontext
 from functools import partial
 from pathlib import Path
@@ -12,8 +13,8 @@ from typing import Any, Callable, Optional, TypedDict, Union
 import numpy as np
 import polars as pl
 import pyarrow.parquet as pq
-from datasets import DownloadConfig, Features
-from datasets.streaming import xopen
+from datasets import Features
+from huggingface_hub import HfFileSystem
 from tqdm.contrib.concurrent import thread_map
 
 from libcommon.exceptions import (
@@ -281,44 +282,46 @@ class Column:
     # Optional column class that might be used inside ._compute_statistics() if computation should be performed
     # over some transformed values. For example, for StringColumn.transform_column is IntColumn
     # because stats are calculated over string lengths which are integers.
-    transform_column: Optional[type["Column"]] = None
+    TRANSFORM_COLUMN_CLASS: Optional[type["Column"]] = None
+    transform_column: Optional["Column"]
 
     def __init__(
         self,
         feature_name: str,
-        n_samples: int,
     ):
         self.name = feature_name
-        self.n_samples = n_samples
+        self.transform_column = (
+            self.TRANSFORM_COLUMN_CLASS(feature_name=self.transformed_name) if self.TRANSFORM_COLUMN_CLASS else None
+        )
 
-    @classmethod
+    @property
+    def transformed_name(self) -> str:
+        return self.name
+
     def compute_transformed_data(
-        cls,
+        self,
         *args: Any,
         **kwargs: Any,
     ) -> Any:
         raise NotImplementedError
 
-    @classmethod
     def _compute_statistics(
-        cls,
+        self,
         *args: Any,
         **kwargs: Any,
     ) -> SupportedStatistics:
         raise NotImplementedError
 
-    @classmethod
     def compute_statistics(
-        cls,
+        self,
         *args: Any,
-        column_name: str,
         **kwargs: Any,
     ) -> Any:
         try:
-            logging.info(f"Compute statistics for {cls.__name__} {column_name}. ")
-            return cls._compute_statistics(*args, column_name=column_name, **kwargs)
+            logging.info(f"Compute statistics for {self.__class__.__name__} {self.name}. ")
+            return self._compute_statistics(*args, **kwargs)
         except Exception as error:
-            raise StatisticsComputationError(f"Error for {cls.__name__}={column_name}: {error=}", error)
+            raise StatisticsComputationError(f"Error for {self.__class__.__name__}={self.name}: {error=}", error)
 
     def compute_and_prepare_response(self, *args: Any, **kwargs: Any) -> StatisticsPerColumnItem:
         raise NotImplementedError
@@ -329,29 +332,29 @@ class ClassLabelColumn(Column):
         super().__init__(*args, **kwargs)
         self.feature_dict = feature_dict
 
-    @classmethod
     def _compute_statistics(
-        cls, data: pl.DataFrame, column_name: str, n_samples: int, feature_dict: dict[str, Any]
+        self,
+        data: pl.DataFrame,
     ) -> CategoricalStatisticsItem:
-        datasets_feature = Features.from_dict({column_name: feature_dict})[column_name]
-        nan_count, nan_proportion = nan_count_proportion(data, column_name, n_samples)
+        datasets_feature = Features.from_dict({self.name: self.feature_dict})[self.name]
+        nan_count, nan_proportion = nan_count_proportion(data, self.name, len(data))
 
-        ids2counts: dict[int, int] = value_counts(data, column_name)
+        ids2counts: dict[int, int] = value_counts(data, self.name)
         no_label_count = ids2counts.pop(NO_LABEL_VALUE, 0)
-        no_label_proportion = np.round(no_label_count / n_samples, DECIMALS).item() if no_label_count != 0 else 0.0
+        no_label_proportion = np.round(no_label_count / len(data), DECIMALS).item() if no_label_count != 0 else 0.0
 
         num_classes = len(datasets_feature.names)
         labels2counts: dict[str, int] = {
             datasets_feature.int2str(cat_id): ids2counts.get(cat_id, 0) for cat_id in range(num_classes)
         }
-        n_unique = data[column_name].n_unique()
+        n_unique = data[self.name].n_unique()
         logging.debug(
             f"{nan_count=} {nan_proportion=} {no_label_count=} {no_label_proportion=}, {n_unique=} {labels2counts=}"
         )
 
         if n_unique > num_classes + int(no_label_count > 0) + int(nan_count > 0):
             raise StatisticsComputationError(
-                f"Got unexpected result for ClassLabel {column_name=}: "
+                f"Got unexpected result for ClassLabel {self.name=}: "
                 f" number of unique values is greater than provided by feature metadata. "
                 f" {n_unique=}, {datasets_feature=}, {no_label_count=}, {nan_count=}. "
             )
@@ -366,9 +369,7 @@ class ClassLabelColumn(Column):
         )
 
     def compute_and_prepare_response(self, data: pl.DataFrame) -> StatisticsPerColumnItem:
-        stats = self.compute_statistics(
-            data, column_name=self.name, n_samples=self.n_samples, feature_dict=self.feature_dict
-        )
+        stats = self.compute_statistics(data)
         return StatisticsPerColumnItem(
             column_name=self.name,
             column_type=ColumnType.CLASS_LABEL,
@@ -377,29 +378,26 @@ class ClassLabelColumn(Column):
 
 
 class FloatColumn(Column):
-    @classmethod
     def _compute_statistics(
-        cls,
+        self,
         data: pl.DataFrame,
-        column_name: str,
-        n_samples: int,
     ) -> NumericalStatisticsItem:
         data = data.fill_nan(None)
-        nan_count, nan_proportion = nan_count_proportion(data, column_name, n_samples)
-        if nan_count == n_samples:  # all values are None
-            return all_nan_statistics_item(n_samples)
+        nan_count, nan_proportion = nan_count_proportion(data, self.name, len(data))
+        if nan_count == len(data):  # all values are None
+            return all_nan_statistics_item(len(data))
 
-        minimum, maximum, mean, median, std = min_max_mean_median_std(data, column_name)
+        minimum, maximum, mean, median, std = min_max_mean_median_std(data, self.name)
         logging.debug(f"{minimum=}, {maximum=}, {mean=}, {median=}, {std=}, {nan_count=} {nan_proportion=}")
 
         hist = compute_histogram(
             data,
-            column_name=column_name,
+            column_name=self.name,
             column_type=ColumnType.FLOAT,
             min_value=minimum,
             max_value=maximum,
             n_bins=NUM_BINS,
-            n_samples=n_samples - nan_count,
+            n_samples=len(data) - nan_count,
         )
 
         return NumericalStatisticsItem(
@@ -414,7 +412,7 @@ class FloatColumn(Column):
         )
 
     def compute_and_prepare_response(self, data: pl.DataFrame) -> StatisticsPerColumnItem:
-        stats = self.compute_statistics(data, column_name=self.name, n_samples=self.n_samples)
+        stats = self.compute_statistics(data)
         return StatisticsPerColumnItem(
             column_name=self.name,
             column_type=ColumnType.FLOAT,
@@ -423,29 +421,26 @@ class FloatColumn(Column):
 
 
 class IntColumn(Column):
-    @classmethod
     def _compute_statistics(
-        cls,
+        self,
         data: pl.DataFrame,
-        column_name: str,
-        n_samples: int,
     ) -> NumericalStatisticsItem:
-        nan_count, nan_proportion = nan_count_proportion(data, column_name, n_samples=n_samples)
-        if nan_count == n_samples:
-            return all_nan_statistics_item(n_samples)
+        nan_count, nan_proportion = nan_count_proportion(data, self.name, n_samples=len(data))
+        if nan_count == len(data):
+            return all_nan_statistics_item(len(data))
 
-        minimum, maximum, mean, median, std = min_max_mean_median_std(data, column_name)
+        minimum, maximum, mean, median, std = min_max_mean_median_std(data, self.name)
         logging.debug(f"{minimum=}, {maximum=}, {mean=}, {median=}, {std=}, {nan_count=} {nan_proportion=}")
 
         minimum, maximum = int(minimum), int(maximum)
         hist = compute_histogram(
             data,
-            column_name=column_name,
+            column_name=self.name,
             column_type=ColumnType.INT,
             min_value=minimum,
             max_value=maximum,
             n_bins=NUM_BINS,
-            n_samples=n_samples - nan_count,
+            n_samples=len(data) - nan_count,
         )
 
         return NumericalStatisticsItem(
@@ -460,7 +455,7 @@ class IntColumn(Column):
         )
 
     def compute_and_prepare_response(self, data: pl.DataFrame) -> StatisticsPerColumnItem:
-        stats = self.compute_statistics(data, column_name=self.name, n_samples=self.n_samples)
+        stats = self.compute_statistics(data)
         return StatisticsPerColumnItem(
             column_name=self.name,
             column_type=ColumnType.INT,
@@ -469,7 +464,11 @@ class IntColumn(Column):
 
 
 class StringColumn(Column):
-    transform_column = IntColumn
+    TRANSFORM_COLUMN_CLASS = IntColumn
+
+    @property
+    def transformed_name(self):
+        return f"{self.name}_len"
 
     @staticmethod
     def is_class(n_unique: int, n_samples: int) -> bool:
@@ -484,42 +483,34 @@ class StringColumn(Column):
         values = data.filter(pl.col(column_name).is_not_null()).head(100)[column_name].to_list()
         return all(is_datetime(value) for value in values) if len(values) > 0 else False
 
-    @classmethod
     def compute_transformed_data(
-        cls,
+        self,
         data: pl.DataFrame,
-        column_name: str,
-        transformed_column_name: str,
     ) -> pl.DataFrame:
-        return data.select(pl.col(column_name)).with_columns(
-            pl.col(column_name).str.len_chars().alias(transformed_column_name)
+        return data.select(pl.col(self.name)).with_columns(
+            pl.col(self.name).str.len_chars().alias(self.transformed_name)
         )
 
-    @classmethod
     def _compute_statistics(
-        cls,
+        self,
         data: pl.DataFrame,
-        column_name: str,
-        n_samples: int,
     ) -> Union[CategoricalStatisticsItem, NumericalStatisticsItem, DatetimeStatisticsItem]:
-        nan_count, nan_proportion = nan_count_proportion(data, column_name, n_samples)
-        n_unique = data[column_name].n_unique()
-        if cls.is_datetime(data, column_name):
+        nan_count, nan_proportion = nan_count_proportion(data, self.name, len(data))
+        n_unique = data[self.name].n_unique()
+        if self.is_datetime(data, self.column_name):
             try:
-                stats: DatetimeStatisticsItem = DatetimeColumn.compute_statistics(
+                stats: DatetimeStatisticsItem = DatetimeColumn(self.name).compute_statistics(
                     data,
-                    column_name=column_name,
-                    n_samples=n_samples,
                 )
                 return stats
             except Exception as error:
                 logging.info(
-                    f"Column {column_name} is datetime, but datetime stats compute failed ({error}), "
+                    f"Column {self.name} is datetime, but datetime stats compute failed ({error}), "
                     f"compute string stats instead. "
                 )
 
-        if cls.is_class(n_unique, n_samples):
-            labels2counts: dict[str, int] = value_counts(data, column_name) if nan_count != n_samples else {}
+        if self.is_class(n_unique, len(data)):
+            labels2counts: dict[str, int] = value_counts(data, self.name) if nan_count != len(data) else {}
             logging.debug(f"{n_unique=} {nan_count=} {nan_proportion=} {labels2counts=}")
             # exclude counts of None values from frequencies if exist:
             labels2counts.pop(None, None)  # type: ignore
@@ -532,15 +523,12 @@ class StringColumn(Column):
                 frequencies=labels2counts,
             )
 
-        lengths_column_name = f"{column_name}_len"
-        lengths_df = cls.compute_transformed_data(data, column_name, transformed_column_name=lengths_column_name)
-        lengths_stats: NumericalStatisticsItem = cls.transform_column.compute_statistics(
-            lengths_df, column_name=lengths_column_name, n_samples=n_samples
-        )
+        lengths_df = self.compute_transformed_data(data)
+        lengths_stats: NumericalStatisticsItem = self.transform_column.compute_statistics(lengths_df)
         return lengths_stats
 
     def compute_and_prepare_response(self, data: pl.DataFrame) -> StatisticsPerColumnItem:
-        stats = self.compute_statistics(data, column_name=self.name, n_samples=self.n_samples)
+        stats = self.compute_statistics(data)
         if "frequencies" in stats:
             string_type = ColumnType.STRING_LABEL
         elif isinstance(stats["histogram"]["bin_edges"][0], str):
@@ -555,10 +543,9 @@ class StringColumn(Column):
 
 
 class BoolColumn(Column):
-    @classmethod
-    def _compute_statistics(cls, data: pl.DataFrame, column_name: str, n_samples: int) -> BoolStatisticsItem:
-        nan_count, nan_proportion = nan_count_proportion(data, column_name, n_samples)
-        values2counts: dict[str, int] = value_counts(data, column_name)
+    def _compute_statistics(self, data: pl.DataFrame) -> BoolStatisticsItem:
+        nan_count, nan_proportion = nan_count_proportion(data, self.name, len(data))
+        values2counts: dict[str, int] = value_counts(data, self.name)
         # exclude counts of None values from frequencies if exist:
         values2counts.pop(None, None)  # type: ignore
         logging.debug(f"{nan_count=} {nan_proportion=} {values2counts=}")
@@ -569,7 +556,7 @@ class BoolColumn(Column):
         )
 
     def compute_and_prepare_response(self, data: pl.DataFrame) -> StatisticsPerColumnItem:
-        stats = self.compute_statistics(data, column_name=self.name, n_samples=self.n_samples)
+        stats = self.compute_statistics(data)
         return StatisticsPerColumnItem(
             column_name=self.name,
             column_type=ColumnType.BOOL,
@@ -578,39 +565,36 @@ class BoolColumn(Column):
 
 
 class ListColumn(Column):
-    transform_column = IntColumn
+    TRANSFORM_COLUMN_CLASS = IntColumn
 
-    @classmethod
+    @property
+    def transformed_name(self) -> str:
+        return f"{self.name}_len"
+
     def compute_transformed_data(
-        cls,
+        self,
         data: pl.DataFrame,
-        column_name: str,
         transformed_column_name: str,
     ) -> pl.DataFrame:
         return data.select(
-            pl.col(column_name),
-            pl.when(pl.col(column_name).is_not_null())
-            .then(pl.col(column_name).list.len())
+            pl.col(self.name),
+            pl.when(pl.col(self.name).is_not_null())
+            .then(pl.col(self.name).list.len())
             .otherwise(pl.lit(None))  # polars counts len(null) in list type column as 0, while we want to keep null
             .alias(transformed_column_name),
         )
 
-    @classmethod
     def _compute_statistics(
-        cls,
+        self,
         data: pl.DataFrame,
-        column_name: str,
-        n_samples: int,
     ) -> NumericalStatisticsItem:
-        nan_count, nan_proportion = nan_count_proportion(data, column_name, n_samples)
-        if nan_count == n_samples:
-            return all_nan_statistics_item(n_samples)
+        nan_count, nan_proportion = nan_count_proportion(data, self.name, len(data))
+        if nan_count == len(data):
+            return all_nan_statistics_item(len(data))
 
-        lengths_column_name = f"{column_name}_len"
-        lengths_df = cls.compute_transformed_data(data, column_name, lengths_column_name)
-        lengths_stats: NumericalStatisticsItem = cls.transform_column.compute_statistics(
-            lengths_df, column_name=lengths_column_name, n_samples=n_samples
-        )
+        lengths_column_name = self.transformed_name
+        lengths_df = self.compute_transformed_data(data, self.name, lengths_column_name)
+        lengths_stats: NumericalStatisticsItem = self.transform_column.compute_statistics(lengths_df)
 
         return NumericalStatisticsItem(
             nan_count=nan_count,
@@ -624,7 +608,7 @@ class ListColumn(Column):
         )
 
     def compute_and_prepare_response(self, data: pl.DataFrame) -> StatisticsPerColumnItem:
-        stats = self.compute_statistics(data, column_name=self.name, n_samples=self.n_samples)
+        stats = self.compute_statistics(data)
         return StatisticsPerColumnItem(
             column_name=self.name,
             column_type=ColumnType.LIST,
@@ -633,57 +617,49 @@ class ListColumn(Column):
 
 
 class MediaColumn(Column):
-    transform_column: type[Column]
-
-    def __init__(self, feature_name: str, n_samples: int, hf_token: Optional[str]):
-        super().__init__(feature_name, n_samples)
+    def __init__(self, feature_name: str, hf_token: Optional[str], repo_id: str, hash: str):
+        super().__init__(feature_name)
         self.hf_token = hf_token
+        self.repo_id = repo_id
+        self.hash = hash
+        self.repo_dir = f"hf://datasets/{repo_id}"
+        self.repo_dir_with_commit_hash = self.repo_dir_with_commit_hash + "@" + self.hash
 
-    @classmethod
-    def transform(cls, example: Optional[Union[bytes, dict[str, Any]]], hf_token: Optional[str]) -> Any:
+    def transform(self, example: Optional[Union[bytes, dict[str, Any]]]) -> Any:
         """
         Function to use to transform the original values to further pass these transformed values to statistics
         computation. Used inside ._compute_statistics() method.
         """
         raise NotImplementedError
 
-    @classmethod
-    def compute_transformed_data(
-        cls, parquet_paths: list[Path], column_name: str, transform_func: Callable[[Any], Any]
-    ) -> list[Any]:
+    def compute_transformed_data(self, parquet_paths: list[Path], transform_func: Callable[[Any], Any]) -> list[Any]:
         transformed_values = []
         for filename in parquet_paths:
-            shard_items = pq.read_table(filename, columns=[column_name]).to_pydict()[column_name]
+            shard_items = pq.read_table(filename, columns=[self.name]).to_pydict()[self.name]
             shard_transformed_values = thread_map(
                 transform_func,
                 shard_items,
-                desc=f"Transforming values of {cls.__name__} {column_name} for {filename.name}",
+                desc=f"Transforming values of {self.__class__.__name__} {self.name} for {filename.name}",
                 leave=False,
             )
             transformed_values.extend(shard_transformed_values)
         return transformed_values
 
-    @classmethod
     def _compute_statistics(
-        cls,
+        self,
         parquet_paths: list[Path],
-        column_name: str,
-        n_samples: int,
-        hf_token: Optional[str],
     ) -> SupportedStatistics:
-        transformed_values = cls.compute_transformed_data(
-            parquet_paths, column_name, partial(cls.transform, hf_token=hf_token)
+        transformed_values = self.compute_transformed_data(
+            parquet_paths, self.name, partial(self.transform, hf_token=self.hf_token)
         )
         nan_count = sum(value is None for value in transformed_values)
-        if nan_count == n_samples:
-            return all_nan_statistics_item(n_samples)
+        if nan_count == len(transformed_values):
+            return all_nan_statistics_item(len(transformed_values))
 
-        nan_proportion = np.round(nan_count / n_samples, DECIMALS).item() if nan_count != 0 else 0.0
-        transformed_df = pl.from_dict({column_name: transformed_values})
-        transformed_stats: NumericalStatisticsItem = cls.transform_column.compute_statistics(
+        nan_proportion = np.round(nan_count / len(transformed_values), DECIMALS).item() if nan_count != 0 else 0.0
+        transformed_df = pl.from_dict({self.transformed_name: transformed_values})
+        transformed_stats: NumericalStatisticsItem = self.transform_column.compute_statistics(
             data=transformed_df,
-            column_name=column_name,
-            n_samples=n_samples,
         )
         return NumericalStatisticsItem(
             nan_count=nan_count,
@@ -701,24 +677,25 @@ class MediaColumn(Column):
         return ColumnType(cls.__name__.split("Column")[0].lower())
 
     def compute_and_prepare_response(self, parquet_paths: list[Path]) -> StatisticsPerColumnItem:
-        stats = self.compute_statistics(
-            parquet_paths=parquet_paths, column_name=self.name, n_samples=self.n_samples, hf_token=self.hf_token
-        )
+        stats = self.compute_statistics(parquet_paths=parquet_paths, column_name=self.name, hf_token=self.hf_token)
         return StatisticsPerColumnItem(
             column_name=self.name,
             column_type=self.get_column_type(),
             column_statistics=stats,
         )
 
-    @classmethod
-    def open(
-        cls, example: Optional[Union[bytes, dict[str, Any]]], hf_token: Optional[str]
-    ) -> Union[io.BytesIO, nullcontext[None]]:
+    def open(self, example: Optional[Union[bytes, dict[str, Any]]]) -> Union[io.BytesIO, nullcontext[None]]:
         if isinstance(example, dict):
             if example["bytes"] is not None:
                 return io.BytesIO(example["bytes"])
             else:
-                return xopen(example["path"], "rb", download_config=DownloadConfig(token=hf_token))  # type: ignore
+                path = example["path"]
+                if not path.startswith("hf://"):
+                    raise ValueError(f"not an hf path: {path}")
+                path = "hf://" + posixpath.relpath(path, start="hf://")
+                if not path.startswith(self.repo_dir_with_commit_hash + "/"):
+                    raise ValueError(f"Data files don't belong to {self.repo_dir}")
+                return HfFileSystem(token=self.hf_token).open(example["path"], "rb")  # type: ignore
         elif isinstance(example, bytes):
             return io.BytesIO(example)
         else:
@@ -726,17 +703,20 @@ class MediaColumn(Column):
 
 
 class AudioColumn(MediaColumn):
-    transform_column = FloatColumn
+    TRANSFORM_COLUMN_CLASS = FloatColumn
 
-    @staticmethod
-    def get_duration(example: Optional[Union[bytes, dict[str, Any]]], hf_token: Optional[str]) -> Optional[float]:
+    @property
+    def transformed_name(self):
+        return f"{self.name}_duration"
+
+    def get_duration(self, example: Optional[Union[bytes, dict[str, Any]]]) -> Optional[float]:
         """Get audio durations"""
         if example is None:
             return None
 
         from torchcodec.decoders import AudioDecoder  # type: ignore[attr-defined]
 
-        with MediaColumn.open(example, hf_token=hf_token) as f:
+        with self.open(example) as f:
             try:
                 duration = AudioDecoder(f).metadata.duration_seconds_from_header if f else None  # type: ignore[arg-type]
             except RuntimeError as e:
@@ -749,23 +729,25 @@ class AudioColumn(MediaColumn):
             raise StatisticsComputationError(f"Failed to get the audio duration for the header {example=}")
         return duration
 
-    @classmethod
-    def transform(cls, example: Optional[Union[bytes, dict[str, Any]]], hf_token: Optional[str]) -> Optional[float]:
-        return cls.get_duration(example, hf_token=hf_token)
+    def transform(self, example: Optional[Union[bytes, dict[str, Any]]]) -> Optional[float]:
+        return self.get_duration(example)
 
 
 class VideoColumn(MediaColumn):
-    transform_column = FloatColumn
+    TRANSFORM_COLUMN_CLASS = FloatColumn
 
-    @staticmethod
-    def get_duration(example: Optional[Union[bytes, dict[str, Any]]], hf_token: Optional[str]) -> Optional[float]:
+    @property
+    def transformed_name(self):
+        return f"{self.name}_duration"
+
+    def get_duration(self, example: Optional[Union[bytes, dict[str, Any]]]) -> Optional[float]:
         """Get video durations"""
         if example is None:
             return None
 
         from torchcodec.decoders import VideoDecoder  # type: ignore[attr-defined]
 
-        with MediaColumn.open(example, hf_token=hf_token) as f:
+        with self.open(example) as f:
             try:
                 duration = VideoDecoder(f).metadata.duration_seconds_from_header if f else None  # type: ignore[arg-type]
             except RuntimeError as e:
@@ -778,28 +760,27 @@ class VideoColumn(MediaColumn):
             raise StatisticsComputationError("Failed to get the video duration for the header.")
         return duration
 
-    @classmethod
-    def transform(cls, example: Optional[Union[bytes, dict[str, Any]]], hf_token: Optional[str]) -> Optional[float]:
-        return cls.get_duration(example, hf_token=hf_token)
+    def transform(self, example: Optional[Union[bytes, dict[str, Any]]]) -> Optional[float]:
+        return self.get_duration(example)
 
 
 class ImageColumn(MediaColumn):
-    transform_column = IntColumn
+    TRANSFORM_COLUMN_CLASS = IntColumn
 
-    @staticmethod
-    def get_width(example: Optional[Union[bytes, dict[str, Any]]], hf_token: Optional[str]) -> Optional[int]:
+    @property
+    def transformed_name(self):
+        return f"{self.name}_width"
+
+    def get_width(self, example: Optional[Union[bytes, dict[str, Any]]]) -> Optional[int]:
         """Get image widths."""
-        image_shape = ImageColumn.get_shape(example, hf_token=hf_token)
+        image_shape = self.get_shape(example)
         return image_shape[0]
 
-    @staticmethod
-    def get_shape(
-        example: Optional[Union[bytes, dict[str, Any]]], hf_token: Optional[str]
-    ) -> Union[tuple[None, None], tuple[int, int]]:
+    def get_shape(self, example: Optional[Union[bytes, dict[str, Any]]]) -> Union[tuple[None, None], tuple[int, int]]:
         """Get image widths and heights."""
         if example is None:
             return None, None
-        with MediaColumn.open(example, hf_token=hf_token) as f:
+        with self.open(example) as f:
             if f:
                 from PIL import Image
 
@@ -808,31 +789,30 @@ class ImageColumn(MediaColumn):
             else:
                 return None, None
 
-    @classmethod
-    def transform(cls, example: Optional[Union[bytes, dict[str, Any]]], hf_token: Optional[str]) -> Optional[int]:
-        return cls.get_width(example, hf_token=hf_token)
+    def transform(self, example: Optional[Union[bytes, dict[str, Any]]]) -> Optional[int]:
+        return self.get_width(example)
 
 
 class DatetimeColumn(Column):
-    transform_column = IntColumn
+    TRANSFORM_COLUMN_CLASS = IntColumn
 
-    @classmethod
+    @property
+    def transformed_name(self):
+        return f"{self.name}_timedelta"
+
     def compute_transformed_data(
-        cls,
+        self,
         data: pl.DataFrame,
-        column_name: str,
-        transformed_column_name: str,
         min_date: datetime.datetime,
     ) -> pl.DataFrame:
-        return data.select((pl.col(column_name) - min_date).dt.total_seconds().alias(transformed_column_name))
+        return data.select((pl.col(self.name) - min_date).dt.total_seconds().alias(self.transformed_name))
 
     @staticmethod
     def shift_and_convert_to_string(base_date: datetime.datetime, seconds: Union[int, float]) -> str:
         return datetime_to_string(base_date + datetime.timedelta(seconds=seconds))
 
-    @staticmethod
-    def get_format(data: pl.DataFrame, column_name: str) -> str:
-        values = data.filter(pl.col(column_name).is_not_null()).head(100)[column_name].to_list()
+    def get_format(self, data: pl.DataFrame) -> str:
+        values = data.filter(pl.col(self.name).is_not_null()).head(100)[self.name].to_list()
         formats = [identify_datetime_format(value) for value in values]
         if len(set(formats)) == 1:
             datetime_format = formats[0]
@@ -847,17 +827,14 @@ class DatetimeColumn(Column):
             "%z", "%#z"
         )  # %#z to support polars, see https://github.com/pola-rs/polars/issues/6386
 
-    @classmethod
     def _compute_statistics(
-        cls,
+        self,
         data: pl.DataFrame,
-        column_name: str,
-        n_samples: int,
     ) -> DatetimeStatisticsItem:
-        nan_count, nan_proportion = nan_count_proportion(data, column_name, n_samples)
-        if nan_count == n_samples:  # all values are None
+        nan_count, nan_proportion = nan_count_proportion(data, self.name, len(data))
+        if nan_count == len(data):  # all values are None
             return DatetimeStatisticsItem(
-                nan_count=n_samples,
+                nan_count=len(data),
                 nan_proportion=1.0,
                 min=None,
                 max=None,
@@ -867,19 +844,16 @@ class DatetimeColumn(Column):
                 histogram=None,
             )
         original_timezone = None
-        if isinstance(data[column_name].dtype, pl.String):
-            original_timezone = get_timezone(data[column_name][0])
-            datetime_format = cls.get_format(data, column_name)
-            data = data.with_columns(pl.col(column_name).str.to_datetime(format=datetime_format))
+        if isinstance(data[self.name].dtype, pl.String):
+            original_timezone = get_timezone(data[self.name][0])
+            datetime_format = self.get_format(data, self.name)
+            data = data.with_columns(pl.col(self.name).str.to_datetime(format=datetime_format))
 
-        min_date: datetime.datetime = data[column_name].min()  # type: ignore   # mypy infers type of datetime column .min() incorrectly
-        timedelta_column_name = f"{column_name}_timedelta"
+        min_date: datetime.datetime = data[self.name].min()  # type: ignore   # mypy infers type of datetime column .min() incorrectly
         # compute distribution of time passed from min date in **seconds**
-        timedelta_df = cls.compute_transformed_data(data, column_name, timedelta_column_name, min_date)
-        timedelta_stats: NumericalStatisticsItem = cls.transform_column.compute_statistics(
+        timedelta_df = self.compute_transformed_data(data, self.name, self.transformed_name, min_date)
+        timedelta_stats: NumericalStatisticsItem = self.transform_column.compute_statistics(
             timedelta_df,
-            column_name=timedelta_column_name,
-            n_samples=n_samples,
         )
         # to assure mypy that these values are not None to pass to conversion functions:
         assert timedelta_stats["histogram"] is not None  # nosec
@@ -892,16 +866,17 @@ class DatetimeColumn(Column):
             min_date = min_date.astimezone(original_timezone)
 
         datetime_bin_edges = [
-            cls.shift_and_convert_to_string(min_date, seconds) for seconds in timedelta_stats["histogram"]["bin_edges"]
+            self.shift_and_convert_to_string(min_date, seconds)
+            for seconds in timedelta_stats["histogram"]["bin_edges"]
         ]
 
         return DatetimeStatisticsItem(
             nan_count=nan_count,
             nan_proportion=nan_proportion,
             min=datetime_to_string(min_date),
-            max=cls.shift_and_convert_to_string(min_date, timedelta_stats["max"]),
-            mean=cls.shift_and_convert_to_string(min_date, timedelta_stats["mean"]),
-            median=cls.shift_and_convert_to_string(min_date, timedelta_stats["median"]),
+            max=self.shift_and_convert_to_string(min_date, timedelta_stats["max"]),
+            mean=self.shift_and_convert_to_string(min_date, timedelta_stats["mean"]),
+            median=self.shift_and_convert_to_string(min_date, timedelta_stats["median"]),
             std=str(datetime.timedelta(seconds=timedelta_stats["std"])),
             histogram=DatetimeHistogram(
                 hist=timedelta_stats["histogram"]["hist"],
@@ -910,7 +885,7 @@ class DatetimeColumn(Column):
         )
 
     def compute_and_prepare_response(self, data: pl.DataFrame) -> StatisticsPerColumnItem:
-        stats = self.compute_statistics(data, column_name=self.name, n_samples=self.n_samples)
+        stats = self.compute_statistics(data)
         return StatisticsPerColumnItem(
             column_name=self.name,
             column_type=ColumnType.DATETIME,

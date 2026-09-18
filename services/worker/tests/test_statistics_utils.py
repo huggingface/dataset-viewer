@@ -215,10 +215,8 @@ def test_float_statistics(
 ) -> None:
     data = datasets["descriptive_statistics"].to_pandas()
     expected = count_expected_statistics_for_numerical_column(data[column_name], dtype=ColumnType.FLOAT)
-    computed = FloatColumn.compute_statistics(
+    computed = FloatColumn(feature_name=column_name).compute_statistics(
         data=pl.from_pandas(data),
-        column_name=column_name,
-        n_samples=len(data[column_name]),
     )
     expected_hist, computed_hist = expected.pop("histogram"), computed.pop("histogram")
     if computed_hist:
@@ -247,10 +245,8 @@ def test_int_statistics(
 ) -> None:
     data = datasets["descriptive_statistics"].to_pandas()
     expected = count_expected_statistics_for_numerical_column(data[column_name], dtype=ColumnType.INT)
-    computed = IntColumn.compute_statistics(
+    computed = IntColumn(feature_name=column_name).compute_statistics(
         data=pl.from_pandas(data),
-        column_name=column_name,
-        n_samples=len(data[column_name]),
     )
     expected_hist, computed_hist = expected.pop("histogram"), computed.pop("histogram")
     if computed_hist:
@@ -283,10 +279,8 @@ def test_string_statistics(
     else:
         data = datasets["descriptive_statistics"].to_pandas()
     expected = count_expected_statistics_for_string_column(data[column_name])
-    computed = StringColumn.compute_statistics(
+    computed = StringColumn(feature_name=column_name).compute_statistics(
         data=pl.from_pandas(data),
-        column_name=column_name,
-        n_samples=len(data[column_name]),
     )
     if column_name.startswith("string_text__"):
         expected_hist, computed_hist = expected.pop("histogram"), computed.pop("histogram")
@@ -316,10 +310,8 @@ def test_class_label_statistics(
     data = datasets["descriptive_statistics"].to_pandas()
     class_label_feature = datasets["descriptive_statistics"].features[column_name]
     expected = count_expected_statistics_for_categorical_column(data[column_name], class_label_feature)
-    computed = ClassLabelColumn.compute_statistics(
+    computed = ClassLabelColumn(feature_name=column_name).compute_statistics(
         data=pl.from_pandas(data),
-        column_name=column_name,
-        n_samples=len(data[column_name]),
         feature_dict={"_type": "ClassLabel", "names": class_label_feature.names},
     )
     assert expected == computed
@@ -360,10 +352,8 @@ def test_list_statistics(
 ) -> None:
     data = datasets["descriptive_statistics"].to_pandas()
     expected = count_expected_statistics_for_list_column(data[column_name])
-    computed = ListColumn.compute_statistics(
+    computed = ListColumn(feature_name=column_name).compute_statistics(
         data=pl.from_pandas(data),
-        column_name=column_name,
-        n_samples=len(data[column_name]),
     )
     assert computed == expected
 
@@ -382,10 +372,8 @@ def test_bool_statistics(
 ) -> None:
     data = datasets["descriptive_statistics"].to_pandas()
     expected = count_expected_statistics_for_bool_column(data[column_name])
-    computed = BoolColumn.compute_statistics(
+    computed = BoolColumn(feature_name=column_name).compute_statistics(
         data=pl.from_pandas(data),
-        column_name=column_name,
-        n_samples=len(data[column_name]),
     )
     assert computed == expected
 
@@ -412,11 +400,8 @@ def test_audio_statistics(
     dataset_table = datasets["audio_statistics"].data
     dataset_table_embedded = embed_table_storage(dataset_table)  # store audio as bytes instead of paths to files
     pq.write_table(dataset_table_embedded, parquet_filename)
-    computed = AudioColumn.compute_statistics(
+    computed = AudioColumn(feature_name=column_name, repo_id="dummy/repo", hash="hash").compute_statistics(
         parquet_paths=[parquet_filename],
-        column_name=column_name,
-        n_samples=4,
-        hf_token=None,
     )
     assert computed == expected
 
@@ -426,11 +411,8 @@ def test_audio_statistics(
         {column_name: [open(audio["path"], "rb").read() if audio else None for audio in audios]}
     )
     pq.write_table(pa_table_bytes, parquet_filename)
-    computed = AudioColumn.compute_statistics(
+    computed = AudioColumn(feature_name=column_name, hf_token=None, repo_id="dummy/repo", hash="hash").compute_statistics(
         parquet_paths=[parquet_filename],
-        column_name=column_name,
-        n_samples=4,
-        hf_token=None,
     )
     assert computed == expected
 
@@ -457,11 +439,8 @@ def test_video_statistics(
     dataset_table = datasets["video_statistics"].data
     dataset_table_embedded = embed_table_storage(dataset_table)  # store audio as bytes instead of paths to files
     pq.write_table(dataset_table_embedded, parquet_filename)
-    computed = VideoColumn.compute_statistics(
+    computed = VideoColumn(feature_name=column_name, repo_id="dummy/repo", hash="hash").compute_statistics(
         parquet_paths=[parquet_filename],
-        column_name=column_name,
-        n_samples=4,
-        hf_token=None,
     )
     assert computed == expected
 
@@ -471,11 +450,8 @@ def test_video_statistics(
         {column_name: [open(video["path"], "rb").read() if video else None for video in videos]}
     )
     pq.write_table(pa_table_bytes, parquet_filename)
-    computed = VideoColumn.compute_statistics(
+    computed = VideoColumn(feature_name=column_name, repo_id="dummy/repo", hash="hash").compute_statistics(
         parquet_paths=[parquet_filename],
-        column_name=column_name,
-        n_samples=4,
-        hf_token=None,
     )
     assert computed == expected
 
@@ -500,11 +476,8 @@ def test_image_statistics(
     dataset_table = datasets["image_statistics"].data
     dataset_table_embedded = embed_table_storage(dataset_table)  # store image as bytes instead of paths to files
     pq.write_table(dataset_table_embedded, parquet_filename)
-    computed = ImageColumn.compute_statistics(
+    computed = ImageColumn(feature_name=column_name, repo_id="dummy/repo", hash="hash").compute_statistics(
         parquet_paths=[parquet_filename],
-        column_name=column_name,
-        n_samples=4,
-        hf_token=None,
     )
     assert computed == expected
 
@@ -514,11 +487,8 @@ def test_image_statistics(
         {column_name: [open(image["path"], "rb").read() if image else None for image in images]}
     )
     pq.write_table(pa_table_bytes, parquet_filename)
-    computed = ImageColumn.compute_statistics(
+    computed = ImageColumn(feature_name=column_name, repo_id="dummy/repo", hash="hash").compute_statistics(
         parquet_paths=[parquet_filename],
-        column_name=column_name,
-        n_samples=4,
-        hf_token=None,
     )
     assert computed == expected
 
@@ -612,16 +582,12 @@ def test_datetime_statistics(
     data = datasets["datetime_statistics"].to_pandas()
     expected = count_expected_statistics_for_datetime_column(data[column_name], column_name)
     if "_string" in column_name:
-        computed = StringColumn.compute_statistics(
+        computed = StringColumn(feature_name=column_name).compute_statistics(
             data=pl.from_pandas(data),
-            column_name=column_name,
-            n_samples=len(data[column_name]),
         )
     else:
-        computed = DatetimeColumn.compute_statistics(
+        computed = DatetimeColumn(feature_name=column_name).compute_statistics(
             data=pl.from_pandas(data),
-            column_name=column_name,
-            n_samples=len(data[column_name]),
         )
 
     computed_std, expected_std = computed.pop("std"), expected.pop("std")
