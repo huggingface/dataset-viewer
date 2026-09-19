@@ -11,6 +11,8 @@ def test_statistics_endpoint(normal_user_public_jsonl_dataset: str) -> None:
         relative_url=f"/statistics?dataset={dataset}&config={config}&split={split}",
         check_x_revision=True,
         dataset=dataset,
+        should_retry_x_error_codes=["ResponseNotFound"],
+        # ^ I had 404 errors without it. It should return something else at one point.
     )
 
     content = statistics_response.json()
