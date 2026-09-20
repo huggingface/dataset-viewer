@@ -167,13 +167,13 @@ class JobDocument(Document):
         "indexes": [
             ("dataset", "status"),
             ("type", "dataset", "status"),
-            ("priority", "status", "created_at", "namespace", "difficulty", "dataset", "unicity_id"),
-            ("priority", "status", "created_at", "namespace", "dataset", "difficulty", "unicity_id"),
+            # Single index for the next-waiting-job query (see _get_next_waiting_job_for_priority).
+            # Do not add other indexes sharing the (priority, status, created_at) prefix: near-identical
+            # candidates make the multi-planner trial every one of them on each plan-cache miss and cause
+            # constant replanning, which burned most of the primary's CPU (see PR description).
             ("priority", "status", "created_at", "difficulty", "dataset", "namespace"),
-            ("priority", "status", "created_at", "dataset", "difficulty", "namespace"),
             ("priority", "status", "type", "namespace", "unicity_id", "created_at", "-difficulty"),
             ("status", "type"),
-            ("type", "status"),  # optimize aggregate $sort on {type: 1, status: 1}
             ("unicity_id", "status", "-created_at"),
         ],
     }
