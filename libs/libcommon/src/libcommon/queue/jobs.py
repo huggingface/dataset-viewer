@@ -167,10 +167,7 @@ class JobDocument(Document):
         "indexes": [
             ("dataset", "status"),
             ("type", "dataset", "status"),
-            # Single index for the next-waiting-job query (see _get_next_waiting_job_for_priority).
-            # Do not add other indexes sharing the (priority, status, created_at) prefix: near-identical
-            # candidates make the multi-planner trial every one of them on each plan-cache miss and cause
-            # constant replanning, which burned most of the primary's CPU (see PR description).
+            # Index for the next-waiting-job query; hinted by name in _get_next_waiting_job_for_priority.
             ("priority", "status", "created_at", "difficulty", "dataset", "namespace"),
             ("priority", "status", "type", "namespace", "unicity_id", "created_at", "-difficulty"),
             ("status", "type"),
@@ -437,6 +434,9 @@ class Queue:
             )
             .order_by("+created_at")
             .only("type", "dataset", "revision", "config", "split", "priority", "unicity_id")
+            # Pin the index: another index shares the (priority, status) prefix and the planner kept
+            # trialing both on every plan-cache miss, replanning constantly and saturating the primary CPU.
+            .hint("priority_1_status_1_created_at_1_difficulty_1_dataset_1_namespace_1")
             .no_cache()
             .first()
         )
