@@ -414,6 +414,9 @@ search:
     annotations:
       alb.ingress.kubernetes.io/group.order: "3"
       alb.ingress.kubernetes.io/target-group-attributes: stickiness.enabled=true,stickiness.lb_cookie.duration_seconds=300
+      # /healthcheck shares the 2 uvicorn workers with search queries, so it blocks under load
+      alb.ingress.kubernetes.io/healthcheck-timeout-seconds: "10"
+      alb.ingress.kubernetes.io/unhealthy-threshold-count: "5"
   ingressInternal:
     enabled: true
     annotations:
@@ -422,6 +425,9 @@ search:
       alb.ingress.kubernetes.io/scheme: "internal"
       alb.ingress.kubernetes.io/load-balancer-name: "datasets-server-prod-int"
       alb.ingress.kubernetes.io/group.name: "datasets-server-internal"
+      # /healthcheck shares the 2 uvicorn workers with search queries, so it blocks under load
+      alb.ingress.kubernetes.io/healthcheck-timeout-seconds: "10"
+      alb.ingress.kubernetes.io/unhealthy-threshold-count: "5"
   resources:
     requests:
       cpu: 1
