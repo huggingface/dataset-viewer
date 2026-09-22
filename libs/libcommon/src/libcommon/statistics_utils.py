@@ -175,12 +175,8 @@ def compute_histogram(
     bin_edges = generate_bins(
         min_value=min_value, max_value=max_value, column_name=column_name, column_type=column_type, n_bins=n_bins
     )
-    if len(bin_edges) == 2:  # possible if min == max (=data has only one value)
-        if bin_edges[0] != bin_edges[1]:
-            raise StatisticsComputationError(
-                f"Got unexpected result during histogram computation for {column_name=}, {column_type=}: "
-                f" len({bin_edges=}) is 2 but {bin_edges[0]=} != {bin_edges[1]=}. "
-            )
+    if len(bin_edges) == 2:
+        # A single bin contains all non-null values, including when min != max.
         hist = [int(df[column_name].is_not_null().sum())]
     elif len(bin_edges) > 2:
         reversed_bins = [-1 * edge for edge in bin_edges[::-1]]

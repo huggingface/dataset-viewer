@@ -29,6 +29,7 @@ from libcommon.statistics_utils import (
     ListColumn,
     StringColumn,
     VideoColumn,
+    compute_histogram,
     generate_bins,
 )
 
@@ -63,6 +64,38 @@ def test_generate_bins(
         assert pytest.approx(bins) == expected_bins
     else:
         assert bins == expected_bins
+
+
+@pytest.mark.parametrize(
+    "values,column_type,n_bins,expected_edges",
+    [
+        ([0, 1, 0, None], ColumnType.INT, NUM_BINS, [0, 1]),
+        ([1, 2, 1, None], ColumnType.INT, NUM_BINS, [1, 2]),
+        ([-2, -1, -2, None], ColumnType.INT, NUM_BINS, [-2, -1]),
+        ([4, 4, 4, None], ColumnType.INT, NUM_BINS, [4, 4]),
+        ([0.5, 0.5, 0.5, None], ColumnType.FLOAT, NUM_BINS, [0.5, 0.5]),
+        ([0.5, 1.0, 0.75, None], ColumnType.FLOAT, 1, [0.5, 1.0]),
+    ],
+)
+def test_single_bin_histogram(
+    values: list[Optional[Union[int, float]]],
+    column_type: ColumnType,
+    n_bins: int,
+    expected_edges: list[Union[int, float]],
+) -> None:
+    data = pl.DataFrame({"value": values})
+    non_null = data["value"].drop_nulls().to_numpy()
+    computed = compute_histogram(
+        data,
+        column_name="value",
+        column_type=column_type,
+        min_value=non_null.min().item(),
+        max_value=non_null.max().item(),
+        n_bins=n_bins,
+        n_samples=len(non_null),
+    )
+    expected_counts, _ = np.histogram(non_null, bins=expected_edges)
+    assert computed == {"hist": expected_counts.tolist(), "bin_edges": expected_edges}
 
 
 def count_expected_statistics_for_numerical_column(
@@ -365,6 +398,21 @@ def test_list_statistics(
         column_name=column_name,
         n_samples=len(data[column_name]),
     )
+    assert computed == expected
+
+
+@pytest.mark.parametrize(
+    "values",
+    [
+        [[], ["a"], None, ["b"]],
+        [["a"], ["a", "b"], None, ["b"]],
+    ],
+)
+def test_short_list_statistics(values: list[Optional[list[str]]]) -> None:
+    computed = ListColumn.compute_statistics(
+        data=pl.DataFrame({"value": values}), column_name="value", n_samples=len(values)
+    )
+    expected = count_expected_statistics_for_list_column(pd.Series(values))
     assert computed == expected
 
 
