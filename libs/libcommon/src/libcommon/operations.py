@@ -80,7 +80,7 @@ class CustomHfApi(HfApi):
                 Whether to set a timeout for the request to the Hub.
             token (`bool` or `str`, *optional*):
                 A valid authentication token (see https://huggingface.co/settings/token).
-                If `None` or `True` and machine is logged in (through `huggingface-cli login`
+                If `None` or `True` and machine is logged in (through `hf auth login`
                 or [`~huggingface_hub.login`]), token will be retrieved from the cache.
                 If `False`, token is not sent in the request header.
 

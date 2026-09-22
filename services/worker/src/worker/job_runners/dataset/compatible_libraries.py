@@ -271,7 +271,7 @@ def simplify_data_files_patterns(
     return patterns
 
 
-LOGIN_COMMENT = "\n# Login using e.g. `huggingface-cli login` to access this dataset"
+LOGIN_COMMENT = "\n# Login using e.g. `hf auth login` to access this dataset"
 
 DATASETS_CODE = """from datasets import load_dataset
 {comment}

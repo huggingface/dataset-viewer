@@ -20,6 +20,7 @@ from libapi.utils import (
     get_json_api_error_response,
     get_json_error_response,
     get_json_ok_response,
+    fix_legacy_login_in_loading_codes,
 )
 from libcommon.croissant_utils import truncate_features_from_croissant_crumbs_response
 from libcommon.exceptions import NotSupportedError
@@ -173,6 +174,8 @@ def create_endpoint(
                             step="truncate features from croissant-crumbs response",
                         ):
                             truncate_features_from_croissant_crumbs_response(content)
+                    elif endpoint_name == "/compatible-libraries":
+                        fix_legacy_login_in_loading_codes(content)
                     with StepProfiler(method=method, step="generate OK response"):
                         return get_json_ok_response(content=content, max_age=max_age_long, revision=revision)
 

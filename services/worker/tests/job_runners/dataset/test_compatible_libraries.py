@@ -234,7 +234,7 @@ EXPECTED_PARQUET_LOGIN_REQUIRED = (
                         "arguments": {"splits": {"test": "test.parquet", "train": "train.parquet"}},
                         "code": "import polars as pl\n"
                         "\n"
-                        "# Login using e.g. `huggingface-cli login` to "
+                        "# Login using e.g. `hf auth login` to "
                         "access this dataset\n"
                         "splits = {'train': 'train.parquet', 'test': "
                         "'test.parquet'}\n"
