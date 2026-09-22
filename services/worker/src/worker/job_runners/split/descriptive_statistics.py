@@ -227,9 +227,7 @@ def compute_descriptive_statistics_response(
         if isinstance(dataset_feature, dict):
             _type = dataset_feature.get("_type")
             if _type == "ClassLabel":
-                return ClassLabelColumn(
-                    feature_name=dataset_feature_name, feature_dict=dataset_feature
-                )
+                return ClassLabelColumn(feature_name=dataset_feature_name, feature_dict=dataset_feature)
 
             if _type == "Audio":
                 return AudioColumn(

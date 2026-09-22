@@ -465,10 +465,11 @@ class IntColumn(Column):
 
 class StringColumn(Column):
     TRANSFORM_COLUMN_CLASS = IntColumn
+    transform_column: IntColumn
 
     @property
-    def transformed_name(self):
-        return f"{self.name}_len"
+    def transformed_name(self) -> str:
+        return f"{self.name}.length"
 
     @staticmethod
     def is_class(n_unique: int, n_samples: int) -> bool:
@@ -565,10 +566,11 @@ class BoolColumn(Column):
 
 class ListColumn(Column):
     TRANSFORM_COLUMN_CLASS = IntColumn
+    transform_column: IntColumn
 
     @property
     def transformed_name(self) -> str:
-        return f"{self.name}_len"
+        return f"{self.name}.length"
 
     def compute_transformed_data(
         self,
@@ -614,6 +616,9 @@ class ListColumn(Column):
 
 
 class MediaColumn(Column):
+    TRANSFORM_COLUMN_CLASS: type[Column]
+    transform_column: Column
+
     def __init__(self, feature_name: str, hf_token: Optional[str], repo_id: str, hash: str):
         super().__init__(feature_name)
         self.hf_token = hf_token
@@ -646,9 +651,7 @@ class MediaColumn(Column):
         self,
         parquet_paths: list[Path],
     ) -> SupportedStatistics:
-        transformed_values = self.compute_transformed_data(
-            parquet_paths, partial(self.transform)
-        )
+        transformed_values = self.compute_transformed_data(parquet_paths, partial(self.transform))
         nan_count = sum(value is None for value in transformed_values)
         if nan_count == len(transformed_values):
             return all_nan_statistics_item(len(transformed_values))
@@ -674,7 +677,7 @@ class MediaColumn(Column):
         return ColumnType(cls.__name__.split("Column")[0].lower())
 
     def compute_and_prepare_response(self, parquet_paths: list[Path]) -> StatisticsPerColumnItem:
-        stats = self.compute_statistics(parquet_paths=parquet_paths, column_name=self.name, hf_token=self.hf_token)
+        stats = self.compute_statistics(parquet_paths=parquet_paths)
         return StatisticsPerColumnItem(
             column_name=self.name,
             column_type=self.get_column_type(),
@@ -701,10 +704,11 @@ class MediaColumn(Column):
 
 class AudioColumn(MediaColumn):
     TRANSFORM_COLUMN_CLASS = FloatColumn
+    transform_column: FloatColumn
 
     @property
-    def transformed_name(self):
-        return f"{self.name}_duration"
+    def transformed_name(self) -> str:
+        return f"{self.name}.duration"
 
     def get_duration(self, example: Optional[Union[bytes, dict[str, Any]]]) -> Optional[float]:
         """Get audio durations"""
@@ -732,10 +736,11 @@ class AudioColumn(MediaColumn):
 
 class VideoColumn(MediaColumn):
     TRANSFORM_COLUMN_CLASS = FloatColumn
+    transform_column: FloatColumn
 
     @property
-    def transformed_name(self):
-        return f"{self.name}_duration"
+    def transformed_name(self) -> str:
+        return f"{self.name}.duration"
 
     def get_duration(self, example: Optional[Union[bytes, dict[str, Any]]]) -> Optional[float]:
         """Get video durations"""
@@ -763,10 +768,11 @@ class VideoColumn(MediaColumn):
 
 class ImageColumn(MediaColumn):
     TRANSFORM_COLUMN_CLASS = IntColumn
+    transform_column: IntColumn
 
     @property
-    def transformed_name(self):
-        return f"{self.name}_width"
+    def transformed_name(self) -> str:
+        return f"{self.name}.width"
 
     def get_width(self, example: Optional[Union[bytes, dict[str, Any]]]) -> Optional[int]:
         """Get image widths."""
@@ -792,10 +798,11 @@ class ImageColumn(MediaColumn):
 
 class DatetimeColumn(Column):
     TRANSFORM_COLUMN_CLASS = IntColumn
+    transform_column: IntColumn
 
     @property
-    def transformed_name(self):
-        return f"{self.name}_timedelta"
+    def transformed_name(self) -> str:
+        return f"{self.name}.timedelta"
 
     def compute_transformed_data(
         self,

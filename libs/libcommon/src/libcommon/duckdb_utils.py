@@ -141,9 +141,7 @@ def compute_length_column(
     column_class = ListColumn if dtype == "list" else StringColumn
     df = pl.read_parquet(parquet_paths, columns=[column_name])
     lengths_column_name = f"{column_name}.length"
-    lengths_df: pl.DataFrame = column_class.compute_transformed_data(
-        df, column_name, transformed_column_name=lengths_column_name
-    )
+    lengths_df: pl.DataFrame = column_class(feature_name=column_name).compute_transformed_data(df)
     if target_df is None:
         return lengths_df.select(pl.col(lengths_column_name))
 
@@ -156,10 +154,12 @@ def compute_audio_duration_column(
     column_name: str,
     target_df: Optional[pl.DataFrame],
     hf_token: Optional[str],
+    repo_id: str,
+    hash: str,
 ) -> pl.DataFrame:
     duration_column_name = f"{column_name}.duration"
-    column = AudioColumn(feature_name=column_name, hf_token=hf_token)
-    durations = column.compute_transformed_data(parquet_paths, column_name, column.get_duration)
+    column = AudioColumn(feature_name=column_name, hf_token=hf_token, repo_id=repo_id, hash=hash)
+    durations = column.compute_transformed_data(parquet_paths, column.get_duration)
     duration_df = pl.from_dict({duration_column_name: durations})
     if target_df is None:
         return duration_df
@@ -172,10 +172,12 @@ def compute_video_duration_column(
     column_name: str,
     target_df: Optional[pl.DataFrame],
     hf_token: Optional[str],
+    repo_id: str,
+    hash: str,
 ) -> pl.DataFrame:
     duration_column_name = f"{column_name}.duration"
-    column = VideoColumn(feature_name=column_name, hf_token=hf_token)
-    durations = column.compute_transformed_data(parquet_paths, column_name, column.get_duration)
+    column = VideoColumn(feature_name=column_name, hf_token=hf_token, repo_id=repo_id, hash=hash)
+    durations = column.compute_transformed_data(parquet_paths, column.get_duration)
     duration_df = pl.from_dict({duration_column_name: durations})
     if target_df is None:
         return duration_df
@@ -188,9 +190,11 @@ def compute_image_width_height_column(
     column_name: str,
     target_df: Optional[pl.DataFrame],
     hf_token: Optional[str],
+    repo_id: str,
+    hash: str,
 ) -> pl.DataFrame:
-    column = ImageColumn(feature_name=column_name, hf_token=hf_token)
-    shapes = column.compute_transformed_data(parquet_paths, column_name, column.get_shape)
+    column = ImageColumn(feature_name=column_name, hf_token=hf_token, repo_id=repo_id, hash=hash)
+    shapes = column.compute_transformed_data(parquet_paths, column.get_shape)
     widths, heights = list(zip(*shapes))
     width_column_name, height_column_name = f"{column_name}.width", f"{column_name}.height"
     shapes_df = pl.from_dict({width_column_name: widths, height_column_name: heights})
@@ -202,7 +206,11 @@ def compute_image_width_height_column(
 
 
 def compute_transformed_data(
-    parquet_paths: list[Path], features: dict[str, Any], hf_token: Optional[str]
+    parquet_paths: list[Path],
+    features: dict[str, Any],
+    hf_token: Optional[str],
+    repo_id: str,
+    hash: str,
 ) -> Optional[pl.DataFrame]:
     transformed_df = None
     for feature_name, feature in features.items():
@@ -219,17 +227,17 @@ def compute_transformed_data(
 
             elif feature.get("_type") == "Audio":
                 transformed_df = compute_audio_duration_column(
-                    parquet_paths, feature_name, transformed_df, hf_token=hf_token
+                    parquet_paths, feature_name, transformed_df, hf_token=hf_token, repo_id=repo_id, hash=hash
                 )
 
             elif feature.get("_type") == "Video":
                 transformed_df = compute_video_duration_column(
-                    parquet_paths, feature_name, transformed_df, hf_token=hf_token
+                    parquet_paths, feature_name, transformed_df, hf_token=hf_token, repo_id=repo_id, hash=hash
                 )
 
             elif feature.get("_type") == "Image":
                 transformed_df = compute_image_width_height_column(
-                    parquet_paths, feature_name, transformed_df, hf_token=hf_token
+                    parquet_paths, feature_name, transformed_df, hf_token=hf_token, repo_id=repo_id, hash=hash
                 )
 
     return transformed_df

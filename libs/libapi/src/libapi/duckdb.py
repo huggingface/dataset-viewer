@@ -85,6 +85,7 @@ def build_index_file(
     cache_folder: StrPath,
     index_folder: StrPath,
     dataset: str,
+    revision: str,
     config: str,
     split: str,
     repo_file_location: str,
@@ -134,7 +135,9 @@ def build_index_file(
 
     transformed_df = None
     try:
-        transformed_df = compute_transformed_data(all_split_parquets, features, hf_token=hf_token)
+        transformed_df = compute_transformed_data(
+            all_split_parquets, features, hf_token=hf_token, repo_id=dataset, hash=revision
+        )
     except Exception as err:
         logging.info(f"Unable to compute transformed data {err}, skipping statistics.")
 
@@ -250,6 +253,7 @@ async def get_index_file_location_and_build_if_missing(
                                         cache_folder,
                                         index_folder,
                                         dataset,
+                                        revision,
                                         config,
                                         split,
                                         repo_file_location,
