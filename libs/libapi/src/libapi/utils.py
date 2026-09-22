@@ -95,6 +95,15 @@ def get_json_api_error_response(error: CustomError, max_age: int = 0, revision: 
     )
 
 
+def fix_legacy_login_in_loading_codes(content: Any) -> None:
+    if isinstance(content, dict) and "libraries" in content and isinstance(content["libraries"], dict):
+        libraries = content["libraries"]
+        if "loading_codes" in libraries and isinstance(libraries["loading_codes"], list):
+            for loading_code in libraries["loading_codes"]:
+                if isinstance(loading_code, dict) and "code" in loading_code and isinstance(loading_code["code"], str):
+                    loading_code["code"] = loading_code["code"].replace("`huggingface-cli login`", "`hf auth login`")
+
+
 def is_non_empty_string(string: Any) -> bool:
     return isinstance(string, str) and bool(string.strip())
 
