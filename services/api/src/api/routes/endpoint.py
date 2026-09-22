@@ -16,11 +16,11 @@ from libapi.request import get_request_parameter
 from libapi.utils import (
     Endpoint,
     are_valid_parameters,
+    fix_legacy_login_in_loading_codes,
     get_cache_entry_from_step,
     get_json_api_error_response,
     get_json_error_response,
     get_json_ok_response,
-    fix_legacy_login_in_loading_codes,
 )
 from libcommon.croissant_utils import truncate_features_from_croissant_crumbs_response
 from libcommon.exceptions import NotSupportedError
