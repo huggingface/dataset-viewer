@@ -41,6 +41,7 @@ from worker.job_runners.config.parquet_and_info import (
     disallow_embed_local_files,
     fill_builder_info,
     get_delete_operations,
+    get_total_files_size,
     get_urlpaths_in_gen_kwargs,
     get_writer_batch_size_from_info,
     limit_parquet_writes,
@@ -737,6 +738,31 @@ def test_get_urlpaths_in_gen_kwargs(
     tmpfs.put(zip_file, "data.zip")
     tmpfs.put(tar_file, "data.tar")
     assert sorted(get_urlpaths_in_gen_kwargs(gen_kwargs)) == sorted(expected)
+
+
+@pytest.mark.parametrize(
+    "urlpath",
+    [
+        "http://169.254.169.254/latest/meta-data/",
+        "https://example.org/data.csv",
+        "s3://bucket/data.csv",
+        "zip://data.csv::https://example.org/data.zip",
+    ],
+)
+def test_get_total_files_size_refuses_a_remote_urlpath(urlpath: str) -> None:
+    with pytest.raises(ValueError, match="Data file is neither on the Hub nor local"):
+        get_total_files_size([urlpath], storage_options={"hf": {"token": None, "endpoint": CI_HUB_ENDPOINT}})
+
+
+@pytest.mark.parametrize("with_protocol", [True, False])
+def test_get_total_files_size_allows_a_local_urlpath(with_protocol: bool, tmp_path: Path) -> None:
+    # the data files the conversion downloaded or extracted itself are local, and are read from there
+    local_file = tmp_path / "dataset.csv"
+    content = "text\nhello\n"
+    local_file.write_text(content)
+    urlpath = f"file://{local_file}" if with_protocol else str(local_file)
+    size = get_total_files_size([urlpath], storage_options={"hf": {"token": None, "endpoint": CI_HUB_ENDPOINT}})
+    assert size == len(content)
 
 
 def test_stream_convert_to_parquet_estimate_info(tmp_path: Path, csv_path: str) -> None:

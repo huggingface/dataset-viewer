@@ -36,7 +36,7 @@ from worker.job_runners.dataset.config_names import DatasetConfigNamesJobRunner
 from worker.job_runners.dataset.dataset_job_runner import (
     DatasetJobRunnerWithDatasetsCache,
 )
-from worker.utils import resolve_hf_path
+from worker.utils import allow_only_relative_data_files, resolve_hf_path
 
 
 def compute_init_responses(
@@ -72,7 +72,8 @@ def compute_init_responses(
     repo_dir = f"hf://datasets/{dataset}"
     dataset_init_response: DatasetInitResponse = {"successes": [], "failed": []}
     try:
-        dataset_module = dataset_module_factory(dataset, token=hf_token)
+        with allow_only_relative_data_files():
+            dataset_module = dataset_module_factory(dataset, token=hf_token)
     except _EmptyDatasetError as err:
         raise EmptyDatasetError("The dataset is empty.", cause=err) from err
     except _DataFilesNotFoundError as err:

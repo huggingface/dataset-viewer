@@ -95,6 +95,10 @@ from worker.utils import (
 )
 
 DATASET_TYPE = "dataset"
+# the protocols a data file may be fetched from: the Hub, and the local filesystem for the files the
+# conversion itself downloaded or extracted. Any other protocol is a request to a host the dataset
+# chooses, which is what must not happen.
+NON_REMOTE_PROTOCOLS = frozenset({"", "hf", "file", "local"})
 MAX_FILES_PER_DIRECTORY = 10_000  # hf hub limitation
 MAX_FILES_PER_REPOSITORY = 1_000_000  # hf hub limitation (actually it is 100k but some repos have more)
 MAX_OPERATIONS_PER_COMMIT = 500
@@ -901,6 +905,12 @@ def get_total_files_size(urlpaths: list[str], storage_options: dict[str, Any]) -
         )
     # for other files we simply use fsspec
     external_paths = [path for path in urlpaths if not path.startswith("hf://")]
+    for path in external_paths:
+        # only the last hop of a path with hops, e.g. "zip://data.csv::file:///tmp/data.zip", is fetched
+        last_hop = path.split("::")[-1]
+        protocol = last_hop.split("://")[0] if "://" in last_hop else ""
+        if protocol not in NON_REMOTE_PROTOCOLS:
+            raise ValueError(f"Data file is neither on the Hub nor local: {path}")
     total_size += sum(
         size
         for size in thread_map(
