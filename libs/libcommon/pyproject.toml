@@ -12,7 +12,7 @@ anyio = ">=3.4.0,<5"
 appdirs = "^1.4.4"
 async-lru = "^2.0.5"
 cryptography = "^50.0.0"
-datasets = { git = "https://github.com/huggingface/datasets", rev = "2315bea8cab24efb5e7dc44ac48bd84ca8421f71" }
+datasets = { git = "https://github.com/huggingface/datasets", rev = "bff13713a1e63a57a4793273df7665ce5f17a413" }
 duckdb = "^1.5.5"
 environs = "^14.3.0"
 filelock = "^3.18.0"
@@ -29,7 +29,7 @@ pdfplumber = ">=0.11.4"
 pillow = "^12.3.0"
 polars = "1.39.3"
 psutil = "^7.1.0"
-pyarrow = "^23.0.1"
+pyarrow = "^24.0.0"
 pydantic = "^2.12.5"
 pylance = "^9.0.1"
 pymongoarrow = "^1.10.0"
@@ -53,7 +53,8 @@ torchcodec = [
     { url = "https://download.pytorch.org/whl/cpu/torchcodec-0.15.0%2Bcpu-cp314-cp314-manylinux_2_28_aarch64.whl", markers = "sys_platform == 'linux' and platform_machine == 'aarch64'"},
 ]
 tqdm = "^4.66.3"
-tsfile = "^2.3.0"
+tsfile = { git = "https://github.com/apache/tsfile", rev = "27655ab772910a9f4237f913c71a4c882bbb2c62", subdirectory = "python" }
+vortex-data = "^0.85.0"
 xxhash = "^3.7.0"
 
 [tool.poetry.group.dev.dependencies]
@@ -89,8 +90,8 @@ markers = [
 
 [tool.mypy]
 strict = true
-# allow calling untyped methods in huggingface_hub (eg: DatasetInfo(...))
-untyped_calls_exclude = "huggingface_hub"
+# allow calling untyped methods in huggingface_hub (eg: DatasetInfo(...)) and pyarrow
+untyped_calls_exclude = ["huggingface_hub", "pyarrow"]
 
 [[tool.mypy.overrides]]
 module = [

@@ -421,6 +421,11 @@ LANCE_CODE = """import lance
 ds = {function}("{uri}")"""
 
 
+VORTEX_CODE = """import vortex
+{comment}
+vxf = {function}("{uri}")"""
+
+
 LEROBOT_CODE = """from lerobot.datasets import LeRobotDataset
 {comment}
 dataset = LeRobotDataset("{dataset}")"""
@@ -856,6 +861,27 @@ def get_compatible_libraries_for_lance(
     return compatible_libraries
 
 
+def get_compatible_libraries_for_vortex(
+    dataset: str, hf_token: Optional[str], login_required: bool
+) -> list[CompatibleLibrary]:
+    builder_configs = get_builder_configs(dataset, module_name="vortex", hf_token=hf_token)
+    loading_codes = _init_empty_loading_codes(builder_configs)
+    function = "vortex.open"
+    comment = LOGIN_COMMENT if login_required else ""
+    for loading_code, builder_config in zip(loading_codes, builder_configs):
+        data_files = next(iter(builder_config.data_files.values()))
+        uri = next(data_file for data_file in data_files if data_file.endswith(".vortex"))
+        loading_code["code"] = VORTEX_CODE.format(function=function, uri=uri, comment=comment)
+    return [
+        {
+            "language": "python",
+            "library": "vortex",
+            "function": function,
+            "loading_codes": loading_codes,
+        }
+    ]
+
+
 def get_compatible_libraries_for_lerobot(
     dataset: str, hf_token: Optional[str], login_required: bool
 ) -> list[CompatibleLibrary]:
@@ -919,6 +945,7 @@ get_compatible_library_for_builder: dict[str, Callable[[str, Optional[str], bool
     "csv": get_compatible_libraries_for_csv,
     "parquet": get_compatible_libraries_for_parquet,
     "lance": get_compatible_libraries_for_lance,
+    "vortex": get_compatible_libraries_for_vortex,
 }
 
 
@@ -932,6 +959,7 @@ get_format_for_builder: dict[str, DatasetFormat] = {
     "text": "text",
     "arrow": "arrow",
     "lance": "lance",
+    "vortex": "vortex",
 }
 
 
