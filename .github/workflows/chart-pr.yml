@@ -8,11 +8,13 @@ on:
       - "chart/**"
       - ".github/workflows/chart-pr.yml"
 
-permissions:
-  contents: read
+
+permissions: {}
 
 jobs:
   code-quality-helm:
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
