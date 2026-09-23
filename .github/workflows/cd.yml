@@ -12,14 +12,16 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-permissions:
-  contents: read
 
 env:
   repository-prefix: huggingface/datasets-server-
 
+permissions: {}
+
 jobs:
   build-and-push-images:
+    permissions:
+      contents: read
     name: Build and push docker images to public Docker Hub
     strategy:
       matrix:
@@ -78,6 +80,8 @@ jobs:
           cache-to: type=registry,ref=${{ env.repository-prefix }}${{ matrix.directory }}-${{ matrix.project }}:buildcache,mode=max
 
   code-quality-helm:
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
@@ -96,6 +100,8 @@ jobs:
         working-directory: chart
 
   deploy-staging-and-prod:
+    permissions:
+      contents: read
     if: ${{ endsWith(github.ref, '/main') }}
     runs-on: ubuntu-latest
     needs: [build-and-push-images]

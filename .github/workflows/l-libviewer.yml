@@ -19,11 +19,13 @@ env:
   python-version: "3.14.5"
   poetry-version: "2.1.4"
 
-permissions:
-  contents: read
+
+permissions: {}
 
 jobs:
   quality-libviewer:
+    permissions:
+      contents: read
     runs-on: "ubuntu-latest"
     defaults:
       run:
@@ -54,6 +56,8 @@ jobs:
         run: poetry run ruff format --check .
 
   unit-tests-libviewer:
+    permissions:
+      contents: read
     runs-on: "ubuntu-latest"
     defaults:
       run:

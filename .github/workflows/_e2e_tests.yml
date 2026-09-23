@@ -5,10 +5,6 @@ name: Launch end-to-end tests
 on:
   workflow_call:
 
-permissions:
-  contents: read
-  # minting the OIDC token the AWS role is assumed with
-  id-token: write
 
 env:
   python-version: 3.14.5
@@ -18,8 +14,13 @@ env:
   working-directory: e2e
   replicaset: "rs0"
   mongo-port: 27017
+permissions: {}
+
 jobs:
   e2e-tests:
+    permissions:
+      contents: read
+      id-token: write
     defaults:
       run:
         shell: bash

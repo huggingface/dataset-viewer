@@ -16,11 +16,14 @@ on:
       - "docs/source/openapi.json"
       - ".github/workflows/openapi-spec.yml"
       - ".spectral.yml"
-permissions:
-  contents: read
+
+permissions: {}
 
 jobs:
   check-openapi-spec-against-spectral:
+    permissions:
+      checks: write
+      contents: read
     name: Run Spectral
     runs-on: ubuntu-latest
     steps:

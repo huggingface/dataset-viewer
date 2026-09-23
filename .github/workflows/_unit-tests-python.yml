@@ -13,8 +13,6 @@ on:
         type: string
         default: ""
 
-permissions:
-  contents: read
 
 env:
   # required to get access to use a cached poetry venv in "/home/runner/.cache/pypoetry/virtualenvs"
@@ -24,8 +22,12 @@ env:
   python-version: "3.14.5"
   poetry-version: "2.1.4"
   replicaset: "rs0"
+permissions: {}
+
 jobs:
   unit-tests:
+    permissions:
+      contents: read
     defaults:
       run:
         shell: bash

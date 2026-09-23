@@ -9,16 +9,18 @@ on:
         required: true
         type: string
 
-permissions:
-  contents: read
 
 env:
   # required to get access to use a cached poetry venv in "/home/runner/.cache/pypoetry/virtualenvs"
   POETRY_VIRTUALENVS_IN_PROJECT: false
   python-version: "3.14.5"
   poetry-version: "2.1.4"
+permissions: {}
+
 jobs:
   code-quality:
+    permissions:
+      contents: read
     defaults:
       run:
         shell: bash
