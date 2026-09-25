@@ -3,14 +3,22 @@
 
 import logging
 from dataclasses import dataclass
-from typing import Literal, Optional
+from http import HTTPStatus
+from typing import Any, Literal, Optional
 from urllib import parse
 
 from huggingface_hub import HfApi
 from huggingface_hub.constants import REPO_TYPE_DATASET
-from libcommon.simple_cache import get_datasets_with_last_updated_kind
+from libcommon.constants import DATASET_INFO_KIND
+from libcommon.simple_cache import (
+    CachedArtifactNotFoundError,
+    get_datasets_with_last_updated_kind,
+    get_response,
+)
 
 PARQUET_CACHE_KIND = "config-parquet"
+# the name of the datasets-builder used when the data is already stored as Parquet files on the Hub
+PARQUET_BUILDER_NAME = "parquet"
 DAYS = 1
 
 DISCUSSION_TITLE = "[bot] [No action needed] Conversion to Parquet"
@@ -48,6 +56,7 @@ class ParquetCounters:
     datasets: int = 0
     new_discussions: int = 0
     dismissed_discussions: int = 0
+    already_in_parquet_discussions: int = 0
     errors: int = 0
 
 
@@ -57,7 +66,11 @@ class Counters:
 
 
 def post_messages(
-    hf_endpoint: str, bot_associated_user_name: Optional[str], bot_token: Optional[str], parquet_revision: str
+    hf_endpoint: str,
+    bot_associated_user_name: Optional[str],
+    bot_token: Optional[str],
+    parquet_revision: str,
+    skip_already_in_parquet: bool = True,
 ) -> Counters:
     """
     Post messages in Hub discussions to notify users.
@@ -71,6 +84,7 @@ def post_messages(
             bot_associated_user_name=bot_associated_user_name,
             bot_token=bot_token,
             parquet_revision=parquet_revision,
+            skip_already_in_parquet=skip_already_in_parquet,
         )
     )
 
@@ -80,6 +94,7 @@ def post_messages_on_parquet_conversion(
     bot_associated_user_name: str,
     bot_token: str,
     parquet_revision: str,
+    skip_already_in_parquet: bool = True,
 ) -> ParquetCounters:
     logging.info("Create a Hub discussion to notify about parquet conversion")
     datasets = limit_to_one_dataset_per_namespace(
@@ -94,7 +109,8 @@ def post_messages_on_parquet_conversion(
         return (
             f" [{counters.datasets}/{len(datasets)}] {counters.new_discussions} discussions"
             f" have been opened, {counters.dismissed_discussions} datasets"
-            f" already had a discussion (open or closed). {counters.errors} errors."
+            f" already had a discussion (open or closed), {counters.already_in_parquet_discussions} datasets"
+            f" were already in Parquet (nothing to convert). {counters.errors} errors."
         )
 
     hf_api = HfApi(endpoint=hf_endpoint, token=bot_token)
@@ -104,16 +120,21 @@ def post_messages_on_parquet_conversion(
         prefix = f"[{counters.datasets}/{len(datasets)}]"
         logging.info(f"{prefix} Processing dataset {dataset}")
         try:
-            try:
-                next(
-                    hf_api.get_repo_discussions(
-                        repo_id=dataset, repo_type=REPO_TYPE_DATASET, token=bot_token, author=bot_associated_user_name
-                    )
-                )
-                # if we get here, the bot has already opened a discussion for this dataset
+            if skip_already_in_parquet and is_dataset_already_in_parquet(dataset):
+                # the data is already stored as Parquet files on the Hub: the dataset viewer only
+                # linked them in the Parquet revision, so there is nothing to announce to the user
+                counters.already_in_parquet_discussions += 1
+                logging.info(f"{prefix} [skipped] Dataset {dataset} is already in Parquet, no discussion opened")
+            elif has_bot_discussion(
+                hf_api=hf_api,
+                dataset=dataset,
+                bot_associated_user_name=bot_associated_user_name,
+                bot_token=bot_token,
+            ):
+                # the bot has already opened a discussion for this dataset
                 counters.dismissed_discussions += 1
                 logging.info(f"{prefix} [dismissed] Dataset {dataset} already has a discussion, skipping")
-            except StopIteration:
+            else:
                 hf_api.create_discussion(
                     repo_id=dataset,
                     repo_type=REPO_TYPE_DATASET,
@@ -140,6 +161,73 @@ def post_messages_on_parquet_conversion(
     logging.info("All the messages about parquet conversion have been posted.")
 
     return counters
+
+
+def has_bot_discussion(hf_api: HfApi, dataset: str, bot_associated_user_name: str, bot_token: str) -> bool:
+    """
+    Tell if the bot has already opened a discussion (open or closed) for a dataset.
+
+    Args:
+        hf_api (`huggingface_hub.HfApi`): the HfApi to use, authenticated with the bot token.
+        dataset (`str`): the dataset in question.
+        bot_associated_user_name (`str`): the name of the Hub user associated with the bot.
+        bot_token (`str`): the token of the bot.
+
+    Returns:
+        `bool`: True if the bot has already opened a discussion for this dataset.
+    """
+    try:
+        next(
+            hf_api.get_repo_discussions(
+                repo_id=dataset, repo_type=REPO_TYPE_DATASET, token=bot_token, author=bot_associated_user_name
+            )
+        )
+    except StopIteration:
+        return False
+    return True
+
+
+def is_dataset_already_in_parquet(dataset: str) -> bool:
+    """
+    Tell if the data of a dataset is already stored as Parquet files on the Hub.
+
+    In that case, the dataset viewer does not convert anything: it only links the original files
+    in the Parquet revision (see "What if my dataset was already in Parquet?" in the discussion
+    description), so there is nothing new to announce to the dataset owner, and we should not
+    clutter their discussions with a "Conversion to Parquet" message.
+
+    The information is read from the cached "dataset-info" response: its "builder_name" is
+    "parquet" when a configuration points to Parquet files already on the Hub. Only datasets
+    with at least one configuration, all of them being Parquet configurations, are considered as
+    already in Parquet: as soon as one configuration has been converted, we keep opening a
+    discussion.
+
+    If the information is not available (no cached response, failed response, or unexpected
+    content), the dataset is not considered as already in Parquet, and a discussion is opened
+    (the historical behavior).
+
+    Args:
+        dataset (`str`): the dataset in question.
+
+    Returns:
+        `bool`: True if every configuration of the dataset is already in Parquet on the Hub.
+    """
+    try:
+        response = get_response(kind=DATASET_INFO_KIND, dataset=dataset)
+    except CachedArtifactNotFoundError:
+        logging.debug(f"No cached '{DATASET_INFO_KIND}' response for {dataset}, opening a discussion anyway")
+        return False
+    if response["http_status"] != HTTPStatus.OK:
+        logging.debug(f"Cached '{DATASET_INFO_KIND}' response for {dataset} is an error, opening a discussion anyway")
+        return False
+    config_infos = response["content"].get("dataset_info")
+    if not isinstance(config_infos, dict):
+        logging.debug(f"Unexpected '{DATASET_INFO_KIND}' content for {dataset}, opening a discussion anyway")
+        return False
+    builder_names: list[Any] = [
+        config_info.get("builder_name") for config_info in config_infos.values() if isinstance(config_info, dict)
+    ]
+    return bool(builder_names) and all(builder_name == PARQUET_BUILDER_NAME for builder_name in builder_names)
 
 
 def create_discussion_description(
