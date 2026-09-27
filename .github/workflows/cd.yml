@@ -118,27 +118,29 @@ jobs:
             images:
               jobs:
                 mongodbMigration:
-                  tag: sha-${{ steps.vars.outputs.sha_short }}
+                  tag: sha-${STEPS_VARS_OUTPUTS_SHA_SHORT}
                 cacheMaintenance:
-                  tag: sha-${{ steps.vars.outputs.sha_short }}
+                  tag: sha-${STEPS_VARS_OUTPUTS_SHA_SHORT}
               services:
                 admin:
-                  tag: sha-${{ steps.vars.outputs.sha_short }}
+                  tag: sha-${STEPS_VARS_OUTPUTS_SHA_SHORT}
                 api:
-                  tag: sha-${{ steps.vars.outputs.sha_short }}
+                  tag: sha-${STEPS_VARS_OUTPUTS_SHA_SHORT}
                 rows:
-                  tag: sha-${{ steps.vars.outputs.sha_short }}
+                  tag: sha-${STEPS_VARS_OUTPUTS_SHA_SHORT}
                 search:
-                  tag: sha-${{ steps.vars.outputs.sha_short }}
+                  tag: sha-${STEPS_VARS_OUTPUTS_SHA_SHORT}
                 sseApi:
-                  tag: sha-${{ steps.vars.outputs.sha_short }}
+                  tag: sha-${STEPS_VARS_OUTPUTS_SHA_SHORT}
                 worker:
-                  tag: sha-${{ steps.vars.outputs.sha_short }}
+                  tag: sha-${STEPS_VARS_OUTPUTS_SHA_SHORT}
                 webhook:
-                  tag: sha-${{ steps.vars.outputs.sha_short }}
+                  tag: sha-${STEPS_VARS_OUTPUTS_SHA_SHORT}
           END
           )
           echo "VALUES=$(echo "$VALUES" | yq -o=json | jq tostring)" >> $GITHUB_ENV
+        env:
+          STEPS_VARS_OUTPUTS_SHA_SHORT: ${{ steps.vars.outputs.sha_short }}
       - name: Deploy on infra-deployments
         uses: aurelien-baudet/workflow-dispatch@93e95b157d791ae7f42aef8f8a0d3d723eba1c31  # v2
         with:
