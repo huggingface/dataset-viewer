@@ -15,9 +15,11 @@ import datasets.config
 import datasets.info
 import fsspec
 import pandas as pd
+import pyarrow as pa
 import pyarrow.parquet as pq
 import pytest
 import requests
+import vortex
 from datasets import Audio, Features, Image, Pdf, StreamingDownloadManager, Value, load_dataset, load_dataset_builder
 from datasets.packaged_modules.generator.generator import (
     Generator as ParametrizedGeneratorBasedBuilder,
@@ -642,6 +644,34 @@ def test_stream_convert_to_parquet_arrowbasedbuilder(
             sum(pq.ParquetFile(parquet_file.local_file).read().nbytes for parquet_file in parquet_files)
             < expected_max_dataset_size_bytes
         )
+
+
+def test_stream_convert_to_parquet_vortex(tmp_path: Path) -> None:
+    source_table = pa.table(
+        {
+            "text": pa.array(["a", None, "c"], type=pa.string()),
+            "binary": pa.array([b"a", None, b"c"], type=pa.binary()),
+            "nested": pa.array([["a", None], None, ["c"]], type=pa.list_(pa.string())),
+        }
+    )
+    vortex_path = tmp_path / "train.vortex"
+    vortex.io.write(source_table, str(vortex_path))
+    builder = load_dataset_builder(
+        "vortex", data_files={"train": [str(vortex_path)]}, cache_dir=str(tmp_path / "cache")
+    )
+
+    parquet_operations, partial, estimated_dataset_info = stream_convert_to_parquet(
+        builder, max_dataset_size_bytes=None
+    )
+
+    assert len(parquet_operations) == 1
+    assert partial is False
+    assert estimated_dataset_info is None
+    assert builder.info.features == Features.from_arrow_schema(source_table.schema)
+    parquet_files = list_generated_parquet_files(builder)
+    assert len(parquet_files) == 1
+    parquet_table = pq.read_table(parquet_files[0].local_file)
+    assert parquet_table.to_pylist() == source_table.to_pylist()
 
 
 @pytest.mark.parametrize(

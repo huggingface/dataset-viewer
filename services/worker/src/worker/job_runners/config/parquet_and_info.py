@@ -7,6 +7,7 @@ import os
 import re
 from collections.abc import Callable, Generator, Iterator
 from contextlib import ExitStack
+from dataclasses import replace
 from itertools import groupby
 from pathlib import Path
 from types import TracebackType
@@ -23,7 +24,7 @@ import httpx
 import numpy as np
 import pyarrow as pa
 import pyarrow.parquet as pq
-from datasets import DownloadConfig, Features
+from datasets import DownloadConfig, Features, LargeList, List, Value
 from datasets.arrow_writer import ParquetWriter
 from datasets.builder import DatasetBuilder
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
@@ -593,7 +594,7 @@ class limit_parquet_writes:
     def __enter__(self) -> "limit_parquet_writes":
         limiter = self
 
-        class _TrackedParquetWriter(pq.ParquetWriter):  # type: ignore
+        class _TrackedParquetWriter(pq.ParquetWriter):
             """Count on-the-fly how many bytes are written"""
 
             def track_write_table(self, pa_table: pa.Table) -> None:
@@ -601,7 +602,7 @@ class limit_parquet_writes:
 
             def write_table(self, pa_table: pa.Table, row_group_size: Optional[int] = None) -> None:
                 self.track_write_table(pa_table)
-                super().write_table(pa_table, row_group_size=row_group_size)
+                super().write_table(pa_table, row_group_size=row_group_size)  # type: ignore[no-untyped-call]
 
         def limited_generator(
             generator: Callable[..., Generator[T, None, None]],
@@ -877,6 +878,27 @@ class disallow_embed_local_files:
         return self.exit_stack.close()
 
 
+def _to_parquet_compatible_features(features: Features) -> Features:
+    """Replace Arrow view types, which the Parquet writer cannot serialize, with their standard equivalents."""
+
+    def convert(feature: Any) -> Any:
+        if isinstance(feature, Features):
+            return Features({name: convert(child) for name, child in feature.items()})
+        if isinstance(feature, dict):
+            return {name: convert(child) for name, child in feature.items()}
+        if isinstance(feature, list):
+            return [convert(child) for child in feature]
+        if isinstance(feature, tuple):
+            return tuple(convert(child) for child in feature)
+        if isinstance(feature, (List, LargeList)):
+            return replace(feature, feature=convert(feature.feature))
+        if isinstance(feature, Value) and feature.dtype in {"string_view", "binary_view"}:
+            return replace(feature, dtype=feature.dtype.removesuffix("_view"))
+        return feature
+
+    return convert(features)
+
+
 def get_total_files_size(urlpaths: list[str], storage_options: dict[str, Any]) -> int:
     total_size = 0
     fs = HfFileSystem(**storage_options["hf"])
@@ -929,6 +951,8 @@ def stream_convert_to_parquet(
     os.makedirs(builder.cache_dir, exist_ok=True)
     split_dict = SplitDict(dataset_name=builder.dataset_name)
     splits_generators: dict[str, SplitGenerator] = {sg.name: sg for sg in builder._split_generators(dl_manager)}
+    if builder.info.features is not None:
+        builder.info.features = _to_parquet_compatible_features(builder.info.features)
 
     partial = False
     estimated_splits_info: dict[str, dict[str, Any]] = {}
