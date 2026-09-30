@@ -48,7 +48,11 @@ def compute_harbor_tasks_response(
         if relative_path in {"task.toml", "instruction.md"} or relative_path.startswith(
             ("environment/", "solution/", "tests/")
         ):
-            tasks[task_path]["files"].append(HarborTaskFile(path=file.path, size=file.size))
+            task_files = tasks[task_path]["files"]
+            task_files.insert(
+                0 if relative_path == "instruction.md" else len(task_files),
+                HarborTaskFile(path=file.path, size=file.size),
+            )
     response["tasks"] = [tasks[path] for path in sorted(tasks)]
     return response
 

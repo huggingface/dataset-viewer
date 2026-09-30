@@ -127,7 +127,7 @@ def create_endpoint(
                     processing_step = step_by_input_type[input_type]
                     # full: only used in /croissant-crumbs endpoint
                     full = get_request_parameter(request, "full", default="true").lower() != "false"
-                    if endpoint_name == "/harbor-tasks":
+                    if endpoint_name == "/environment-tasks":
                         offset = get_request_parameter_offset(request)
                         length = get_request_parameter_length(request)
                         if length == 0:
@@ -183,7 +183,7 @@ def create_endpoint(
                             truncate_features_from_croissant_crumbs_response(content)
                     elif endpoint_name == "/compatible-libraries":
                         fix_legacy_login_in_loading_codes(content)
-                    elif endpoint_name == "/harbor-tasks":
+                    elif endpoint_name == "/environment-tasks":
                         tasks = content["tasks"]
                         if "task" in request.query_params:
                             task_path = get_request_parameter(request, "task")
@@ -191,7 +191,7 @@ def create_endpoint(
                                 (index for index, task in enumerate(tasks) if task["path"] == task_path), None
                             )
                             if task_index is None:
-                                raise ResponseNotFoundError("Harbor task not found")
+                                raise ResponseNotFoundError("Environment task not found")
                             offset = task_index // length * length
                         content = {
                             **content,

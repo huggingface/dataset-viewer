@@ -1925,11 +1925,11 @@
     }
   },
   "paths": {
-    "/harbor-tasks": {
+    "/environment-tasks": {
       "get": {
-        "summary": "List Harbor environment tasks",
-        "description": "Returns a page from the cached task index for datasets explicitly tagged rl-environment and harbor (or library:harbor). Tasks are discovered from unpacked task.toml files. File contents remain available from the Hub resolve endpoint at the returned revision; this endpoint only returns task and file metadata.",
-        "operationId": "getHarborTasks",
+        "summary": "List environment tasks",
+        "description": "Returns a page from the cached task index for supported RL environment datasets. Currently supports Harbor datasets explicitly tagged rl-environment and harbor (or library:harbor), with tasks discovered from unpacked task.toml files. File contents remain available from the Hub resolve endpoint at the returned revision; this endpoint only returns task and file metadata.",
+        "operationId": "getEnvironmentTasks",
         "tags": [
           "datasets"
         ],
@@ -1979,7 +1979,7 @@
         ],
         "responses": {
           "200": {
-            "description": "A page of Harbor tasks and their files, including the total task count and indexed revision.",
+            "description": "A page of environment tasks and their files, including the total task count and indexed revision.",
             "headers": {
               "Cache-Control": {
                 "$ref": "#/components/headers/Cache-Control"
@@ -2029,6 +2029,7 @@
                           },
                           "files": {
                             "type": "array",
+                            "description": "Files are ordered with the preferred preview first, followed by the remaining files in lexicographic path order.",
                             "items": {
                               "type": "object",
                               "required": [

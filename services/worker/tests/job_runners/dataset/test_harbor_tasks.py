@@ -33,6 +33,7 @@ def test_index_at_job_revision(hf_api: MagicMock, library_tag: str) -> None:
     hf_api.dataset_info.return_value = DatasetInfo(id=DATASET, tags=["rl-environment", library_tag])
     paths = [
         "tasks/b/task.toml",
+        "tasks/b/environment/Dockerfile",
         "tasks/a/tests/test.sh",
         "tasks/a/README.md",
         "tasks/a/solution/solve.sh",
@@ -70,16 +71,22 @@ def test_index_at_job_revision(hf_api: MagicMock, library_tag: str) -> None:
                 "files": [
                     {"path": path, "size": 42}
                     for path in [
+                        "tasks/a/instruction.md",
                         "tasks/a/environment/Dockerfile",
                         "tasks/a/environment/data/input.txt",
-                        "tasks/a/instruction.md",
                         "tasks/a/solution/solve.sh",
                         "tasks/a/task.toml",
                         "tasks/a/tests/test.sh",
                     ]
                 ],
             },
-            {"path": "tasks/b", "files": [{"path": "tasks/b/task.toml", "size": 42}]},
+            {
+                "path": "tasks/b",
+                "files": [
+                    {"path": "tasks/b/environment/Dockerfile", "size": 42},
+                    {"path": "tasks/b/task.toml", "size": 42},
+                ],
+            },
         ],
     }
     hf_api.dataset_info.assert_called_once_with(DATASET, revision=REVISION, expand=["tags"])
@@ -102,7 +109,7 @@ def test_root_and_nested_tasks_own_their_files(hf_api: MagicMock) -> None:
     assert result["tasks"] == [
         {
             "path": "",
-            "files": [{"path": path, "size": 1} for path in ["environment/Dockerfile", "instruction.md", "task.toml"]],
+            "files": [{"path": path, "size": 1} for path in ["instruction.md", "environment/Dockerfile", "task.toml"]],
         },
         {
             "path": "environment/nested",
