@@ -114,7 +114,7 @@ def get_num_parquet_files_to_process(
     num_parquet_files_to_process, num_bytes, num_rows = 0, 0, 0
     for parquet_file_id, parquet_file in enumerate(parquet_files):
         parquet_metadata_path = os.path.join(parquet_metadata_directory, parquet_file["parquet_metadata_subpath"])
-        parquet_metadata = pq.read_metadata(parquet_metadata_path)
+        parquet_metadata = pq.read_metadata(parquet_metadata_path)  # type: ignore
         num_parquet_files_to_process += 1
         num_rows += parquet_metadata.num_rows
         for row_group_id in range(parquet_metadata.num_row_groups):
@@ -127,7 +127,7 @@ def get_num_parquet_files_to_process(
 def is_list_pa_type(parquet_file_path: Path, feature_name: str) -> bool:
     # Check if (Sequence) feature is internally a List, because it can also be Struct in datasets<4, see
     # https://huggingface.co/docs/datasets/v2.18.0/en/package_reference/main_classes#datasets.Features
-    feature_arrow_type = pq.read_schema(parquet_file_path).field(feature_name).type
+    feature_arrow_type = pq.read_schema(parquet_file_path).field(feature_name).type  # type: ignore
     is_list: bool = pa.types.is_list(feature_arrow_type) or pa.types.is_large_list(feature_arrow_type)
     return is_list
 
@@ -142,7 +142,7 @@ def truncate_binary_columns(table: pa.Table, max_binary_length: int, features: F
     truncated_column_names: list[str] = []
     for field_idx, field in enumerate(table.schema):  # noqa: F402
         if features[field.name] == Value("binary") and table[field_idx].nbytes > max_binary_length:
-            truncated_array = pc.binary_slice(table[field_idx], 0, max_binary_length // len(table))
+            truncated_array = pc.binary_slice(table[field_idx], 0, max_binary_length // len(table))  # type: ignore
             columns[field.name] = truncated_array
             truncated_column_names.append(field.name)
         else:
@@ -204,7 +204,7 @@ class RowsIndex:
         else:
             # config-parquet version<6 didn't have features
             first_metadata_file = self.parquet_metadata_directory / parquet_files[0]["parquet_metadata_subpath"]
-            arrow_schema = pq.read_schema(first_metadata_file)
+            arrow_schema = pq.read_schema(first_metadata_file)  # type: ignore
             self.features = Features.from_arrow_schema(arrow_schema)
 
     def _init_viewer_index(

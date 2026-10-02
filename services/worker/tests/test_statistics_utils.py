@@ -398,7 +398,7 @@ def test_audio_statistics(
     parquet_filename = parquet_directory / "data.parquet"
     dataset_table = datasets["audio_statistics"].data
     dataset_table_embedded = embed_table_storage(dataset_table)  # store audio as bytes instead of paths to files
-    pq.write_table(dataset_table_embedded, parquet_filename)
+    pq.write_table(dataset_table_embedded, parquet_filename)  # type: ignore
     computed = AudioColumn(
         feature_name=column_name, hf_token=None, repo_id="dummy/repo", hash="hash"
     ).compute_statistics(parquet_paths=[parquet_filename])
@@ -409,7 +409,7 @@ def test_audio_statistics(
     pa_table_bytes = pa.Table.from_pydict(
         {column_name: [open(audio["path"], "rb").read() if audio else None for audio in audios]}
     )
-    pq.write_table(pa_table_bytes, parquet_filename)
+    pq.write_table(pa_table_bytes, parquet_filename)  # type: ignore
     computed = AudioColumn(
         feature_name=column_name, hf_token=None, repo_id="dummy/repo", hash="hash"
     ).compute_statistics(parquet_paths=[parquet_filename])
@@ -437,7 +437,7 @@ def test_video_statistics(
     parquet_filename = parquet_directory / "data.parquet"
     dataset_table = datasets["video_statistics"].data
     dataset_table_embedded = embed_table_storage(dataset_table)  # store audio as bytes instead of paths to files
-    pq.write_table(dataset_table_embedded, parquet_filename)
+    pq.write_table(dataset_table_embedded, parquet_filename)  # type: ignore
     computed = VideoColumn(
         feature_name=column_name, hf_token=None, repo_id="dummy/repo", hash="hash"
     ).compute_statistics(parquet_paths=[parquet_filename])
@@ -448,7 +448,7 @@ def test_video_statistics(
     pa_table_bytes = pa.Table.from_pydict(
         {column_name: [open(video["path"], "rb").read() if video else None for video in videos]}
     )
-    pq.write_table(pa_table_bytes, parquet_filename)
+    pq.write_table(pa_table_bytes, parquet_filename)  # type: ignore
     computed = VideoColumn(
         feature_name=column_name, hf_token=None, repo_id="dummy/repo", hash="hash"
     ).compute_statistics(parquet_paths=[parquet_filename])
@@ -474,7 +474,7 @@ def test_image_statistics(
     parquet_filename = parquet_directory / "data.parquet"
     dataset_table = datasets["image_statistics"].data
     dataset_table_embedded = embed_table_storage(dataset_table)  # store image as bytes instead of paths to files
-    pq.write_table(dataset_table_embedded, parquet_filename)
+    pq.write_table(dataset_table_embedded, parquet_filename)  # type: ignore
     computed = ImageColumn(
         feature_name=column_name, hf_token=None, repo_id="dummy/repo", hash="hash"
     ).compute_statistics(parquet_paths=[parquet_filename])
@@ -485,7 +485,7 @@ def test_image_statistics(
     pa_table_bytes = pa.Table.from_pydict(
         {column_name: [open(image["path"], "rb").read() if image else None for image in images]}
     )
-    pq.write_table(pa_table_bytes, parquet_filename)
+    pq.write_table(pa_table_bytes, parquet_filename)  # type: ignore
     computed = ImageColumn(
         feature_name=column_name, hf_token=None, repo_id="dummy/repo", hash="hash"
     ).compute_statistics(parquet_paths=[parquet_filename])

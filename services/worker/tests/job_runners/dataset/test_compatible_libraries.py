@@ -797,7 +797,7 @@ def _write_parquet(path: str, table: pa.Table, use_cdc: bool = False) -> None:
         }
     else:
         write_kwargs["data_page_size"] = 10_000
-    pq.write_table(table, path, **write_kwargs)
+    pq.write_table(table, path, **write_kwargs)  # type: ignore
 
 
 class TestIsOptimizedParquetFromFirstPolarsLoadingCode:

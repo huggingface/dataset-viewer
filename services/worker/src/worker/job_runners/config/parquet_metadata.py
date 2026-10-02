@@ -47,7 +47,7 @@ def create_parquet_metadata_file_from_remote_parquet(
         f = retry_on_arrow_invalid_open_file(
             file_url=hfh_parquet_file_path, hf_endpoint=hf_endpoint, hf_token=hf_token, revision=PARQUET_REVISION
         )
-        parquet_file_metadata = ParquetFile(f).metadata
+        parquet_file_metadata = ParquetFile(f).metadata  # type: ignore
     except Exception as e:
         raise FileSystemError(f"Could not read the parquet files: {e}") from e
     split = parquet_file_item["url"].split("/")[-2]

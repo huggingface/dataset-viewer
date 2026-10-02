@@ -430,7 +430,7 @@ def retry_get_num_examples_size_and_num_bytes(
     """
     try:
         f = retry_on_arrow_invalid_open_file(url, hf_endpoint, hf_token)
-        pf, size = pq.ParquetFile(f), f.size
+        pf, size = pq.ParquetFile(f), f.size  # type: ignore
         num_bytes = sum(pf.metadata.row_group(i).total_byte_size for i in range(pf.num_row_groups))
         f.close()
         return pf.metadata.num_rows, size, num_bytes
@@ -455,7 +455,7 @@ def retry_get_features_num_examples_size_and_num_bytes(
     """
     try:
         f = retry_on_arrow_invalid_open_file(url, hf_endpoint, hf_token)
-        pf, size = pq.ParquetFile(f), f.size
+        pf, size = pq.ParquetFile(f), f.size  # type: ignore
         num_bytes = sum(pf.metadata.row_group(i).total_byte_size for i in range(pf.num_row_groups))
         features = Features.from_arrow_schema(pf.schema_arrow)
         num_examples = pf.metadata.num_rows
@@ -593,7 +593,7 @@ class limit_parquet_writes:
     def __enter__(self) -> "limit_parquet_writes":
         limiter = self
 
-        class _TrackedParquetWriter(pq.ParquetWriter):  # type: ignore
+        class _TrackedParquetWriter(pq.ParquetWriter):
             """Count on-the-fly how many bytes are written"""
 
             def track_write_table(self, pa_table: pa.Table) -> None:
@@ -601,7 +601,7 @@ class limit_parquet_writes:
 
             def write_table(self, pa_table: pa.Table, row_group_size: Optional[int] = None) -> None:
                 self.track_write_table(pa_table)
-                super().write_table(pa_table, row_group_size=row_group_size)
+                super().write_table(pa_table, row_group_size=row_group_size)  # type: ignore
 
         def limited_generator(
             generator: Callable[..., Generator[T, None, None]],

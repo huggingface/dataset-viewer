@@ -37,7 +37,7 @@ def prepare_and_clean_mongo(app_config: AppConfig) -> None:
 
 def get_dummy_parquet_buffer(write_page_index: bool = False) -> io.BytesIO:
     dummy_parquet_buffer = io.BytesIO()
-    pq.write_table(pa.table({"a": [0, 1, 2]}), dummy_parquet_buffer, write_page_index=write_page_index)
+    pq.write_table(pa.table({"a": [0, 1, 2]}), dummy_parquet_buffer, write_page_index=write_page_index)  # type: ignore
     return dummy_parquet_buffer
 
 
@@ -308,9 +308,9 @@ def test_compute_libviewer(
             metadata_path = (
                 Path(job_runner.parquet_metadata_directory) / parquet_file_metadata_item["parquet_metadata_subpath"]
             )
-            metadata = pq.read_metadata(metadata_path)
+            metadata = pq.read_metadata(metadata_path)  # type: ignore
             data_buffer = get_dummy_parquet_buffer(write_page_index=write_page_index)
-            expected_metadata = pq.ParquetFile(data_buffer).metadata
+            expected_metadata = pq.ParquetFile(data_buffer).metadata  # type: ignore
             assert metadata.num_columns == expected_metadata.num_columns
             assert metadata.num_rows == expected_metadata.num_rows
             assert metadata.schema == expected_metadata.schema
