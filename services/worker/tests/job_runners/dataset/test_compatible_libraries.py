@@ -346,12 +346,9 @@ EXPECTED_WEBDATASET = (
                         "arguments": {"splits": {"train": "**/*.tar"}},
                         "code": (
                             "import webdataset as wds\n"
-                            "from huggingface_hub import HfFileSystem, get_token, hf_hub_url\n"
+                            "from huggingface_hub import hffs\n"
                             "\n"
-                            "fs = HfFileSystem()\n"
-                            'files = [fs.resolve_path(path) for path in fs.glob("hf://datasets/dummy/webdataset-dataset/**/*.tar")]\n'
-                            'urls = [hf_hub_url(file.repo_id, file.path_in_repo, repo_type="dataset") for file in files]\n'
-                            "urls = f\"pipe: curl -s -L -H 'Authorization:Bearer {get_token()}' {'::'.join(urls)}\"\n"
+                            'urls = [f"hf://{path}" for path in hffs.glob("hf://datasets/dummy/webdataset-dataset/**/*.tar")]\n'
                             "\n"
                             "ds = wds.WebDataset(urls).decode()"
                         ),

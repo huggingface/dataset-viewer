@@ -393,25 +393,19 @@ df = {function}("hf://datasets/{dataset}/" + splits["{first_split}"]{args})"""
 
 
 WEBDATASET_CODE = """import webdataset as wds
-from huggingface_hub import HfFileSystem, get_token, hf_hub_url
+from huggingface_hub import hffs
 {comment}
-fs = HfFileSystem()
-files = [fs.resolve_path(path) for path in fs.glob("hf://datasets/{dataset}/{pattern}")]
-urls = [hf_hub_url(file.repo_id, file.path_in_repo, repo_type="dataset") for file in files]
-urls = f"pipe: curl -s -L -H 'Authorization:Bearer {{get_token()}}' {{'::'.join(urls)}}"
+urls = [f"hf://{{path}}" for path in hffs.glob("hf://datasets/{dataset}/{pattern}")]
 
 ds = {function}(urls).decode()"""
 
 
 WEBDATASET_CODE_SPLITS = """import webdataset as wds
-from huggingface_hub import HfFileSystem, get_token, hf_hub_url
+from huggingface_hub import hffs
 
 splits = {splits}
 {comment}
-fs = HfFileSystem()
-files = [fs.resolve_path(path) for path in fs.glob("hf://datasets/{dataset}/" + splits["{first_split}"])]
-urls = [hf_hub_url(file.repo_id, file.path_in_repo, repo_type="dataset") for file in files]
-urls = f"pipe: curl -s -L -H 'Authorization:Bearer {{get_token()}}' {{'::'.join(urls)}}"
+urls = [f"hf://{{path}}" for path in hffs.glob("hf://datasets/{dataset}/" + splits["{first_split}"])]
 
 ds = {function}(urls).decode()"""
 
