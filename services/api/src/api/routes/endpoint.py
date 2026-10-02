@@ -9,10 +9,12 @@ from typing import Optional, TypedDict
 from libapi.authentication import auth_check
 from libapi.exceptions import (
     ApiError,
+    InvalidParameterError,
     MissingRequiredParameterError,
+    ResponseNotFoundError,
     UnexpectedApiError,
 )
-from libapi.request import get_request_parameter
+from libapi.request import get_request_parameter, get_request_parameter_length, get_request_parameter_offset
 from libapi.utils import (
     Endpoint,
     are_valid_parameters,
@@ -125,6 +127,11 @@ def create_endpoint(
                     processing_step = step_by_input_type[input_type]
                     # full: only used in /croissant-crumbs endpoint
                     full = get_request_parameter(request, "full", default="true").lower() != "false"
+                    if endpoint_name == "/environment-tasks":
+                        offset = get_request_parameter_offset(request)
+                        length = get_request_parameter_length(request)
+                        if length == 0:
+                            raise InvalidParameterError("Parameter 'length' must be greater than zero")
                 # if auth_check fails, it will raise an exception that will be caught below
                 with StepProfiler(method=method, step="check authentication"):
                     await auth_check(
@@ -176,6 +183,23 @@ def create_endpoint(
                             truncate_features_from_croissant_crumbs_response(content)
                     elif endpoint_name == "/compatible-libraries":
                         fix_legacy_login_in_loading_codes(content)
+                    elif endpoint_name == "/environment-tasks":
+                        tasks = content["tasks"]
+                        if "task" in request.query_params:
+                            task_path = get_request_parameter(request, "task")
+                            task_index = next(
+                                (index for index, task in enumerate(tasks) if task["path"] == task_path), None
+                            )
+                            if task_index is None:
+                                raise ResponseNotFoundError("Environment task not found")
+                            offset = task_index // length * length
+                        content = {
+                            **content,
+                            "tasks": tasks[offset : offset + length],
+                            "num_tasks_total": len(tasks),
+                            "offset": offset,
+                            "length": length,
+                        }
                     with StepProfiler(method=method, step="generate OK response"):
                         return get_json_ok_response(content=content, max_age=max_age_long, revision=revision)
 
