@@ -23,8 +23,8 @@ from datasets.packaged_modules.generator.generator import (
     Generator as ParametrizedGeneratorBasedBuilder,
 )
 from datasets.utils.py_utils import asdict
-from huggingface_hub._commit_api import CommitOperation
-from huggingface_hub.hf_api import CommitOperationAdd, HfApi
+from huggingface_hub._commit_api import CommitOperation, CommitOperationAdd
+from huggingface_hub.hf_api import HfApi
 from libcommon.dtos import JobInfo, JobParams, Priority
 from libcommon.queue.jobs import Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
@@ -640,7 +640,7 @@ def test_stream_convert_to_parquet_arrowbasedbuilder(
         one_sample_max_size = 100
         expected_max_dataset_size_bytes = max_dataset_size_bytes + one_sample_max_size
         assert (
-            sum(pq.ParquetFile(parquet_file.local_file).read().nbytes for parquet_file in parquet_files)
+            sum(pq.ParquetFile(parquet_file.local_file).read().nbytes for parquet_file in parquet_files)  # type: ignore
             < expected_max_dataset_size_bytes
         )
 
@@ -683,7 +683,7 @@ def test_stream_convert_to_parquet_generatorbasedbuilder(
         one_sample_max_size = 100
         expected_max_dataset_size_bytes = max_dataset_size_bytes + one_sample_max_size
         assert (
-            sum(pq.ParquetFile(parquet_file.local_file).read().nbytes for parquet_file in parquet_files)
+            sum(pq.ParquetFile(parquet_file.local_file).read().nbytes for parquet_file in parquet_files)  # type: ignore
             < expected_max_dataset_size_bytes
         )
 
@@ -971,5 +971,5 @@ def test_disallow_embed_local_files(text_file: str, tmp_path: Path) -> None:
     )
     with disallow_embed_local_files():
         builder.download_and_prepare(file_format="parquet")
-        table = pq.read_table(list(Path(cache_dir).rglob("*.parquet"))[0])
+        table = pq.read_table(list(Path(cache_dir).rglob("*.parquet"))[0])  # type: ignore
         assert table.to_pydict() == {"image": [{"bytes": None, "path": text_file}]}

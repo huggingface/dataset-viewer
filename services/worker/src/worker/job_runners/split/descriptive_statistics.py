@@ -202,7 +202,7 @@ def compute_descriptive_statistics_response(
 
     local_parquet_split_directory = Path(local_parquet_directory) / config / split_directory
 
-    pq_split_dataset = pq.ParquetDataset(local_parquet_split_directory)
+    pq_split_dataset = pq.ParquetDataset(local_parquet_split_directory)  # type: ignore
     num_examples = sum(fragment.metadata.num_rows for fragment in pq_split_dataset.fragments)
     split_extension_features = get_extension_features(features)
     features = {
@@ -287,7 +287,7 @@ def compute_descriptive_statistics_response(
         else:
             try:
                 data = pl.DataFrame._from_arrow(
-                    pq.read_table(
+                    pq.read_table(  # type: ignore
                         local_parquet_paths,
                         columns=[column.name],
                         schema=Features.from_dict({column.name: features[column.name]}).arrow_schema,
