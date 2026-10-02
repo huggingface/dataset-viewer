@@ -47,6 +47,13 @@ class DatasetSplitNamesResponse(TypedDict):
 class ShortcutJobResult(JobResult):
     job: CachedJob
     content: Mapping[str, Any]
+    progress: float
+
+
+@dataclass
+class ShortcutCompleteJobResult(JobResult):
+    job: CachedJob
+    content: Mapping[str, Any]
     progress: float = field(init=False, default=1.0)
 
 
