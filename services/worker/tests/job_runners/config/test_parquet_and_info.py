@@ -23,7 +23,8 @@ from datasets.packaged_modules.generator.generator import (
     Generator as ParametrizedGeneratorBasedBuilder,
 )
 from datasets.utils.py_utils import asdict
-from huggingface_hub.hf_api import CommitOperation, CommitOperationAdd, HfApi
+from huggingface_hub._commit_api import CommitOperation
+from huggingface_hub.hf_api import CommitOperationAdd, HfApi
 from libcommon.dtos import JobInfo, JobParams, Priority
 from libcommon.queue.jobs import Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource

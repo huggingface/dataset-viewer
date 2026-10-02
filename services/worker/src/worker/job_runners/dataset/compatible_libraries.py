@@ -912,7 +912,12 @@ def get_compatible_libraries_for_environment_tags(dataset: str, hf_token: Option
         for library in libraries
     ]
 
-def get_compatible_libraries_for_harbor(dataset: str, hf_token: Optional[str], login_required: bool) -> list[CompatibleLibrary]:
+
+def get_compatible_libraries_for_harbor(
+    dataset: str,
+    hf_token: Optional[str],  # noqa
+    login_required: bool,  # noqa
+) -> list[CompatibleLibrary]:
     return [
         {
             "language": ENVIRONMENT_LIBRARY_SNIPPETS["harbor"][0],
