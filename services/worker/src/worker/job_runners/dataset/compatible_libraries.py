@@ -912,6 +912,22 @@ def get_compatible_libraries_for_environment_tags(dataset: str, hf_token: Option
         for library in libraries
     ]
 
+def get_compatible_libraries_for_harbor(dataset: str, hf_token: Optional[str], login_required: bool) -> list[CompatibleLibrary]:
+    return [
+        {
+            "language": ENVIRONMENT_LIBRARY_SNIPPETS["harbor"][0],
+            "library": "harbor",
+            "function": ENVIRONMENT_LIBRARY_SNIPPETS["harbor"][1],
+            "loading_codes": [
+                {
+                    "config_name": "default",
+                    "arguments": {},
+                    "code": ENVIRONMENT_LIBRARY_SNIPPETS["harbor"][2].format(dataset=dataset),
+                }
+            ],
+        }
+    ]
+
 
 get_compatible_library_for_builder: dict[str, Callable[[str, Optional[str], bool], list[CompatibleLibrary]]] = {
     "webdataset": get_compatible_libraries_for_webdataset,
@@ -919,6 +935,7 @@ get_compatible_library_for_builder: dict[str, Callable[[str, Optional[str], bool
     "csv": get_compatible_libraries_for_csv,
     "parquet": get_compatible_libraries_for_parquet,
     "lance": get_compatible_libraries_for_lance,
+    "harbor": get_compatible_libraries_for_harbor,
 }
 
 
@@ -1003,7 +1020,8 @@ def compute_compatible_libraries_response(
         # lerobot library (identified by the "LeRobot" tag in the dataset card, not by the builder/format)
         libraries += get_compatible_libraries_for_lerobot(dataset, hf_token, login_required)
 
-    libraries += environment_libraries
+    if builder_name != "harbor":
+        libraries += environment_libraries
 
     # Optimized Parquet
     if "parquet" in formats:
