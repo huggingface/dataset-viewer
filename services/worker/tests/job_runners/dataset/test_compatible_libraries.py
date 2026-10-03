@@ -423,7 +423,7 @@ def mock_hffs(tmp_path_factory: TempPathFactory) -> Iterator[fsspec.AbstractFile
 
     (hf / "datasets" / ENVIRONMENT_DATASET).mkdir(parents=True)
     (hf / "datasets" / ENVIRONMENT_DATASET / "README.md").write_text(
-        "---\ntags:\n- environment\n- Harbor\n- verifiers\n- openenv\n- nemo-gym\n---\n"
+        "---\ntags:\n- rl-environment\n- Harbor\n- verifiers\n- openenv\n- nemo-gym\n---\n"
     )
 
     class MockHfFileSystem(DirFileSystem):  # type: ignore[misc]
