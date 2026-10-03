@@ -893,7 +893,7 @@ def get_compatible_libraries_for_environment_tags(dataset: str, hf_token: Option
         return []
     dataset_card_data = DatasetCard(dataset_readme_content).data
     tags = {tag.lower() for tag in (getattr(dataset_card_data, "tags", None) or []) if isinstance(tag, str)}
-    if "environment" not in tags:
+    if "rl-environment" not in tags:
         return []
     libraries = [library for tag, library in ENVIRONMENT_LIBRARY_TAGS.items() if tag in tags]
     return [

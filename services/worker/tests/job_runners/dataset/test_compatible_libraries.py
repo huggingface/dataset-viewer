@@ -423,7 +423,7 @@ def mock_hffs(tmp_path_factory: TempPathFactory) -> Iterator[fsspec.AbstractFile
 
     (hf / "datasets" / ENVIRONMENT_DATASET).mkdir(parents=True)
     (hf / "datasets" / ENVIRONMENT_DATASET / "README.md").write_text(
-        "---\ntags:\n- environment\n- Harbor\n- verifiers\n- openenv\n- nemo-gym\n---\n"
+        "---\ntags:\n- rl-environment\n- Harbor\n- verifiers\n- openenv\n- nemo-gym\n---\n"
     )
 
     class MockHfFileSystem(DirFileSystem):  # type: ignore[misc]
@@ -588,6 +588,30 @@ def test_get_compatible_libraries_for_environment_tags(
     assert "AutoEnv.from_env" in compatible_libraries[2]["loading_codes"][0]["code"]
     assert "gym eval run" in compatible_libraries[3]["loading_codes"][0]["code"]
     assert get_compatible_libraries_for_environment_tags(LEROBOT_DATASET, hf_token=None) == []
+
+
+@pytest.mark.parametrize(
+    "tags,expected_libraries",
+    [
+        (["rl-environment", "verifiers"], ["verifiers"]),
+        (["environment", "verifiers"], []),
+        (["verifiers"], []),
+        (["rl-environment", "environment", "verifiers"], ["verifiers"]),
+        (["RL-Environment", "Verifiers"], ["verifiers"]),
+        (["rl-environment"], []),
+    ],
+)
+def test_environment_library_tag_gate(
+    mock_hffs: fsspec.AbstractFileSystem,
+    tags: list[str],
+    expected_libraries: list[str],
+) -> None:
+    mock_hffs.write_text(
+        f"datasets/{ENVIRONMENT_DATASET}/README.md",
+        "---\ntags:\n" + "".join(f"- {tag}\n" for tag in tags) + "---\n",
+    )
+    compatible_libraries = get_compatible_libraries_for_environment_tags(ENVIRONMENT_DATASET, hf_token=None)
+    assert [library["library"] for library in compatible_libraries] == expected_libraries
 
 
 def test_compute_environment_libraries_when_dataset_info_fails(
