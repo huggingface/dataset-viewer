@@ -9,6 +9,7 @@ on:
       - main
     paths:
       - "libs/libcommon/**"
+      - "libs/libviewer/**"
       - "services/worker/**"
       - ".github/workflows/s-worker.yml"
       - ".github/workflows/_quality-python.yml"
@@ -17,6 +18,7 @@ on:
   pull_request:
     paths:
       - "libs/libcommon/**"
+      - "libs/libviewer/**"
       - "services/worker/**"
       - ".github/workflows/s-worker.yml"
       - ".github/workflows/_quality-python.yml"
