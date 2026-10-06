@@ -9,6 +9,8 @@ on:
       - main
     paths:
       - "libs/libapi/**"
+      - "libs/libcommon/**"
+      - "libs/libviewer/**"
       - ".github/workflows/l-libapi.yml"
       - ".github/workflows/_quality-python.yml"
       - ".github/workflows/_unit-tests-python.yml"
@@ -16,6 +18,8 @@ on:
   pull_request:
     paths:
       - "libs/libapi/**"
+      - "libs/libcommon/**"
+      - "libs/libviewer/**"
       - ".github/workflows/l-libapi.yml"
       - ".github/workflows/_quality-python.yml"
       - ".github/workflows/_unit-tests-python.yml"

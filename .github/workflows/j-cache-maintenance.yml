@@ -10,6 +10,7 @@ on:
     paths:
       - "jobs/cache_maintenance/**"
       - "libs/libcommon/**"
+      - "libs/libviewer/**"
       - ".github/workflows/j-cache-maintenance.yml"
       - ".github/workflows/_quality-python.yml"
       - ".github/workflows/_unit-tests-python.yml"
@@ -18,6 +19,7 @@ on:
     paths:
       - "jobs/cache_maintenance/**"
       - "libs/libcommon/**"
+      - "libs/libviewer/**"
       - ".github/workflows/j-cache-maintenance.yml"
       - ".github/workflows/_quality-python.yml"
       - ".github/workflows/_unit-tests-python.yml"

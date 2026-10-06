@@ -10,6 +10,7 @@ on:
     paths:
       - "libs/libapi/**"
       - "libs/libcommon/**"
+      - "libs/libviewer/**"
       - "services/search/**"
       - ".github/workflows/s-search.yml"
       - ".github/workflows/_quality-python.yml"
@@ -19,6 +20,7 @@ on:
     paths:
       - "libs/libapi/**"
       - "libs/libcommon/**"
+      - "libs/libviewer/**"
       - "services/search/**"
       - ".github/workflows/s-search.yml"
       - ".github/workflows/_quality-python.yml"
