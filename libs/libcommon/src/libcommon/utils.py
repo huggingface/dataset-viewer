@@ -206,7 +206,9 @@ def inputs_to_string(
 def is_image_url(text: str) -> bool:
     is_url = text.startswith("https://") or text.startswith("http://")
     (mime_type, _) = mimetypes.guess_type(text.split("/")[-1].split("?")[0])
-    return is_url and mime_type is not None and mime_type.startswith("image/")
+    # Some URLs do not have a filename but are served from domain like userimages.example.net or path like /images/
+    url_contains_image = "image" in text
+    return (is_url and mime_type is not None and mime_type.startswith("image/")) or (is_url and url_contains_image)
 
 
 def raise_if_blocked(
