@@ -25,6 +25,7 @@ from worker.job_runners.dataset.compatible_libraries import DatasetCompatibleLib
 from worker.job_runners.dataset.config_names import DatasetConfigNamesJobRunner
 from worker.job_runners.dataset.croissant_crumbs import DatasetCroissantCrumbsJobRunner
 from worker.job_runners.dataset.filetypes import DatasetFiletypesJobRunner
+from worker.job_runners.dataset.harbor_tasks import DatasetHarborTasksJobRunner
 from worker.job_runners.dataset.hub_cache import DatasetHubCacheJobRunner
 from worker.job_runners.dataset.info import DatasetInfoJobRunner
 from worker.job_runners.dataset.init import DatasetInitJobRunner
@@ -96,6 +97,11 @@ class JobRunnerFactory(BaseJobRunnerFactory):
                 job_info=job_info,
                 app_config=self.app_config,
                 hf_datasets_cache=self.hf_datasets_cache,
+            )
+        if job_type == DatasetHarborTasksJobRunner.get_job_type():
+            return DatasetHarborTasksJobRunner(
+                job_info=job_info,
+                app_config=self.app_config,
             )
         if job_type == ConfigSplitNamesJobRunner.get_job_type():
             return ConfigSplitNamesJobRunner(
