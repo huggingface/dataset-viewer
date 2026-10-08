@@ -51,8 +51,8 @@ markers = [
 
 [tool.mypy]
 strict = true
-# allow calling untyped methods in huggingface_hub (eg: DatasetInfo(...)) and pyarrow
-untyped_calls_exclude = ["huggingface_hub", "pyarrow"]
+# allow calling untyped methods in huggingface_hub (eg: DatasetInfo(...))
+untyped_calls_exclude = "huggingface_hub"
 
 [[tool.mypy.overrides]]
 module = [
