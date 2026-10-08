@@ -458,11 +458,20 @@ gym eval run \\
     --agent <agent>"""
 
 
+AGENTENV_CODE = """hf download {dataset} \\
+    --repo-type dataset \\
+    --local-dir agentenv-dataset
+
+# Install the plugins the dataset card names, then run one of its bundles:
+agent-env run agentenv-dataset/bundles/<bundle>"""
+
+
 ENVIRONMENT_LIBRARY_TAGS: dict[str, DatasetLibrary] = {
     "harbor": "harbor",
     "verifiers": "verifiers",
     "openenv": "openenv",
     "nemo-gym": "nemo-gym",
+    "agentenv": "agentenv",
 }
 
 
@@ -471,6 +480,7 @@ ENVIRONMENT_LIBRARY_SNIPPETS: dict[DatasetLibrary, tuple[ProgrammingLanguage, st
     "verifiers": ("python", "HarborTaskset", VERIFIERS_CODE),
     "openenv": ("python", "AutoEnv.from_env", OPENENV_CODE),
     "nemo-gym": ("shell", "gym eval run", NEMO_GYM_CODE),
+    "agentenv": ("shell", "agent-env run", AGENTENV_CODE),
 }
 
 
