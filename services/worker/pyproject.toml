@@ -68,6 +68,7 @@ module = [
     "pandas.*",
     "pytz.*",
     "libviewer.*",
+    "vortex.*",
 ]
 ignore_missing_imports = true
 # ^ prometheus_client is now typed, but we use an old version to stick with the other services

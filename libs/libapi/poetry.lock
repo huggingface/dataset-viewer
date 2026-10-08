@@ -1514,6 +1514,7 @@ torchcodec = [
 ]
 tqdm = "^4.66.3"
 tsfile = "^2.3.0"
+vortex-data = "^0.85.0"
 xxhash = "^3.7.0"
 
 [package.source]
@@ -3186,6 +3187,26 @@ files = [
 ]
 
 [[package]]
+name = "protobuf"
+version = "6.33.6"
+description = ""
+optional = false
+python-versions = ">=3.9"
+groups = ["main"]
+files = [
+    {file = "protobuf-6.33.6-cp310-abi3-win32.whl", hash = "sha256:7d29d9b65f8afef196f8334e80d6bc1d5d4adedb449971fefd3723824e6e77d3"},
+    {file = "protobuf-6.33.6-cp310-abi3-win_amd64.whl", hash = "sha256:0cd27b587afca21b7cfa59a74dcbd48a50f0a6400cfb59391340ad729d91d326"},
+    {file = "protobuf-6.33.6-cp39-abi3-macosx_10_9_universal2.whl", hash = "sha256:9720e6961b251bde64edfdab7d500725a2af5280f3f4c87e57c0208376aa8c3a"},
+    {file = "protobuf-6.33.6-cp39-abi3-manylinux2014_aarch64.whl", hash = "sha256:e2afbae9b8e1825e3529f88d514754e094278bb95eadc0e199751cdd9a2e82a2"},
+    {file = "protobuf-6.33.6-cp39-abi3-manylinux2014_s390x.whl", hash = "sha256:c96c37eec15086b79762ed265d59ab204dabc53056e3443e702d2681f4b39ce3"},
+    {file = "protobuf-6.33.6-cp39-abi3-manylinux2014_x86_64.whl", hash = "sha256:e9db7e292e0ab79dd108d7f1a94fe31601ce1ee3f7b79e0692043423020b0593"},
+    {file = "protobuf-6.33.6-cp39-cp39-win32.whl", hash = "sha256:bd56799fb262994b2c2faa1799693c95cc2e22c62f56fb43af311cae45d26f0e"},
+    {file = "protobuf-6.33.6-cp39-cp39-win_amd64.whl", hash = "sha256:f443a394af5ed23672bc6c486be138628fbe5c651ccbc536873d7da23d1868cf"},
+    {file = "protobuf-6.33.6-py3-none-any.whl", hash = "sha256:77179e006c476e69bf8e8ce866640091ec42e1beb80b213c3900006ecfba6901"},
+    {file = "protobuf-6.33.6.tar.gz", hash = "sha256:a6768d25248312c297558af96a9f9c929e8c4cee0659cb07e780731095f38135"},
+]
+
+[[package]]
 name = "psutil"
 version = "7.2.2"
 description = "Cross-platform lib for process and system monitoring."
@@ -4178,6 +4199,54 @@ files = [
 ]
 
 [[package]]
+name = "substrait"
+version = "0.28.0"
+description = "A python package for Substrait."
+optional = false
+python-versions = "<3.15,>=3.10"
+groups = ["main"]
+files = [
+    {file = "substrait-0.28.0-py3-none-any.whl", hash = "sha256:c36c5f424e901534b6150a7cc56fb75d237c6e85ce4c0e95102c16acc8f69414"},
+    {file = "substrait-0.28.0.tar.gz", hash = "sha256:0d73925a7fefb0503637d3dad35e70e14e74b2a72fa624ab95514ed79a067cac"},
+]
+
+[package.dependencies]
+protobuf = ">=5,<7"
+substrait-extensions = "0.79.0"
+substrait-protobuf = "0.79.0"
+
+[package.extras]
+extensions = ["antlr4-python3-runtime", "pyyaml", "substrait-antlr (==0.79.0)"]
+sql = ["deepdiff", "sqloxide ; python_version < \"3.14\""]
+
+[[package]]
+name = "substrait-extensions"
+version = "0.79.0"
+description = "Packaged Substrait Extension Files"
+optional = false
+python-versions = ">=3.10"
+groups = ["main"]
+files = [
+    {file = "substrait_extensions-0.79.0-py3-none-any.whl", hash = "sha256:4ca15d059b912e7e030b4c7a5f0a7c434206c7543f699e5f896caf9cb0b47b65"},
+    {file = "substrait_extensions-0.79.0.tar.gz", hash = "sha256:ae295944eb007d5d8243b4e9b818635ee054c6cab224b28e2d45746541b384f2"},
+]
+
+[[package]]
+name = "substrait-protobuf"
+version = "0.79.0"
+description = "Generated Substrait Protocol Buffer Code"
+optional = false
+python-versions = ">=3.10"
+groups = ["main"]
+files = [
+    {file = "substrait_protobuf-0.79.0-py3-none-any.whl", hash = "sha256:6f710459569be0b92661e16a2d180a9f2a03853c3ef0154a0c6c8a9aef365ffa"},
+    {file = "substrait_protobuf-0.79.0.tar.gz", hash = "sha256:f1bf8641eb3ee785f4affd4f728568958deda2bb1ededa09f02f2118229616d4"},
+]
+
+[package.dependencies]
+protobuf = ">=5,<7"
+
+[[package]]
 name = "sympy"
 version = "1.14.0"
 description = "Computer algebra system (CAS) in Python"
@@ -4676,6 +4745,34 @@ h11 = ">=0.8"
 
 [package.extras]
 standard = ["colorama (>=0.4) ; sys_platform == \"win32\"", "httptools (>=0.5.0)", "python-dotenv (>=0.13)", "pyyaml (>=5.1)", "uvloop (>=0.14.0,!=0.15.0,!=0.15.1) ; sys_platform != \"win32\" and sys_platform != \"cygwin\" and platform_python_implementation != \"PyPy\"", "watchfiles (>=0.13)", "websockets (>=10.4)"]
+
+[[package]]
+name = "vortex-data"
+version = "0.85.0"
+description = "Python bindings for Vortex, an Apache Arrow-compatible toolkit for working with compressed array data."
+optional = false
+python-versions = ">=3.11"
+groups = ["main"]
+files = [
+    {file = "vortex_data-0.85.0-cp311-abi3-macosx_10_12_x86_64.whl", hash = "sha256:c703f0a8eba2f4fbb8e456e7fc53ea8e271075028b6fd1ffe7471805b68cca9f"},
+    {file = "vortex_data-0.85.0-cp311-abi3-macosx_11_0_arm64.whl", hash = "sha256:7b30e038492f28ea94a8cd5088e3eaf80152486175726e778b61ed259f454a30"},
+    {file = "vortex_data-0.85.0-cp311-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:a574bf7bc3037b221fc2a2be30c5783dfc7f8eefe6cd06edc7739e54ba5e2a5f"},
+    {file = "vortex_data-0.85.0-cp311-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:a426db0bffac80e31535aa8699beff5f01c3ea474dca775fb76fb44340c11e97"},
+]
+
+[package.dependencies]
+pyarrow = ">=17.0.0"
+substrait = ">=0.23.0,<0.29.0"
+typing-extensions = ">=4.5.0"
+
+[package.extras]
+cuda = ["vortex-data-cuda (==0.85.0)"]
+duckdb = ["duckdb (>=1.1.2)"]
+hf = ["datasets (>=4.0.0,<6)", "huggingface-hub (>=0.34.0)"]
+numpy = ["numpy (>=1.26.0)"]
+pandas = ["pandas (>=2.2.0)"]
+polars = ["polars (>=1.31.0)"]
+ray = ["ray (>=2.48)"]
 
 [[package]]
 name = "websockets"
