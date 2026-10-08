@@ -671,7 +671,7 @@ def test_stream_convert_to_parquet_vortex(tmp_path: Path) -> None:
     assert builder.info.features == Features.from_arrow_schema(source_table.schema)
     parquet_files = list_generated_parquet_files(builder)
     assert len(parquet_files) == 1
-    parquet_table = pq.read_table(parquet_files[0].local_file)
+    parquet_table = pq.read_table(parquet_files[0].local_file)  # type: ignore
     assert parquet_table.to_pylist() == source_table.to_pylist()
 
 
