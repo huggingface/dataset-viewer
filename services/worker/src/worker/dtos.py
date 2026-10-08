@@ -267,6 +267,7 @@ DatasetLibrary = Literal[
     "verifiers",
     "openenv",
     "nemo-gym",
+    "agentenv",
 ]
 DatasetFormat = Literal[
     "json",
