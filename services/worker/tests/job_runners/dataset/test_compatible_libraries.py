@@ -589,8 +589,7 @@ def test_get_compatible_libraries_for_environment_tags(
     assert "AutoEnv.from_env" in compatible_libraries[2]["loading_codes"][0]["code"]
     assert "gym eval run" in compatible_libraries[3]["loading_codes"][0]["code"]
     assert compatible_libraries[4]["language"] == "shell"
-    assert f"hf download {ENVIRONMENT_DATASET}" in compatible_libraries[4]["loading_codes"][0]["code"]
-    assert "agent-env run" in compatible_libraries[4]["loading_codes"][0]["code"]
+    assert f"agent-env hf run {ENVIRONMENT_DATASET}" in compatible_libraries[4]["loading_codes"][0]["code"]
     assert get_compatible_libraries_for_environment_tags(LEROBOT_DATASET, hf_token=None) == []
 
 

@@ -458,12 +458,10 @@ gym eval run \\
     --agent <agent>"""
 
 
-AGENTENV_CODE = """hf download {dataset} \\
-    --repo-type dataset \\
-    --local-dir agentenv-dataset
+AGENTENV_CODE = """agent-env plugin add 'agentenv-hf @ git+https://github.com/earakely-scale/agentenv-hf-plugin@v0.3.0'
 
-# Install the plugins the dataset card names, then run one of its bundles:
-agent-env run agentenv-dataset/bundles/<bundle>"""
+# Picks the dataset's bundle, names any plugin or setup step it still needs, and asks before it runs:
+agent-env hf run {dataset}"""
 
 
 ENVIRONMENT_LIBRARY_TAGS: dict[str, DatasetLibrary] = {
@@ -480,7 +478,7 @@ ENVIRONMENT_LIBRARY_SNIPPETS: dict[DatasetLibrary, tuple[ProgrammingLanguage, st
     "verifiers": ("python", "HarborTaskset", VERIFIERS_CODE),
     "openenv": ("python", "AutoEnv.from_env", OPENENV_CODE),
     "nemo-gym": ("shell", "gym eval run", NEMO_GYM_CODE),
-    "agentenv": ("shell", "agent-env run", AGENTENV_CODE),
+    "agentenv": ("shell", "agent-env hf run", AGENTENV_CODE),
 }
 
 
