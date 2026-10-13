@@ -423,7 +423,7 @@ def mock_hffs(tmp_path_factory: TempPathFactory) -> Iterator[fsspec.AbstractFile
 
     (hf / "datasets" / ENVIRONMENT_DATASET).mkdir(parents=True)
     (hf / "datasets" / ENVIRONMENT_DATASET / "README.md").write_text(
-        "---\ntags:\n- rl-environment\n- Harbor\n- verifiers\n- openenv\n- nemo-gym\n---\n"
+        "---\ntags:\n- rl-environment\n- Harbor\n- verifiers\n- openenv\n- nemo-gym\n- AgentEnv\n---\n"
     )
 
     class MockHfFileSystem(DirFileSystem):  # type: ignore[misc]
@@ -581,12 +581,15 @@ def test_get_compatible_libraries_for_environment_tags(
         "verifiers",
         "openenv",
         "nemo-gym",
+        "agentenv",
     ]
     assert compatible_libraries[0]["language"] == "shell"
     assert f"hf://datasets/{ENVIRONMENT_DATASET}" in compatible_libraries[0]["loading_codes"][0]["code"]
     assert "HarborTasksetConfig" in compatible_libraries[1]["loading_codes"][0]["code"]
     assert "AutoEnv.from_env" in compatible_libraries[2]["loading_codes"][0]["code"]
     assert "gym eval run" in compatible_libraries[3]["loading_codes"][0]["code"]
+    assert compatible_libraries[4]["language"] == "shell"
+    assert f"agent-env hf run {ENVIRONMENT_DATASET}" in compatible_libraries[4]["loading_codes"][0]["code"]
     assert get_compatible_libraries_for_environment_tags(LEROBOT_DATASET, hf_token=None) == []
 
 
@@ -605,6 +608,7 @@ def test_compute_environment_libraries_when_dataset_info_fails(
         "verifiers",
         "openenv",
         "nemo-gym",
+        "agentenv",
     ]
     assert compute_result.content["formats"] == []
 
