@@ -96,6 +96,9 @@ from mongodb_migration.migrations._20240703160300_cache_add_duration import (
 from mongodb_migration.migrations._20240731143600_queue_add_dataset_status_to_queue_metrics import (
     MigrationAddDatasetStatusToQueueMetrics,
 )
+from mongodb_migration.migrations._20261013120000_queue_add_worker_size_to_jobs import (
+    MigrationQueueAddWorkerSizeToJobs,
+)
 from mongodb_migration.renaming_migrations import (
     CacheRenamingMigration,
     QueueRenamingMigration,
@@ -417,5 +420,8 @@ class MigrationsCollector:
             ),
             MigrationAddDatasetStatusToQueueMetrics(
                 version="20240731143600", description="add 'dataset_status' field to the jobs metrics"
+            ),
+            MigrationQueueAddWorkerSizeToJobs(
+                version="20261013120000", description="add 'worker_size' field and index to the jobs"
             ),
         ]

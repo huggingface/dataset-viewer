@@ -435,6 +435,48 @@ def test_difficulty(difficulty_min: Optional[int], difficulty_max: Optional[int]
         assert job_info["params"]["dataset"] == test_dataset
 
 
+@pytest.mark.parametrize(
+    "difficulty,expected_worker_size",
+    [
+        (0, WorkerSize.light),
+        (40, WorkerSize.light),
+        (41, WorkerSize.medium),
+        (70, WorkerSize.medium),
+        (71, WorkerSize.heavy),
+    ],
+)
+def test_worker_size_is_set_on_creation(difficulty: int, expected_worker_size: WorkerSize) -> None:
+    queue = Queue()
+    queue.add_job(job_type="test_type", dataset="test_dataset", revision="test_revision", difficulty=difficulty)
+    queue.create_jobs(
+        [
+            {
+                "job_id": "unused",
+                "type": "test_type",
+                "params": {"dataset": "test_dataset2", "revision": "test_revision", "config": None, "split": None},
+                "priority": Priority.NORMAL,
+                "difficulty": difficulty,
+                "started_at": None,
+            }
+        ]
+    )
+    assert {job.worker_size for job in JobDocument.objects()} == {expected_worker_size}
+
+
+def test_backfill_missing_worker_size() -> None:
+    queue = Queue()
+    queue.add_job(job_type="test_type", dataset="test_dataset", revision="test_revision", difficulty=20)
+    queue.add_job(job_type="test_type", dataset="test_dataset2", revision="test_revision", difficulty=90)
+    JobDocument.objects().update(unset__worker_size=1)
+    assert all(job.worker_size is None for job in JobDocument.objects())
+    assert queue.backfill_missing_worker_size() == 2
+    assert {job.dataset: job.worker_size for job in JobDocument.objects()} == {
+        "test_dataset": WorkerSize.light,
+        "test_dataset2": WorkerSize.heavy,
+    }
+    assert queue.backfill_missing_worker_size() == 0
+
+
 def test_get_jobs_total_by_type_status_and_dataset_status() -> None:
     test_type = "test_type"
     test_other_type = "test_other_type"

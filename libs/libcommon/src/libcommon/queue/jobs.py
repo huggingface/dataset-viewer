@@ -33,6 +33,7 @@ from libcommon.dtos import FlatJobInfo, JobInfo, Priority, Status, WorkerSize
 from libcommon.queue.dataset_blockages import DATASET_STATUS_BLOCKED, DATASET_STATUS_NORMAL, get_blocked_datasets
 from libcommon.queue.lock import lock, release_lock
 from libcommon.queue.metrics import (
+    WorkerSizeJobsCountDocument,
     decrease_metric,
     decrease_worker_size_metrics,
     increase_metric,
@@ -114,6 +115,7 @@ class StartedJobError(Exception):
 class JobQueryFilters(TypedDict, total=False):
     difficulty__gt: int
     difficulty__lte: int
+    worker_size: WorkerSize
     dataset__nin: list[str]
 
 
@@ -168,6 +170,10 @@ class JobDocument(Document):
             ("dataset", "status"),
             ("type", "dataset", "status"),
             # Index for the next-waiting-job query; hinted by name in _get_next_waiting_job_for_priority.
+            # worker_size (equality) comes before created_at (sort), so a light worker never walks past the
+            # medium/heavy jobs that sit at the head of the queue. The difficulty variant below is kept until
+            # every worker runs with the worker_size filter; it is removed in a follow-up.
+            ("priority", "status", "worker_size", "created_at", "dataset", "namespace"),
             ("priority", "status", "created_at", "difficulty", "dataset", "namespace"),
             ("priority", "status", "type", "namespace", "unicity_id", "created_at", "-difficulty"),
             ("status", "type"),
@@ -184,6 +190,9 @@ class JobDocument(Document):
     priority = EnumField(Priority, default=Priority.LOW)
     status = EnumField(Status, default=Status.WAITING)
     difficulty = IntField(required=True)
+    # Derived from difficulty (see WorkerSizeJobsCountDocument.get_worker_size); it is the equality key the
+    # next-waiting-job query uses instead of a range on difficulty.
+    worker_size = EnumField(WorkerSize)
     created_at = DateTimeField(required=True)
     started_at = DateTimeField()
     last_heartbeat = DateTimeField()
@@ -260,6 +269,25 @@ class JobDocument(Document):
         )
 
 
+def _worker_size_for_difficulty_range(
+    difficulty_min: Optional[int], difficulty_max: Optional[int]
+) -> Optional[WorkerSize]:
+    """Return the worker size whose difficulty interval is exactly [difficulty_min, difficulty_max], if any.
+
+    The intervals are the ones of WorkerSizeJobsCountDocument.get_worker_size: light = (0, 40],
+    medium = (40, 70], heavy = (70, 100]. Any other range keeps the range filter on difficulty.
+    """
+    lower = DEFAULT_DIFFICULTY_MIN if difficulty_min is None else difficulty_min
+    upper = DEFAULT_DIFFICULTY_MAX if difficulty_max is None else difficulty_max
+    if lower == 0 and upper == 40:
+        return WorkerSize.light
+    if lower == 40 and upper == 70:
+        return WorkerSize.medium
+    if lower == 70 and upper == 100:
+        return WorkerSize.heavy
+    return None
+
+
 class Queue:
     """A queue manages jobs.
 
@@ -319,6 +347,7 @@ class Queue:
             created_at=get_datetime(),
             status=Status.WAITING,
             difficulty=difficulty,
+            worker_size=WorkerSizeJobsCountDocument.get_worker_size(difficulty),
         ).save()
 
     def create_jobs(self, job_infos: list[JobInfo]) -> int:
@@ -352,6 +381,7 @@ class Queue:
                     created_at=get_datetime(),
                     status=Status.WAITING,
                     difficulty=job_info["difficulty"],
+                    worker_size=WorkerSizeJobsCountDocument.get_worker_size(job_info["difficulty"]),
                 )
                 for job_info in job_infos
             ]
@@ -414,10 +444,18 @@ class Queue:
         logging.debug(f"Blocked datasets: {blocked_datasets}")
 
         filters: JobQueryFilters = {}
-        if difficulty_min is not None and difficulty_min > DEFAULT_DIFFICULTY_MIN:
-            filters["difficulty__gt"] = difficulty_min
-        if difficulty_max is not None and difficulty_max < DEFAULT_DIFFICULTY_MAX:
-            filters["difficulty__lte"] = difficulty_max
+        worker_size = _worker_size_for_difficulty_range(difficulty_min=difficulty_min, difficulty_max=difficulty_max)
+        if worker_size is not None:
+            # Equality on worker_size is served by the index prefix; a range on difficulty is a residual filter
+            # applied after the created_at sort, which made every poll scan all the older jobs of the other sizes.
+            filters["worker_size"] = worker_size
+            index_hint = "priority_1_status_1_worker_size_1_created_at_1_dataset_1_namespace_1"
+        else:
+            if difficulty_min is not None and difficulty_min > DEFAULT_DIFFICULTY_MIN:
+                filters["difficulty__gt"] = difficulty_min
+            if difficulty_max is not None and difficulty_max < DEFAULT_DIFFICULTY_MAX:
+                filters["difficulty__lte"] = difficulty_max
+            index_hint = "priority_1_status_1_created_at_1_difficulty_1_dataset_1_namespace_1"
         if blocked_datasets:
             filters["dataset__nin"] = blocked_datasets
         started_jobs = JobDocument.objects(status=Status.STARTED, **filters)
@@ -436,7 +474,7 @@ class Queue:
             .only("type", "dataset", "revision", "config", "split", "priority", "unicity_id")
             # Pin the index: another index shares the (priority, status) prefix and the planner kept
             # trialing both on every plan-cache miss, replanning constantly and saturating the primary CPU.
-            .hint("priority_1_status_1_created_at_1_difficulty_1_dataset_1_namespace_1")
+            .hint(index_hint)
             .no_cache()
             .first()
         )
@@ -721,6 +759,26 @@ class Queue:
                 decrease_worker_size_metrics(pending_job["difficulty"])
 
         return job_priority
+
+    def backfill_missing_worker_size(self) -> int:
+        """Set worker_size on the jobs that lack it (jobs created by code predating the field).
+
+        The migration backfills the collection once; this covers the jobs inserted by the previous version of the
+        services while the new one rolls out, which the next-waiting-job query would otherwise never see.
+
+        Returns:
+            `int`: the number of updated jobs
+        """
+        updated = 0
+        for worker_size, difficulty_filters in [
+            (WorkerSize.light, {"difficulty__lte": 40}),
+            (WorkerSize.medium, {"difficulty__gt": 40, "difficulty__lte": 70}),
+            (WorkerSize.heavy, {"difficulty__gt": 70}),
+        ]:
+            updated += JobDocument.objects(worker_size__exists=False, **difficulty_filters).update(
+                worker_size=worker_size
+            )
+        return updated
 
     def delete_dataset_waiting_jobs(self, dataset: str) -> int:
         """
