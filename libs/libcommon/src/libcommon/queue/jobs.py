@@ -710,6 +710,12 @@ class Queue:
         job.delete()
         release_lock(key=job.unicity_id)
         if was_blocked:
+            # The dataset is now rate-limited. Its waiting jobs must leave the queue: the next-waiting-job
+            # query excludes blocked datasets with a residual `$nin` filter, so every worker would skip
+            # every one of these jobs on every poll (~100k such jobs cost the primary 13 CPU cores). The
+            # daily backfill re-creates the missing jobs once the blockage has expired.
+            num_deleted = self.delete_dataset_waiting_jobs(dataset=job.dataset)
+            logging.info(f"dataset {job.dataset} has been blocked: deleted {num_deleted} waiting jobs")
             pending_jobs = self.get_pending_jobs_df(dataset=job.dataset)
             for _, pending_job in pending_jobs.iterrows():
                 decrease_worker_size_metrics(pending_job["difficulty"])
