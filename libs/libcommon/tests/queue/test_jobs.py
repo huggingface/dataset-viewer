@@ -166,6 +166,12 @@ def test_finish_job_blocked() -> None:
         queue.finish_job(job_id=job_info["job_id"])
         assert_metric_jobs_per_worker(worker_size=WorkerSize.medium, jobs_count=0)
 
+    # the waiting jobs of the blocked dataset have been deleted, not only hidden from the metrics
+    assert JobDocument.objects(dataset=test_dataset).count() == 0
+    assert_metric_jobs_per_type(job_type="test_type2", status=Status.WAITING, total=0)
+    assert_metric_jobs_per_type(job_type="test_type3", status=Status.WAITING, total=0)
+    assert_metric_jobs_per_type(job_type="test_type4", status=Status.WAITING, total=0)
+
 
 @pytest.mark.parametrize(
     "jobs_ids,job_ids_to_delete,expected_deleted_number",
