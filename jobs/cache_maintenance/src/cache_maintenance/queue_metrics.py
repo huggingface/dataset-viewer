@@ -18,6 +18,10 @@ def collect_queue_metrics() -> None:
     """
     logging.info("updating queue metrics")
 
+    updated = Queue().backfill_missing_worker_size()
+    if updated:
+        logging.info(f"set worker_size on {updated} jobs that were missing it")
+
     new_metric_by_id = Queue().get_jobs_total_by_type_status_and_dataset_status()
     new_ids = set(new_metric_by_id.keys())
     old_ids = set(
