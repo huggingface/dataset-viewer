@@ -6,7 +6,7 @@ import functools
 import logging
 from collections.abc import Iterator
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 import anyio
 from datasets import IterableDataset, get_dataset_config_info
@@ -21,7 +21,13 @@ from libcommon.exceptions import (
     SplitParquetSchemaMismatchError,
     TooBigContentError,
 )
-from libcommon.parquet_utils import EmptyParquetMetadataError, RowsIndex, SchemaMismatchError, TooBigRows
+from libcommon.parquet_utils import (
+    EmptyParquetMetadataError,
+    ParquetFileMetadataItem,
+    RowsIndex,
+    SchemaMismatchError,
+    TooBigRows,
+)
 from libcommon.simple_cache import CachedArtifactError, CachedArtifactNotFoundError
 from libcommon.storage import StrPath
 from libcommon.storage_client import StorageClient
@@ -48,6 +54,8 @@ def compute_first_rows_from_parquet_response(
     hf_endpoint: str,
     max_arrow_data_in_memory: int,
     parquet_metadata_directory: StrPath,
+    parquet_files_metadata: Optional[list[ParquetFileMetadataItem]] = None,
+    features: Optional[dict[str, Any]] = None,
 ) -> SplitFirstRowsResponse:
     """
     Compute the response of 'split-first-rows' for one specific split of a dataset from the parquet files.
@@ -81,6 +89,12 @@ def compute_first_rows_from_parquet_response(
             The local directory where the parquet metadata are stored.
         max_arrow_data_in_memory (`int`):
             The maximum size in bytes of Arrow data loaded in memory.
+        parquet_files_metadata (`list[ParquetFileMetadataItem]`, *optional*):
+            The parquet files metadata to use, instead of fetching the 'config-parquet-metadata' cache entry.
+            It's used to skip the cache round-trip when the caller already has the metadata (eg. the
+            dataset-init shortcut).
+        features (`dict`, *optional*):
+            The features of the dataset, used together with parquet_files_metadata.
 
     Raises:
         [~`libcommon.exceptions.ParquetResponseEmptyError`]:
@@ -105,6 +119,9 @@ def compute_first_rows_from_parquet_response(
             hf_endpoint=hf_endpoint,
             max_scan_size=max_arrow_data_in_memory,
             parquet_metadata_directory=parquet_metadata_directory,
+            parquet_files_metadata=parquet_files_metadata,
+            features=features,
+            revision=revision,
         )
     except EmptyParquetMetadataError:
         raise ParquetResponseEmptyError("No parquet files found.")

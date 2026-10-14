@@ -19,6 +19,7 @@ from libcommon.parquet_utils import (
     RowsIndex,
     SchemaMismatchError,
     TooBigRows,
+    extract_revision_and_path_in_repo_from_parquet_url,
     extract_split_directory_from_parquet_url,
     get_num_parquet_files_to_process,
     parquet_export_is_partial,
@@ -533,6 +534,40 @@ def test_extract_split_directory_from_parquet_url(parquet_url: str, expected: st
     split_name = extract_split_directory_from_parquet_url(parquet_url)
 
     assert split_name == expected
+
+
+@pytest.mark.parametrize(
+    "parquet_url,expected_revision,expected_path_in_repo",
+    [
+        (
+            "https://hf.co/datasets/rajpurkar/squad/resolve/refs%2Fconvert%2Fparquet/plain_text/train/0000.parquet",
+            "refs/convert/parquet",
+            "plain_text/train/0000.parquet",
+        ),
+        (
+            "https://hf.co/datasets/rajpurkar/squad/resolve/refs%2Fconvert%2Fparquet/en/partial-test/0000.parquet",
+            "refs/convert/parquet",
+            "en/partial-test/0000.parquet",
+        ),
+        (
+            "https://huggingface.co/datasets/lhoestq/test/resolve/31af35b845abcef40b63dd5f34e29e77fa0a1341/data/part-0.parquet",
+            "31af35b845abcef40b63dd5f34e29e77fa0a1341",
+            "data/part-0.parquet",
+        ),
+        (
+            "https://huggingface.co/datasets/lhoestq/test/resolve/main/data/my%20file.parquet",
+            "main",
+            "data/my file.parquet",
+        ),
+    ],
+)
+def test_extract_revision_and_path_in_repo_from_parquet_url(
+    parquet_url: str, expected_revision: str, expected_path_in_repo: str
+) -> None:
+    revision, path_in_repo = extract_revision_and_path_in_repo_from_parquet_url(parquet_url)
+
+    assert revision == expected_revision
+    assert path_in_repo == expected_path_in_repo
 
 
 @pytest.mark.parametrize(

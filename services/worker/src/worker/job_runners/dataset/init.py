@@ -305,7 +305,7 @@ def compute_init_responses(
         }
         dataset_init_response["successes"].append(job)
         split_items = [
-            FullSplitItem(dataset=dataset, config=config, split=split) for split in builder.config.data_files
+            FullSplitItem(dataset=dataset, config=config, split=str(split)) for split in builder.config.data_files
         ]
         yield ShortcutCompleteJobResult(
             content=SplitsList(splits=split_items),
@@ -342,7 +342,7 @@ def compute_init_responses(
             SplitHubFile(
                 dataset=dataset,
                 config=config,
-                split=split,
+                split=str(split),
                 url=fs.url(data_file),
                 filename=fs.resolve_path(data_file).path_in_repo,
                 size=all_sizes[fs._strip_protocol(data_file)],
@@ -600,9 +600,8 @@ def compute_init_responses(
         yield JobResult(dataset_init_response, progress=0.8)
 
         # split-first-rows (for first split only)
-        # TODO: smh dataset-config-names is still triggered is this step fails
-        # TODO: don't require the parquet-metadata job to be stored and fetch it - instead reuse parquet_files_metadata
-        # WARNING: 2026-07-31 10:28:58,587 - root - Could not compute split-first-rows shortcut for dataset='DVUser/image_statistics-17852775329062' config='default' first_split='train': Cache entry does not exist: kind='config-parquet-metadata' dataset='DVUser/image_statistics-17852775329062' config='default' split=None
+        # note: we reuse the parquet_files_metadata and features computed above, instead of
+        # relying on the 'config-parquet-metadata' cache entry being saved and fetched back
         if storage_client is not None and hf_datasets_cache is not None:
             try:
                 split_first_rows_response: SplitFirstRowsResponse = compute_first_rows_from_parquet_response(
@@ -620,6 +619,8 @@ def compute_init_responses(
                     hf_endpoint=hf_endpoint,
                     max_arrow_data_in_memory=rows_index_max_arrow_data_in_memory,
                     parquet_metadata_directory=parquet_metadata_directory,
+                    parquet_files_metadata=parquet_files_metadata,
+                    features=features_dict,
                 )
                 job = {
                     "dataset": dataset,

@@ -17,7 +17,7 @@ import filelock
 from datasets import Features
 from filelock import AsyncFileLock
 from huggingface_hub import HfApi
-from libcommon.constants import CONFIG_PARQUET_METADATA_KIND, PARQUET_REVISION, ROW_IDX_COLUMN
+from libcommon.constants import CONFIG_PARQUET_METADATA_KIND, ROW_IDX_COLUMN
 from libcommon.duckdb_utils import (
     CREATE_INDEX_ID_COLUMN_COMMANDS,
     CREATE_TABLE_COMMAND_FROM_LIST_OF_PARQUET_FILES,
@@ -34,6 +34,7 @@ from libcommon.duckdb_utils import (
 )
 from libcommon.parquet_utils import (
     ParquetFileMetadataItem,
+    extract_revision_and_path_in_repo_from_parquet_url,
     extract_split_directory_from_parquet_url,
     get_num_parquet_files_to_process,
     parquet_export_is_partial,
@@ -99,10 +100,6 @@ def build_index_file(
     if not split_parquet_files:
         raise DownloadIndexError("No parquet files found.")
 
-    # For directories like "partial-train" for the file at "en/partial-train/0000.parquet" in the C4 dataset.
-    # Note that "-" is forbidden for split names so it doesn't create directory names collisions.
-    split_directory = extract_split_directory_from_parquet_url(split_parquet_files[0]["url"])
-
     num_parquet_files_to_index, num_bytes, num_rows = get_num_parquet_files_to_process(
         parquet_files=split_parquet_files,
         parquet_metadata_directory=parquet_metadata_directory,
@@ -110,7 +107,6 @@ def build_index_file(
     )
 
     split_parquet_files = split_parquet_files[:num_parquet_files_to_index]
-    parquet_file_names = [parquet_file["filename"] for parquet_file in split_parquet_files]
 
     column_names_sql = ",".join(key_sql(column) for column in features)
 
@@ -118,14 +114,19 @@ def build_index_file(
     indexable_columns = get_indexable_columns(Features.from_dict(features))
 
     all_split_parquets: list[Path] = []
-    for parquet_file in parquet_file_names:
+    for parquet_file in split_parquet_files:
+        # The parquet files can be stored in the "refs/convert/parquet" branch (converted datasets)
+        # or in any revision of the raw repository (datasets with raw parquet files). That's why we
+        # get the revision and the path in the repo from the URL itself, instead of assuming the
+        # "{config}/{split_directory}/" layout on the "refs/convert/parquet" branch.
+        file_revision, file_path_in_repo = extract_revision_and_path_in_repo_from_parquet_url(parquet_file["url"])
         all_split_parquets.append(
             Path(
                 download_file_from_hub(
                     repo_type="dataset",
-                    revision=PARQUET_REVISION,
+                    revision=file_revision,
                     repo_id=dataset,
-                    filename=f"{config}/{split_directory}/{parquet_file}",
+                    filename=file_path_in_repo,
                     hf_token=hf_token,
                     cache_dir=cache_folder,
                 )

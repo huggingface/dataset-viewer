@@ -20,6 +20,7 @@ from libcommon.exceptions import (
     PreviousStepFormatError,
 )
 from libcommon.parquet_utils import (
+    extract_revision_and_path_in_repo_from_parquet_url,
     extract_split_directory_from_parquet_url,
     get_num_parquet_files_to_process,
     is_list_pa_type,
@@ -95,7 +96,6 @@ def compute_descriptive_statistics_response(
     split: str,
     local_parquet_directory: Path,
     hf_token: Optional[str],
-    parquet_revision: str,
     max_split_size_bytes: int,
     parquet_metadata_directory: StrPath,
 ) -> SplitDescriptiveStatisticsResponse:
@@ -115,8 +115,6 @@ def compute_descriptive_statistics_response(
             because it enables fast querying and statistics computation.
         hf_token (`str`, *optional*):
             An app authentication token with read access to all the datasets.
-        parquet_revision (`str`):
-            The git revision (e.g. "refs/convert/parquet") from where to download the dataset's parquet files.
         max_split_size_bytes (`int`):
             If raw uncompressed split data is larger than this value, the statistics are computed
             only on the first parquet files, approximately up to this size, and the `partial` field will be set
@@ -187,21 +185,31 @@ def compute_descriptive_statistics_response(
     # For directories like "partial-train" for the file at "en/partial-train/0000.parquet" in the C4 dataset.
     # Note that "-" is forbidden for split names so it doesn't create directory names collisions.
     split_directory = extract_split_directory_from_parquet_url(split_parquet_files[0]["url"])
+    local_parquet_files: list[Path] = []
     for parquet_file in split_parquet_files:
-        download_file_from_hub(
-            repo_type=REPO_TYPE,
-            revision=parquet_revision,
-            repo_id=dataset,
-            filename=f"{config}/{split_directory}/{parquet_file['filename']}",
-            local_dir=local_parquet_directory,
-            hf_token=hf_token,
-            cache_dir=local_parquet_directory,
-            force_download=True,
+        # The parquet files can be stored in the "refs/convert/parquet" branch (converted datasets)
+        # or in any revision of the raw repository (datasets with raw parquet files). That's why we
+        # get the revision and the path in the repo from the URL itself, instead of assuming the
+        # "{config}/{split_directory}/" layout on the "refs/convert/parquet" branch.
+        file_revision, file_path_in_repo = extract_revision_and_path_in_repo_from_parquet_url(parquet_file["url"])
+        local_parquet_files.append(
+            Path(
+                download_file_from_hub(
+                    repo_type=REPO_TYPE,
+                    revision=file_revision,
+                    repo_id=dataset,
+                    filename=file_path_in_repo,
+                    local_dir=local_parquet_directory,
+                    hf_token=hf_token,
+                    cache_dir=local_parquet_directory,
+                    force_download=True,
+                )
+            )
         )
 
     local_parquet_split_directory = Path(local_parquet_directory) / config / split_directory
 
-    pq_split_dataset = pq.ParquetDataset(local_parquet_split_directory)
+    pq_split_dataset = pq.ParquetDataset([str(path) for path in local_parquet_files])
     num_examples = sum(fragment.metadata.num_rows for fragment in pq_split_dataset.fragments)
     split_extension_features = get_extension_features(features)
     features = {
@@ -218,9 +226,7 @@ def compute_descriptive_statistics_response(
         ):
             # Compute only if it's internally a List! because it can also be Struct, see
             # https://huggingface.co/docs/datasets/v2.18.0/en/package_reference/main_classes#datasets.Features
-            if is_list_pa_type(
-                local_parquet_split_directory / split_parquet_files[0]["filename"], dataset_feature_name
-            ):
+            if is_list_pa_type(local_parquet_files[0], dataset_feature_name):
                 return ListColumn(feature_name=dataset_feature_name, n_samples=num_examples)
 
         if isinstance(dataset_feature, dict):
@@ -275,7 +281,7 @@ def compute_descriptive_statistics_response(
         f"Computing statistics for {len(columns)} columns: {column_names_str},\nColumn types counts: {column_counts}. "
     )
 
-    local_parquet_paths = list(local_parquet_split_directory.glob("*.parquet"))
+    local_parquet_paths = local_parquet_files
     for column in columns:
         if isinstance(column, (AudioColumn, VideoColumn, ImageColumn)):
             column_stats = column.compute_and_prepare_response(local_parquet_paths)
@@ -343,7 +349,6 @@ class SplitDescriptiveStatisticsJobRunner(SplitJobRunnerWithCache):
                 split=self.split,
                 local_parquet_directory=self.cache_subdirectory,
                 hf_token=self.app_config.common.hf_token,
-                parquet_revision=self.descriptive_statistics_config.parquet_revision,
                 max_split_size_bytes=self.descriptive_statistics_config.max_split_size_bytes,
                 parquet_metadata_directory=self.parquet_metadata_directory,
             )

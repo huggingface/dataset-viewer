@@ -516,7 +516,7 @@ class AfterJobPlan(Plan):
 
         self.job_infos_to_create: dict[str, JobInfo] = {}
         config_names: Optional[list[str]] = None
-        split_names: Optional[list[str]] = None
+        split_names_by_config: dict[str, list[str]] = {}
 
         # filter to only get the jobs that are not already in the queue or done using a shortcut
         for cached_job, next_processing_step in next_processing_steps:
@@ -551,16 +551,19 @@ class AfterJobPlan(Plan):
             elif cached_job_input_type == "config" and next_processing_step.input_type == "split":
                 # going to lower level (fan-out), one job is expected per split, we need the list of splits
                 # C -> S
-                if split_names is None:
-                    split_names = fetch_names(
+                # note that the config of the cached job is not necessarily the config of the finished job
+                # (eg. when a dataset-level job ran shortcuts for multiple configs)
+                config_of_job = str(cached_job["config"])
+                if config_of_job not in split_names_by_config:
+                    split_names_by_config[config_of_job] = fetch_names(
                         dataset=self.dataset,
-                        config=config,
+                        config=config_of_job,
                         cache_kind=CONFIG_SPLIT_NAMES_KIND,
                         names_field="splits",
                         name_field="split",
                     )  # Note that we use the cached content even the revision is different (ie. maybe obsolete)
-                for split_name in split_names:
-                    self.update(next_processing_step, cached_job["config"], split_name)
+                for split_name in split_names_by_config[config_of_job]:
+                    self.update(next_processing_step, config_of_job, split_name)
             else:
                 raise NotImplementedError(
                     f"Unsupported input types: {cached_job_input_type} -> {next_processing_step.input_type}"

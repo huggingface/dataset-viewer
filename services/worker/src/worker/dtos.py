@@ -51,7 +51,7 @@ class ShortcutJobResult(JobResult):
 
 
 @dataclass
-class ShortcutCompleteJobResult(JobResult):
+class ShortcutCompleteJobResult(ShortcutJobResult):
     job: CachedJob
     content: Mapping[str, Any]
     progress: float = field(init=False, default=1.0)

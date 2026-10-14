@@ -13,6 +13,7 @@ from worker.dtos import (
     ConfigParquetMetadataResponse,
     ConfigParquetResponse,
     ParquetFileMetadataItem,
+    ShortcutCompleteJobResult,
     ShortcutJobResult,
 )
 from worker.job_runners.config.parquet import ConfigParquetJobRunner
@@ -80,6 +81,27 @@ class TestDatasetInitJobRunner:
                 (),
                 {"storage_directory": None, "max_parallelism": 1},
             )(),
+            datasets_based=type(
+                "DatasetsBasedConfig",
+                (),
+                {"hf_datasets_cache": "/tmp/test-cache"},
+            )(),
+            rows_index=type(
+                "RowsIndexConfig",
+                (),
+                {"max_arrow_data_in_memory": 50_000_000},
+            )(),
+            first_rows=type(
+                "FirstRowsConfig",
+                (),
+                {
+                    "columns_max_number": 100,
+                    "max_bytes": 200_000,
+                    "min_cell_bytes": 100,
+                    "min_number": 0,
+                    "max_number": 3,
+                },
+            )(),
             committer=type(
                 "CommitterConfig",
                 (),
@@ -101,6 +123,7 @@ class TestDatasetInitJobRunner:
                             "config": None,
                             "split": None,
                         },
+                        progress=1.0,
                     )
                 ]
             ),
@@ -163,12 +186,6 @@ class TestComputeInitResponsesShortcuts:
                     max_num_configs=10,
                     hf_endpoint=hf_endpoint,
                     hf_token=hf_token,
-                    committer_hf_token=hf_token,
-                    source_revision="main",
-                    target_revision="refs/convert/parquet",
-                    commit_message="test",
-                    url_template="/test",
-                    max_dataset_size_bytes=100_000_000,
                     data_store=None,
                     parquet_metadata_directory=None,
                     max_parallelism=1,
@@ -305,12 +322,6 @@ class TestComputeInitResponsesShortcuts:
                                 max_num_configs=10,
                                 hf_endpoint=hf_endpoint,
                                 hf_token=hf_token,
-                                committer_hf_token=hf_token,
-                                source_revision="main",
-                                target_revision="refs/convert/parquet",
-                                commit_message="test",
-                                url_template="/test",
-                                max_dataset_size_bytes=100_000_000,
                                 data_store=None,
                                 parquet_metadata_directory="/tmp/metadata",
                                 max_parallelism=1,
@@ -341,18 +352,22 @@ class TestComputeInitResponsesShortcuts:
                             if isinstance(result, ShortcutJobResult):
                                 shortcut_kinds.append(result.job["kind"])
 
-                        expected_kinds = [
+                        expected_kinds = {
                             "dataset-config-names",
                             "config-split-names",
                             "config-parquet",
                             "config-parquet-metadata",
                             "config-parquet-and-info",
                             "config-info",
+                            "dataset-info",
                             "config-size",
+                            "dataset-size",
                             "split-is-valid",
+                            "config-is-valid",
+                            "dataset-is-valid",
                             "split-first-rows",
-                        ]
-                        assert set(shortcut_kinds) == set(expected_kinds)
+                        }
+                        assert set(shortcut_kinds) == expected_kinds
 
                         # Count split-is-valid occurrences
                         split_is_valid_results = [
@@ -510,7 +525,7 @@ class TestJobResultProgress:
 
     def test_config_names_progress_is_complete(self) -> None:
         """Test that config-names shortcut result has progress=1.0."""
-        result = ShortcutJobResult(
+        result = ShortcutCompleteJobResult(
             content=DatasetConfigNamesResponse(config_names=[{"dataset": "test", "config": "default"}]),
             job={
                 "dataset": "test",
@@ -523,7 +538,7 @@ class TestJobResultProgress:
 
     def test_split_names_progress_is_complete(self) -> None:
         """Test that split-names shortcut result has progress=1.0."""
-        result = ShortcutJobResult(
+        result = ShortcutCompleteJobResult(
             content=SplitsList(
                 splits=[
                     FullSplitItem(
@@ -544,7 +559,7 @@ class TestJobResultProgress:
 
     def test_parquet_progress_is_complete(self) -> None:
         """Test that parquet shortcut result has progress=1.0."""
-        result = ShortcutJobResult(
+        result = ShortcutCompleteJobResult(
             content=ConfigParquetResponse(
                 parquet_files=[
                     {
@@ -570,7 +585,7 @@ class TestJobResultProgress:
 
     def test_parquet_metadata_progress_is_complete(self) -> None:
         """Test that parquet-metadata shortcut result has progress=1.0."""
-        result = ShortcutJobResult(
+        result = ShortcutCompleteJobResult(
             content=ConfigParquetMetadataResponse(
                 parquet_files_metadata=[],
                 features=None,
@@ -587,7 +602,7 @@ class TestJobResultProgress:
 
     def test_parquet_and_info_progress_is_complete(self) -> None:
         """Test that parquet-and-info shortcut result has progress=1.0."""
-        result = ShortcutJobResult(
+        result = ShortcutCompleteJobResult(
             content=ConfigParquetAndInfoResponse(
                 parquet_files=[
                     {

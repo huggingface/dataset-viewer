@@ -43,8 +43,9 @@ class DummyJobRunnerWithShortcuts(DatasetJobRunner):
 
     def compute(self) -> Iterator[JobResult]:
         yield ShortcutJobResult(
-            {"config_names": [{"dataset": self.dataset, "config": "default"}]},
-            {"dataset": self.dataset, "kind": "dataset-config-names", "config": None, "split": None},
+            job={"dataset": self.dataset, "kind": "dataset-config-names", "config": None, "split": None},
+            content={"config_names": [{"dataset": self.dataset, "config": "default"}]},
+            progress=1.0,
         )
         yield JobResult({"key": "value"}, progress=0.5)
         yield JobResult({"key": "value"}, progress=1.0)

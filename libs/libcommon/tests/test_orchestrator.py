@@ -5,11 +5,12 @@ from http import HTTPStatus
 
 import pytest
 
-from libcommon.dtos import JobOutput, JobResult, Priority, Status
+from libcommon.dtos import CachedJob, JobOutput, JobResult, Priority, Status
 from libcommon.orchestrator import (
     AfterJobPlan,
     finish_job,
     get_failed_runs,
+    get_shortcut_job_key,
     has_pending_ancestor_jobs,
     remove_dataset,
     save_job_result,
@@ -38,6 +39,7 @@ from .utils import (
     ARTIFACT_SA_1_1,
     ARTIFACT_SA_1_2,
     CONFIG_NAMES_CONTENT,
+    CONFIG_NAME_1,
     DATASET_NAME,
     DIFFICULTY,
     JOB_RUNNER_VERSION,
@@ -46,6 +48,8 @@ from .utils import (
     PROCESSING_GRAPH_ONE_STEP,
     PROCESSING_GRAPH_PARALLEL,
     REVISION_NAME,
+    SPLIT_NAMES_CONTENT,
+    STEP_CA,
     STEP_CB,
     STEP_DA,
     STEP_DC,
@@ -115,6 +119,65 @@ def test_after_job_plan(
         for _, row in pending_jobs_df.iterrows()
     ]
     assert set(artifact_ids) == set(artifacts_to_create)
+
+
+def test_after_job_plan_with_dataset_job_done_using_shortcuts() -> None:
+    # regression test: when a dataset-level job finishes with shortcut config-level artifacts
+    # (eg. 'dataset-init' shortcutting 'config-split-names'), the C -> S fan-out must use the
+    # config of the cached (shortcut) job, not the config of the finished job (None).
+    job_info = artifact_id_to_job_info(ARTIFACT_DA)
+    shortcut_job: CachedJob = {
+        "dataset": DATASET_NAME,
+        "kind": STEP_CA,
+        "config": CONFIG_NAME_1,
+        "split": None,
+    }
+    shortcut_jobs_by_key = {get_shortcut_job_key(shortcut_job): shortcut_job}
+    # put the dataset-config-names cache (for the D -> C fan-out)
+    upsert_response_params(
+        kind=STEP_DA,
+        job_params={"dataset": DATASET_NAME, "config": None, "split": None, "revision": REVISION_NAME},
+        job_runner_version=JOB_RUNNER_VERSION,
+        content=CONFIG_NAMES_CONTENT,
+        http_status=HTTPStatus.OK,
+        error_code=None,
+        details=None,
+        progress=1.0,
+    )
+    # put the config-split-names cache for config1 (for the C -> S fan-out)
+    upsert_response_params(
+        kind=STEP_CA,
+        job_params={"dataset": DATASET_NAME, "config": CONFIG_NAME_1, "split": None, "revision": REVISION_NAME},
+        job_runner_version=JOB_RUNNER_VERSION,
+        content=SPLIT_NAMES_CONTENT,
+        http_status=HTTPStatus.OK,
+        error_code=None,
+        details=None,
+        progress=1.0,
+    )
+    after_job_plan = AfterJobPlan(
+        processing_graph=PROCESSING_GRAPH_FAN_IN_OUT,
+        job_info=job_info,
+        shortcut_jobs_by_key=shortcut_jobs_by_key,
+    )
+    # CA is done by shortcut for config1, so a CA job is only created for config2.
+    # The shortcut CA job for config1 triggers the C -> S fan-out: one SA job per split.
+    # It also triggers the C -> D fan-in for its DE child.
+    # NB: without the fix, no SA job was created (fetch_names with config=None returned no split).
+    assert after_job_plan.as_response() == ["CreateJobs,4"]
+    after_job_plan.run()
+    pending_jobs_df = Queue().get_pending_jobs_df(dataset=DATASET_NAME)
+    artifact_ids = [
+        Artifact.get_id(
+            dataset=row["dataset"],
+            revision=row["revision"],
+            config=row["config"],
+            split=row["split"],
+            processing_step_name=row["type"],
+        )
+        for _, row in pending_jobs_df.iterrows()
+    ]
+    assert set(artifact_ids) == {ARTIFACT_CA_2, ARTIFACT_SA_1_1, ARTIFACT_SA_1_2, ARTIFACT_DE}
 
 
 def test_after_job_plan_delete() -> None:

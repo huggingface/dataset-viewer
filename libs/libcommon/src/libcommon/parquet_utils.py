@@ -1,7 +1,7 @@
 import logging
 import os
 from pathlib import Path
-from typing import Optional, TypedDict
+from typing import Any, Optional, TypedDict
 from urllib.parse import unquote
 
 import libviewer as lv
@@ -98,6 +98,28 @@ def extract_split_directory_from_parquet_url(parquet_url: str) -> str:
     return split_name
 
 
+def extract_revision_and_path_in_repo_from_parquet_url(parquet_url: str) -> tuple[str, str]:
+    """
+    Extract the revision and the path in the repository from a parquet file URL,
+    ie. a URL of the form
+    `{host}/datasets/{dataset}/resolve/{revision}/{path_in_repo}`.
+
+    Note that the parquet files can be stored in the `refs/convert/parquet` branch
+    (datasets converted to parquet by the hub) or in any revision of the raw repository
+    (eg. datasets that already contain parquet files, see the 'dataset-init' shortcut).
+    That's why we must rely on the URL rather than on a fixed revision and layout.
+
+    Args:
+        parquet_url (`str`): The URL to extract the revision and the path in the repo from.
+
+    Returns:
+        `tuple[str, str]`: The revision (unquoted) and the path in the repo.
+    """
+    rev_and_path = parquet_url.split("/resolve/", 1)[1]
+    revision, path_in_repo = rev_and_path.split("/", 1)
+    return unquote(revision), unquote(path_in_repo)
+
+
 def get_num_parquet_files_to_process(
     parquet_files: list[ParquetFileMetadataItem],
     parquet_metadata_directory: StrPath,
@@ -162,6 +184,9 @@ class RowsIndex:
         hf_token: Optional[str] = None,
         hf_endpoint: Optional[str] = None,
         data_store: Optional[str] = None,
+        parquet_files_metadata: Optional[list[ParquetFileMetadataItem]] = None,
+        features: Optional[dict[str, Any]] = None,
+        revision: Optional[str] = None,
     ):
         self.dataset = dataset
         self.config = config
@@ -169,7 +194,13 @@ class RowsIndex:
         self.max_scan_size = max_scan_size
         self.parquet_metadata_directory = Path(parquet_metadata_directory)
 
-        self._init_dataset_info()
+        if parquet_files_metadata is not None:
+            # reuse the parquet files metadata and features from the caller, instead of
+            # fetching the 'config-parquet-metadata' cache entry (eg. during the dataset-init
+            # shortcut, where the cache entry might not be saved yet)
+            self._set_dataset_info(parquet_files_metadata=parquet_files_metadata, features=features, revision=revision)
+        else:
+            self._init_dataset_info()
         self._init_viewer_index(hf_token=hf_token, hf_endpoint=hf_endpoint, data_store=data_store)
 
     def _init_dataset_info(self) -> None:
@@ -178,12 +209,24 @@ class RowsIndex:
             response = get_previous_step_or_raise(
                 kind=CONFIG_PARQUET_METADATA_KIND, dataset=self.dataset, config=self.config, split=None
             )
+        self._set_dataset_info(
+            parquet_files_metadata=response["content"]["parquet_files_metadata"],
+            features=response["content"].get("features"),
+            revision=response["dataset_git_revision"],
+        )
 
+    def _set_dataset_info(
+        self,
+        parquet_files_metadata: list[ParquetFileMetadataItem],
+        features: Optional[dict[str, Any]],
+        revision: Optional[str],
+    ) -> None:
         # set the revision of the dataset
-        self.revision = response["dataset_git_revision"]
+        # note that the revision is also available, and used, in the parquet files URLs
+        self.revision = revision
 
         # get the list of parquet files
-        parquet_files = response["content"]["parquet_files_metadata"]
+        parquet_files = parquet_files_metadata
         # filter only files for the current split and config
         parquet_files = [f for f in parquet_files if f["split"] == self.split and f["config"] == self.config]
         # sort by filename to have a deterministic order
@@ -197,13 +240,12 @@ class RowsIndex:
         # required for `rows` endpoint's response
         self.partial = parquet_export_is_partial(self.parquet_files[0]["url"])
 
-        # retrieve the features from the mongo response
-        features = response["content"].get("features")
+        # retrieve the features from the provided response, or from the first parquet metadata file
         if features:
             self.features = Features.from_dict(features)
         else:
             # config-parquet version<6 didn't have features
-            first_metadata_file = self.parquet_metadata_directory / parquet_files[0]["parquet_metadata_subpath"]
+            first_metadata_file = self.parquet_metadata_directory / self.parquet_files[0]["parquet_metadata_subpath"]
             arrow_schema = pq.read_schema(first_metadata_file)
             self.features = Features.from_arrow_schema(arrow_schema)
 
@@ -216,14 +258,14 @@ class RowsIndex:
 
         files = [
             {
-                "path": f["url"].split("/resolve/", 1)[1].split("/", 1)[1],
+                "path": extract_revision_and_path_in_repo_from_parquet_url(f["url"])[1],
                 "size": f["size"],
                 "num_rows": f["num_rows"],
                 "metadata_path": f["parquet_metadata_subpath"],
             }
             for f in self.parquet_files
         ]
-        revision = unquote(self.parquet_files[0]["url"].split("/resolve/", 1)[1].split("/", 1)[0])
+        revision = extract_revision_and_path_in_repo_from_parquet_url(self.parquet_files[0]["url"])[0]
 
         self.viewer_index = lv.Dataset(
             name=self.dataset,
