@@ -84,6 +84,7 @@ class JobRunnerFactory(BaseJobRunnerFactory):
                 job_info=job_info,
                 app_config=self.app_config,
                 hf_datasets_cache=self.hf_datasets_cache,
+                storage_client=self.storage_client,
             )
         if job_type == DatasetConfigNamesJobRunner.get_job_type():
             return DatasetConfigNamesJobRunner(
