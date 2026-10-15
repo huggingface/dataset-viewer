@@ -414,6 +414,7 @@ def test_graph() -> None:
                 "dataset-init",
             ],
         ),
+        ("dataset-harbor-tasks", [], ["dataset-init"], ["dataset-init"]),
     ],
 )
 def test_default_graph_steps(

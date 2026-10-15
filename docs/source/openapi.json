@@ -1925,6 +1925,180 @@
     }
   },
   "paths": {
+    "/environment-tasks": {
+      "get": {
+        "summary": "List environment tasks",
+        "description": "Returns a page from the cached task index for supported RL environment datasets. Currently supports Harbor datasets explicitly tagged rl-environment and harbor (or library:harbor), with tasks discovered from unpacked task.toml files. File contents remain available from the Hub resolve endpoint at the returned revision; this endpoint only returns task and file metadata.",
+        "operationId": "getEnvironmentTasks",
+        "tags": [
+          "datasets"
+        ],
+        "security": [
+          {},
+          {
+            "AuthorizationHuggingFaceApiToken": []
+          },
+          {
+            "AuthorizationHuggingFaceJWT": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequiredDataset"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "description": "Index of the first task in the page.",
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "minimum": 0
+            }
+          },
+          {
+            "name": "length",
+            "in": "query",
+            "description": "Maximum number of tasks to return.",
+            "schema": {
+              "type": "integer",
+              "default": 100,
+              "minimum": 1,
+              "maximum": 100
+            }
+          },
+          {
+            "name": "task",
+            "in": "query",
+            "description": "When supplied, returns the page containing this exact task path and overrides offset. An empty value selects a root task. Returns 404 if the task is absent.",
+            "allowEmptyValue": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of environment tasks and their files, including the total task count and indexed revision.",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/Cache-Control"
+              },
+              "Access-Control-Allow-Origin": {
+                "$ref": "#/components/headers/Access-Control-Allow-Origin"
+              },
+              "X-Revision": {
+                "description": "Commit SHA used for the cached task index.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "dataset",
+                    "revision",
+                    "tasks",
+                    "num_tasks_total",
+                    "offset",
+                    "length"
+                  ],
+                  "properties": {
+                    "dataset": {
+                      "type": "string"
+                    },
+                    "revision": {
+                      "type": "string",
+                      "description": "Commit SHA used to index the tasks and their files."
+                    },
+                    "tasks": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "files"
+                        ],
+                        "properties": {
+                          "path": {
+                            "type": "string",
+                            "description": "Task directory relative to the repository root, or an empty string for a root task."
+                          },
+                          "files": {
+                            "type": "array",
+                            "description": "Files are ordered with the preferred preview first, followed by the remaining files in lexicographic path order.",
+                            "items": {
+                              "type": "object",
+                              "required": [
+                                "path",
+                                "size"
+                              ],
+                              "properties": {
+                                "path": {
+                                  "type": "string",
+                                  "description": "File path relative to the repository root."
+                                },
+                                "size": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "description": "File size in bytes."
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "num_tasks_total": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "offset": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "length": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 100
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Common401"
+          },
+          "404": {
+            "$ref": "#/components/responses/Dataset404"
+          },
+          "422": {
+            "description": "The dataset is missing, offset is negative or not an integer, or length is outside 1 to 100 or not an integer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The task index is not ready or an unexpected server error occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/splits": {
       "get": {
         "summary": "List of splits",

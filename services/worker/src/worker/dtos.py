@@ -239,6 +239,22 @@ class DatasetConfigNamesResponse(TypedDict):
     config_names: list[ConfigNameItem]
 
 
+class HarborTaskFile(TypedDict):
+    path: str
+    size: int
+
+
+class HarborTask(TypedDict):
+    path: str
+    files: list[HarborTaskFile]
+
+
+class DatasetHarborTasksResponse(TypedDict):
+    dataset: str
+    revision: str
+    tasks: list[HarborTask]
+
+
 class DatasetInfoResponse(TypedDict):
     dataset_info: dict[str, Any]
     pending: list[CachedJob]
