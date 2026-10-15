@@ -11,7 +11,7 @@ python = "3.14.5"
 
 [tool.poetry.group.dev.dependencies]
 bandit = "^1.7.4"
-huggingface-hub = "^1.18.0"
+huggingface-hub = { git = "https://github.com/huggingface/huggingface_hub.git", rev = "7112419ac6e28c557778587b8460d7477c1ce69c" }  # Xet range and stream reads in HfFileSystem (huggingface/huggingface_hub#5165, backported to 1.33)
 datasets = "^5.0.0"
 pillow = "^12.3.0"
 mypy = "^1.10.0"
