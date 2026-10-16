@@ -5,7 +5,7 @@ import logging
 from collections.abc import Generator
 from typing import Literal, Optional
 
-import httpx
+import httpx2 as httpx
 from libcommon.prometheus import StepProfiler
 from starlette.requests import Request
 

@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Optional
 from unittest.mock import patch
 
-import httpx
+import httpx2 as httpx
 import pytest
 from huggingface_hub.hf_api import DatasetInfo, HfApi
 from huggingface_hub.utils import HfHubHTTPError
