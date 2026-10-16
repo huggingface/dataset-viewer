@@ -17,7 +17,7 @@ duckdb = "^1.5.5"
 environs = "^14.3.0"
 filelock = "^3.18.0"
 fsspec = {version = "2024.6.0", extras = ["s3"]}
-huggingface-hub = "^1.18.0"
+huggingface-hub = { git = "https://github.com/huggingface/huggingface_hub.git", rev = "7112419ac6e28c557778587b8460d7477c1ce69c" }  # Xet range and stream reads in HfFileSystem (huggingface/huggingface_hub#5165, backported to 1.33)
 libviewer = { path = "../libviewer", develop = true }
 mongo-types = "0.15.1"
 mongoengine = "^0.29.1"
