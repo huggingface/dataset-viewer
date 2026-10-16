@@ -7,17 +7,16 @@ license = "Apache-2.0"
 
 [tool.poetry.dependencies]
 python = "3.14.5"
-aiohttp = "^3.14.1"
 anyio = ">=3.4.0,<5"
 appdirs = "^1.4.4"
 async-lru = "^2.0.5"
 cryptography = "^50.0.0"
-datasets = { git = "https://github.com/huggingface/datasets", rev = "af4347bd438a00e7c688661f7ae1e377674e0a97" }
+datasets = { git = "https://github.com/huggingface/datasets", rev = "18378f7322c7eb1c2d93f895dd8e9f71f8623934" }
 duckdb = "^1.5.5"
 environs = "^14.3.0"
 filelock = "^3.18.0"
-fsspec = {version = "2024.6.0", extras = ["s3"]}
-huggingface-hub = { git = "https://github.com/huggingface/huggingface_hub.git", rev = "7112419ac6e28c557778587b8460d7477c1ce69c" }  # Xet range and stream reads in HfFileSystem (huggingface/huggingface_hub#5165, backported to 1.33)
+fsspec = {version = "2026.7.0", extras = ["s3"]}
+huggingface-hub = { git = "https://github.com/huggingface/huggingface_hub.git", rev = "1cc1d9d5d15929ad5e214cb3a121d3a0a108af20" }  # List large repos in parallel https://github.com/huggingface/huggingface_hub/pull/5153
 libviewer = { path = "../libviewer", develop = true }
 mongo-types = "0.15.1"
 mongoengine = "^0.29.1"
@@ -37,7 +36,7 @@ pymongoarrow = "^1.10.0"
 pymupdf = "^1.28.2"
 pymongo = { extras = ["srv", "aws"], version = "^4.15.1" }
 pytz = "^2020.1"
-s3fs = "2024.6.0"  # Aligned with fsspec[s3] version
+s3fs = "2026.7.0"  # Aligned with fsspec[s3] version
 soundfile = ">=0.12.1"
 starlette-prometheus = "^0.9.0"
 teich = { git = "https://github.com/lhoestq/teich", rev = "b18cb66dc7fbb2c0d59bee761b236273aeecccc5" }  # to fix traces streaming
@@ -58,10 +57,9 @@ tsfile = "^2.3.0"
 xxhash = "^3.7.0"
 
 [tool.poetry.group.dev.dependencies]
-aiobotocore = "2.13.0"
+aiobotocore = "3.9.2"
 bandit = "^1.7.4"
-boto3 = "1.34.106"
-httpx = "^0.26.0"
+boto3 = "1.43.106"
 moto = "^4.2.8"
 mypy = "^1.10.0"
 pandas-stubs = "^2.2.0"
@@ -70,7 +68,7 @@ pytest = "^9.1.1"
 pytest-datadir = "^1.5.0"
 pytest-memray = "^1.6.0"
 ruff = "^0"
-types-aiobotocore = {extras = ["signer"], version = "2.13.0"}
+types-aiobotocore = {extras = ["signer"], version = "3.9.2"}
 types-psutil = "^7.0.0"
 types-pytz = "^2022.1.1"
 validators = "^0.22.0"

@@ -7,11 +7,10 @@ from collections.abc import AsyncGenerator
 from http import HTTPStatus
 from typing import Any
 
-import httpx
+import httpx2 as httpx
 import pytest
 import pytest_asyncio
 import uvicorn
-from httpx_sse import aconnect_sse
 from libcommon.resources import CacheMongoResource
 from libcommon.simple_cache import delete_response, upsert_response
 from starlette.applications import Starlette
@@ -336,7 +335,7 @@ INIT_AND_UPDATE_EVENTS: EventsList = INIT_ONLY_EVENTS + UPDATE_ONLY_AFTER_INIT_E
 
 
 async def check(client: httpx.AsyncClient, url: str, expected_events: EventsList) -> None:
-    async with aconnect_sse(client, url) as event_source:
+    async with client.sse(url) as event_source:
         event_iter = event_source.aiter_sse()
         i = 0
         while True:

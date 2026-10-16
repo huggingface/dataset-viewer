@@ -10,7 +10,7 @@ from contextlib import contextmanager, suppress
 from pathlib import Path
 from typing import Any, Optional
 
-import httpx
+import httpx2 as httpx
 import requests
 from huggingface_hub.hf_api import HfApi
 from huggingface_hub.utils import hf_raise_for_status

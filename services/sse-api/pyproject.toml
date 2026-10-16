@@ -16,8 +16,6 @@ watchdog = { extras = ["watchmedo"], version = "^2.2.1" }
 
 [tool.poetry.group.dev.dependencies]
 bandit = "^1.7.4"
-httpx = "^0.28.1"
-httpx-sse = "^0.1.0"
 motor-types = "^1.0.0b0"
 mypy = "^1.10.0"
 pip-audit = "^2.7.3"

@@ -9,7 +9,6 @@ from typing import Any
 from unittest.mock import patch
 
 import pytest
-from aiohttp import ClientSession
 from aiolimiter import AsyncLimiter
 from libcommon.dtos import Priority
 from libcommon.exceptions import ExternalServerError
@@ -310,6 +309,8 @@ def test_compute_error_from_spawning(
 )
 @pytest.mark.asyncio
 async def test_real_check_spawning_response(app_config: AppConfig) -> None:
+    from aiohttp import ClientSession
+
     semaphore = Semaphore(value=10)
     limiter = AsyncLimiter(10, time_period=1)
 
