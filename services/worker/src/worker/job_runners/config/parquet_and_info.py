@@ -19,6 +19,7 @@ import datasets.config
 import datasets.exceptions
 import datasets.info
 import fsspec
+import httpx2 as httpx
 import numpy as np
 import pyarrow as pa
 import pyarrow.parquet as pq
@@ -53,7 +54,7 @@ from huggingface_hub._commit_api import (
 from huggingface_hub.errors import HfHubHTTPError, RepositoryNotFoundError
 from huggingface_hub.hf_api import CommitInfo, DatasetInfo, HfApi, RepoFile, RepoSibling
 from huggingface_hub.hf_file_system import HfFileSystemResolvedRepositoryPath
-from huggingface_hub.utils._http import HTTP_METHOD_T, http_backoff, httpx
+from huggingface_hub.utils._http import HTTP_METHOD_T, http_backoff
 from libcommon.constants import (
     PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_ROW_GROUP_SIZE_FOR_AUDIO_DATASETS,
     PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_ROW_GROUP_SIZE_FOR_BINARY_DATASETS,
