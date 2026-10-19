@@ -36,6 +36,8 @@ API_HF_JWT_ADDITIONAL_PUBLIC_KEYS: list[str] = []
 API_HF_JWT_ALGORITHM = "EdDSA"
 API_HF_TIMEOUT_SECONDS = 0.2
 API_HF_WEBHOOK_SECRET = None
+API_HUB_ORIGINS = ["https://huggingface.co"]
+API_HUB_NETWORKS: list[str] = []
 API_MAX_AGE_LONG = 120  # 2 minutes
 API_MAX_AGE_SHORT = 10  # 10 seconds
 
@@ -49,6 +51,8 @@ class ApiConfig:
     hf_jwt_algorithm: Optional[str] = API_HF_JWT_ALGORITHM
     hf_timeout_seconds: Optional[float] = API_HF_TIMEOUT_SECONDS
     hf_webhook_secret: Optional[str] = API_HF_WEBHOOK_SECRET
+    hub_origins: list[str] = field(default_factory=API_HUB_ORIGINS.copy)
+    hub_networks: list[str] = field(default_factory=API_HUB_NETWORKS.copy)
     max_age_long: int = API_MAX_AGE_LONG
     max_age_short: int = API_MAX_AGE_SHORT
 
@@ -71,6 +75,8 @@ class ApiConfig:
                 hf_jwt_algorithm=env.str(name="HF_JWT_ALGORITHM", default=API_HF_JWT_ALGORITHM),
                 hf_timeout_seconds=env.float(name="HF_TIMEOUT_SECONDS", default=API_HF_TIMEOUT_SECONDS),
                 hf_webhook_secret=resolve_secret(env, "HF_WEBHOOK_SECRET", "WEBHOOK_SECRET", API_HF_WEBHOOK_SECRET),
+                hub_origins=env.list(name="HUB_ORIGINS", default=API_HUB_ORIGINS.copy()),
+                hub_networks=env.list(name="HUB_NETWORKS", default=API_HUB_NETWORKS.copy()),
                 max_age_long=env.int(name="MAX_AGE_LONG", default=API_MAX_AGE_LONG),
                 max_age_short=env.int(name="MAX_AGE_SHORT", default=API_MAX_AGE_SHORT),
             )

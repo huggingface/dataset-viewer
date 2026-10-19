@@ -23,6 +23,8 @@ Set environment variables to configure the application (`API_` prefix):
 - `API_HF_JWT_ALGORITHM`: the algorithm used to encode the JWT. Defaults to `"EdDSA"`.
 - `API_HF_TIMEOUT_SECONDS`: the timeout in seconds for the requests to the Hugging Face Hub. Defaults to `0.2` (200 ms).
 - `API_HF_WEBHOOK_SECRET`: a shared secret sent by the Hub in the "X-Webhook-Secret" header of POST requests sent to /webhook, to authenticate the originator and bypass some validation of the content (avoiding roundtrip to the Hub). If not set, all the validations are done. Defaults to empty.
+- `API_HUB_ORIGINS`: a comma-separated list of the "Origin" header values that identify the Hugging Face Hub UI in the browser. It's used to label the logs of the data endpoints (`source=hub-browser`), nothing else: as any other header, it's spoofable, and it's never used for authentication or rate limiting. Defaults to "https://huggingface.co".
+- `API_HUB_NETWORKS`: a comma-separated list of the IP addresses and networks of the Hugging Face Hub servers, as CIDRs ("10.0.0.0/16") or bare addresses ("10.0.0.1"). It's used to label the logs of the data endpoints (`source=hub-server`), and nothing else. The compared address is the one the service accepted the connection from: it cannot be forged by the caller, but it's the address of the last proxy of the chain when there is one. Defaults to empty, in which case every call without a Hub origin is labeled as external.
 - `API_MAX_AGE_LONG`: number of seconds to set in the `max-age` header on data endpoints. Defaults to `120` (2 minutes).
 - `API_MAX_AGE_SHORT`: number of seconds to set in the `max-age` header on technical endpoints. Defaults to `10` (10 seconds).
 

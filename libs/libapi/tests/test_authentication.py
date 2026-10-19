@@ -16,7 +16,7 @@ from starlette.requests import Request
 from werkzeug.wrappers import Request as WerkzeugRequest
 from werkzeug.wrappers import Response as WerkzeugResponse
 
-from libapi.authentication import auth_check
+from libapi.authentication import auth_check, get_auth_kind
 from libapi.exceptions import (
     AuthCheckHubRequestError,
     ExternalAuthenticatedError,
@@ -342,3 +342,21 @@ async def test_external_auth_service_dataset_public_renamed(
     expectation: Any,
 ) -> None:
     await assert_auth_headers(httpserver, hf_endpoint, hf_auth_path, dataset_public_renamed, headers, expectation)
+
+
+@pytest.mark.parametrize(
+    "headers,expected_auth_kind",
+    [
+        ({}, "none"),
+        ({"Cookie": cookie_is_not_supported_anymore}, "none"),
+        ({"Authorization": f"Bearer hf_{api_token_ok}"}, "hf_token"),
+        ({"Authorization": f"Bearer api_{api_token_ok}"}, "hf_token"),
+        ({"Authorization": f"Bearer api_org_{api_token_ok}"}, "hf_token"),
+        ({"Authorization": f"Bearer jwt:{get_jwt(dataset_public)}"}, "jwt"),
+        ({"X-Api-Key": get_jwt(dataset_public)}, "jwt"),
+        ({"Authorization": f"Bearer {api_token_ok}"}, "other"),
+        ({"Authorization": "Basic dXNlcjpwYXNz"}, "other"),
+    ],
+)
+def test_get_auth_kind(headers: Mapping[str, str], expected_auth_kind: str) -> None:
+    assert get_auth_kind(create_request(headers)) == expected_auth_kind

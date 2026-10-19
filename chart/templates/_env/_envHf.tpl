@@ -22,6 +22,10 @@
   value: {{ .Values.hf.jwtAlgorithm | quote }}
 - name: API_HF_TIMEOUT_SECONDS
   value: {{ .Values.hf.timeoutSeconds | quote }}
+- name: API_HUB_ORIGINS
+  value: {{ .Values.hf.hubOrigins | quote }}
+- name: API_HUB_NETWORKS
+  value: {{ .Values.hf.hubNetworks | quote }}
 {{- if not (and .Values.secrets.infisical.csi.enabled .Values.secrets.hfWebhookSecret.fromSecret) }}
 - name: API_HF_WEBHOOK_SECRET
   {{- if .Values.secrets.hfWebhookSecret.fromSecret }}

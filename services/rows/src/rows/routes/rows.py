@@ -7,12 +7,13 @@ from http import HTTPStatus
 from typing import Optional
 
 from fsspec.implementations.http import HTTPFileSystem
-from libapi.authentication import auth_check
+from libapi.authentication import auth_check, get_auth_kind
 from libapi.exceptions import ApiError, TooBigContentError, UnexpectedApiError
 from libapi.request import (
     get_request_parameter,
     get_request_parameter_length,
     get_request_parameter_offset,
+    get_request_source,
 )
 from libapi.response import create_response
 from libapi.utils import (
@@ -33,6 +34,9 @@ from starlette.responses import Response
 
 logger = logging.getLogger(__name__)
 
+# the user-agent is free-form (and spoofable): we cap it to keep the log lines bounded
+MAX_USER_AGENT_LENGTH = 200
+
 
 def create_rows_endpoint(
     cached_assets_storage_client: StorageClient,
@@ -44,6 +48,8 @@ def create_rows_endpoint(
     hf_jwt_public_keys: Optional[list[str]] = None,
     hf_jwt_algorithm: Optional[str] = None,
     external_auth_url: Optional[str] = None,
+    hub_origins: Optional[list[str]] = None,
+    hub_networks: Optional[list[str]] = None,
     hf_timeout_seconds: Optional[float] = None,
     max_age_long: int = 0,
     max_age_short: int = 0,
@@ -77,7 +83,18 @@ def create_rows_endpoint(
                     split = get_request_parameter(request, "split", required=True)
                     offset = get_request_parameter_offset(request)
                     length = get_request_parameter_length(request)
-                    logging.info(f"/rows, {dataset=}, {config=}, {split=}, {offset=}, {length=}")
+                    # "source" and "auth_kind" tell apart the calls coming from the Hugging Face Hub (its servers,
+                    # or the browser on huggingface.co) from the calls of the external users. They are based on
+                    # headers chosen by the client, so they are logging labels, not authentication (see
+                    # get_request_source).
+                    source = get_request_source(request, hub_origins=hub_origins, hub_networks=hub_networks)
+                    auth_kind = get_auth_kind(request)
+                    origin = request.headers.get("origin", "-")
+                    user_agent = request.headers.get("user-agent", "-")[:MAX_USER_AGENT_LENGTH]
+                    logging.info(
+                        f"/rows, {dataset=}, {config=}, {split=}, {offset=}, {length=}, "
+                        f"{source=}, {auth_kind=}, {origin=}, {user_agent=}"
+                    )
                 if dataset == "HuggingFaceFW/fineweb-edu-score-2" and offset > 1_000_000:
                     return get_json_error_response(
                         content={"error": "too many requests"},
