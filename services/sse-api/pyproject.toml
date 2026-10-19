@@ -55,7 +55,7 @@ ignore_missing_imports = true
 [tool.ruff]
 line-length = 119
 src = ["src"]
-target-version = "py39"
+target-version = "py314"
 
 [tool.ruff.lint]
 extend-select = [

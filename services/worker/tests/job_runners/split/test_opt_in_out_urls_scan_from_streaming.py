@@ -5,7 +5,7 @@ from asyncio import Semaphore
 from collections.abc import Callable, Mapping
 from dataclasses import replace
 from http import HTTPStatus
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from unittest.mock import patch
 
 import pytest
@@ -26,6 +26,9 @@ from worker.resources import LibrariesResource
 from ...constants import CI_SPAWNING_TOKEN
 from ...fixtures.hub import HubDatasetTest, get_default_config_split
 from ..utils import REVISION_NAME
+
+if TYPE_CHECKING:
+    from aiohttp import ClientSession
 
 GetJobRunner = Callable[[str, str, str, AppConfig], SplitOptInOutUrlsScanJobRunner]
 

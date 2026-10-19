@@ -32,8 +32,10 @@ from datasets import (
 from datasets.features.features import decode_nested_example
 from datasets.utils.file_utils import SINGLE_FILE_COMPRESSION_EXTENSION_TO_PROTOCOL, is_relative_path
 from huggingface_hub import HfFileSystem, HfFileSystemFile
+from huggingface_hub.constants import DEFAULT_REVISION
 from huggingface_hub.errors import RepositoryNotFoundError
 from huggingface_hub.hf_api import HfApi
+from huggingface_hub.utils._http import hf_raise_for_status, http_backoff
 from libcommon.constants import CONFIG_SPLIT_NAMES_KIND, MAX_COLUMN_NAME_LENGTH
 from libcommon.dtos import RowsContent
 from libcommon.exceptions import (
@@ -196,13 +198,72 @@ LIST_REPO_REFS_RETRY_SLEEPS = [1, 1, 1, 10, 10]
 LOCK_GIT_BRANCH_RETRY_SLEEPS = [1, 1, 1, 1, 1, 10, 10, 10, 10, 100] * 3
 
 
+def get_initial_commit(
+    hf_api: HfApi,
+    repo_id: str,
+    repo_type: str = DATASET_TYPE,
+    revision: str = DEFAULT_REVISION,
+) -> str:
+    """
+    Get the id of the first commit (the "root commit") of a repo revision, without listing all its commits.
+
+    It returns the same commit as `hf_api.list_repo_commits(...) [-1].commit_id`, but it does not page through every
+    commit of the repository: it's a lot of requests, and of data transferred, for the datasets with a long history.
+    Instead, it only makes two light requests, using the pagination of the "/commits" endpoint of the Hub API (the
+    commits are returned from the newest to the oldest, and the total number of commits is in "X-Total-Count"):
+
+    1. `HEAD {url}?limit=1` to get the number of commits (the response body is not even needed)
+    2. `GET {url}?limit=1&p={count - 1}` to get the last page, with only one commit: the oldest one
+
+    Both requests are made on the same `revision`, and they are not atomic: pass a commit SHA rather than a branch
+    name to be sure that the history does not move in between (otherwise the second-oldest commit is returned).
+
+    If the Hub does not return what's expected (no "X-Total-Count" header, empty last page), we fall back on listing
+    all the commits: it's better to be slow than wrong.
+
+    Args:
+        hf_api (`HfApi`): the API to use: it holds the endpoint and the token used for the requests.
+        repo_id (`str`): the id of the repo, eg "user/dataset".
+        repo_type (`str`, *optional*): the type of the repo. Defaults to "dataset".
+        revision (`str`, *optional*): the revision to get the initial commit from. Defaults to "main".
+
+    Returns:
+        `str`: the id of the initial commit of the revision.
+
+    Raises:
+        [`~utils.RepositoryNotFoundError`]: if the repo does not exist on the Hub.
+        [`~utils.RevisionNotFoundError`]: if the revision does not exist on the Hub.
+    """
+    headers = hf_api._build_hf_headers()  # ^ as in libcommon.operations.CustomHfApi
+    url = f"{hf_api.endpoint}/api/{repo_type}s/{repo_id}/commits/{quote(revision, safe='')}"
+    response = http_backoff("HEAD", url, params={"limit": 1}, headers=headers)
+    hf_raise_for_status(response)
+    total_count = response.headers.get("X-Total-Count")
+    last_page = int(total_count) - 1 if total_count is not None and total_count.isdigit() else -1
+    if last_page >= 0:
+        response = http_backoff("GET", url, params={"limit": 1, "p": last_page}, headers=headers)
+        hf_raise_for_status(response)
+        commits: Any = response.json()
+        if isinstance(commits, list) and commits:
+            return str(commits[0]["id"])
+    logging.warning(
+        f"Did not get the initial commit of {repo_id}@{revision} with two requests "
+        f"(X-Total-Count={total_count!r}, last_page={last_page}). Listing all its commits instead."
+    )
+    return hf_api.list_repo_commits(repo_id=repo_id, repo_type=repo_type, revision=revision)[-1].commit_id
+
+
 def create_branch(dataset: str, target_revision: str, hf_api: HfApi, committer_hf_api: HfApi) -> None:
     try:
         refs = retry(on=[requests.exceptions.ConnectionError], sleeps=LIST_REPO_REFS_RETRY_SLEEPS)(
             hf_api.list_repo_refs
         )(repo_id=dataset, repo_type=DATASET_TYPE)
         if all(ref.ref != target_revision for ref in refs.converts):
-            initial_commit = hf_api.list_repo_commits(repo_id=dataset, repo_type=DATASET_TYPE)[-1].commit_id
+            # we pin the revision to the sha of the main branch, since the two requests made by get_initial_commit
+            # are not atomic (see its docstring), and we want to branch out from the history we have just seen.
+            main_branch = next((branch for branch in refs.branches if branch.name == DEFAULT_REVISION), None)
+            revision = main_branch.target_commit if main_branch is not None else DEFAULT_REVISION
+            initial_commit = get_initial_commit(hf_api, repo_id=dataset, repo_type=DATASET_TYPE, revision=revision)
             committer_hf_api.create_branch(
                 repo_id=dataset, branch=target_revision, repo_type=DATASET_TYPE, revision=initial_commit, exist_ok=True
             )

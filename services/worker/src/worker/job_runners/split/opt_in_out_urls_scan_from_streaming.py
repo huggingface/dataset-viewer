@@ -5,7 +5,7 @@ import logging
 from asyncio import Semaphore, create_task, run, wait
 from collections.abc import Iterator
 from pathlib import Path
-from typing import Any, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Optional
 
 from aiolimiter import AsyncLimiter
 from libcommon.dtos import JobInfo
