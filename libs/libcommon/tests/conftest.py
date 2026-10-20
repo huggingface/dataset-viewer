@@ -3,7 +3,7 @@
 from collections.abc import Iterator
 
 from environs import Env
-from pytest import TempPathFactory, fixture
+from pytest import FixtureRequest, TempPathFactory, fixture
 
 from libcommon.config import ParquetMetadataConfig
 from libcommon.queue.utils import _clean_queue_database
@@ -13,7 +13,8 @@ from libcommon.storage import StrPath, init_parquet_metadata_dir
 from libcommon.storage_client import StorageClient
 from libcommon.url_preparator import URLPreparator
 
-from .constants import ASSETS_BASE_URL, CI_HUB_ENDPOINT
+from .constants import ASSETS_BASE_URL, CI_HUB_ENDPOINT, MESH_DATASET_NAME
+from .mesh_rendering import ensure_mesh_rendering
 
 # Import fixture modules as plugins
 pytest_plugins = ["tests.fixtures.datasets", "tests.fixtures.fsspec"]
@@ -93,3 +94,15 @@ def storage_client_with_url_preparator(tmp_path_factory: TempPathFactory) -> Sto
         overwrite=True,
         url_preparator=URLPreparator(url_signer=None, hf_endpoint=CI_HUB_ENDPOINT, assets_base_url=ASSETS_BASE_URL),
     )
+
+
+@fixture(autouse=True)
+def skip_mesh_rendering_if_unavailable(request: FixtureRequest) -> None:
+    """Skip the tests of the "mesh" dataset fixture when the 3D thumbnails cannot be rendered.
+
+    The tests parametrized on the dataset names render a thumbnail for every cell which contains an
+    asset, including the mesh ones. See tests/mesh_rendering.py.
+    """
+    callspec = getattr(request.node, "callspec", None)
+    if callspec is not None and callspec.params.get("dataset_name") == MESH_DATASET_NAME:
+        ensure_mesh_rendering()

@@ -22,6 +22,7 @@ from datasets import (
     Json,
     LargeList,
     List,
+    Mesh,
     Pdf,
     Translation,
     TranslationVariableLanguages,
@@ -44,13 +45,14 @@ from libcommon.viewer_utils.asset import (
     VideoSource,
     create_audio_file,
     create_image_file,
+    create_mesh_file,
     create_mesh_thumbnail,
     create_pdf_file,
     create_video_file,
 )
 
 if TYPE_CHECKING:
-    pass
+    import trimesh
 
 
 AUDIO_FILE_MAGIC_NUMBERS: dict[str, Any] = {
@@ -69,6 +71,14 @@ VIDEO_FILE_MAGIC_NUMBERS: dict[str, Any] = {
     ".mpeg": [b"\x00\x00\x01\xba"],
     ".mov": [b"\x00\x00\x01\xb3"],
 }
+
+# the mesh file types that trimesh reads without additional dependency, and that the viewer renders
+SUPPORTED_MESH_FILE_TYPES = {"glb", "ply", "stl", "obj"}
+SUPPORTED_MESH_EXTENSIONS = ", ".join(f".{file_type}" for file_type in sorted(SUPPORTED_MESH_FILE_TYPES))
+MESH_FILE_TYPE_ERROR = (
+    "Decoding mesh bytes requires a 'path' value with one of the supported mesh extensions "
+    f"({SUPPORTED_MESH_EXTENSIONS}) to infer the mesh file type."
+)
 
 
 logging.getLogger("pdfminer").setLevel(logging.ERROR)
@@ -412,13 +422,31 @@ def pdf(
 
 
 def _infer_mesh_file_type(path: Optional[str]) -> Optional[str]:
-    supported_file_types = {"glb", "ply", "stl", "obj"}
+    """Guess the type of a mesh file from its extension, or None if it's not a supported one.
+
+    The supported types are the ones trimesh reads without additional dependency, and that the viewer
+    renders: glTF binaries, ply, stl and obj files.
+    """
     if path is None:
         return None
-    path_without_archive = path.split("::", 1)[0]
-    path_without_query = path_without_archive.split("?", 1)[0]
+    # the path can be chained with "::" (a file inside an archive), or end with a query string (an URL)
+    path_without_query = path.split("::", 1)[0].split("?", 1)[0]
     extension = os.path.splitext(path_without_query)[1].lower().lstrip(".")
-    return extension if extension in supported_file_types else None
+    return extension if extension in SUPPORTED_MESH_FILE_TYPES else None
+
+
+def _as_mesh_scene(value: Any) -> "trimesh.Scene":
+    """Return the trimesh scene of a decoded mesh cell, which can be a single mesh or a whole scene."""
+    import trimesh
+
+    if isinstance(value, trimesh.Trimesh):
+        return value.scene()
+    if isinstance(value, trimesh.Scene):
+        return value
+    raise TypeError(
+        "Mesh cell must be a `trimesh.Scene` object or an encoded dict of a mesh, "
+        f"but got {str(value)[:300]}{'...' if len(str(value)) > 300 else ''}"
+    )
 
 
 def mesh(
@@ -434,60 +462,99 @@ def mesh(
     hf_token: Optional[str],
     json_path: Optional[list[Union[str, int]]] = None,
 ) -> Optional[MeshSource]:
+    """Prepare a mesh cell: a rendered thumbnail, and a URL to fetch the 3D file.
+
+    The cell can be:
+    - an encoded dict with the mesh bytes, and a path to infer the file type: the mesh file is stored
+      on the assets storage with its thumbnail, and "src" is the URL of the stored mesh file;
+    - an encoded dict with a path of the dataset on the Hub: the mesh file is fetched from the Hub by
+      the viewer, so only its thumbnail is stored, and "src" is its URL on the Hub;
+    - a `trimesh.Trimesh` or `trimesh.Scene` object: it's exported to glTF binary, then stored as the
+      mesh bytes above.
+
+    It raises a ValueError if the bytes cannot be decoded, or if the path points elsewhere than in the
+    dataset. Like the other media cells, a local path is skipped: the file is on the machine of the
+    creator of the dataset, and cannot be fetched by the viewer.
+    """
     import trimesh
 
     if value is None:
         return None
-    if isinstance(value, dict) and value.get("bytes"):
-        src = value.get("path")
-        file_type = _infer_mesh_file_type(src)
-        if file_type is None:
-            raise ValueError(
-                "Decoding mesh bytes requires a 'path' value with a .glb, .ply, .stl or .obj extension "
-                "to infer the mesh file type."
-            )
-        value = trimesh.load(BytesIO(value["bytes"]), file_type=file_type)
-        size_bytes = len(value["bytes"])
-    elif isinstance(value, bytes):
-        raise ValueError(
-            "Decoding mesh bytes requires a 'path' value with a .glb, .ply, .stl or .obj extension "
-            "to infer the mesh file type."
-        )
-    elif isinstance(value, dict) and "path" in value and isinstance(value["path"], str):
-        if is_local_path(value["path"]):
-            return None
-        elif value["path"].startswith(f"hf://datasets/{dataset}@"):
-            f = HfFileSystem(endpoint=hf_endpoint, token=hf_token).open(value["path"], "rb")
-            src = value["path"]
-            file_type = _infer_mesh_file_type(src)
-            if file_type is None:
-                raise ValueError(
-                    "Decoding mesh bytes requires a 'path' value with a .glb, .ply, .stl or .obj extension "
-                    "to infer the mesh file type."
-                )
-            value = trimesh.load(f, file_type=file_type)
-            size_bytes = f.size
-    if isinstance(value, trimesh.Trimesh):
-        value = value.scene()
-    if not isinstance(value, trimesh.Scene) or not isinstance(src, str):
-        raise TypeError(
-            "Mesh cell must be a `trimesh.Scene` object or an encoded dict of a mesh, "
-            f"but got {str(value)[:300]}{'...' if len(str(value)) > 300 else ''}"
+    # the names of the stored assets: "mesh.glb" and "mesh.glb.png", with a suffix if the cell is nested
+    filename = append_hash_suffix("mesh", json_path)
+
+    def create_thumbnail(scene: "trimesh.Scene", file_type: str) -> ImageSource:
+        return create_mesh_thumbnail(
+            dataset=dataset,
+            revision=revision,
+            config=config,
+            split=split,
+            row_idx=row_idx,
+            column=featureName,
+            mesh=scene,
+            storage_client=storage_client,
+            filename=f"{filename}.{file_type}",
         )
 
-    # this function can raise, we don't catch it
-    thumbnail = create_mesh_thumbnail(
+    if isinstance(value, bytes):
+        # the mesh bytes alone don't tell the file type: it's read from the extension of "path"
+        raise ValueError(MESH_FILE_TYPE_ERROR)
+
+    if isinstance(value, dict) and value.get("bytes") is not None:
+        file_type = _infer_mesh_file_type(value.get("path"))
+        if file_type is None:
+            raise ValueError(MESH_FILE_TYPE_ERROR)
+        mesh_bytes: bytes = value["bytes"]
+        scene = _as_mesh_scene(trimesh.load(BytesIO(mesh_bytes), file_type=file_type))
+        # this function can raise, we don't catch it
+        return create_mesh_file(
+            dataset=dataset,
+            revision=revision,
+            config=config,
+            split=split,
+            row_idx=row_idx,
+            column=featureName,
+            filename=f"{filename}.{file_type}",
+            mesh=scene,
+            mesh_bytes=mesh_bytes,
+            storage_client=storage_client,
+        )
+
+    if isinstance(value, dict) and isinstance(value.get("path"), str):
+        path = value["path"]
+        if is_local_path(path):
+            return None
+        if not path.startswith(f"hf://datasets/{dataset}@"):
+            # only the files of the dataset itself can be fetched, and served by the viewer
+            raise ValueError(f"invalid path: {path}")
+        file_type = _infer_mesh_file_type(path)
+        if file_type is None:
+            raise ValueError(MESH_FILE_TYPE_ERROR)
+        # this function can raise, we don't catch it
+        with HfFileSystem(endpoint=hf_endpoint, token=hf_token).open(path, "rb") as file:
+            scene = _as_mesh_scene(trimesh.load(file, file_type=file_type))
+            size_bytes = file.size
+        # the mesh file stays on the Hub: it's already available at its own URL, we don't store a copy
+        return MeshSource(
+            src=hf_to_https_url(path, hf_endpoint),
+            size_bytes=size_bytes,
+            thumbnail=create_thumbnail(scene, file_type),
+        )
+
+    # a mesh or a scene object: it has not been encoded for storage, so we export it to glTF binary
+    scene = _as_mesh_scene(value)
+    return create_mesh_file(
         dataset=dataset,
         revision=revision,
         config=config,
         split=split,
         row_idx=row_idx,
         column=featureName,
-        mesh=value,
+        filename=f"{filename}.glb",
+        mesh=scene,
+        mesh_bytes=scene.export(file_type="glb"),
         storage_client=storage_client,
-        filename=f"{append_hash_suffix('document', json_path)}.{file_type}",
     )
-    return MeshSource(src=src, size_bytes=size_bytes, thumbnail=thumbnail)
 
 
 def get_cell_value(
@@ -550,6 +617,20 @@ def get_cell_value(
         )
     elif isinstance(fieldType, Pdf):
         return pdf(
+            dataset=dataset,
+            revision=revision,
+            config=config,
+            split=split,
+            row_idx=row_idx,
+            value=cell,
+            featureName=featureName,
+            storage_client=storage_client,
+            hf_endpoint=hf_endpoint,
+            hf_token=hf_token,
+            json_path=json_path,
+        )
+    elif isinstance(fieldType, Mesh):
+        return mesh(
             dataset=dataset,
             revision=revision,
             config=config,

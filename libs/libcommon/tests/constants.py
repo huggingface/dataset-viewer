@@ -23,6 +23,10 @@ DEFAULT_SAMPLING_RATE = 16_000
 DEFAULT_ROW_IDX = 0  # <- we cannot change this, because the fixtures only have one row
 DEFAULT_COLUMN_NAME = "col"
 
+# the name of the dataset fixture of a 3D mesh cell: the tests which use it render a thumbnail, and
+# they are skipped if the platform cannot render it (see tests/mesh_rendering.py)
+MESH_DATASET_NAME = "mesh"
+
 DATASETS_NAMES = [
     "null",
     "bool",
@@ -67,6 +71,7 @@ DATASETS_NAMES = [
     "sequence_of_dicts",
     "none_value",
     "pdf",
+    MESH_DATASET_NAME,
 ]
 
 TEN_CHARS_TEXT = "a" * 10
