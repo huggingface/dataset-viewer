@@ -35,6 +35,7 @@ pylance = "^9.0.1"
 pymongoarrow = "^1.10.0"
 pymupdf = "^1.28.2"
 pymongo = { extras = ["srv", "aws"], version = "^4.15.1" }
+pyrender2 = "^0.2.2"
 pytz = "^2020.1"
 s3fs = "2026.9.0"  # Aligned with fsspec[s3] version
 soundfile = ">=0.12.1"
@@ -53,6 +54,7 @@ torchcodec = [
     { url = "https://download.pytorch.org/whl/cpu/torchcodec-0.15.0%2Bcpu-cp314-cp314-manylinux_2_28_aarch64.whl", markers = "sys_platform == 'linux' and platform_machine == 'aarch64'"},
 ]
 tqdm = "^4.66.3"
+trimesh = "^5.1.1"
 tsfile = "^2.3.0"
 xxhash = "^3.7.0"
 

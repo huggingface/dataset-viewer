@@ -5,11 +5,14 @@ import threading
 from io import BufferedReader, BytesIO
 from tempfile import NamedTemporaryFile
 from typing import TYPE_CHECKING, Any, Optional, TypedDict, Union
+from unittest.mock import patch
 
 import fitz
+import numpy as np
 from datasets import Audio
 
 if TYPE_CHECKING:
+    import trimesh
     from pdfplumber.pdf import PDF
     from PIL import Image
 
@@ -43,6 +46,12 @@ class VideoSource(TypedDict):
 
 
 class PDFSource(TypedDict):
+    src: str
+    size_bytes: int
+    thumbnail: ImageSource
+
+
+class MeshSource(TypedDict):
     src: str
     size_bytes: int
     thumbnail: ImageSource
@@ -273,3 +282,236 @@ def create_video_file(
         raise ValueError("The video cell doesn't contain a valid path or bytes")
     src = storage_client.get_url(object_path, revision=revision)
     return VideoSource(src=src)
+
+
+def _robust_format_texture_source(
+    texture: Optional[Union["Image.Image", np.ndarray]], target_channels: str = "RGB"
+) -> Optional[np.ndarray]:
+    """Format a texture as a float32 np array.
+    Two fixes for robustness:
+    1. fix for np.bool
+    2. fix for 2-channels RGBA
+    """
+    import numpy as np
+    from PIL import Image as PILImage
+
+    # Pass through None
+    if texture is None:
+        return None
+
+    # Convert PIL images into numpy arrays
+    if isinstance(texture, PILImage.Image):
+        if texture.mode == "P" and target_channels in ("RGB", "RGBA"):
+            texture = np.array(texture.convert(target_channels))
+        else:
+            texture = np.array(texture)
+
+    # Format numpy arrays
+    if isinstance(texture, np.ndarray):
+        if np.issubdtype(texture.dtype, np.floating):
+            texture = np.array(texture * 255.0, dtype=np.uint8)
+        elif np.issubdtype(texture.dtype, np.integer):
+            texture = texture.astype(np.uint8)
+        elif np.issubdtype(texture.dtype, np.bool):
+            texture = texture.astype(np.uint8) * 255
+        else:
+            raise TypeError("Invalid type {} for texture".format(texture.dtype))
+
+        # Format array by picking out correct texture channels or padding
+        if texture.ndim == 2:
+            texture = texture[:, :, np.newaxis]
+        if target_channels == "R":
+            texture = texture[:, :, 0]
+            texture = texture.squeeze()
+        elif target_channels == "RG":
+            if texture.shape[2] == 1:
+                texture = np.repeat(texture, 2, axis=2)
+            else:
+                texture = texture[:, :, (0, 1)]
+        elif target_channels == "GB":
+            if texture.shape[2] == 1:
+                texture = np.repeat(texture, 2, axis=2)
+            elif texture.shape[2] > 2:
+                texture = texture[:, :, (1, 2)]
+        elif target_channels == "RGB":
+            if texture.shape[2] == 1:
+                texture = np.repeat(texture, 3, axis=2)
+            elif texture.shape[2] == 2:
+                raise ValueError("Cannot reformat 2-channel texture into RGB")
+            else:
+                texture = texture[:, :, (0, 1, 2)]
+        elif target_channels == "RGBA":
+            if texture.shape[2] == 1:
+                texture = np.repeat(texture, 4, axis=2)
+                texture[:, :, 3] = 255
+            elif texture.shape[2] == 2:
+                tx = np.empty((texture.shape[0], texture.shape[1], 4), dtype=np.uint8)
+                tx[:, :, :2] = texture
+                tx[:, :, 2] = texture.mean(axis=2).astype(np.uint8)
+                tx[:, :, 3] = 255
+                texture = tx
+            elif texture.shape[2] == 3:
+                tx = np.empty((texture.shape[0], texture.shape[1], 4), dtype=np.uint8)
+                tx[:, :, :3] = texture
+                tx[:, :, 3] = 255
+                texture = tx
+        else:
+            raise ValueError("Invalid texture channel specification: {}".format(target_channels))
+    else:
+        raise TypeError("Invalid type {} for texture".format(type(texture)))
+
+    return texture
+
+
+def _compute_scene_camera_pose(
+    scene: "trimesh.Scene", yfov_rad: float = np.pi / 3.0, margin_factor: float = 1.25
+) -> tuple[np.ndarray, float, float]:
+    """
+    Computes a 4x4 OpenGL camera pose that dynamically frames an entire trimesh Scene.
+    """
+    import numpy as np
+
+    if scene.is_empty:
+        return np.eye(4), 0.05, 100.0
+
+    center = scene.centroid
+    extents = scene.extents
+
+    radius = np.linalg.norm(extents) / 2.0
+    distance = (radius * margin_factor) / np.sin(yfov_rad / 2.0)
+
+    # 3/4 isometric viewpoint direction
+    view_direction = np.array([1.0, 1.0, 1.0])
+    view_direction /= np.linalg.norm(view_direction)
+
+    eye = center + (view_direction * distance)
+
+    z_axis = eye - center
+    z_axis /= np.linalg.norm(z_axis)
+
+    up_tmp = np.array([0.0, 1.0, 0.0])
+    if np.abs(np.dot(z_axis, up_tmp)) > 0.99:
+        up_tmp = np.array([0.0, 0.0, 1.0])
+
+    x_axis = np.cross(up_tmp, z_axis)
+    x_axis /= np.linalg.norm(x_axis)
+
+    y_axis = np.cross(z_axis, x_axis)
+    y_axis /= np.linalg.norm(y_axis)
+
+    camera_pose = np.eye(4)
+    camera_pose[:3, 0] = x_axis
+    camera_pose[:3, 1] = y_axis
+    camera_pose[:3, 2] = z_axis
+    camera_pose[:3, 3] = eye
+
+    znear = max(0.01, distance - (radius * margin_factor))
+    zfar = distance + (radius * margin_factor)
+
+    return camera_pose, znear, zfar
+
+
+def _render_trimesh_scene_to_png(
+    trimesh_scene: "trimesh.Scene", output_buffer: BytesIO, width: int = 800, height: int = 600
+) -> None:
+    """
+    Converts a trimesh Scene to pyrender, applies the camera heuristic,
+    and saves the output to a transparent PNG image.
+    """
+    import numpy as np
+    import pyrender  # type: ignore
+    from PIL import Image as PILImage
+
+    # 1. Convert trimesh.Scene to pyrender.Scene
+    geometries = {}
+    with patch("pytest.material.format_texture_source", _robust_format_texture_source):
+        for name, geom in trimesh_scene.geometry.items():
+            try:
+                geometries[name] = pyrender.Mesh.from_trimesh(geom)
+            except TypeError:
+                pass
+
+    # create the pyrender scene object
+    pyrender_scene = pyrender.Scene()
+
+    # add every node with geometry to the pyrender scene
+    for node in trimesh_scene.graph.nodes_geometry:
+        pose, geom_name = trimesh_scene.graph[node]
+        pyrender_scene.add(geometries[geom_name], pose=pose)
+
+    # 2. Set background color to fully transparent [R, G, B, Alpha]
+    pyrender_scene.bg_color = np.array([0.0, 0.0, 0.0, 0.0])  # 0.0 alpha means transparent
+
+    # 3. Configure perspective camera parameters
+    yfov = np.pi / 3.0
+    aspect_ratio = float(width) / float(height)
+
+    # Compute heuristic camera pose (using your previous function)
+    camera_pose, znear, zfar = _compute_scene_camera_pose(trimesh_scene, yfov_rad=yfov)
+
+    camera = pyrender.PerspectiveCamera(yfov=yfov, aspectRatio=aspect_ratio, znear=znear, zfar=zfar)
+    pyrender_scene.add(camera, pose=camera_pose)
+
+    # 4. Add light source
+    light = pyrender.DirectionalLight(color=[1.0, 1.0, 1.0], intensity=3.0)
+    pyrender_scene.add(light, pose=camera_pose)
+
+    # 5. Initialize the Offscreen Renderer
+    renderer = pyrender.OffscreenRenderer(viewport_width=width, viewport_height=height)
+
+    try:
+        # Render the scene (returns an RGBA color image array if bg_color has 4 elements)
+        color_image, _ = renderer.render(pyrender_scene)
+
+        # 6. Save the image using Pillow as RGBA
+        # If your pyrender installation outputs an RGB shape, you can convert it to RGBA
+        if color_image.shape[2] == 3:
+            # Fallback wrapper if pyrender context drops alpha on your specific platform
+            img = PILImage.fromarray(color_image).convert("RGBA")
+            # Set white background pixels to transparent manually if needed
+            # (Usually not necessary if bg_color works perfectly on your platform)
+        else:
+            img = PILImage.fromarray(color_image, mode="RGBA")
+
+        img.save(output_buffer, "PNG")
+
+    finally:
+        renderer.delete()
+
+
+def create_mesh_thumbnail(
+    dataset: str,
+    revision: str,
+    config: str,
+    split: str,
+    row_idx: int,
+    column: str,
+    filename: str,
+    mesh: "trimesh.Scene",
+    storage_client: "StorageClient",
+) -> ImageSource:
+    thumbnail_object_path = storage_client.generate_object_path(
+        dataset=dataset,
+        revision=DATASET_GIT_REVISION_PLACEHOLDER,
+        config=config,
+        split=split,
+        row_idx=row_idx,
+        column=column,
+        filename=f"{filename}.png",
+    )
+    thumbnail_storage_path = replace_dataset_git_revision_placeholder(thumbnail_object_path, revision=revision)
+    thumbnail_buffer = BytesIO()
+    thumbnail_width = 800
+    thumbnail_height = 600
+    _render_trimesh_scene_to_png(mesh, thumbnail_buffer, width=thumbnail_width, height=thumbnail_height)
+    thumbnail_buffer.seek(0)
+
+    if storage_client.overwrite or not storage_client.exists(thumbnail_storage_path):
+        with storage_client._fs.open(storage_client.get_full_path(thumbnail_storage_path), "wb") as thumbnail_file:
+            thumbnail_file.write(thumbnail_buffer.read())
+
+    return ImageSource(
+        src=storage_client.get_url(thumbnail_object_path, revision=revision),
+        height=thumbnail_height,
+        width=thumbnail_width,
+    )
