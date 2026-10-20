@@ -250,6 +250,19 @@ _3D_EXTENSIONS = {
     ".gltf",
     ".glb",
     ".usdz",
+    # OpenUSD (used by robotics / simulation datasets, e.g. Isaac Sim)
+    ".usd",
+    ".usda",
+    ".usdc",
+    # other 3D formats frequently found on the Hub
+    ".blend",
+    ".off",
+    ".step",
+    ".3ds",
+    ".abc",
+    # Gaussian splatting
+    ".splat",
+    ".ksplat",
 }
 TEXT_EXTENSIONS = {
     ".txt",
