@@ -65,6 +65,34 @@ def test_generate_bins(
         assert bins == expected_bins
 
 
+@pytest.mark.parametrize(
+    "column_class,values,expected_bin_edges,expected_nan_count,expected_nan_proportion",
+    [
+        (FloatColumn, [694.0], [694.0, 694.0], 0, 0.0),
+        (FloatColumn, [694.0, None], [694.0, 694.0], 1, 0.5),
+        (IntColumn, [694], [694, 694], 0, 0.0),
+        (IntColumn, [694, None], [694, 694], 1, 0.5),
+    ],
+)
+def test_numerical_statistics_single_sample(
+    column_class: Union[type[FloatColumn], type[IntColumn]],
+    values: list[Optional[Union[int, float]]],
+    expected_bin_edges: list[Union[int, float]],
+    expected_nan_count: int,
+    expected_nan_proportion: float,
+) -> None:
+    computed = column_class(feature_name="value").compute_statistics(data=pl.DataFrame({"value": values}))
+
+    assert computed["nan_count"] == expected_nan_count
+    assert computed["nan_proportion"] == expected_nan_proportion
+    assert computed["min"] == values[0]
+    assert computed["max"] == values[0]
+    assert computed["mean"] == values[0]
+    assert computed["median"] == values[0]
+    assert computed["std"] is None
+    assert computed["histogram"] == {"hist": [1], "bin_edges": expected_bin_edges}
+
+
 def count_expected_statistics_for_numerical_column(
     column: pd.Series,
     dtype: ColumnType,

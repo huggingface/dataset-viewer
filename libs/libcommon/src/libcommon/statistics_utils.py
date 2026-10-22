@@ -237,14 +237,23 @@ def min_max_mean_median_std(data: pl.DataFrame, column_name: str) -> tuple[float
         .unnest("stats")
     )
     minimum, maximum, mean, median, std = stats[column_name].to_list()
-    if any(statistic is None for statistic in [minimum, maximum, mean, median, std]):
-        # this should be possible only if all values are none
-        if not all(statistic is None for statistic in [minimum, maximum, mean, median, std]):
-            raise StatisticsComputationError(
-                f"Unexpected result for {column_name=}: "
-                f"Some measures among {minimum=}, {maximum=}, {mean=}, {median=}, {std=} are None but not all of them. "
-            )
+    if all(statistic is None for statistic in [minimum, maximum, mean, median, std]):
         return minimum, maximum, mean, median, std
+
+    # Sample standard deviation is undefined for a single non-null value, so
+    # Polars returns None while the other statistics remain valid.
+    non_null_count = data[column_name].is_not_null().sum()
+    if std is None and non_null_count == 1 and all(
+        statistic is not None for statistic in [minimum, maximum, mean, median]
+    ):
+        minimum, maximum, mean, median = np.round([minimum, maximum, mean, median], DECIMALS).tolist()
+        return minimum, maximum, mean, median, None
+
+    if any(statistic is None for statistic in [minimum, maximum, mean, median, std]):
+        raise StatisticsComputationError(
+            f"Unexpected result for {column_name=}: "
+            f"Some measures among {minimum=}, {maximum=}, {mean=}, {median=}, {std=} are None but not all of them. "
+        )
 
     minimum, maximum, mean, median, std = np.round([minimum, maximum, mean, median, std], DECIMALS).tolist()
 
