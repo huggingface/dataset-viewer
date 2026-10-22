@@ -23,11 +23,12 @@ import httpx
 import numpy as np
 import pyarrow as pa
 import pyarrow.parquet as pq
-from datasets import DownloadConfig, Features
+from datasets import DownloadConfig, Features, Value
 from datasets.arrow_writer import ParquetWriter
 from datasets.builder import DatasetBuilder
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
 from datasets.download import StreamingDownloadManager
+from datasets.features.features import FeatureType, _visit
 from datasets.packaged_modules.imagefolder.imagefolder import ImageFolder as ImageFolderBuilder
 from datasets.packaged_modules.parquet.parquet import Parquet as ParquetBuilder
 from datasets.packaged_modules.videofolder.videofolder import VideoFolder as VideoFolderBuilder
@@ -911,6 +912,19 @@ def get_total_files_size(urlpaths: list[str], storage_options: dict[str, Any]) -
     return int(total_size)
 
 
+# The Parquet writer cannot chunk Arrow view types when content-defined chunking is on.
+# Vortex files, for example, give view types. Map them to the plain types that hold the same values.
+_VIEW_TO_PLAIN_DTYPES = {"string_view": "string", "binary_view": "binary"}
+
+
+def _replace_view_dtype(feature: FeatureType) -> FeatureType:
+    if isinstance(feature, Value) and feature.dtype in _VIEW_TO_PLAIN_DTYPES:
+        return Value(_VIEW_TO_PLAIN_DTYPES[feature.dtype], id=feature.id)
+
+    # Do not return None: `_visit` then keeps the original feature and loses the visited children.
+    return feature
+
+
 def stream_convert_to_parquet(
     builder: DatasetBuilder, max_dataset_size_bytes: Optional[int], writer_batch_size: Optional[int] = None
 ) -> tuple[list[CommitOperationAdd], bool, Optional[dict[str, Any]]]:
@@ -929,6 +943,10 @@ def stream_convert_to_parquet(
     os.makedirs(builder.cache_dir, exist_ok=True)
     split_dict = SplitDict(dataset_name=builder.dataset_name)
     splits_generators: dict[str, SplitGenerator] = {sg.name: sg for sg in builder._split_generators(dl_manager)}
+
+    # The features are known only after `_split_generators`. The writer casts each table to them.
+    if builder.info.features is not None:
+        builder.info.features = _visit(builder.info.features, _replace_view_dtype)
 
     partial = False
     estimated_splits_info: dict[str, dict[str, Any]] = {}

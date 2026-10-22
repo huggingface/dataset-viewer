@@ -55,6 +55,7 @@ torchcodec = [
 ]
 tqdm = "^4.66.3"
 tsfile = "^2.3.0"
+vortex-data = "^0.85.0"
 xxhash = "^3.7.0"
 
 [tool.poetry.group.dev.dependencies]
