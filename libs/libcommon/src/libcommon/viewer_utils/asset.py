@@ -4,6 +4,7 @@
 import logging
 import os
 import threading
+from collections.abc import Hashable
 from io import BufferedReader, BytesIO
 from tempfile import NamedTemporaryFile
 from typing import TYPE_CHECKING, Any, Optional, TypedDict, Union
@@ -452,7 +453,7 @@ def _render_trimesh_scene_to_png(
     # pyrender formats the textures with its own format_texture_source, which refuses some of the
     # textures trimesh extracts from a 3D file (see _robust_format_texture_source). As the name is
     # looked up in the module where it's used, both call sites are patched.
-    geometries: dict[str, Any] = {}
+    geometries: dict[Hashable, Any] = {}
     with (
         patch("pyrender.material.format_texture_source", _robust_format_texture_source),
         patch("pyrender.texture.format_texture_source", _robust_format_texture_source),

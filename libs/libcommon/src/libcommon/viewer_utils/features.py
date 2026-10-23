@@ -552,7 +552,7 @@ def mesh(
         column=featureName,
         filename=f"{filename}.glb",
         mesh=scene,
-        mesh_bytes=scene.export(file_type="glb"),
+        mesh_bytes=scene.export(file_type="glb"),  # type: ignore
         storage_client=storage_client,
     )
 
