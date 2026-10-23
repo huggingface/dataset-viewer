@@ -105,6 +105,8 @@ def create_app_with_config(app_config: AppConfig) -> Starlette:
                 hf_jwt_public_keys=hf_jwt_public_keys,
                 hf_jwt_algorithm=app_config.api.hf_jwt_algorithm,
                 external_auth_url=app_config.api.external_auth_url,
+                hub_origins=app_config.api.hub_origins,
+                hub_networks=app_config.api.hub_networks,
                 hf_timeout_seconds=app_config.api.hf_timeout_seconds,
                 max_age_long=app_config.api.max_age_long,
                 max_age_short=app_config.api.max_age_short,

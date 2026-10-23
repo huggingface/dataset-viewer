@@ -44,6 +44,28 @@ def get_jwt_token(request: Optional[Request] = None) -> Optional[str]:
     return None if token == authorization else token
 
 
+def get_auth_kind(request: Request) -> str:
+    """Classify the authentication material carried by a request, to label the logs.
+
+    It says nothing about the permissions of the caller: a JWT is public (anyone can get one for a public dataset
+    from "GET /api/datasets/{name}/jwt"), and any other header value is free to choose. Never use it for a security
+    or a rate limiting decision, use auth_check for that.
+
+    Args:
+        request (`Request`): the incoming request.
+
+    Returns: `str` - "jwt" (a "Bearer jwt:..." token or the deprecated "X-Api-Key" header), "hf_token" (a read or
+        write token of the Hub), "other" (any other authorization) or "none".
+    """
+    if get_jwt_token(request) is not None:
+        return "jwt"
+    authorization = request.headers.get("authorization", "")
+    if not authorization:
+        return "none"
+    token = authorization.removeprefix("Bearer ")
+    return "hf_token" if token.startswith(("hf_", "api_")) else "other"
+
+
 async def auth_check(
     dataset: str,
     external_auth_url: Optional[str] = None,

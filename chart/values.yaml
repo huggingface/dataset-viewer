@@ -524,6 +524,15 @@ hf:
   jwtAlgorithm: "EdDSA"
   # the timeout in seconds for the requests to the Hugging Face Hub.
   timeoutSeconds: "0.2"
+  # comma-separated list of "Origin" header values identifying the Hugging Face Hub UI in the browser.
+  # It's only used to label the logs of the data endpoints (source=hub-browser), and it's spoofable:
+  # see get_request_source in libs/libapi. Leave it alone unless the Hub UI moves to another origin.
+  hubOrigins: "https://huggingface.co"
+  # comma-separated list of the IP addresses and networks of the Hugging Face Hub servers, as CIDRs
+  # ("10.0.0.0/16") or bare addresses ("10.0.0.1"). It's only used to label the logs of the data endpoints
+  # (source=hub-server): the compared address is the one the service accepted the connection from, so it cannot be
+  # forged by the caller. See get_request_source in libs/libapi.
+  hubNetworks: "10.0.0.0/16"
 
 api:
   # Number of seconds to set in the `max-age` header on data endpoints
