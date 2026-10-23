@@ -16,7 +16,7 @@ duckdb = "^1.5.5"
 environs = "^14.3.0"
 filelock = "^3.18.0"
 fsspec = {version = "2026.9.0", extras = ["s3"]}
-huggingface-hub = { git = "https://github.com/huggingface/huggingface_hub.git", rev = "1cc1d9d5d15929ad5e214cb3a121d3a0a108af20" }  # List large repos in parallel https://github.com/huggingface/huggingface_hub/pull/5153
+huggingface-hub = "^2.3.0"
 libviewer = { path = "../libviewer", develop = true }
 mongo-types = "0.15.1"
 mongoengine = "^0.29.1"
