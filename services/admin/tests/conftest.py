@@ -10,6 +10,8 @@ from pytest import MonkeyPatch, TempPathFactory, fixture
 
 from admin.config import AppConfig
 
+from .utils import HTTPXMock
+
 # Import fixture modules as plugins
 pytest_plugins = ["tests.fixtures.hub"]
 
@@ -55,3 +57,13 @@ def queue_mongo_resource(app_config: AppConfig) -> Iterator[QueueMongoResource]:
 @fixture
 def anyio_backend() -> str:
     return "asyncio"
+
+
+@fixture
+def httpx_mock(monkeypatch: MonkeyPatch) -> Iterator[HTTPXMock]:
+    """mock the httpx2 clients: the requests made by the code under test are answered with the responses
+    registered on the returned mock (pytest-httpx cannot be used, as it only supports httpx)
+    """
+    httpx_mock = HTTPXMock()
+    with httpx_mock.patched(monkeypatch):
+        yield httpx_mock

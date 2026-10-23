@@ -5,11 +5,10 @@ from asyncio import Semaphore
 from collections.abc import Callable, Mapping
 from dataclasses import replace
 from http import HTTPStatus
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from unittest.mock import patch
 
 import pytest
-from aiohttp import ClientSession
 from aiolimiter import AsyncLimiter
 from libcommon.dtos import Priority
 from libcommon.exceptions import ExternalServerError
@@ -27,6 +26,9 @@ from worker.resources import LibrariesResource
 from ...constants import CI_SPAWNING_TOKEN
 from ...fixtures.hub import HubDatasetTest, get_default_config_split
 from ..utils import REVISION_NAME
+
+if TYPE_CHECKING:
+    from aiohttp import ClientSession
 
 GetJobRunner = Callable[[str, str, str, AppConfig], SplitOptInOutUrlsScanJobRunner]
 
@@ -310,6 +312,8 @@ def test_compute_error_from_spawning(
 )
 @pytest.mark.asyncio
 async def test_real_check_spawning_response(app_config: AppConfig) -> None:
+    from aiohttp import ClientSession
+
     semaphore = Semaphore(value=10)
     limiter = AsyncLimiter(10, time_period=1)
 

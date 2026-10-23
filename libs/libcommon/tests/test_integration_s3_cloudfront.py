@@ -4,7 +4,7 @@
 
 from datetime import datetime
 
-import httpx
+import httpx2 as httpx
 import pytest
 
 from libcommon.cloudfront import get_cloudfront_signer

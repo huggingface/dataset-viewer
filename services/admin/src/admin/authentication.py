@@ -4,7 +4,7 @@
 from collections.abc import Sequence
 from typing import Literal, Optional
 
-import httpx
+import httpx2 as httpx
 from libapi.authentication import RequestAuth
 from libapi.exceptions import ExternalAuthenticatedError, ExternalUnauthenticatedError
 from starlette.requests import Request

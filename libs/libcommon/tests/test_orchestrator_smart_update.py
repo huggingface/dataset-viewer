@@ -2,7 +2,7 @@
 # Copyright 2024 The HuggingFace Authors.
 import time
 
-import httpx
+import httpx2 as httpx
 import pytest
 from tqdm.contrib.concurrent import thread_map
 

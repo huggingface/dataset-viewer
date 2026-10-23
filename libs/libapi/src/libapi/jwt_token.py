@@ -4,7 +4,7 @@
 import logging
 from typing import Any, Optional, Union
 
-import httpx
+import httpx2 as httpx
 import jwt
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.ec import (

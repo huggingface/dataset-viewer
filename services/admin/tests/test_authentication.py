@@ -6,13 +6,12 @@ from typing import Optional
 
 import pytest
 from libapi.exceptions import ExternalAuthenticatedError, ExternalUnauthenticatedError
-from pytest_httpx import HTTPXMock
 from starlette.datastructures import Headers
 from starlette.requests import Request
 
 from admin.authentication import auth_check
 
-from .utils import request_callback
+from .utils import HTTPXMock, request_callback
 
 pytestmark = pytest.mark.anyio
 

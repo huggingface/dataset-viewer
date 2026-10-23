@@ -19,7 +19,7 @@ import datasets.config
 import datasets.exceptions
 import datasets.info
 import fsspec
-import httpx
+import httpx2 as httpx
 import numpy as np
 import pyarrow as pa
 import pyarrow.parquet as pq

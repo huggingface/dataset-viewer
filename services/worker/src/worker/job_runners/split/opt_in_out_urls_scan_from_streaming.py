@@ -5,9 +5,8 @@ import logging
 from asyncio import Semaphore, create_task, run, wait
 from collections.abc import Iterator
 from pathlib import Path
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
-from aiohttp import ClientSession
 from aiolimiter import AsyncLimiter
 from libcommon.dtos import JobInfo
 from libcommon.exceptions import (
@@ -23,9 +22,12 @@ from worker.dtos import CompleteJobResult, OptInOutUrlsScanResponse, OptUrl
 from worker.job_runners.split.split_job_runner import SplitJobRunnerWithDatasetsCache
 from worker.utils import get_rows_or_raise
 
+if TYPE_CHECKING:
+    from aiohttp import ClientSession
+
 
 async def check_spawning(
-    image_urls: list[str], session: ClientSession, semaphore: Semaphore, limiter: AsyncLimiter, spawning_url: str
+    image_urls: list[str], session: "ClientSession", semaphore: Semaphore, limiter: AsyncLimiter, spawning_url: str
 ) -> Any:
     if not image_urls:
         return {"urls": []}
@@ -39,7 +41,7 @@ async def check_spawning(
 
 
 async def opt_in_out_task(
-    image_urls: list[str], session: ClientSession, semaphore: Semaphore, limiter: AsyncLimiter, spawning_url: str
+    image_urls: list[str], session: "ClientSession", semaphore: Semaphore, limiter: AsyncLimiter, spawning_url: str
 ) -> tuple[list[Any], list[Any]]:
     try:
         spawning_response = await check_spawning(image_urls, session, semaphore, limiter, spawning_url)
@@ -60,6 +62,8 @@ async def opt_in_out_scan_urls(
     max_requests_per_second: int,
     spawning_url: str,
 ) -> tuple[list[int], list[int]]:
+    from aiohttp import ClientSession
+
     offsets = []
     tasks = []
     semaphore = Semaphore(value=max_concurrent_requests_number)
