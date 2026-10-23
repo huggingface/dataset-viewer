@@ -280,7 +280,8 @@ def test_get_mesh_cell_value_with_bytes(storage_client_with_url_preparator: Stor
     """The mesh bytes of a cell are stored, with a rendered thumbnail of the 3D scene."""
     ensure_mesh_rendering()
     asset_path = mesh_asset_path(1)
-    mesh_bytes = trimesh.load(PATH_TO_MESH_GLB).export(file_type="glb")
+    mesh_bytes = trimesh.load(PATH_TO_MESH_GLB).export(file_type="glb")  # type: ignore
+    assert isinstance(mesh_bytes, bytes)
     value = get_mesh_cell_value({"path": "mesh.glb", "bytes": mesh_bytes}, storage_client_with_url_preparator, 1)
     assert value == {
         "src": f"{ASSETS_BASE_URL}/{asset_path}/mesh.glb",
@@ -374,7 +375,9 @@ def test_get_mesh_cell_value_with_mesh_object(
     with storage_client_with_url_preparator._fs.open(
         storage_client_with_url_preparator.get_full_path(f"{asset_path}/mesh.glb"), "rb"
     ) as file:
-        assert len(trimesh.load(BytesIO(file.read()), file_type="glb").geometry) == 1, "the exported mesh loads back"
+        mesh = trimesh.load(BytesIO(file.read()), file_type="glb")
+        assert isinstance(mesh, trimesh.Scene)
+        assert len(mesh.geometry) == 1, "the exported mesh loads back"
 
 
 @pytest.mark.parametrize("cell", ["a string", 42, {"path": None, "bytes": None}])

@@ -326,7 +326,7 @@ def test_create_mesh_thumbnail_skips_unsupported_geometry(
     ensure_mesh_rendering()
     box = trimesh.creation.box()
     scene = trimesh.Scene(box)
-    scene.add_geometry(trimesh.PointCloud(box.vertices))
+    scene.add_geometry(trimesh.PointCloud(box.vertices))  # type: ignore
     value = create_mesh_thumbnail(
         dataset=MESH_DATASET,
         revision=DEFAULT_REVISION,
@@ -354,7 +354,7 @@ def test_create_mesh_thumbnail_without_geometry(storage_client_with_url_preparat
             row_idx=MESH_ROW_IDX,
             column=DEFAULT_COLUMN_NAME,
             filename="mesh.ply",
-            mesh=trimesh.Scene([trimesh.PointCloud(np.random.rand(10, 3))]),
+            mesh=trimesh.Scene([trimesh.PointCloud(np.random.rand(10, 3))]),  # type: ignore
             storage_client=storage_client_with_url_preparator,
         )
 
@@ -365,6 +365,8 @@ def test_create_mesh_file_stores_mesh_and_thumbnail(
     """The mesh file itself is stored as well as its thumbnail, so that it can be fetched and drawn."""
     ensure_mesh_rendering()
     mesh_bytes = PATH_TO_MESH_GLB.read_bytes()
+    mesh = trimesh.load(BytesIO(mesh_bytes), file_type="glb")
+    assert isinstance(mesh, trimesh.Scene)
     value = create_mesh_file(
         dataset=MESH_DATASET,
         revision=DEFAULT_REVISION,
@@ -373,7 +375,7 @@ def test_create_mesh_file_stores_mesh_and_thumbnail(
         row_idx=MESH_ROW_IDX,
         column=DEFAULT_COLUMN_NAME,
         filename="mesh.glb",
-        mesh=trimesh.load(BytesIO(mesh_bytes), file_type="glb"),
+        mesh=mesh,
         mesh_bytes=mesh_bytes,
         storage_client=storage_client_with_url_preparator,
     )
@@ -382,7 +384,9 @@ def test_create_mesh_file_stores_mesh_and_thumbnail(
     stored_mesh_bytes = Path(get_stored_asset_path(storage_client_with_url_preparator, value["src"])).read_bytes()
     assert stored_mesh_bytes == mesh_bytes, "the mesh file is stored as-is"
     # the stored file is the one the viewers fetch to draw the 3D scene: it must be readable
-    assert len(trimesh.load(BytesIO(stored_mesh_bytes), file_type="glb").geometry) > 1
+    reloaded = trimesh.load(BytesIO(stored_mesh_bytes), file_type="glb")
+    assert isinstance(reloaded, trimesh.Scene)
+    assert len(reloaded.geometry) > 1
     assert_thumbnail(value["thumbnail"], storage_client_with_url_preparator, filename="mesh.glb")
 
 
@@ -398,7 +402,9 @@ def test_render_trimesh_scene_to_png_without_alpha_channel() -> None:
     image = PILImage.open(output_buffer)
     assert image.format == "PNG"
     assert image.size == (MESH_THUMBNAIL_WIDTH, MESH_THUMBNAIL_HEIGHT)
-    assert image.getpixel((0, 0))[3] == 255, "the background is opaque, but the colors are kept"
+    pixel = image.getpixel((0, 0))
+    assert isinstance(pixel, tuple)
+    assert pixel[3] == 255, "the background is opaque, but the colors are kept"
 
 
 @pytest.mark.parametrize(
@@ -417,9 +423,11 @@ def test_render_trimesh_scene_to_png_without_alpha_channel() -> None:
     ],
 )
 def test_robust_format_texture_source_fixes(texture: np.ndarray, expected: np.ndarray) -> None:
-    from pyrender.utils import format_texture_source
+    from pyrender.utils import format_texture_source  # type: ignore
 
-    assert np.array_equal(_robust_format_texture_source(texture, "RGBA"), expected)
+    out = _robust_format_texture_source(texture, "RGBA")
+    assert out is not None
+    assert np.array_equal(out, expected)
     # the two cases above are the reason of the existence of _robust_format_texture_source
     with pytest.raises(Exception):
         format_texture_source(texture, "RGBA")
@@ -438,8 +446,10 @@ def test_robust_format_texture_source_is_a_drop_in_replacement(texture: Optional
     """Out of the fixed cases, it returns the same as the function of pyrender it replaces."""
     from pyrender.utils import format_texture_source
 
+    out = _robust_format_texture_source(texture, "RGBA")
+    assert out is not None
     assert np.array_equal(
-        _robust_format_texture_source(texture, "RGBA"),
+        out,
         format_texture_source(texture, "RGBA"),
     )
 
