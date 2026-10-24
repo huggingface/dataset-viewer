@@ -111,6 +111,7 @@ CacheableErrorCode = Literal[
     "NotSupportedTagNFAAError",
     "NormalRowsError",
     "ParameterMissingError",
+    "ParquetBrotliCompressionNotSupportedError",
     "ParquetResponseEmptyError",
     "PresidioScanNotEnabledForThisDataset",
     "PreviousStepFormatError",
@@ -379,6 +380,15 @@ class ParameterMissingError(CacheableError):
             code="ParameterMissingError",
             cause=cause,
             disclose_cause=False,
+        )
+
+
+class ParquetBrotliCompressionNotSupportedError(CacheableError):
+    """A Parquet file uses the BROTLI compression codec, which is not supported."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(
+            message, HTTPStatus.NOT_IMPLEMENTED, "ParquetBrotliCompressionNotSupportedError", cause, False
         )
 
 
