@@ -5,7 +5,7 @@
 from typing import Optional, Protocol
 
 import PIL
-from datasets import Audio, Features, Image, Pdf, Value, Video
+from datasets import Audio, Features, Image, Mesh, Pdf, Value, Video
 from datasets.packaged_modules.json.json import AGENT_TRACES_FEATURES
 
 from libcommon.dtos import Row, RowsContent, SplitFirstRowsResponse
@@ -176,7 +176,7 @@ def create_first_rows_response(
     columns_to_keep_untruncated = [
         col
         for col, feature in features.items()
-        if isinstance(feature, (Image, Audio, Pdf, Video))
+        if isinstance(feature, (Image, Audio, Pdf, Video, Mesh))
         or (  # column of URLs
             isinstance(feature, Value)
             and feature.dtype == "string"

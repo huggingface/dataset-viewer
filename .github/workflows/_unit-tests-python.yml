@@ -42,7 +42,7 @@ jobs:
         with:
           python-version: ${{ env.python-version }}
       - name: Install packages
-        run: sudo apt update; sudo apt install -y ffmpeg libavcodec-extra libsndfile1 libjpeg-dev zlib1g-dev
+        run: sudo apt update; sudo apt install -y ffmpeg libavcodec-extra libsndfile1 libjpeg-dev zlib1g-dev libegl1 libegl-mesa0
       - name: Install dependencies
         # "poetry env use" is required: https://github.com/actions/setup-python/issues/374#issuecomment-1088938718
         run: |

@@ -27,8 +27,10 @@ RUN maturin build --release --strip --out /tmp/dist
 FROM python:${PYTHON_VERSION}-slim AS libcommon
 
 # System dependencies
+# libegl1 and libegl-mesa0 are needed to render the thumbnails of the 3D meshes files offscreen
 RUN apt-get update \
     && apt-get install -y unzip wget procps htop ffmpeg libavcodec-extra libsndfile1 libjpeg-dev zlib1g-dev \
+      libegl1 libegl-mesa0 \
     && rm -rf /var/lib/apt/lists/*
 
 # Common environment variables
