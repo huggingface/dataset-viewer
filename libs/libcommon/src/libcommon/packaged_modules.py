@@ -7,7 +7,7 @@ from typing import Any, NoReturn
 import pyarrow.dataset as ds
 from datasets.utils.patching import patch_submodule
 
-from libcommon.parquet_utils import raise_if_brotli_compressed
+from libcommon.parquet_compression import raise_if_brotli_compressed
 
 # The Lance decoder reads variable-width values without validating the offsets stored in the file,
 # so a crafted .lance file makes the worker return adjacent heap memory or segfault. The dataset

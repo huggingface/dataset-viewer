@@ -1,6 +1,8 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 The HuggingFace Authors.
 
+import subprocess
+import sys
 from pathlib import Path
 from typing import Union
 
@@ -13,6 +15,11 @@ import pytest
 from PIL import Image
 
 from libcommon.exceptions import ParquetBrotliCompressionNotSupportedError
+
+
+def test_libcommon_imports_without_libviewer() -> None:
+    # the api, admin, sse-api and webhook images ship without libviewer, and importing libcommon applies the patches
+    subprocess.run([sys.executable, "-c", "import sys; sys.modules['libviewer'] = None; import libcommon"], check=True)
 
 
 @pytest.mark.parametrize("as_dataset_dir", [True, False])
