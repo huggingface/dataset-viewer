@@ -73,9 +73,10 @@ from libcommon.exceptions import (
     FileSystemError,
     HfHubError,
     LockedDatasetTimeoutError,
+    ParquetBrotliCompressionNotSupportedError,
     PreviousStepFormatError,
 )
-from libcommon.parquet_utils import PART_SUFFIX, PARTIAL_PREFIX
+from libcommon.parquet_utils import PART_SUFFIX, PARTIAL_PREFIX, raise_if_brotli_compressed
 from libcommon.queue.lock import lock
 from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.utils import HF_HUB_HTTP_ERROR_RETRY_SLEEPS, retry
@@ -431,6 +432,7 @@ def retry_get_num_examples_size_and_num_bytes(
     try:
         f = retry_on_arrow_invalid_open_file(url, hf_endpoint, hf_token)
         pf, size = pq.ParquetFile(f), f.size  # type: ignore
+        raise_if_brotli_compressed(pf.metadata)
         num_bytes = sum(pf.metadata.row_group(i).total_byte_size for i in range(pf.num_row_groups))
         f.close()
         return pf.metadata.num_rows, size, num_bytes
@@ -456,6 +458,7 @@ def retry_get_features_num_examples_size_and_num_bytes(
     try:
         f = retry_on_arrow_invalid_open_file(url, hf_endpoint, hf_token)
         pf, size = pq.ParquetFile(f), f.size  # type: ignore
+        raise_if_brotli_compressed(pf.metadata)
         num_bytes = sum(pf.metadata.row_group(i).total_byte_size for i in range(pf.num_row_groups))
         features = Features.from_arrow_schema(pf.schema_arrow)
         num_examples = pf.metadata.num_rows
@@ -511,6 +514,8 @@ def fill_builder_info(
             builder.info.download_size += first_size
             num_examples += first_num_examples
             num_bytes += first_num_bytes
+        except ParquetBrotliCompressionNotSupportedError:
+            raise
         except Exception as e:
             raise FileSystemError(f"Could not read the parquet files: {e}") from e
 
@@ -532,6 +537,8 @@ def fill_builder_info(
                 num_examples += sum(num_examples_list)
                 num_bytes += sum(num_bytes_list)
                 builder.info.download_size += sum(sizes_list)
+            except ParquetBrotliCompressionNotSupportedError:
+                raise
             except Exception as e:
                 raise FileSystemError(f"Could not read the parquet files: {e}") from e
 
@@ -1298,6 +1305,8 @@ def compute_config_parquet_and_info_response(
           The dataset is empty.
         [~`libcommon.exceptions.DatasetWithScriptNotSupportedError`]:
             If the dataset has a dataset script.
+        [~`libcommon.exceptions.ParquetBrotliCompressionNotSupportedError`]:
+            If one of the original Parquet files uses the BROTLI compression codec.
         [~`libcommon.exceptions.PreviousStepFormatError`]:
             If the content of the previous step has not the expected format
         [~`libcommon.exceptions.TooLongColumnNameError`]:

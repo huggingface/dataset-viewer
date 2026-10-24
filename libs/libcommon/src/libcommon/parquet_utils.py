@@ -13,6 +13,7 @@ from datasets import Features, Value
 from datasets.table import CastError, cast_table_to_schema
 
 from libcommon.constants import CONFIG_PARQUET_METADATA_KIND
+from libcommon.exceptions import ParquetBrotliCompressionNotSupportedError
 from libcommon.prometheus import StepProfiler
 from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.storage import StrPath
@@ -98,6 +99,30 @@ def extract_split_directory_from_parquet_url(parquet_url: str) -> str:
     return split_name
 
 
+def raise_if_brotli_compressed(parquet_metadata: pq.FileMetaData) -> None:
+    """
+    Refuse Parquet files that have a column chunk compressed with the BROTLI codec.
+
+    The Brotli decoder bundled in pyarrow and DuckDB has a known memory-safety bug (CVE-2026-111497) and no fixed
+    release exists yet. The footer is never compressed, so its metadata gives the codec before any page is decoded.
+
+    Args:
+        parquet_metadata (`pq.FileMetaData`): The metadata read from the footer of the Parquet file.
+
+    Raises:
+        [~`libcommon.exceptions.ParquetBrotliCompressionNotSupportedError`]:
+            If a column chunk uses the BROTLI compression codec.
+    """
+    for row_group_id in range(parquet_metadata.num_row_groups):
+        row_group = parquet_metadata.row_group(row_group_id)
+        for column_id in range(row_group.num_columns):
+            if row_group.column(column_id).compression == "BROTLI":
+                raise ParquetBrotliCompressionNotSupportedError(
+                    "The Parquet file uses the BROTLI compression codec, which is not supported. "
+                    "Please use another codec, for example ZSTD or SNAPPY."
+                )
+
+
 def get_num_parquet_files_to_process(
     parquet_files: list[ParquetFileMetadataItem],
     parquet_metadata_directory: StrPath,
@@ -110,11 +135,16 @@ def get_num_parquet_files_to_process(
 
     Returns:
         tuple of number of files, number of bytes and number of rows to process
+
+    Raises:
+        [~`libcommon.exceptions.ParquetBrotliCompressionNotSupportedError`]:
+            If one of the files to process uses the BROTLI compression codec.
     """
     num_parquet_files_to_process, num_bytes, num_rows = 0, 0, 0
     for parquet_file_id, parquet_file in enumerate(parquet_files):
         parquet_metadata_path = os.path.join(parquet_metadata_directory, parquet_file["parquet_metadata_subpath"])
         parquet_metadata = pq.read_metadata(parquet_metadata_path)  # type: ignore
+        raise_if_brotli_compressed(parquet_metadata)
         num_parquet_files_to_process += 1
         num_rows += parquet_metadata.num_rows
         for row_group_id in range(parquet_metadata.num_row_groups):

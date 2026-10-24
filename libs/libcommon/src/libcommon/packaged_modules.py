@@ -4,6 +4,11 @@
 import importlib
 from typing import Any, NoReturn
 
+import pyarrow.dataset as ds
+from datasets.utils.patching import patch_submodule
+
+from libcommon.parquet_utils import raise_if_brotli_compressed
+
 # The Lance decoder reads variable-width values without validating the offsets stored in the file,
 # so a crafted .lance file makes the worker return adjacent heap memory or segfault. The dataset
 # entry point can be hardened with read_params={"validate_on_decode": True}, but LanceFileReader,
@@ -22,3 +27,21 @@ def _refuse_lance(*args: Any, **kwargs: Any) -> NoReturn:
 # module, so they fail explicitly instead of falling back to whichever module matches the Lance
 # metadata files.
 setattr(lance_module.Lance, "_split_generators", _refuse_lance)
+
+
+class _BrotliRefusingParquetFileFormat(ds.ParquetFileFormat):  # type: ignore
+    def make_fragment(self, *args: Any, **kwargs: Any) -> Any:
+        fragment = super().make_fragment(*args, **kwargs)
+        raise_if_brotli_compressed(fragment.metadata)
+        return fragment
+
+
+# The Parquet builder and the folder-based builders (for metadata.parquet files) decode the pages with
+# ParquetFileFormat().make_fragment(f).to_batches(), so check the codecs in the footer of each file first.
+for module_name in [
+    "datasets.packaged_modules.parquet.parquet",
+    "datasets.packaged_modules.folder_based_builder.folder_based_builder",
+]:
+    patch_submodule(
+        importlib.import_module(module_name), "pyarrow.dataset.ParquetFileFormat", _BrotliRefusingParquetFileFormat
+    ).start()
