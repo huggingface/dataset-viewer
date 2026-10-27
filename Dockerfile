@@ -26,8 +26,13 @@ RUN maturin build --release --strip --out /tmp/dist
 # Base stage with shared setup
 FROM python:${PYTHON_VERSION}-slim AS libcommon
 
-# System dependencies
-RUN apt-get update \
+# System dependencies.
+# APT_SNAPSHOT is bumped weekly (see cd.yml) to bust this layer's build cache so
+# Debian security updates reach the published images.
+ARG APT_SNAPSHOT=base
+RUN echo "apt snapshot: ${APT_SNAPSHOT}" \
+    && apt-get update \
+    && apt-get upgrade -y \
     && apt-get install -y unzip wget procps htop ffmpeg libavcodec-extra libsndfile1 libjpeg-dev zlib1g-dev \
     && rm -rf /var/lib/apt/lists/*
 
