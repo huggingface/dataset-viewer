@@ -20,6 +20,7 @@ from datasets import (
     Features,
     Image,
     List,
+    Mesh,
     Pdf,
     Translation,
     TranslationVariableLanguages,
@@ -28,6 +29,7 @@ from datasets import (
 from datasets.features.features import FeatureType
 
 from libcommon.url_preparator import AssetUrlPath
+from libcommon.viewer_utils.asset import MESH_THUMBNAIL_HEIGHT, MESH_THUMBNAIL_WIDTH
 
 from ..constants import (
     ASSETS_BASE_URL,
@@ -639,5 +641,31 @@ def datasets_fixtures() -> Mapping[str, DatasetFixture]:
                 ),
             ],
             2,  # One for the pdf file and one for the thumbnail
+        ),
+        "mesh": DatasetFixture(
+            other(
+                str(Path(__file__).resolve().parent / "data" / "test_mesh.glb"),
+                Mesh(),
+            ),
+            {"_type": "Mesh"},
+            {
+                "src": f"{ASSETS_BASE_URL}/mesh/--/{DEFAULT_REVISION}/--/{DEFAULT_CONFIG}/{DEFAULT_SPLIT}/{DEFAULT_ROW_IDX}/col/mesh.glb",
+                "thumbnail": {
+                    "src": f"{ASSETS_BASE_URL}/mesh/--/{DEFAULT_REVISION}/--/{DEFAULT_CONFIG}/{DEFAULT_SPLIT}/{DEFAULT_ROW_IDX}/col/mesh.glb.png",
+                    "height": MESH_THUMBNAIL_HEIGHT,
+                    "width": MESH_THUMBNAIL_WIDTH,
+                },
+                # the size of tests/fixtures/data/test_mesh.glb: the mesh file is stored as-is
+                "size_bytes": 162_588,
+            },
+            [
+                AssetUrlPath(
+                    feature_type="Mesh",
+                    path=[
+                        DEFAULT_COLUMN_NAME,
+                    ],
+                )
+            ],
+            2,  # One for the mesh file and one for the thumbnail
         ),
     }

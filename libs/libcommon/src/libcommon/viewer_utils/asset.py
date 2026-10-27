@@ -1,15 +1,21 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+import logging
+import os
 import threading
+from collections.abc import Hashable
 from io import BufferedReader, BytesIO
 from tempfile import NamedTemporaryFile
 from typing import TYPE_CHECKING, Any, Optional, TypedDict, Union
+from unittest.mock import patch
 
 import fitz
+import numpy as np
 from datasets import Audio
 
 if TYPE_CHECKING:
+    import trimesh
     from pdfplumber.pdf import PDF
     from PIL import Image
 
@@ -25,6 +31,11 @@ SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE = {
 SUPPORTED_AUDIO_EXTENSIONS = SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE.keys()
 DATASET_GIT_REVISION_PLACEHOLDER = "{dataset_git_revision}"
 LOCK = threading.Lock()
+# the size of the rendered 3D thumbnails, in pixels
+MESH_THUMBNAIL_WIDTH = 800
+MESH_THUMBNAIL_HEIGHT = 600
+
+logger = logging.getLogger(__name__)
 
 
 class ImageSource(TypedDict):
@@ -43,6 +54,12 @@ class VideoSource(TypedDict):
 
 
 class PDFSource(TypedDict):
+    src: str
+    size_bytes: int
+    thumbnail: ImageSource
+
+
+class MeshSource(TypedDict):
     src: str
     size_bytes: int
     thumbnail: ImageSource
@@ -273,3 +290,319 @@ def create_video_file(
         raise ValueError("The video cell doesn't contain a valid path or bytes")
     src = storage_client.get_url(object_path, revision=revision)
     return VideoSource(src=src)
+
+
+def _robust_format_texture_source(
+    texture: Optional[Union["Image.Image", np.ndarray]], target_channels: str = "RGB"
+) -> Optional[np.ndarray]:
+    """Format a texture as a np array of uint8, where pyrender's version of this function fails.
+
+    It replaces pyrender's format_texture_source (a copy of it, with the same signature and the same
+    returned value) for the textures that trimesh extracts from a 3D file, in two cases:
+    1. the boolean textures: pyrender does not know the boolean dtype, and raises a TypeError for them
+       (it only tests floating and integer dtypes). A boolean mask is rendered black and white.
+    2. the 2-channels textures: pyrender refuses to convert them to RGBA. We fill the missing channel
+       with the average of the two others, and the alpha channel with 255 (fully opaque).
+    """
+    import numpy as np
+    from PIL import Image as PILImage
+
+    # Pass through None
+    if texture is None:
+        return None
+
+    # Convert PIL images into numpy arrays
+    if isinstance(texture, PILImage.Image):
+        if texture.mode == "P" and target_channels in ("RGB", "RGBA"):
+            texture = np.array(texture.convert(target_channels))
+        else:
+            texture = np.array(texture)
+
+    # Format numpy arrays
+    if isinstance(texture, np.ndarray):
+        if np.issubdtype(texture.dtype, np.floating):
+            texture = np.array(texture * 255.0, dtype=np.uint8)
+        elif np.issubdtype(texture.dtype, np.bool_):
+            # a boolean mask is a black and white image: 0 and 255, not 0 and 1
+            texture = texture.astype(np.uint8) * 255
+        elif np.issubdtype(texture.dtype, np.integer):
+            texture = texture.astype(np.uint8)
+        else:
+            raise TypeError("Invalid type {} for texture".format(texture.dtype))
+
+        # Format array by picking out correct texture channels or padding
+        if texture.ndim == 2:
+            texture = texture[:, :, np.newaxis]
+        if target_channels == "R":
+            texture = texture[:, :, 0]
+            texture = texture.squeeze()
+        elif target_channels == "RG":
+            if texture.shape[2] == 1:
+                texture = np.repeat(texture, 2, axis=2)
+            else:
+                texture = texture[:, :, (0, 1)]
+        elif target_channels == "GB":
+            if texture.shape[2] == 1:
+                texture = np.repeat(texture, 2, axis=2)
+            elif texture.shape[2] > 2:
+                texture = texture[:, :, (1, 2)]
+        elif target_channels == "RGB":
+            if texture.shape[2] == 1:
+                texture = np.repeat(texture, 3, axis=2)
+            elif texture.shape[2] == 2:
+                raise ValueError("Cannot reformat 2-channel texture into RGB")
+            else:
+                texture = texture[:, :, (0, 1, 2)]
+        elif target_channels == "RGBA":
+            if texture.shape[2] == 1:
+                texture = np.repeat(texture, 4, axis=2)
+                texture[:, :, 3] = 255
+            elif texture.shape[2] == 2:
+                tx = np.empty((texture.shape[0], texture.shape[1], 4), dtype=np.uint8)
+                tx[:, :, :2] = texture
+                tx[:, :, 2] = texture.mean(axis=2).astype(np.uint8)
+                tx[:, :, 3] = 255
+                texture = tx
+            elif texture.shape[2] == 3:
+                tx = np.empty((texture.shape[0], texture.shape[1], 4), dtype=np.uint8)
+                tx[:, :, :3] = texture
+                tx[:, :, 3] = 255
+                texture = tx
+        else:
+            raise ValueError("Invalid texture channel specification: {}".format(target_channels))
+    else:
+        raise TypeError("Invalid type {} for texture".format(type(texture)))
+
+    return texture
+
+
+def _compute_scene_camera_pose(
+    scene: "trimesh.Scene", yfov_rad: float = np.pi / 3.0, margin_factor: float = 1.25
+) -> tuple[np.ndarray, float, float]:
+    """
+    Computes a 4x4 OpenGL camera pose that dynamically frames an entire trimesh Scene.
+    """
+    import numpy as np
+
+    if scene.is_empty:
+        return np.eye(4), 0.05, 100.0
+
+    center = scene.centroid
+    extents = scene.extents
+
+    radius = np.linalg.norm(extents) / 2.0
+    distance = (radius * margin_factor) / np.sin(yfov_rad / 2.0)
+
+    # 3/4 isometric viewpoint direction
+    view_direction = np.array([1.0, 1.0, 1.0])
+    view_direction /= np.linalg.norm(view_direction)
+
+    eye = center + (view_direction * distance)
+
+    z_axis = eye - center
+    z_axis /= np.linalg.norm(z_axis)
+
+    up_tmp = np.array([0.0, 1.0, 0.0])
+    if np.abs(np.dot(z_axis, up_tmp)) > 0.99:
+        up_tmp = np.array([0.0, 0.0, 1.0])
+
+    x_axis = np.cross(up_tmp, z_axis)
+    x_axis /= np.linalg.norm(x_axis)
+
+    y_axis = np.cross(z_axis, x_axis)
+    y_axis /= np.linalg.norm(y_axis)
+
+    camera_pose = np.eye(4)
+    camera_pose[:3, 0] = x_axis
+    camera_pose[:3, 1] = y_axis
+    camera_pose[:3, 2] = z_axis
+    camera_pose[:3, 3] = eye
+
+    znear = max(0.01, distance - (radius * margin_factor))
+    zfar = distance + (radius * margin_factor)
+
+    return camera_pose, znear, zfar
+
+
+def _render_trimesh_scene_to_png(
+    trimesh_scene: "trimesh.Scene",
+    output_buffer: BytesIO,
+    width: int = MESH_THUMBNAIL_WIDTH,
+    height: int = MESH_THUMBNAIL_HEIGHT,
+) -> None:
+    """
+    Converts a trimesh Scene to pyrender, applies the camera heuristic,
+    and saves the output to a transparent PNG image.
+
+    It needs a headless OpenGL context: pyrender uses EGL or OSMesa, depending on the
+    PYOPENGL_PLATFORM environment variable ("egl" or "osmesa"). Only EGL gives an alpha channel, so
+    the background is transparent with it, and opaque black with OSMesa.
+    """
+    # pyrender needs an offscreen OpenGL context, and falls back to pyglet (which needs a display, so
+    # it fails on a server) unless the platform is set: default to EGL, the only one that gives an
+    # alpha channel, unless the deployment already chose another one (e.g "osmesa"). It must be set
+    # before pyrender is imported, as PyOpenGL reads it when it's imported.
+    os.environ.setdefault("PYOPENGL_PLATFORM", "egl")
+
+    import numpy as np
+    import pyrender  # type: ignore
+    from PIL import Image as PILImage
+
+    # 1. Convert trimesh.Scene to pyrender.Scene
+    #
+    # pyrender formats the textures with its own format_texture_source, which refuses some of the
+    # textures trimesh extracts from a 3D file (see _robust_format_texture_source). As the name is
+    # looked up in the module where it's used, both call sites are patched.
+    geometries: dict[Hashable, Any] = {}
+    with (
+        patch("pyrender.material.format_texture_source", _robust_format_texture_source),
+        patch("pyrender.texture.format_texture_source", _robust_format_texture_source),
+    ):
+        for name, geom in trimesh_scene.geometry.items():
+            try:
+                geometries[name] = pyrender.Mesh.from_trimesh(geom)
+            except Exception:
+                # a geometry we cannot render (a point cloud, for instance) must not prevent us from
+                # rendering the rest of the scene
+                logger.warning(f"Skipping the geometry {name} while rendering a 3D thumbnail.", exc_info=True)
+    if not geometries:
+        raise ValueError("The 3D scene doesn't contain any renderable geometry.")
+
+    # create the pyrender scene object
+    pyrender_scene = pyrender.Scene()
+
+    # add every node with a renderable geometry to the pyrender scene
+    for node in trimesh_scene.graph.nodes_geometry:
+        pose, geom_name = trimesh_scene.graph[node]
+        if geom_name in geometries:
+            pyrender_scene.add(geometries[geom_name], pose=pose)
+
+    # 2. Set background color to fully transparent [R, G, B, Alpha]
+    pyrender_scene.bg_color = np.array([0.0, 0.0, 0.0, 0.0])  # 0.0 alpha means transparent
+
+    # 3. Configure perspective camera parameters
+    yfov = np.pi / 3.0
+    aspect_ratio = float(width) / float(height)
+
+    # Compute heuristic camera pose
+    camera_pose, znear, zfar = _compute_scene_camera_pose(trimesh_scene, yfov_rad=yfov)
+
+    camera = pyrender.PerspectiveCamera(yfov=yfov, aspectRatio=aspect_ratio, znear=znear, zfar=zfar)
+    pyrender_scene.add(camera, pose=camera_pose)
+
+    # 4. Add light source
+    light = pyrender.DirectionalLight(color=[1.0, 1.0, 1.0], intensity=3.0)
+    pyrender_scene.add(light, pose=camera_pose)
+
+    # 5. Initialize the Offscreen Renderer
+    renderer = pyrender.OffscreenRenderer(viewport_width=width, viewport_height=height)
+
+    try:
+        # Render the scene. The RGBA flag asks for the alpha channel: without it, pyrender always
+        # returns an RGB image, and the background cannot be transparent.
+        color_image, _ = renderer.render(pyrender_scene, flags=pyrender.RenderFlags.RGBA)
+
+        # Save the image using Pillow as RGBA. Some platforms (e.g OSMesa) return an RGB image even
+        # with the RGBA flag: in that case the background is opaque, and only the colors are kept.
+        if color_image.shape[2] == 3:
+            img = PILImage.fromarray(color_image).convert("RGBA")
+        else:
+            img = PILImage.fromarray(color_image, mode="RGBA")
+
+        img.save(output_buffer, "PNG")
+
+    finally:
+        renderer.delete()
+
+
+def create_mesh_thumbnail(
+    dataset: str,
+    revision: str,
+    config: str,
+    split: str,
+    row_idx: int,
+    column: str,
+    filename: str,
+    mesh: "trimesh.Scene",
+    storage_client: "StorageClient",
+) -> ImageSource:
+    """Render a 3D scene to a PNG image, and store it on the assets storage.
+
+    The image is not resized to a thumbnail size: it's rendered at the requested size, so that the
+    edges stay sharp.
+    """
+    thumbnail_object_path = storage_client.generate_object_path(
+        dataset=dataset,
+        revision=DATASET_GIT_REVISION_PLACEHOLDER,
+        config=config,
+        split=split,
+        row_idx=row_idx,
+        column=column,
+        filename=f"{filename}.png",
+    )
+    thumbnail_storage_path = replace_dataset_git_revision_placeholder(thumbnail_object_path, revision=revision)
+    thumbnail_buffer = BytesIO()
+    thumbnail_width = MESH_THUMBNAIL_WIDTH
+    thumbnail_height = MESH_THUMBNAIL_HEIGHT
+    _render_trimesh_scene_to_png(mesh, thumbnail_buffer, width=thumbnail_width, height=thumbnail_height)
+    thumbnail_buffer.seek(0)
+
+    if storage_client.overwrite or not storage_client.exists(thumbnail_storage_path):
+        with storage_client._fs.open(storage_client.get_full_path(thumbnail_storage_path), "wb") as thumbnail_file:
+            thumbnail_file.write(thumbnail_buffer.read())
+
+    return ImageSource(
+        src=storage_client.get_url(thumbnail_object_path, revision=revision),
+        height=thumbnail_height,
+        width=thumbnail_width,
+    )
+
+
+def create_mesh_file(
+    dataset: str,
+    revision: str,
+    config: str,
+    split: str,
+    row_idx: int,
+    column: str,
+    filename: str,
+    mesh: "trimesh.Scene",
+    mesh_bytes: bytes,
+    storage_client: "StorageClient",
+) -> MeshSource:
+    """Store a mesh cell on the assets storage: the mesh file, and a rendered thumbnail of it.
+
+    The mesh file is stored as well, and not only the thumbnail: the viewers fetch the 3D file to
+    display it, to download it, or to rotate it. A cell whose mesh is already available at its own
+    URL does not go through this function: only its thumbnail is created (see create_mesh_thumbnail).
+    """
+    thumbnail = create_mesh_thumbnail(
+        dataset=dataset,
+        revision=revision,
+        config=config,
+        split=split,
+        row_idx=row_idx,
+        column=column,
+        filename=filename,
+        mesh=mesh,
+        storage_client=storage_client,
+    )
+    mesh_object_path = storage_client.generate_object_path(
+        dataset=dataset,
+        revision=DATASET_GIT_REVISION_PLACEHOLDER,
+        config=config,
+        split=split,
+        row_idx=row_idx,
+        column=column,
+        filename=filename,
+    )
+    mesh_storage_path = replace_dataset_git_revision_placeholder(mesh_object_path, revision=revision)
+    if storage_client.overwrite or not storage_client.exists(mesh_storage_path):
+        with storage_client._fs.open(storage_client.get_full_path(mesh_storage_path), "wb") as mesh_file:
+            mesh_file.write(mesh_bytes)
+
+    return MeshSource(
+        src=storage_client.get_url(mesh_object_path, revision=revision),
+        size_bytes=len(mesh_bytes),
+        thumbnail=thumbnail,
+    )

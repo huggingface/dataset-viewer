@@ -1,9 +1,14 @@
 import os.path
 from collections.abc import Mapping
+from io import BytesIO
 from pathlib import Path
+from typing import Optional
+from unittest.mock import patch
 
+import numpy as np
 import pymupdf
 import pytest
+import trimesh
 import validators  # type: ignore
 from pdfplumber import open
 from PIL import Image as PILImage
@@ -11,9 +16,16 @@ from PIL import Image as PILImage
 from libcommon.storage_client import StorageClient
 from libcommon.viewer_utils.asset import (
     DATASET_GIT_REVISION_PLACEHOLDER,
+    MESH_THUMBNAIL_HEIGHT,
+    MESH_THUMBNAIL_WIDTH,
     SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE,
+    ImageSource,
+    _render_trimesh_scene_to_png,
+    _robust_format_texture_source,
     create_audio_file,
     create_image_file,
+    create_mesh_file,
+    create_mesh_thumbnail,
     create_pdf_file,
     create_video_file,
 )
@@ -27,6 +39,7 @@ from ..constants import (
     DEFAULT_ROW_IDX,
     DEFAULT_SPLIT,
 )
+from ..mesh_rendering import ensure_mesh_rendering
 from ..types import DatasetFixture
 
 
@@ -222,3 +235,237 @@ def test_src_is_sanitized(storage_client: StorageClient, dataset: str, config: s
     )
     src = f"{base_url}/{object_key}"
     assert validators.url(src)
+
+
+# --- 3D meshes ---
+
+# a scene with four geometries and textured materials, also used by the "mesh" dataset fixture
+PATH_TO_MESH_GLB = Path(__file__).resolve().parent.parent / "fixtures" / "data" / "test_mesh.glb"
+# where the assets created by the tests below are stored: images, and 3D files
+MESH_DATASET = "dataset"
+MESH_CONFIG = "config"
+MESH_SPLIT = "split"
+MESH_ROW_IDX = 7
+MESH_ASSET_PATH = (
+    f"{MESH_DATASET}/--/{DEFAULT_REVISION}/--/{MESH_CONFIG}/{MESH_SPLIT}/{MESH_ROW_IDX}/{DEFAULT_COLUMN_NAME}"
+)
+
+
+def get_stored_asset_path(storage_client: StorageClient, src: str) -> str:
+    """Get the path of a stored asset, from the URL returned to the client."""
+    key = src.removeprefix(f"{ASSETS_BASE_URL}/").replace(DATASET_GIT_REVISION_PLACEHOLDER, DEFAULT_REVISION)
+    assert storage_client.exists(key), f"{key} is not in the assets storage"
+    return storage_client.get_full_path(key)
+
+
+def assert_thumbnail(thumbnail: ImageSource, storage_client: StorageClient, filename: str) -> np.ndarray:
+    """Check that a rendered thumbnail is a PNG image of the expected size, and return its pixels."""
+    assert thumbnail == {
+        "src": f"{ASSETS_BASE_URL}/{MESH_ASSET_PATH}/{filename}.png",
+        "height": MESH_THUMBNAIL_HEIGHT,
+        "width": MESH_THUMBNAIL_WIDTH,
+    }
+    image = PILImage.open(get_stored_asset_path(storage_client, thumbnail["src"]))
+    assert image.format == "PNG"
+    assert image.size == (MESH_THUMBNAIL_WIDTH, MESH_THUMBNAIL_HEIGHT)
+    return np.asarray(image.convert("RGBA"))
+
+
+@pytest.mark.parametrize("file_type", ["glb", "ply", "stl", "obj"])
+def test_create_mesh_thumbnail_file_types(file_type: str, storage_client_with_url_preparator: StorageClient) -> None:
+    """Every supported mesh file type is rendered to a thumbnail, framed on the mesh."""
+    ensure_mesh_rendering()
+    exported = trimesh.creation.box().export(file_type=file_type)
+    # the obj files are text: trimesh exports them to a str, while the cells contain bytes
+    mesh_bytes = exported.encode() if isinstance(exported, str) else exported
+    mesh = trimesh.load(BytesIO(mesh_bytes), file_type=file_type)
+    value = create_mesh_thumbnail(
+        dataset=MESH_DATASET,
+        revision=DEFAULT_REVISION,
+        config=MESH_CONFIG,
+        split=MESH_SPLIT,
+        row_idx=MESH_ROW_IDX,
+        column=DEFAULT_COLUMN_NAME,
+        filename=f"mesh.{file_type}",
+        mesh=trimesh.Scene(mesh),
+        storage_client=storage_client_with_url_preparator,
+    )
+    pixels = assert_thumbnail(value, storage_client_with_url_preparator, filename=f"mesh.{file_type}")
+    assert pixels.shape == (MESH_THUMBNAIL_HEIGHT, MESH_THUMBNAIL_WIDTH, 4)
+    assert pixels[0, 0, 3] == 0, "the corners are the background: it must be transparent"
+    coverage = float((pixels[:, :, 3] > 0).mean())
+    assert 0.01 < coverage < 0.95, f"the mesh covers {coverage:.2%} of the thumbnail, in {file_type}"
+
+
+def test_create_mesh_thumbnail_scene(storage_client_with_url_preparator: StorageClient) -> None:
+    """A scene with several geometries, and materials with textures, is rendered to a thumbnail."""
+    ensure_mesh_rendering()
+    mesh = trimesh.load(PATH_TO_MESH_GLB)
+    assert isinstance(mesh, trimesh.Scene)
+    assert len(mesh.geometry) > 1
+    value = create_mesh_thumbnail(
+        dataset=MESH_DATASET,
+        revision=DEFAULT_REVISION,
+        config=MESH_CONFIG,
+        split=MESH_SPLIT,
+        row_idx=MESH_ROW_IDX,
+        column=DEFAULT_COLUMN_NAME,
+        filename="mesh.glb",
+        mesh=mesh,
+        storage_client=storage_client_with_url_preparator,
+    )
+    pixels = assert_thumbnail(value, storage_client_with_url_preparator, filename="mesh.glb")
+    opaque_pixels = pixels[pixels[:, :, 3] > 0][:, :3]
+    assert len(np.unique(opaque_pixels.reshape(-1, 3), axis=0)) > 1, "the geometries are lit and textured"
+
+
+def test_create_mesh_thumbnail_skips_unsupported_geometry(
+    storage_client_with_url_preparator: StorageClient,
+) -> None:
+    """A geometry pyrender cannot convert (a point cloud) is skipped: the rest of the scene renders."""
+    ensure_mesh_rendering()
+    box = trimesh.creation.box()
+    scene = trimesh.Scene(box)
+    scene.add_geometry(trimesh.PointCloud(box.vertices))  # type: ignore
+    value = create_mesh_thumbnail(
+        dataset=MESH_DATASET,
+        revision=DEFAULT_REVISION,
+        config=MESH_CONFIG,
+        split=MESH_SPLIT,
+        row_idx=MESH_ROW_IDX,
+        column=DEFAULT_COLUMN_NAME,
+        filename="mesh.glb",
+        mesh=scene,
+        storage_client=storage_client_with_url_preparator,
+    )
+    pixels = assert_thumbnail(value, storage_client_with_url_preparator, filename="mesh.glb")
+    assert float((pixels[:, :, 3] > 0).mean()) > 0.01, "the mesh of the scene is still rendered"
+
+
+def test_create_mesh_thumbnail_without_geometry(storage_client_with_url_preparator: StorageClient) -> None:
+    """A scene without any renderable geometry raises an error, instead of returning a blank image."""
+    ensure_mesh_rendering()
+    with pytest.raises(ValueError, match="doesn't contain any renderable geometry"):
+        create_mesh_thumbnail(
+            dataset=MESH_DATASET,
+            revision=DEFAULT_REVISION,
+            config=MESH_CONFIG,
+            split=MESH_SPLIT,
+            row_idx=MESH_ROW_IDX,
+            column=DEFAULT_COLUMN_NAME,
+            filename="mesh.ply",
+            mesh=trimesh.Scene([trimesh.PointCloud(np.random.rand(10, 3))]),  # type: ignore
+            storage_client=storage_client_with_url_preparator,
+        )
+
+
+def test_create_mesh_file_stores_mesh_and_thumbnail(
+    storage_client_with_url_preparator: StorageClient,
+) -> None:
+    """The mesh file itself is stored as well as its thumbnail, so that it can be fetched and drawn."""
+    ensure_mesh_rendering()
+    mesh_bytes = PATH_TO_MESH_GLB.read_bytes()
+    mesh = trimesh.load(BytesIO(mesh_bytes), file_type="glb")
+    assert isinstance(mesh, trimesh.Scene)
+    value = create_mesh_file(
+        dataset=MESH_DATASET,
+        revision=DEFAULT_REVISION,
+        config=MESH_CONFIG,
+        split=MESH_SPLIT,
+        row_idx=MESH_ROW_IDX,
+        column=DEFAULT_COLUMN_NAME,
+        filename="mesh.glb",
+        mesh=mesh,
+        mesh_bytes=mesh_bytes,
+        storage_client=storage_client_with_url_preparator,
+    )
+    assert value["src"] == f"{ASSETS_BASE_URL}/{MESH_ASSET_PATH}/mesh.glb"
+    assert value["size_bytes"] == len(mesh_bytes)
+    stored_mesh_bytes = Path(get_stored_asset_path(storage_client_with_url_preparator, value["src"])).read_bytes()
+    assert stored_mesh_bytes == mesh_bytes, "the mesh file is stored as-is"
+    # the stored file is the one the viewers fetch to draw the 3D scene: it must be readable
+    reloaded = trimesh.load(BytesIO(stored_mesh_bytes), file_type="glb")
+    assert isinstance(reloaded, trimesh.Scene)
+    assert len(reloaded.geometry) > 1
+    assert_thumbnail(value["thumbnail"], storage_client_with_url_preparator, filename="mesh.glb")
+
+
+def test_render_trimesh_scene_to_png_without_alpha_channel() -> None:
+    """A platform which doesn't render the alpha channel (e.g OSMesa) still gives a valid RGBA image."""
+    # the renderer is replaced by a mock which returns what such a platform returns: an RGB image
+    rgb_image = np.zeros((MESH_THUMBNAIL_HEIGHT, MESH_THUMBNAIL_WIDTH, 3), dtype=np.uint8)
+    with patch("pyrender.OffscreenRenderer") as OffscreenRenderer:
+        OffscreenRenderer.return_value.render.return_value = (rgb_image, None)
+        output_buffer = BytesIO()
+        _render_trimesh_scene_to_png(trimesh.creation.box().scene(), output_buffer)
+    output_buffer.seek(0)
+    image = PILImage.open(output_buffer)
+    assert image.format == "PNG"
+    assert image.size == (MESH_THUMBNAIL_WIDTH, MESH_THUMBNAIL_HEIGHT)
+    pixel = image.getpixel((0, 0))
+    assert isinstance(pixel, tuple)
+    assert pixel[3] == 255, "the background is opaque, but the colors are kept"
+
+
+@pytest.mark.parametrize(
+    "texture,expected",
+    [
+        # pyrender refuses the boolean textures: we convert them to a black and white image
+        (
+            np.array([[True, False]]),
+            np.array([[[255, 255, 255, 255], [0, 0, 0, 255]]], dtype=np.uint8),
+        ),
+        # pyrender refuses to convert 2-channels textures to RGBA: the missing channel is filled
+        (
+            np.array([[[10, 20], [30, 40]]], dtype=np.uint8),
+            np.array([[[10, 20, 15, 255], [30, 40, 35, 255]]], dtype=np.uint8),
+        ),
+    ],
+)
+def test_robust_format_texture_source_fixes(texture: np.ndarray, expected: np.ndarray) -> None:
+    from pyrender.utils import format_texture_source  # type: ignore
+
+    out = _robust_format_texture_source(texture, "RGBA")
+    assert out is not None
+    assert np.array_equal(out, expected)
+    # the two cases above are the reason of the existence of _robust_format_texture_source
+    with pytest.raises(Exception):
+        format_texture_source(texture, "RGBA")
+
+
+@pytest.mark.parametrize(
+    "texture",
+    [
+        None,
+        np.array([[[0, 128, 255]]], dtype=np.uint8),
+        np.array([[[0.0, 0.5, 1.0]]], dtype=np.float32),
+        np.array([[[0, 128, 255, 255]]], dtype=np.uint8),
+    ],
+)
+def test_robust_format_texture_source_is_a_drop_in_replacement(texture: Optional[np.ndarray]) -> None:
+    """Out of the fixed cases, it returns the same as the function of pyrender it replaces."""
+    from pyrender.utils import format_texture_source
+
+    out = _robust_format_texture_source(texture, "RGBA")
+    if texture is None:
+        assert out is None
+    else:
+        assert out is not None
+        assert np.array_equal(
+            out,
+            format_texture_source(texture, "RGBA"),
+        )
+
+
+def test_robust_format_texture_source_with_pil_image() -> None:
+    texture = PILImage.new("P", (2, 2), color=1)
+    texture.putpalette([0, 0, 0, 255, 0, 0])
+    formatted = _robust_format_texture_source(texture, "RGBA")
+    assert formatted is not None
+    assert formatted.shape == (2, 2, 4)
+    assert formatted[0, 0].tolist() == [255, 0, 0, 255]
+
+
+def test_robust_format_texture_source_with_unsupported_dtype() -> None:
+    with pytest.raises(TypeError):
+        _robust_format_texture_source(np.array([[1 + 1j]], dtype=np.complex128), "RGBA")

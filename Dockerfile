@@ -34,6 +34,7 @@ RUN echo "apt snapshot: ${APT_SNAPSHOT}" \
     && apt-get update \
     && apt-get upgrade -y \
     && apt-get install -y unzip wget procps htop ffmpeg libavcodec-extra libsndfile1 libjpeg-dev zlib1g-dev \
+      libegl1 libegl-mesa0 \
     && rm -rf /var/lib/apt/lists/*
 
 # Common environment variables
