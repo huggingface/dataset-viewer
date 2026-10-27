@@ -424,6 +424,34 @@ def _compute_scene_camera_pose(
     return camera_pose, znear, zfar
 
 
+# The thumbnail is rendered larger, then cropped to the object: it fills the frame whatever its shape
+MESH_THUMBNAIL_SUPERSAMPLING = 2
+MESH_THUMBNAIL_MARGIN = 0.06
+# Without it, the sides facing away from the camera light are black, and so are the metallic surfaces,
+# which have no environment to reflect
+MESH_THUMBNAIL_AMBIENT_LIGHT = 0.5
+
+
+def _fit_to_frame(image: "Image.Image", width: int, height: int) -> "Image.Image":
+    """Crop the image to its non-transparent pixels, and center them in a transparent frame of the given size."""
+    from PIL import Image as PILImage
+
+    bbox = image.getchannel("A").getbbox()
+    if bbox is None:
+        return image.resize((width, height), PILImage.Resampling.LANCZOS)
+    cropped = image.crop(bbox)
+    scale = min(
+        width * (1 - 2 * MESH_THUMBNAIL_MARGIN) / cropped.width,
+        height * (1 - 2 * MESH_THUMBNAIL_MARGIN) / cropped.height,
+    )
+    resized = cropped.resize(
+        (max(1, round(cropped.width * scale)), max(1, round(cropped.height * scale))), PILImage.Resampling.LANCZOS
+    )
+    frame = PILImage.new("RGBA", (width, height), (0, 0, 0, 0))
+    frame.paste(resized, ((width - resized.width) // 2, (height - resized.height) // 2))
+    return frame
+
+
 def _render_trimesh_scene_to_png(
     trimesh_scene: "trimesh.Scene",
     output_buffer: BytesIO,
@@ -469,7 +497,7 @@ def _render_trimesh_scene_to_png(
         raise ValueError("The 3D scene doesn't contain any renderable geometry.")
 
     # create the pyrender scene object
-    pyrender_scene = pyrender.Scene()
+    pyrender_scene = pyrender.Scene(ambient_light=[MESH_THUMBNAIL_AMBIENT_LIGHT] * 3)
 
     # add every node with a renderable geometry to the pyrender scene
     for node in trimesh_scene.graph.nodes_geometry:
@@ -495,7 +523,9 @@ def _render_trimesh_scene_to_png(
     pyrender_scene.add(light, pose=camera_pose)
 
     # 5. Initialize the Offscreen Renderer
-    renderer = pyrender.OffscreenRenderer(viewport_width=width, viewport_height=height)
+    renderer = pyrender.OffscreenRenderer(
+        viewport_width=width * MESH_THUMBNAIL_SUPERSAMPLING, viewport_height=height * MESH_THUMBNAIL_SUPERSAMPLING
+    )
 
     try:
         # Render the scene. The RGBA flag asks for the alpha channel: without it, pyrender always
@@ -505,9 +535,9 @@ def _render_trimesh_scene_to_png(
         # Save the image using Pillow as RGBA. Some platforms (e.g OSMesa) return an RGB image even
         # with the RGBA flag: in that case the background is opaque, and only the colors are kept.
         if color_image.shape[2] == 3:
-            img = PILImage.fromarray(color_image).convert("RGBA")
+            img = PILImage.fromarray(color_image).convert("RGBA").resize((width, height), PILImage.Resampling.LANCZOS)
         else:
-            img = PILImage.fromarray(color_image, mode="RGBA")
+            img = _fit_to_frame(PILImage.fromarray(color_image, mode="RGBA"), width, height)
 
         img.save(output_buffer, "PNG")
 
