@@ -376,60 +376,51 @@ def _robust_format_texture_source(
     return texture
 
 
-def _compute_scene_camera_pose(
-    scene: "trimesh.Scene", yfov_rad: float = np.pi / 3.0, margin_factor: float = 1.25
-) -> tuple[np.ndarray, float, float]:
-    """
-    Computes a 4x4 OpenGL camera pose that dynamically frames an entire trimesh Scene.
-    """
-    import numpy as np
+# The camera of the SimReady thumbnails (NVIDIA's simready-thumbnail): an orthographic three-quarter view
+MESH_CAMERA_ELEVATION_DEG = 45.0
+MESH_CAMERA_AZIMUTH_DEG = 45.0
+# Their key, fill and rim lights, as directions in the camera space (x right, y up, z toward the camera)
+MESH_THUMBNAIL_LIGHTS = [((-1.0, 1.0, 1.0), 3.0), ((1.0, 0.0, 1.0), 1.5), ((0.0, 1.0, -1.0), 2.0)]
 
-    if scene.is_empty:
-        return np.eye(4), 0.05, 100.0
 
-    center = scene.centroid
-    extents = scene.extents
-
-    radius = np.linalg.norm(extents) / 2.0
-    distance = (radius * margin_factor) / np.sin(yfov_rad / 2.0)
-
-    # 3/4 isometric viewpoint direction
-    view_direction = np.array([1.0, 1.0, 1.0])
-    view_direction /= np.linalg.norm(view_direction)
-
-    eye = center + (view_direction * distance)
-
-    z_axis = eye - center
-    z_axis /= np.linalg.norm(z_axis)
-
-    up_tmp = np.array([0.0, 1.0, 0.0])
-    if np.abs(np.dot(z_axis, up_tmp)) > 0.99:
-        up_tmp = np.array([0.0, 0.0, 1.0])
-
-    x_axis = np.cross(up_tmp, z_axis)
+def _pose_looking_along(direction: np.ndarray, position: np.ndarray) -> np.ndarray:
+    """A 4x4 OpenGL pose at the given position, looking along -direction (cameras and lights look along -Z)."""
+    z_axis = direction / np.linalg.norm(direction)
+    up = np.array([0.0, 1.0, 0.0]) if abs(z_axis[1]) < 0.99 else np.array([0.0, 0.0, 1.0])
+    x_axis = np.cross(up, z_axis)
     x_axis /= np.linalg.norm(x_axis)
+    pose = np.eye(4)
+    pose[:3, 0] = x_axis
+    pose[:3, 1] = np.cross(z_axis, x_axis)
+    pose[:3, 2] = z_axis
+    pose[:3, 3] = position
+    return pose
 
-    y_axis = np.cross(z_axis, x_axis)
-    y_axis /= np.linalg.norm(y_axis)
 
-    camera_pose = np.eye(4)
-    camera_pose[:3, 0] = x_axis
-    camera_pose[:3, 1] = y_axis
-    camera_pose[:3, 2] = z_axis
-    camera_pose[:3, 3] = eye
+def _compute_scene_camera_pose(scene: "trimesh.Scene") -> tuple[np.ndarray, float, float, float]:
+    """
+    Computes the 4x4 OpenGL pose of an orthographic camera looking at the center of the scene bounds from the
+    SimReady three-quarter view, the half size of a view that contains the whole scene, and the clipping planes.
+    """
+    if scene.is_empty:
+        return np.eye(4), 1.0, 0.05, 100.0
 
-    znear = max(0.01, distance - (radius * margin_factor))
-    zfar = distance + (radius * margin_factor)
-
-    return camera_pose, znear, zfar
+    center = scene.bounds.mean(axis=0)
+    radius = float(np.linalg.norm(scene.extents) / 2.0)
+    elevation, azimuth = np.radians(MESH_CAMERA_ELEVATION_DEG), np.radians(MESH_CAMERA_AZIMUTH_DEG)
+    view_direction = np.array(
+        [np.cos(elevation) * np.cos(azimuth), np.sin(elevation), np.cos(elevation) * np.sin(azimuth)]
+    )
+    distance = radius * 4.0
+    camera_pose = _pose_looking_along(view_direction, center + view_direction * distance)
+    return camera_pose, radius, distance - radius * 1.1, distance + radius * 1.1
 
 
 # The thumbnail is rendered larger, then cropped to the object: it fills the frame whatever its shape
 MESH_THUMBNAIL_SUPERSAMPLING = 2
-MESH_THUMBNAIL_MARGIN = 0.06
-# Without it, the sides facing away from the camera light are black, and so are the metallic surfaces,
-# which have no environment to reflect
-MESH_THUMBNAIL_AMBIENT_LIGHT = 0.5
+MESH_THUMBNAIL_MARGIN = 0.05
+# Stands in for the dome of the SimReady setup: without it, metallic surfaces have nothing to reflect, and are black
+MESH_THUMBNAIL_AMBIENT_LIGHT = 0.3
 
 
 def _fit_to_frame(image: "Image.Image", width: int, height: int) -> "Image.Image":
@@ -508,19 +499,20 @@ def _render_trimesh_scene_to_png(
     # 2. Set background color to fully transparent [R, G, B, Alpha]
     pyrender_scene.bg_color = np.array([0.0, 0.0, 0.0, 0.0])  # 0.0 alpha means transparent
 
-    # 3. Configure perspective camera parameters
-    yfov = np.pi / 3.0
+    # 3. Configure the orthographic camera
     aspect_ratio = float(width) / float(height)
 
     # Compute heuristic camera pose
-    camera_pose, znear, zfar = _compute_scene_camera_pose(trimesh_scene, yfov_rad=yfov)
+    camera_pose, half_size, znear, zfar = _compute_scene_camera_pose(trimesh_scene)
 
-    camera = pyrender.PerspectiveCamera(yfov=yfov, aspectRatio=aspect_ratio, znear=znear, zfar=zfar)
+    camera = pyrender.OrthographicCamera(xmag=half_size * aspect_ratio, ymag=half_size, znear=znear, zfar=zfar)
     pyrender_scene.add(camera, pose=camera_pose)
 
-    # 4. Add light source
-    light = pyrender.DirectionalLight(color=[1.0, 1.0, 1.0], intensity=3.0)
-    pyrender_scene.add(light, pose=camera_pose)
+    # 4. Add the key, fill and rim lights
+    for direction, intensity in MESH_THUMBNAIL_LIGHTS:
+        world_direction = camera_pose[:3, :3] @ np.array(direction)
+        light = pyrender.DirectionalLight(color=[1.0, 1.0, 1.0], intensity=intensity)
+        pyrender_scene.add(light, pose=_pose_looking_along(world_direction, camera_pose[:3, 3]))
 
     # 5. Initialize the Offscreen Renderer
     renderer = pyrender.OffscreenRenderer(
