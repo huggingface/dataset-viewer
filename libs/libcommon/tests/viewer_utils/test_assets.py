@@ -447,11 +447,14 @@ def test_robust_format_texture_source_is_a_drop_in_replacement(texture: Optional
     from pyrender.utils import format_texture_source
 
     out = _robust_format_texture_source(texture, "RGBA")
-    assert out is not None
-    assert np.array_equal(
-        out,
-        format_texture_source(texture, "RGBA"),
-    )
+    if texture is None:
+        assert out is None
+    else:
+        assert out is not None
+        assert np.array_equal(
+            out,
+            format_texture_source(texture, "RGBA"),
+        )
 
 
 def test_robust_format_texture_source_with_pil_image() -> None:
