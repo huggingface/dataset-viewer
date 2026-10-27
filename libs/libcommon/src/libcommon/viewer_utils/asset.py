@@ -522,6 +522,27 @@ def _delete_pyrender_platform(platform: Any) -> None:
         platform._egl_display = None
 
 
+# The 0th order spherical harmonics constant: a Gaussian splat's base color is 0.5 + SH_C0 * f_dc
+SH_C0 = 0.28209479177387814
+
+
+def _point_cloud_colors(point_cloud: "trimesh.PointCloud") -> Optional[np.ndarray]:
+    """Return the colors of the points, or None if the point cloud has none.
+
+    Gaussian splats (3DGS ply files) store the color of each splat as a spherical harmonics
+    coefficient (f_dc_0, f_dc_1 and f_dc_2), which trimesh doesn't read as a vertex color.
+    """
+    if len(point_cloud.colors):
+        return np.asarray(point_cloud.colors)
+    # a structured array for a binary ply file, and a dict of arrays for an ascii one
+    vertices = point_cloud.metadata.get("_ply_raw", {}).get("vertex", {}).get("data")
+    names = vertices.keys() if isinstance(vertices, dict) else getattr(getattr(vertices, "dtype", None), "names", None)
+    if not names or not {"f_dc_0", "f_dc_1", "f_dc_2"} <= set(names):
+        return None
+    coefficients = np.stack([np.asarray(vertices[f"f_dc_{i}"]).ravel() for i in range(3)], axis=-1)
+    return np.clip(0.5 + SH_C0 * coefficients, 0.0, 1.0)
+
+
 def _render_trimesh_scene_to_png(
     trimesh_scene: "trimesh.Scene",
     output_buffer: BytesIO,
@@ -544,6 +565,7 @@ def _render_trimesh_scene_to_png(
 
     import numpy as np
     import pyrender
+    import trimesh
     from PIL import Image as PILImage
 
     # pyrender formats the textures with its own format_texture_source, which refuses some of the
@@ -554,10 +576,13 @@ def _render_trimesh_scene_to_png(
     geometries: dict[Hashable, Any] = {}
     for name, geom in trimesh_scene.geometry.items():
         try:
-            geometries[name] = pyrender.Mesh.from_trimesh(geom)
+            geometries[name] = (
+                pyrender.Mesh.from_points(geom.vertices, colors=_point_cloud_colors(geom))
+                if isinstance(geom, trimesh.PointCloud)
+                else pyrender.Mesh.from_trimesh(geom)
+            )
         except Exception:
-            # a geometry we cannot render (a point cloud, for instance) must not prevent us from
-            # rendering the rest of the scene
+            # a geometry we cannot render must not prevent us from rendering the rest of the scene
             logger.warning(f"Skipping the geometry {name} while rendering a 3D thumbnail.", exc_info=True)
     if not geometries:
         raise ValueError("The 3D scene doesn't contain any renderable geometry.")

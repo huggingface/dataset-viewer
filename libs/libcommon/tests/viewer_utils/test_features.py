@@ -11,6 +11,7 @@ from unittest.mock import patch
 from urllib import parse
 
 import boto3
+import numpy as np
 import pytest
 import trimesh
 from aiobotocore.response import StreamingBody
@@ -378,6 +379,41 @@ def test_get_mesh_cell_value_with_mesh_object(
         mesh = trimesh.load(BytesIO(file.read()), file_type="glb")
         assert isinstance(mesh, trimesh.Scene)
         assert len(mesh.geometry) == 1, "the exported mesh loads back"
+
+
+def point_cloud_ply(with_splat_colors: bool) -> bytes:
+    """A ply file of points on a sphere, without faces: a point cloud, or a Gaussian splat (red splats)."""
+    points = trimesh.creation.icosphere(subdivisions=3).vertices
+    properties = ["x", "y", "z"] + (["f_dc_0", "f_dc_1", "f_dc_2", "opacity"] if with_splat_colors else [])
+    header = ["ply", "format ascii 1.0", f"element vertex {len(points)}"]
+    header += [f"property float {name}" for name in properties] + ["end_header"]
+    # f_dc_0 = 1.7 is a red splat: 0.5 + 0.282 * 1.7 > 0.98, and 0.5 + 0.282 * -1.7 < 0.02
+    rows = [" ".join(map(str, [*point, *([1.7, -1.7, -1.7, 1.0] if with_splat_colors else [])])) for point in points]
+    return "\n".join(header + rows + [""]).encode()
+
+
+@pytest.mark.parametrize("with_splat_colors", [False, True], ids=["point cloud", "gaussian splat"])
+def test_get_mesh_cell_value_with_point_cloud(
+    with_splat_colors: bool, storage_client_with_url_preparator: StorageClient
+) -> None:
+    """A ply file without faces is loaded as a point cloud: the thumbnail renders its points."""
+    ensure_mesh_rendering()
+    from PIL import Image
+
+    asset_path = mesh_asset_path(4)
+    ply_bytes = point_cloud_ply(with_splat_colors)
+    value = get_mesh_cell_value({"path": "points.ply", "bytes": ply_bytes}, storage_client_with_url_preparator, 4)
+    assert value["src"] == f"{ASSETS_BASE_URL}/{asset_path}/mesh.ply"
+    assert_output_has_valid_files(value, storage_client_with_url_preparator)
+    with storage_client_with_url_preparator._fs.open(
+        storage_client_with_url_preparator.get_full_path(f"{asset_path}/mesh.ply.png"), "rb"
+    ) as file:
+        pixels = np.asarray(Image.open(file).convert("RGBA")).astype(int)
+    drawn = pixels[pixels[:, :, 3] > 0]
+    assert len(drawn), "the points are drawn"
+    if with_splat_colors:
+        # the splats get their color from the f_dc coefficients: red, darkened by the shading
+        assert (drawn[:, 0] > 4 * drawn[:, 1:3].max(axis=1)).all()
 
 
 @pytest.mark.parametrize("cell", ["a string", 42, {"path": None, "bytes": None}])
