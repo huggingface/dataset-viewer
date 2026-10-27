@@ -67,6 +67,32 @@ def get_request_ip(request: Request) -> Optional[str]:
     return request.client.host if request.client else None
 
 
+# how a request reached the service, used by get_caller_debug_info: which URL it was sent to, and what the proxies
+# said about where it came from. The headers carrying credentials are deliberately left out of the list.
+CALLER_HEADERS = ("host", "forwarded", "x-forwarded-for", "x-real-ip", "x-envoy-external-address", "via")
+MAX_CALLER_HEADER_LENGTH = 200
+
+
+def get_caller_debug_info(request: Request) -> str:
+    """Everything the service can know about the caller, to debug the labels of `get_request_source`.
+
+    The address of the caller is a personal data: it must only be logged when it's asked for, and then for the
+    smallest possible scope. The credentials carried by the request are never part of the result.
+
+    Args:
+        request (`Request`): the incoming request.
+
+    Returns: `str` - a description of the peer of the connection, and of the headers telling how it was forwarded.
+    """
+    peer = f"{request.client.host}:{request.client.port}" if request.client else "-"
+    headers = ", ".join(
+        f"{name}={request.headers[name][:MAX_CALLER_HEADER_LENGTH]}"
+        for name in CALLER_HEADERS
+        if name in request.headers
+    )
+    return f"peer='{peer}', headers=[{headers}]"
+
+
 @lru_cache(maxsize=None)
 def _parse_networks(networks: tuple[str, ...]) -> tuple[IPNetwork, ...]:
     """Parse the configured networks, once and for all (they come from the environment, and don't change).

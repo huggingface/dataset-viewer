@@ -10,6 +10,7 @@ from fsspec.implementations.http import HTTPFileSystem
 from libapi.authentication import auth_check, get_auth_kind
 from libapi.exceptions import ApiError, TooBigContentError, UnexpectedApiError
 from libapi.request import (
+    get_caller_debug_info,
     get_request_parameter,
     get_request_parameter_length,
     get_request_parameter_offset,
@@ -36,6 +37,9 @@ logger = logging.getLogger(__name__)
 
 # the user-agent is free-form (and spoofable): we cap it to keep the log lines bounded
 MAX_USER_AGENT_LENGTH = 200
+# the datasets whose owner asked to log the address of every caller, to debug how the calls reach the service (see
+# get_caller_debug_info). An address is a personal data: only list a dataset here while its owner needs it.
+PROBE_DATASETS = {"lhoestq/probe-rows-service"}
 
 
 def create_rows_endpoint(
@@ -84,9 +88,8 @@ def create_rows_endpoint(
                     offset = get_request_parameter_offset(request)
                     length = get_request_parameter_length(request)
                     # "source" and "auth_kind" tell apart the calls coming from the Hugging Face Hub (its servers,
-                    # or the browser on huggingface.co) from the calls of the external users. They are based on
-                    # headers chosen by the client, so they are logging labels, not authentication (see
-                    # get_request_source).
+                    # or the browser on huggingface.co) from the calls of the external users. They are read from the
+                    # request, so they are logging labels, not an authentication (see get_request_source).
                     source = get_request_source(request, hub_origins=hub_origins, hub_networks=hub_networks)
                     auth_kind = get_auth_kind(request)
                     origin = request.headers.get("origin", "-")
@@ -95,6 +98,11 @@ def create_rows_endpoint(
                         f"/rows, {dataset=}, {config=}, {split=}, {offset=}, {length=}, "
                         f"{source=}, {auth_kind=}, {origin=}, {user_agent=}"
                     )
+                    if dataset in PROBE_DATASETS:
+                        details = get_caller_debug_info(request)
+                        # the configured networks are logged as well: a "hub-server" label is only reachable if the
+                        # caller address falls in one of them, so they tell if the configuration reached the service
+                        logging.info(f"/rows caller, {dataset=}, {source=}, {hub_networks=}, {details=}")
                 if dataset == "HuggingFaceFW/fineweb-edu-score-2" and offset > 1_000_000:
                     return get_json_error_response(
                         content={"error": "too many requests"},
