@@ -6,16 +6,19 @@ import shutil
 from collections.abc import Generator
 from http import HTTPStatus
 from pathlib import Path
-from typing import Any
+from typing import Any, Union
 
 import libviewer as lv
+import pyarrow as pa
 import pyarrow.parquet as pq
 import pytest
 from datasets import Dataset, Image, concatenate_datasets
 from datasets.table import embed_table_storage
 from fsspec import AbstractFileSystem
 
+from libcommon.exceptions import ParquetBrotliCompressionNotSupportedError
 from libcommon.parquet_utils import (
+    ParquetFileMetadataItem,
     RowsIndex,
     SchemaMismatchError,
     TooBigRows,
@@ -558,3 +561,53 @@ def test_get_num_parquet_files_to_index(
         max_size_bytes=max_size_bytes,
     )
     assert (num_files, num_bytes, num_rows) == expected
+
+
+@pytest.mark.parametrize(
+    "compression,refused",
+    [
+        ("brotli", True),
+        ({"text": "snappy", "label": "brotli"}, True),
+        ("snappy", False),
+        ("none", False),
+    ],
+)
+def test_get_num_parquet_files_to_process_refuses_brotli(
+    tmp_path: Path, compression: Union[str, dict[str, str]], refused: bool
+) -> None:
+    parquet_file_path = tmp_path / "0000.parquet"
+    pq.write_table(  # type: ignore
+        pa.table({"text": ["Hello there", "General Kenobi"], "label": [0, 1]}),
+        parquet_file_path,
+        compression=compression,
+    )
+    parquet_metadata_directory = tmp_path / "parquet-metadata"
+    parquet_metadata_directory.mkdir()
+    pq.read_metadata(parquet_file_path).write_metadata_file(parquet_metadata_directory / "0000.parquet")  # type: ignore
+    parquet_files: list[ParquetFileMetadataItem] = [
+        {
+            "dataset": "ds_brotli",
+            "config": "default",
+            "split": "train",
+            "url": "https://fake.huggingface.co/datasets/ds_brotli/resolve/refs%2Fconvert%2Fparquet/default/train/0000.parquet",  # noqa: E501
+            "filename": "0000.parquet",
+            "size": parquet_file_path.stat().st_size,
+            "num_rows": 2,
+            "parquet_metadata_subpath": "0000.parquet",
+        }
+    ]
+
+    if refused:
+        with pytest.raises(ParquetBrotliCompressionNotSupportedError):
+            get_num_parquet_files_to_process(
+                parquet_files=parquet_files,
+                parquet_metadata_directory=parquet_metadata_directory,
+                max_size_bytes=1_000_000,
+            )
+    else:
+        num_files, _, num_rows = get_num_parquet_files_to_process(
+            parquet_files=parquet_files,
+            parquet_metadata_directory=parquet_metadata_directory,
+            max_size_bytes=1_000_000,
+        )
+        assert (num_files, num_rows) == (1, 2)

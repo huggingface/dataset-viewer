@@ -26,6 +26,7 @@ from datasets.utils.py_utils import asdict
 from huggingface_hub._commit_api import CommitOperation, CommitOperationAdd
 from huggingface_hub.hf_api import HfApi
 from libcommon.dtos import JobInfo, JobParams, Priority
+from libcommon.exceptions import ParquetBrotliCompressionNotSupportedError
 from libcommon.queue.jobs import Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import upsert_response
@@ -220,6 +221,21 @@ def test_supported_if_big_parquet(
     assert content
     assert len(content["parquet_files"]) == 1
     assert_content_is_equal(content, hub_responses_big["parquet_and_info_response"])
+
+
+def test_brotli_parquet_is_refused(
+    app_config: AppConfig,
+    get_job_runner: GetJobRunner,
+    hub_public_brotli_parquet: str,
+) -> None:
+    dataset = hub_public_brotli_parquet
+    job_runner = get_job_runner(dataset, "default", app_config)
+    job_runner.pre_compute()
+    with pytest.raises(ParquetBrotliCompressionNotSupportedError):
+        list(job_runner.compute())
+    job_runner.post_compute()
+    hf_api = HfApi(endpoint=CI_HUB_ENDPOINT, token=CI_USER_TOKEN)
+    assert not hf_api.list_repo_refs(dataset, repo_type="dataset").converts
 
 
 def test_partially_converted_if_big_non_parquet(

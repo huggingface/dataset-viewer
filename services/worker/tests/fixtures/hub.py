@@ -10,6 +10,8 @@ from contextlib import suppress
 from pathlib import Path
 from typing import Any, Literal, Optional, TypedDict, cast
 
+import pyarrow as pa
+import pyarrow.parquet as pq
 import pytest
 import requests
 from datasets import Dataset, Features, Value
@@ -375,6 +377,15 @@ def hub_public_parquet_splits_empty_rows(tmp_path_factory: pytest.TempPathFactor
 
     repo_id = create_hub_dataset_repo(prefix="hub_public_parquet_splits_empty_rows", file_paths=[path])
 
+    yield repo_id
+    delete_hub_dataset_repo(repo_id=repo_id)
+
+
+@pytest.fixture(scope="session")
+def hub_public_brotli_parquet(tmp_path_factory: pytest.TempPathFactory) -> Iterator[str]:
+    path = str(tmp_path_factory.mktemp("data") / "train.parquet")
+    pq.write_table(pa.table({"col": ["a", "b", "c"]}), path, compression="brotli")  # type: ignore
+    repo_id = create_hub_dataset_repo(prefix="hub_public_brotli_parquet", file_paths=[path])
     yield repo_id
     delete_hub_dataset_repo(repo_id=repo_id)
 

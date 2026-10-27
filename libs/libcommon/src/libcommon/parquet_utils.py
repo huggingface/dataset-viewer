@@ -13,6 +13,7 @@ from datasets import Features, Value
 from datasets.table import CastError, cast_table_to_schema
 
 from libcommon.constants import CONFIG_PARQUET_METADATA_KIND
+from libcommon.parquet_compression import raise_if_brotli_compressed
 from libcommon.prometheus import StepProfiler
 from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.storage import StrPath
@@ -110,11 +111,16 @@ def get_num_parquet_files_to_process(
 
     Returns:
         tuple of number of files, number of bytes and number of rows to process
+
+    Raises:
+        [~`libcommon.exceptions.ParquetBrotliCompressionNotSupportedError`]:
+            If one of the files to process uses the BROTLI compression codec.
     """
     num_parquet_files_to_process, num_bytes, num_rows = 0, 0, 0
     for parquet_file_id, parquet_file in enumerate(parquet_files):
         parquet_metadata_path = os.path.join(parquet_metadata_directory, parquet_file["parquet_metadata_subpath"])
         parquet_metadata = pq.read_metadata(parquet_metadata_path)  # type: ignore
+        raise_if_brotli_compressed(parquet_metadata)
         num_parquet_files_to_process += 1
         num_rows += parquet_metadata.num_rows
         for row_group_id in range(parquet_metadata.num_row_groups):

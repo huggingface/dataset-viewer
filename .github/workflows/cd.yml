@@ -7,6 +7,10 @@ on:
   push:
     branches:
       - main
+  schedule:
+    # Weekly rebuild so the base image picks up Debian security updates even
+    # without a merge (see APT_SNAPSHOT in the Dockerfile).
+    - cron: "17 6 * * 1"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -52,7 +56,9 @@ jobs:
         uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069  # v4.4.1
       - name: Set outputs
         id: vars
-        run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+        run: |
+          echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+          echo "apt_snapshot=$(date -u +%G-W%V)" >> $GITHUB_OUTPUT
       - name: Login to Docker Hub
         uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f  # v4.6.0
         with:
@@ -71,7 +77,9 @@ jobs:
           context: .
           file: Dockerfile
           target: ${{ matrix.project }}
-          build-args: COMMIT=${{ steps.vars.outputs.sha_short }}
+          build-args: |
+            COMMIT=${{ steps.vars.outputs.sha_short }}
+            APT_SNAPSHOT=${{ steps.vars.outputs.apt_snapshot }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
@@ -102,7 +110,7 @@ jobs:
   deploy-staging-and-prod:
     permissions:
       contents: read
-    if: ${{ endsWith(github.ref, '/main') }}
+    if: ${{ endsWith(github.ref, '/main') && github.event_name != 'schedule' }}
     runs-on: ubuntu-latest
     needs: [build-and-push-images]
     environment: production
