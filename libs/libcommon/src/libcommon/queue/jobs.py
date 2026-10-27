@@ -38,6 +38,7 @@ from libcommon.queue.metrics import (
     decrease_worker_size_metrics,
     increase_metric,
     update_metrics_for_type,
+    update_worker_size_metrics,
 )
 from libcommon.queue.past_jobs import create_past_job
 from libcommon.utils import get_datetime, inputs_to_string
@@ -68,6 +69,7 @@ JobsCountByWorkerSize = Mapping[str, int]
 
 
 class JobDict(TypedDict):
+    job_id: str
     type: str
     dataset: str
     revision: str
@@ -202,6 +204,7 @@ class JobDocument(Document):
 
     def to_dict(self) -> JobDict:
         return {
+            "job_id": str(self.pk),  # job.pk is the id. job.id is not recognized by mypy
             "type": self.type,
             "dataset": self.dataset,
             "revision": self.revision,
@@ -413,6 +416,86 @@ class Queue:
             return 0 if deleted_jobs is None else deleted_jobs
         except Exception:
             return 0
+
+    def update_job(
+        self,
+        job_id: str,
+        priority: Optional[Priority] = None,
+        difficulty: Optional[int] = None,
+    ) -> JobDocument:
+        """Update the priority and/or the difficulty of a job of the queue.
+
+        Only the provided fields are updated. The worker size is derived from the difficulty, so it's updated as
+        well: the job is then picked by a worker of the new size. The metrics are updated accordingly.
+
+        A job can be updated whatever its status. Beware that updating the difficulty of a started job does not
+        change the worker that is already processing it.
+
+        Args:
+            job_id (`str`): id of the job
+            priority (`Priority`, *optional*): the new priority of the job. If None, the priority is not changed.
+            difficulty (`int`, *optional*): the new difficulty of the job. If None, the difficulty is not changed.
+
+        Raises:
+            [`JobDoesNotExistError`]: if the job does not exist
+
+        Returns:
+            `JobDocument`: the updated job
+        """
+        job = JobDocument.get(job_id=job_id)
+        # ^ raises JobDoesNotExistError
+        previous_difficulty = job.difficulty
+        new_difficulty: Optional[int] = None
+        updates: dict[str, Any] = {}
+        if priority is not None and job.priority != priority:
+            updates["priority"] = priority
+        if difficulty is not None and job.difficulty != difficulty:
+            updates["difficulty"] = difficulty
+            updates["worker_size"] = WorkerSizeJobsCountDocument.get_worker_size(difficulty=difficulty)
+            new_difficulty = difficulty
+        if updates:
+            logging.info(f"Updating job {job_id} ({job.unicity_id}): {updates}")
+            JobDocument.objects(pk=job.pk).update(
+                write_concern={"w": "majority", "fsync": True},
+                read_concern={"level": "majority"},
+                **updates,
+            )
+            job.reload()
+            if new_difficulty is not None and job.status == Status.WAITING:
+                # ^ only the waiting jobs are counted in the worker size metrics
+                update_worker_size_metrics(
+                    dataset=job.dataset,
+                    previous_difficulty=previous_difficulty,
+                    new_difficulty=new_difficulty,
+                )
+        return job
+
+    def delete_job(self, job_id: str) -> JobDocument:
+        """Delete a job of the queue, whatever its status.
+
+        The metrics are updated, and the lock associated with the job is released, so that another job with the
+        same unicity_id can be started.
+
+        Beware that a started job is only deleted from the queue: the worker that processes it is not interrupted,
+        it can even save its result in the cache. But its call to finish_job() will be a no-op, as the job does not
+        exist anymore.
+
+        Args:
+            job_id (`str`): id of the job
+
+        Raises:
+            [`JobDoesNotExistError`]: if the job does not exist
+
+        Returns:
+            `JobDocument`: the deleted job. The document is stale: it does not exist in the database anymore.
+        """
+        job = JobDocument.get(job_id=job_id)
+        # ^ raises JobDoesNotExistError
+        logging.info(f"Deleting job {job_id} ({job.unicity_id}), status: {job.status.value}")
+        decrease_metric(job_type=job.type, status=job.status, difficulty=job.difficulty)
+        release_lock(key=job.unicity_id)
+        job.delete()
+        return job
 
     def _get_next_waiting_job_for_priority(
         self,

@@ -146,6 +146,27 @@ def decrease_worker_size_metrics(difficulty: int) -> None:
     _update_worker_size_metrics(DEFAULT_DECREASE_AMOUNT, difficulty)
 
 
+def update_worker_size_metrics(dataset: str, previous_difficulty: int, new_difficulty: int) -> None:
+    """Move one waiting job from the worker size of the previous difficulty to the one of the new difficulty.
+
+    It's used when the difficulty of a job in the queue is updated: the job is not deleted nor created, only the
+    bucket it is counted in changes. It's a no-op if both difficulties are handled by the same worker size.
+
+    Args:
+        dataset (`str`): the dataset of the job. The jobs of the blocked datasets are not counted.
+        previous_difficulty (`int`): the difficulty the job had
+        new_difficulty (`int`): the difficulty the job has now
+    """
+    if is_blocked(dataset):
+        # as in increase_metric, the jobs of the blocked datasets are not counted in these metrics
+        return
+    previous_worker_size = WorkerSizeJobsCountDocument.get_worker_size(difficulty=previous_difficulty)
+    new_worker_size = WorkerSizeJobsCountDocument.get_worker_size(difficulty=new_difficulty)
+    if previous_worker_size is not new_worker_size:
+        _update_worker_size_metrics(DEFAULT_DECREASE_AMOUNT, previous_difficulty)
+        _update_worker_size_metrics(DEFAULT_INCREASE_AMOUNT, new_difficulty)
+
+
 def update_metrics_for_type(
     dataset: str, job_type: str, previous_status: str, new_status: str, difficulty: int
 ) -> None:

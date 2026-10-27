@@ -39,9 +39,22 @@ The admin service provides endpoints:
 
 - `/admin/healthcheck`: ensure the app is running
 - `/admin/metrics`: give info about the cache and the queue
-- `/admin/pending-jobs`: give the pending jobs, classed by queue and status (waiting or started)
+- `/admin/pending-jobs`: give the pending jobs, classed by queue and status (waiting or started). Every job has a `job_id` that can be used to edit or delete it.
 - `/admin/dataset-status`: give the dataset status including cache records and pending jobs.
 - `/admin/num-dataset-infos-by-builder-name`: give a report about number of datasets by builder name (parquet, csv, text, imagefolder, audiofolder, json, arrow and webdataset).
+- `/admin/update-job`: update a job of the queue. It's a POST endpoint. Pass the requested parameters:
+  - `job_id`: the id of the job
+  - `priority`: `low`, `normal` or `high` (optional: the priority is not changed if it's absent)
+  - `difficulty`: an int between 0 and 100 (optional: the difficulty is not changed if it's absent). The worker
+    size is derived from the difficulty, and is updated as well.
+
+  At least one of `priority` or `difficulty` is required. It returns 404 if the job does not exist (anymore).
+- `/admin/delete-job`: delete a job from the queue, whatever its status. It's a POST endpoint. Pass the requested
+  parameters:
+  - `job_id`: the id of the job
+
+  It returns 404 if the job does not exist (anymore). Beware that a started job is only deleted from the queue: the
+  worker that processes it is not interrupted, but it won't be able to finish it (and the lock it holds is released).
 - `/admin/recreate-dataset`: deletes all the cache entries related to a specific dataset, then run all the steps in order. It's a POST endpoint. Pass the requested parameters:
   - `dataset`: the dataset name
   - `priority`: `low` (default), `normal` or `high`

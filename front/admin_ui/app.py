@@ -34,6 +34,10 @@ DV_ENDPOINT = DEV_DV_ENDPOINT if DEV else PROD_DV_ENDPOINT
 
 # global state (shared with all the user sessions)
 pending_jobs_df = None
+# the jobs fetched by the "Jobs manager" tab, by job id (to fill the fields of the selected job)
+jobs_by_id: dict[str, dict] = {}
+# the possible priorities of a job, from the lowest to the highest
+JOB_PRIORITIES: list[str] = ["low", "normal", "high"]
 
 
 def healthcheck():
@@ -628,6 +632,7 @@ with gr.Blocks() as demo:
                         jobs_df = pd.DataFrame(
                             [
                                 {
+                                    "job_id": job["job_id"],
                                     "type": job["type"],
                                     "dataset": job["dataset"],
                                     "revision": job["revision"],
@@ -671,6 +676,238 @@ with gr.Blocks() as demo:
                     get_dataset_status,
                     inputs=[token_box, dataset_name],
                     outputs=[cached_responses_table, jobs_table],
+                )
+
+            with gr.Tab("Jobs manager"):
+                gr.Markdown(
+                    "Edit a job of the queue, or delete it. Get the job ids from this tab, or from the "
+                    "*Dataset status* and *View pending jobs* tabs."
+                )
+                gr.Markdown(
+                    "*Beware: deleting a job only removes it from the queue, no cached response is deleted. A job "
+                    "that a worker already started is not interrupted: the worker just won't be able to finish "
+                    "it. A new job is created later if the cache is still missing.*"
+                )
+                jobs_manager_dataset_name = gr.Textbox(
+                    label="dataset", placeholder="allenai/c4"
+                )
+                jobs_manager_fetch_button = gr.Button("Fetch the jobs of the dataset")
+                gr.Markdown("### Jobs of the dataset")
+                jobs_manager_jobs_table = gr.DataFrame()
+                gr.Markdown("### Edit a job")
+                jobs_manager_job_id = gr.Dropdown(
+                    choices=[], label="job", allow_custom_value=True
+                )
+                with gr.Row():
+                    jobs_manager_priority = gr.Dropdown(
+                        JOB_PRIORITIES,
+                        multiselect=False,
+                        label="priority (empty: no change)",
+                    )
+                    jobs_manager_difficulty = gr.Number(
+                        label="difficulty (empty: no change)", precision=0
+                    )
+                with gr.Row():
+                    jobs_manager_update_button = gr.Button("Update job")
+                    jobs_manager_delete_button = gr.Button("Delete job", variant="stop")
+                jobs_manager_output = gr.Markdown("")
+
+                def error_message(response) -> str:
+                    try:
+                        return str(response.json().get("error") or response.content)
+                    except (requests.JSONDecodeError, ValueError):
+                        return str(response.content)
+
+                def job_label(job) -> str:
+                    suffix = "".join(
+                        f" · {job[key]}" for key in ("config", "split") if job.get(key)
+                    )
+                    return (
+                        f"{job['status']} · {job['type']}{suffix} · {job['priority']} · "
+                        f"difficulty {job['difficulty']} · {job['job_id']}"
+                    )
+
+                def fetch_jobs(token, dataset):
+                    """Fetch the jobs of a dataset: fill the table and the choices of the dropdown."""
+                    global jobs_by_id
+                    jobs_by_id = {}
+                    updates = {
+                        jobs_manager_jobs_table: gr.DataFrame(
+                            visible=True,
+                            value=pd.DataFrame(
+                                {"Error": ["❌ Failed to fetch the jobs of the queue."]}
+                            ),
+                        ),
+                        jobs_manager_job_id: gr.Dropdown(choices=[], value=None),
+                    }
+                    dataset = (dataset or "").strip()
+                    if not dataset:
+                        updates[jobs_manager_jobs_table] = gr.DataFrame(
+                            visible=True,
+                            value=pd.DataFrame(
+                                {"Error": ["❌ Please, enter a dataset."]}
+                            ),
+                        )
+                        return updates
+                    response = requests.get(
+                        f"{DV_ENDPOINT}/admin/dataset-status",
+                        params={"dataset": dataset},
+                        headers={"Authorization": f"Bearer {token}"},
+                        timeout=60,
+                    )
+                    if response.status_code != 200:
+                        updates[jobs_manager_jobs_table] = gr.DataFrame(
+                            visible=True,
+                            value=pd.DataFrame(
+                                {
+                                    "Error": [
+                                        f"❌ Failed to fetch the jobs of {dataset} (error "
+                                        f"{response.status_code}): {error_message(response)}"
+                                    ]
+                                }
+                            ),
+                        )
+                        return updates
+                    jobs = sorted(
+                        (
+                            job
+                            for content in response.json().values()
+                            for job in content["jobs"]
+                        ),
+                        key=lambda job: (job["type"], job["created_at"] or ""),
+                    )
+                    jobs_by_id = {job["job_id"]: job for job in jobs}
+                    return {
+                        jobs_manager_jobs_table: gr.DataFrame(
+                            visible=True,
+                            wrap=True,
+                            value=pd.DataFrame(
+                                [
+                                    {
+                                        "job_id": job["job_id"],
+                                        "type": job["type"],
+                                        "dataset": job["dataset"],
+                                        "config": job["config"],
+                                        "split": job["split"],
+                                        "status": job["status"],
+                                        "priority": job["priority"],
+                                        "difficulty": job["difficulty"],
+                                        "created_at": job["created_at"],
+                                        "started_at": job["started_at"],
+                                        "last_heartbeat": job["last_heartbeat"],
+                                    }
+                                    for job in jobs
+                                ]
+                            ),
+                        ),
+                        jobs_manager_job_id: gr.Dropdown(
+                            choices=[(job_label(job), job["job_id"]) for job in jobs],
+                            value=None,
+                        ),
+                    }
+
+                def on_job_selected(job_id):
+                    """Pre-fill the priority and the difficulty of the selected job."""
+                    job = jobs_by_id.get((job_id or "").strip())
+                    if job is None:
+                        return {
+                            jobs_manager_priority: gr.Dropdown(
+                                choices=JOB_PRIORITIES, value=None
+                            ),
+                            jobs_manager_difficulty: gr.Number(value=None),
+                        }
+                    return {
+                        jobs_manager_priority: gr.Dropdown(
+                            choices=JOB_PRIORITIES, value=job["priority"]
+                        ),
+                        jobs_manager_difficulty: gr.Number(value=job["difficulty"]),
+                    }
+
+                def error_output(message) -> dict:
+                    return {jobs_manager_output: gr.Markdown(value=message)}
+
+                def edit_job(token, dataset, job_id, action, params=None):
+                    """Call the admin endpoint, then refresh the jobs of the dataset."""
+                    job_id = (job_id or "").strip()
+                    if not job_id:
+                        return error_output(
+                            "❌ Please, select a job (or paste its id)."
+                        )
+                    response = requests.post(
+                        f"{DV_ENDPOINT}/admin/{action}-job",
+                        params={"job_id": job_id, **(params or {})},
+                        headers={"Authorization": f"Bearer {token}"},
+                        timeout=60,
+                    )
+                    if response.status_code != 200:
+                        return error_output(
+                            f"❌ Failed to {action} the job `{job_id}` (error "
+                            f"{response.status_code}): {error_message(response)}"
+                        )
+                    out = fetch_jobs(token, dataset)
+                    if action == "update":
+                        job = response.json()["job"]
+                        out[jobs_manager_output] = gr.Markdown(
+                            value=(
+                                f"✅ Job `{job['job_id']}` ({job['type']}) has been updated: "
+                                f"status `{job['status']}`, priority `{job['priority']}`, "
+                                f"difficulty `{job['difficulty']}`."
+                            )
+                        )
+                    else:
+                        out[jobs_manager_output] = gr.Markdown(
+                            value=f"✅ Job `{job_id}` has been deleted from the queue."
+                        )
+                    return out
+
+                def update_job(token, dataset, job_id, priority, difficulty):
+                    params = {}
+                    if priority:
+                        params["priority"] = priority
+                    if difficulty is not None:
+                        params["difficulty"] = str(int(difficulty))
+                    if not params:
+                        return error_output(
+                            "❌ Please, set a priority or a difficulty to update the job."
+                        )
+                    return edit_job(token, dataset, job_id, "update", params)
+
+                def delete_job(token, dataset, job_id):
+                    return edit_job(token, dataset, job_id, "delete")
+
+                jobs_manager_fetch_button.click(
+                    fetch_jobs,
+                    inputs=[token_box, jobs_manager_dataset_name],
+                    outputs=[jobs_manager_jobs_table, jobs_manager_job_id],
+                )
+                jobs_manager_job_id.change(
+                    on_job_selected,
+                    inputs=jobs_manager_job_id,
+                    outputs=[jobs_manager_priority, jobs_manager_difficulty],
+                )
+                jobs_manager_update_button.click(
+                    update_job,
+                    inputs=[
+                        token_box,
+                        jobs_manager_dataset_name,
+                        jobs_manager_job_id,
+                        jobs_manager_priority,
+                        jobs_manager_difficulty,
+                    ],
+                    outputs=[
+                        jobs_manager_output,
+                        jobs_manager_jobs_table,
+                        jobs_manager_job_id,
+                    ],
+                )
+                jobs_manager_delete_button.click(
+                    delete_job,
+                    inputs=[token_box, jobs_manager_dataset_name, jobs_manager_job_id],
+                    outputs=[
+                        jobs_manager_output,
+                        jobs_manager_jobs_table,
+                        jobs_manager_job_id,
+                    ],
                 )
 
             with gr.Tab("Processing graph"):

@@ -13,6 +13,7 @@ ApiErrorCode = Literal[
     "ExternalAuthenticatedError",
     "ExternalUnauthenticatedError",
     "InvalidParameter",
+    "JobNotFound",
     "JWTExpiredSignature",
     "JWTInvalidClaimRead",
     "JWTInvalidClaimSub",
@@ -92,6 +93,13 @@ class InvalidParameterError(ApiError):
 
     def __init__(self, message: str):
         super().__init__(message, HTTPStatus.UNPROCESSABLE_ENTITY, "InvalidParameter")
+
+
+class JobNotFoundError(ApiError):
+    """The job has not been found in the queue."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.NOT_FOUND, "JobNotFound", cause=cause, disclose_cause=False)
 
 
 class JWTKeysError(ApiError):
