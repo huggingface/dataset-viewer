@@ -1,9 +1,10 @@
 import os.path
+import threading
 from collections.abc import Mapping
 from io import BytesIO
 from pathlib import Path
 from typing import Optional
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import numpy as np
 import pymupdf
@@ -20,6 +21,7 @@ from libcommon.viewer_utils.asset import (
     MESH_THUMBNAIL_WIDTH,
     SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE,
     ImageSource,
+    _delete_pyrender_platform,
     _render_trimesh_scene_to_png,
     _robust_format_texture_source,
     create_audio_file,
@@ -398,12 +400,21 @@ def test_create_mesh_file_stores_mesh_and_thumbnail(
 
 def test_render_trimesh_scene_to_png_without_alpha_channel() -> None:
     """A platform which doesn't render the alpha channel (e.g OSMesa) still gives a valid RGBA image."""
-    # the renderer is replaced by a mock which returns what such a platform returns: an RGB image
+    # the OpenGL platform, and the renderer which draws on it, are replaced by mocks which return
+    # what such a platform returns: an RGB image, read from the buffer of the platform
     rgb_image = np.zeros((MESH_THUMBNAIL_HEIGHT, MESH_THUMBNAIL_WIDTH, 3), dtype=np.uint8)
-    with patch("pyrender.OffscreenRenderer") as OffscreenRenderer:
-        OffscreenRenderer.return_value.render.return_value = (rgb_image, None)
+    platform = Mock()
+    platform._egl_display = None  # not the EGL platform, so pyrender can delete its context
+    platform.supports_framebuffers.return_value = False  # like OSMesa: no offscreen framebuffer
+    with (
+        patch("libcommon.viewer_utils.asset._create_pyrender_platform", return_value=platform),
+        patch("pyrender.Renderer") as Renderer,
+    ):
+        Renderer.return_value.read_color_buf.return_value = rgb_image
         output_buffer = BytesIO()
         _render_trimesh_scene_to_png(trimesh.creation.box().scene(), output_buffer)
+    Renderer.return_value.delete.assert_called_once()  # the OpenGL resources are freed
+    platform.delete_context.assert_called_once()  # and so is the OpenGL context
     output_buffer.seek(0)
     image = PILImage.open(output_buffer)
     assert image.format == "PNG"
@@ -411,6 +422,65 @@ def test_render_trimesh_scene_to_png_without_alpha_channel() -> None:
     pixel = image.getpixel((0, 0))
     assert isinstance(pixel, tuple)
     assert pixel[3] == 255, "the background is opaque, but the colors are kept"
+
+
+def test_render_trimesh_scene_to_png_concurrently() -> None:
+    """Several thumbnails rendered at the same time don't break each other.
+
+    The rows of a page are transformed in parallel (see libapi.rows_utils.transform_rows), and every
+    thread creates its own OpenGL context on the EGL display of the process. pyrender deletes a
+    context by terminating that shared display: the contexts of the other threads become invalid,
+    and their next EGL call fails with EGL_NOT_INITIALIZED.
+    """
+    ensure_mesh_rendering()
+    errors: list[str] = []
+
+    def render() -> None:
+        try:
+            # like the rows of a page: every thread decodes its own scene, and renders it
+            mesh = trimesh.load(PATH_TO_MESH_GLB)
+            assert isinstance(mesh, trimesh.Scene), "a .glb file is loaded as a scene"
+            for _ in range(2):
+                output_buffer = BytesIO()
+                _render_trimesh_scene_to_png(mesh, output_buffer)
+                output_buffer.seek(0)
+                image = PILImage.open(output_buffer)
+                assert image.size == (MESH_THUMBNAIL_WIDTH, MESH_THUMBNAIL_HEIGHT)
+        except Exception as error:
+            errors.append(repr(error))
+
+    threads = [threading.Thread(target=render) for _ in range(4)]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+    assert not errors, f"the concurrent renders failed: {errors}"
+
+
+def test_delete_pyrender_platform_keeps_the_shared_display() -> None:
+    """Only the context of an EGL platform is deleted: the display it's attached to stays alive."""
+    pytest.importorskip("OpenGL.EGL", reason="the EGL libraries are not installed")
+    platform = Mock(spec_set=["_egl_display", "_egl_context", "delete_context"])
+    display, context = Mock(), Mock()
+    platform._egl_display = display
+    platform._egl_context = context
+    with (
+        patch("OpenGL.EGL.eglMakeCurrent") as eglMakeCurrent,
+        patch("OpenGL.EGL.eglDestroyContext") as eglDestroyContext,
+        patch("OpenGL.EGL.eglTerminate") as eglTerminate,
+    ):
+        _delete_pyrender_platform(platform)
+    eglMakeCurrent.assert_called_once()
+    eglDestroyContext.assert_called_once_with(display, context)
+    # the display is the one of the whole process: it's shared by the other threads, and stays alive
+    eglTerminate.assert_not_called()
+    platform.delete_context.assert_not_called()  # pyrender's deleting method is not called
+    # the platform is marked as deleted: pyrender doesn't terminate the display when it's collected
+    assert platform._egl_display is None
+    assert platform._egl_context is None
+    with patch("OpenGL.EGL.eglDestroyContext") as eglDestroyContext:
+        _delete_pyrender_platform(platform)  # a deleted platform is not deleted twice
+    eglDestroyContext.assert_not_called()
 
 
 @pytest.mark.parametrize(
@@ -429,7 +499,7 @@ def test_render_trimesh_scene_to_png_without_alpha_channel() -> None:
     ],
 )
 def test_robust_format_texture_source_fixes(texture: np.ndarray, expected: np.ndarray) -> None:
-    from pyrender.utils import format_texture_source  # type: ignore
+    from pyrender.utils import format_texture_source
 
     out = _robust_format_texture_source(texture, "RGBA")
     assert out is not None
