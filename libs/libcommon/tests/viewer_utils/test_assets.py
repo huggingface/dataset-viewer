@@ -295,6 +295,12 @@ def test_create_mesh_thumbnail_file_types(file_type: str, storage_client_with_ur
     assert pixels[0, 0, 3] == 0, "the corners are the background: it must be transparent"
     coverage = float((pixels[:, :, 3] > 0).mean())
     assert 0.01 < coverage < 0.95, f"the mesh covers {coverage:.2%} of the thumbnail, in {file_type}"
+    rows, columns = np.nonzero(pixels[:, :, 3])
+    filled = max(
+        (columns.max() - columns.min() + 1) / MESH_THUMBNAIL_WIDTH,
+        (rows.max() - rows.min() + 1) / MESH_THUMBNAIL_HEIGHT,
+    )
+    assert filled > 0.85, f"the mesh fills {filled:.0%} of the thumbnail width or height, in {file_type}"
 
 
 def test_create_mesh_thumbnail_scene(storage_client_with_url_preparator: StorageClient) -> None:
