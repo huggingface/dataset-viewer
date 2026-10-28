@@ -609,8 +609,12 @@ def _render_splats(point_cloud: "trimesh.PointCloud", width: int, height: int) -
         lens = lens * [[scale], [scale], [1.0]]
         frame_width, frame_height = round(image_width * scale), round(image_height * scale)
     else:
-        # a few stray splats far away would shrink the scene to a speck: the view frames the bulk of them
-        low, high = np.percentile(positions, [2, 98], axis=0)
+        # the background of a captured scene surrounds it, and would hide it: only the splats around the
+        # bulk of them are drawn, which also leaves out the stray ones that would shrink it to a speck
+        low, high = np.percentile(positions, [10, 90], axis=0)
+        margin = (high - low) * 0.1
+        bulk = ((positions >= low - margin) & (positions <= high + margin)).all(axis=1)
+        positions, colors, opacities, sizes = positions[bulk], colors[bulk], opacities[bulk], sizes[bulk]
         center, radius = (low + high) / 2, float(np.linalg.norm(high - low) / 2)
         elevation, azimuth = np.radians(30.0), np.radians(MESH_CAMERA_AZIMUTH_DEG)
         # splats are trained in the OpenCV convention, with y down: the camera is above them at -y
