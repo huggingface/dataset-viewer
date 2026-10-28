@@ -32,7 +32,7 @@ def mesh_rendering_available() -> bool:
     os.environ.setdefault("PYOPENGL_PLATFORM", PREFERRED_PLATFORM)
     try:
         import numpy as np
-        import pyrender  # type: ignore
+        import pyrender
 
         scene = pyrender.Scene(bg_color=[0.0, 0.0, 0.0, 0.0])  # a fully transparent background
         scene.add(pyrender.PerspectiveCamera(yfov=1.0), pose=np.eye(4))  # pyrender requires a camera

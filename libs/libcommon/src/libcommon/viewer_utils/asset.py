@@ -8,7 +8,6 @@ from collections.abc import Hashable
 from io import BufferedReader, BytesIO
 from tempfile import NamedTemporaryFile
 from typing import TYPE_CHECKING, Any, Optional, TypedDict, Union
-from unittest.mock import patch
 
 import fitz
 import numpy as np
@@ -34,6 +33,9 @@ LOCK = threading.Lock()
 # the size of the rendered 3D thumbnails, in pixels
 MESH_THUMBNAIL_WIDTH = 800
 MESH_THUMBNAIL_HEIGHT = 600
+# has pyrender's format_texture_source already been replaced by the robust version? (see
+# _patch_pyrender_texture_formatting)
+PYRENDER_TEXTURES_ARE_PATCHED = False
 
 logger = logging.getLogger(__name__)
 
@@ -443,6 +445,83 @@ def _fit_to_frame(image: "Image.Image", width: int, height: int) -> "Image.Image
     return frame
 
 
+def _patch_pyrender_texture_formatting() -> None:
+    """Replace pyrender's format_texture_source by the version which accepts more textures.
+
+    The name is looked up in the module where it's used, so every call site is replaced. It's done
+    once for the whole process, instead of patching and unpatching around every render: the rows of
+    a /rows request are rendered in parallel (see libapi.rows_utils.transform_rows), so a patch
+    reverted by a thread would give the original function back to the other threads, in the middle
+    of their render.
+    """
+    global PYRENDER_TEXTURES_ARE_PATCHED
+    if PYRENDER_TEXTURES_ARE_PATCHED:
+        return
+    # importing a submodule also binds the top-level "pyrender" module
+    import pyrender.material
+    import pyrender.texture
+
+    pyrender.material.format_texture_source = _robust_format_texture_source
+    pyrender.texture.format_texture_source = _robust_format_texture_source
+    PYRENDER_TEXTURES_ARE_PATCHED = True
+
+
+def _create_pyrender_platform(width: int, height: int) -> Any:
+    """Create the offscreen OpenGL platform of pyrender, for EGL (the default) or OSMesa.
+
+    It's what pyrender's OffscreenRenderer does, without the renderer it creates along with it: the
+    lifecycle of the OpenGL context is managed here instead (see _delete_pyrender_platform).
+    """
+    platform = os.environ.get("PYOPENGL_PLATFORM") or "egl"
+    if platform == "osmesa":
+        from pyrender.platforms.osmesa import OSMesaPlatform
+
+        return OSMesaPlatform(width, height)
+    if platform != "egl":
+        raise ValueError(f"Unsupported PYOPENGL_PLATFORM: {platform}")
+    from pyrender.platforms import egl
+
+    device_id = int(os.environ.get("EGL_DEVICE_ID", "0"))
+    return egl.EGLPlatform(width, height, device=egl.get_device_by_index(device_id))
+
+
+def _delete_pyrender_platform(platform: Any) -> None:
+    """Delete the OpenGL context created by _create_pyrender_platform, and only it.
+
+    pyrender's own EGLPlatform.delete_context() also calls eglTerminate() on the display. That
+    display is the default display of the whole process, shared by every renderer: terminating it
+    invalidates the contexts of the other threads, and the next EGL call of a thumbnail rendered in
+    parallel fails with EGL_NOT_INITIALIZED (the rows of a /rows request are rendered in parallel,
+    see libapi.rows_utils.transform_rows). Only the context is deleted here, and the platform is
+    marked as deleted, so that pyrender doesn't terminate the display either when it's
+    garbage-collected (Platform.__del__ calls delete_context()). The display stays initialized until
+    the process exits, which is fine: it costs nothing, and nothing else needs it terminated.
+    """
+    display = getattr(platform, "_egl_display", None)
+    if display is None:
+        # not the EGL platform (only OSMesa is left): its context is not shared with the other
+        # renderers, so pyrender can delete it as usual
+        platform.delete_context()
+        return
+    from OpenGL.EGL import EGL_NO_CONTEXT, EGL_NO_SURFACE, eglDestroyContext, eglMakeCurrent
+
+    try:
+        context = getattr(platform, "_egl_context", None)
+        if context is not None:
+            # detach the context from the thread before destroying it
+            eglMakeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT)
+            eglDestroyContext(display, context)
+    except Exception:
+        # a context we cannot delete is leaked until the process exits: it's not worth failing the
+        # render, which succeeded
+        logger.warning("Could not delete the OpenGL context used to render a 3D thumbnail.", exc_info=True)
+    finally:
+        # whatever happened, pyrender must not try to delete the context, nor to terminate the
+        # display, when the platform is garbage-collected
+        platform._egl_context = None
+        platform._egl_display = None
+
+
 def _render_trimesh_scene_to_png(
     trimesh_scene: "trimesh.Scene",
     output_buffer: BytesIO,
@@ -464,26 +543,22 @@ def _render_trimesh_scene_to_png(
     os.environ.setdefault("PYOPENGL_PLATFORM", "egl")
 
     import numpy as np
-    import pyrender  # type: ignore
+    import pyrender
     from PIL import Image as PILImage
 
-    # 1. Convert trimesh.Scene to pyrender.Scene
-    #
     # pyrender formats the textures with its own format_texture_source, which refuses some of the
-    # textures trimesh extracts from a 3D file (see _robust_format_texture_source). As the name is
-    # looked up in the module where it's used, both call sites are patched.
+    # textures trimesh extracts from a 3D file (see _robust_format_texture_source)
+    _patch_pyrender_texture_formatting()
+
+    # 1. Convert trimesh.Scene to pyrender.Scene
     geometries: dict[Hashable, Any] = {}
-    with (
-        patch("pyrender.material.format_texture_source", _robust_format_texture_source),
-        patch("pyrender.texture.format_texture_source", _robust_format_texture_source),
-    ):
-        for name, geom in trimesh_scene.geometry.items():
-            try:
-                geometries[name] = pyrender.Mesh.from_trimesh(geom)
-            except Exception:
-                # a geometry we cannot render (a point cloud, for instance) must not prevent us from
-                # rendering the rest of the scene
-                logger.warning(f"Skipping the geometry {name} while rendering a 3D thumbnail.", exc_info=True)
+    for name, geom in trimesh_scene.geometry.items():
+        try:
+            geometries[name] = pyrender.Mesh.from_trimesh(geom)
+        except Exception:
+            # a geometry we cannot render (a point cloud, for instance) must not prevent us from
+            # rendering the rest of the scene
+            logger.warning(f"Skipping the geometry {name} while rendering a 3D thumbnail.", exc_info=True)
     if not geometries:
         raise ValueError("The 3D scene doesn't contain any renderable geometry.")
 
@@ -514,27 +589,48 @@ def _render_trimesh_scene_to_png(
         light = pyrender.DirectionalLight(color=[1.0, 1.0, 1.0], intensity=intensity)
         pyrender_scene.add(light, pose=_pose_looking_along(world_direction, camera_pose[:3, 3]))
 
-    # 5. Initialize the Offscreen Renderer
-    renderer = pyrender.OffscreenRenderer(
-        viewport_width=width * MESH_THUMBNAIL_SUPERSAMPLING, viewport_height=height * MESH_THUMBNAIL_SUPERSAMPLING
-    )
-
+    # 5. Initialize the offscreen renderer: an OpenGL context, and the pyrender renderer which uses
+    # it. They are not managed by pyrender's OffscreenRenderer, as deleting it would terminate the
+    # EGL display shared by the whole process (see _delete_pyrender_platform), and would run a full
+    # garbage collection for every rendered row.
+    viewport_width = width * MESH_THUMBNAIL_SUPERSAMPLING
+    viewport_height = height * MESH_THUMBNAIL_SUPERSAMPLING
+    platform = _create_pyrender_platform(viewport_width, viewport_height)
     try:
-        # Render the scene. The RGBA flag asks for the alpha channel: without it, pyrender always
-        # returns an RGB image, and the background cannot be transparent.
-        color_image, _ = renderer.render(pyrender_scene, flags=pyrender.RenderFlags.RGBA)
+        platform.init_context()
+        platform.make_current()
+        renderer = pyrender.Renderer(viewport_width=viewport_width, viewport_height=viewport_height)
+        try:
+            # Render the scene. The RGBA flag asks for the alpha channel: without it, pyrender always
+            # returns an RGB image, and the background cannot be transparent.
+            flags = pyrender.RenderFlags.RGBA
+            if platform.supports_framebuffers():
+                # EGL renders to an offscreen framebuffer, and returns the color and depth buffers
+                color_image, _ = renderer.render(pyrender_scene, flags=flags | pyrender.RenderFlags.OFFSCREEN)
+            else:
+                # OSMesa renders to the buffer attached to its context, which is read afterwards
+                renderer.render(pyrender_scene, flags=flags)
+                color_image = renderer.read_color_buf()
 
-        # Save the image using Pillow as RGBA. Some platforms (e.g OSMesa) return an RGB image even
-        # with the RGBA flag: in that case the background is opaque, and only the colors are kept.
-        if color_image.shape[2] == 3:
-            img = PILImage.fromarray(color_image).convert("RGBA").resize((width, height), PILImage.Resampling.LANCZOS)
-        else:
-            img = _fit_to_frame(PILImage.fromarray(color_image, mode="RGBA"), width, height)
+            # Save the image using Pillow as RGBA. Some platforms (e.g OSMesa) return an RGB image even
+            # with the RGBA flag: in that case the background is opaque, and only the colors are kept.
+            if color_image.shape[2] == 3:
+                img = PILImage.fromarray(color_image).convert("RGBA")
+                img = img.resize((width, height), PILImage.Resampling.LANCZOS)
+            else:
+                img = _fit_to_frame(PILImage.fromarray(color_image, mode="RGBA"), width, height)
 
-        img.save(output_buffer, "PNG")
+            img.save(output_buffer, "PNG")
 
+        finally:
+            # the failures of the cleanup must not fail a render which succeeded: the thumbnail is
+            # already in the buffer, and a leaked OpenGL resource is freed with the context anyway
+            try:
+                renderer.delete()
+            except Exception:
+                logger.warning("Could not delete the OpenGL resources used to render a 3D thumbnail.", exc_info=True)
     finally:
-        renderer.delete()
+        _delete_pyrender_platform(platform)
 
 
 def create_mesh_thumbnail(

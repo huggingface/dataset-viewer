@@ -111,6 +111,9 @@ module = [
     "dateutil.*",
     "torchcodec.*",
     "duckdb.*",
+    # pyrender and PyOpenGL (used to render the 3D thumbnails) don't ship type information
+    "OpenGL.*",
+    "pyrender.*",
     "libviewer.*"
 ]
 ignore_missing_imports = true
