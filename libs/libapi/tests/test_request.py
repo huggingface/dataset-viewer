@@ -11,6 +11,8 @@ from starlette.requests import Request
 
 from libapi.exceptions import InvalidParameterError, MissingRequiredParameterError
 from libapi.request import (
+    MAX_CALLER_HEADER_LENGTH,
+    get_caller_debug_info,
     get_request_ip,
     get_request_parameter,
     get_request_parameter_length,
@@ -109,6 +111,38 @@ def test_get_request_ip(build_request: Callable[..., Request]) -> None:
     # the forwarded headers are not used: they are set by the callers, when the peer address comes from the connection
     request = build_request(headers={"x-forwarded-for": HUB_IP}, client=("192.0.2.1", 555))
     assert get_request_ip(request) == "192.0.2.1"
+
+
+def test_get_caller_debug_info(build_request: Callable[..., Request]) -> None:
+    request = build_request(
+        headers={
+            "host": "datasets-server.huggingface.co",
+            "x-forwarded-for": "10.0.5.42, 203.0.113.7",
+            "authorization": "Bearer hf_secret",
+            "via": "1.1 gw",
+        },
+        client=(HUB_IP, 54321),
+    )
+    info = get_caller_debug_info(request)
+    assert "peer='10.0.5.42:54321'" in info
+    assert "host=datasets-server.huggingface.co" in info
+    assert "x-forwarded-for=10.0.5.42, 203.0.113.7" in info
+    assert "via=1.1 gw" in info
+    # the credentials and whatever is not a forwarded header never end up in the logs
+    assert "hf_secret" not in info
+    assert "authorization" not in info
+
+
+def test_get_caller_debug_info_without_anything(build_request: Callable[..., Request]) -> None:
+    assert get_caller_debug_info(build_request()) == "peer='-', headers=[]"
+
+
+def test_get_caller_debug_info_caps_the_headers(build_request: Callable[..., Request]) -> None:
+    # a caller is free to send a header of any length: the log line stays bounded
+    request = build_request(headers={"x-forwarded-for": "a" * 500})
+    info = get_caller_debug_info(request)
+    assert "a" * MAX_CALLER_HEADER_LENGTH in info
+    assert "a" * (MAX_CALLER_HEADER_LENGTH + 1) not in info
 
 
 @pytest.mark.parametrize(
