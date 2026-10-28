@@ -26,6 +26,7 @@ from admin.routes.cache_reports_with_content import (
     create_cache_reports_with_content_endpoint,
 )
 from admin.routes.dataset_status import create_dataset_status_endpoint
+from admin.routes.delete_job import create_delete_job_endpoint
 from admin.routes.force_refresh import create_force_refresh_endpoint
 from admin.routes.healthcheck import healthcheck_endpoint
 from admin.routes.metrics import create_metrics_endpoint
@@ -34,6 +35,7 @@ from admin.routes.num_dataset_infos_by_builder_name import (
 )
 from admin.routes.pending_jobs import create_pending_jobs_endpoint
 from admin.routes.recreate_dataset import create_recreate_dataset_endpoint
+from admin.routes.update_job import create_update_job_endpoint
 
 
 def create_app() -> Starlette:
@@ -137,6 +139,26 @@ def create_app() -> Starlette:
                 hf_timeout_seconds=app_config.admin.hf_timeout_seconds,
                 blocked_datasets=app_config.common.blocked_datasets,
                 storage_clients=storage_clients,
+            ),
+            methods=["POST"],
+        ),
+        # used to edit a job of the queue, by the admin UI
+        Route(
+            "/admin/update-job",
+            endpoint=create_update_job_endpoint(
+                external_auth_url=app_config.admin.external_auth_url,
+                organization=app_config.admin.hf_organization,
+                hf_timeout_seconds=app_config.admin.hf_timeout_seconds,
+            ),
+            methods=["POST"],
+        ),
+        # used to delete a job of the queue, by the admin UI
+        Route(
+            "/admin/delete-job",
+            endpoint=create_delete_job_endpoint(
+                external_auth_url=app_config.admin.external_auth_url,
+                organization=app_config.admin.hf_organization,
+                hf_timeout_seconds=app_config.admin.hf_timeout_seconds,
             ),
             methods=["POST"],
         ),

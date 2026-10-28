@@ -11,7 +11,7 @@ import pytz
 from libcommon.constants import QUEUE_TTL_SECONDS
 from libcommon.dtos import Priority, Status, WorkerSize
 from libcommon.queue.dataset_blockages import DATASET_STATUS_NORMAL, block_dataset
-from libcommon.queue.jobs import EmptyQueueError, JobDocument, Queue
+from libcommon.queue.jobs import EmptyQueueError, JobDocument, JobDoesNotExistError, Queue
 from libcommon.queue.metrics import JobTotalMetricDocument, WorkerSizeJobsCountDocument
 from libcommon.queue.past_jobs import JOB_DURATION_MIN_SECONDS, PastJobDocument
 from libcommon.resources import QueueMongoResource
@@ -30,6 +30,10 @@ def assert_metric_jobs_per_worker(worker_size: str, jobs_count: int) -> None:
     metric = WorkerSizeJobsCountDocument.objects(worker_size=worker_size).first()
     assert metric is not None, metric
     assert metric.jobs_count == jobs_count, metric.jobs_count
+
+
+def get_metrics_per_worker() -> dict[str, int]:
+    return {metric.worker_size.value: metric.jobs_count for metric in WorkerSizeJobsCountDocument.objects()}
 
 
 def assert_past_jobs_number(count: int) -> None:
@@ -233,6 +237,158 @@ def test_delete_waiting_jobs_by_job_id_blocked() -> None:
     assert_metric_jobs_per_worker(worker_size=WorkerSize.medium, jobs_count=0)
     assert queue.delete_waiting_jobs_by_job_id(job_ids=[job.info()["job_id"]]) == 1
     assert_metric_jobs_per_worker(worker_size=WorkerSize.medium, jobs_count=0)
+
+
+def test_update_job_priority() -> None:
+    test_type = "test_type"
+    test_difficulty = 50
+    queue = Queue()
+    job = queue.add_job(
+        job_type=test_type, dataset="test_dataset", revision="test_revision", difficulty=test_difficulty
+    )
+    job_id = job.info()["job_id"]
+    assert job.priority == Priority.LOW
+
+    updated_job = queue.update_job(job_id=job_id, priority=Priority.HIGH)
+    assert updated_job.priority == Priority.HIGH
+    assert JobDocument.get(job_id).priority == Priority.HIGH
+    # the other fields are left untouched
+    assert updated_job.dataset == "test_dataset"
+    assert updated_job.status == Status.WAITING
+    assert updated_job.difficulty == test_difficulty
+    # a change of priority does not change the metrics
+    assert_metric_jobs_per_type(job_type=test_type, status=Status.WAITING, total=1)
+    assert_metric_jobs_per_worker(worker_size=WorkerSize.medium, jobs_count=1)
+    # the job is still the one that gets started
+    assert queue.start_job()["job_id"] == job_id
+
+
+def test_update_job_difficulty() -> None:
+    test_type = "test_type"
+    queue = Queue()
+    job = queue.add_job(job_type=test_type, dataset="test_dataset", revision="test_revision", difficulty=50)
+    job_id = job.info()["job_id"]
+    assert job.difficulty == 50
+    assert job.worker_size == WorkerSize.medium
+    assert_metric_jobs_per_worker(worker_size=WorkerSize.medium, jobs_count=1)
+
+    updated_job = queue.update_job(job_id=job_id, difficulty=80)
+    assert updated_job.difficulty == 80
+    assert updated_job.priority == Priority.LOW
+    # the worker size is derived from the difficulty: it has been updated, in the document and in the metrics
+    assert updated_job.worker_size == WorkerSize.heavy
+    assert JobDocument.get(job_id).worker_size == WorkerSize.heavy
+    assert_metric_jobs_per_worker(worker_size=WorkerSize.medium, jobs_count=0)
+    assert_metric_jobs_per_worker(worker_size=WorkerSize.heavy, jobs_count=1)
+
+    # the metrics of the worker sizes only count the waiting jobs: a started job does not move anymore
+    queue.start_job()
+    assert_metric_jobs_per_worker(worker_size=WorkerSize.heavy, jobs_count=0)
+    updated_job = queue.update_job(job_id=job_id, difficulty=10)
+    assert updated_job.status == Status.STARTED
+    assert updated_job.difficulty == 10
+    assert updated_job.worker_size == WorkerSize.light
+    assert JobDocument.get(job_id).worker_size == WorkerSize.light
+    assert_metric_jobs_per_worker(worker_size=WorkerSize.heavy, jobs_count=0)
+    assert all(metric.jobs_count >= 0 for metric in WorkerSizeJobsCountDocument.objects())
+
+
+def test_update_job_difficulty_of_blocked_dataset() -> None:
+    # the jobs of the blocked datasets are not counted in the worker size metrics (see increase_metric), so
+    # updating the difficulty of such a job leaves the metrics untouched
+    queue = Queue()
+    block_dataset("blocked_dataset")
+    job = queue.add_job(
+        job_type="test_type",
+        dataset="blocked_dataset",
+        revision="test_revision",
+        config="config",
+        split=None,
+        difficulty=50,
+    )
+    metrics_before = get_metrics_per_worker()
+
+    updated_job = queue.update_job(job_id=job.info()["job_id"], difficulty=80)
+    assert updated_job.status == Status.WAITING
+    assert updated_job.difficulty == 80
+    assert updated_job.worker_size == WorkerSize.heavy
+    assert get_metrics_per_worker() == metrics_before
+
+
+def test_update_job_does_nothing_if_no_change() -> None:
+    test_type = "test_type"
+    test_difficulty = 50
+    queue = Queue()
+    job = queue.add_job(
+        job_type=test_type, dataset="test_dataset", revision="test_revision", difficulty=test_difficulty
+    )
+    updated_job = queue.update_job(job_id=job.info()["job_id"], priority=Priority.LOW, difficulty=test_difficulty)
+    assert updated_job.priority == Priority.LOW
+    assert updated_job.difficulty == test_difficulty
+    assert updated_job.status == Status.WAITING
+    assert JobDocument.objects().count() == 1
+    assert_metric_jobs_per_type(job_type=test_type, status=Status.WAITING, total=1)
+    assert_metric_jobs_per_worker(worker_size=WorkerSize.medium, jobs_count=1)
+
+
+def test_update_or_delete_job_that_does_not_exist() -> None:
+    # a valid job id, that does not exist in the queue
+    job_id = "5f9a6b3d71b4c8c0b8e0d123"
+    queue = Queue()
+    with pytest.raises(JobDoesNotExistError):
+        queue.update_job(job_id=job_id, priority=Priority.HIGH)
+    with pytest.raises(JobDoesNotExistError):
+        queue.update_job(job_id=job_id, difficulty=50)
+    with pytest.raises(JobDoesNotExistError):
+        queue.delete_job(job_id=job_id)
+    assert JobDocument.objects().count() == 0
+    assert JobTotalMetricDocument.objects().count() == 0
+
+
+def test_delete_waiting_job() -> None:
+    test_type = "test_type"
+    test_difficulty = 50
+    queue = Queue()
+    job = queue.add_job(
+        job_type=test_type, dataset="test_dataset", revision="test_revision", difficulty=test_difficulty
+    )
+    job_id = job.info()["job_id"]
+    assert_metric_jobs_per_type(job_type=test_type, status=Status.WAITING, total=1)
+    assert_metric_jobs_per_worker(worker_size=WorkerSize.medium, jobs_count=1)
+
+    # the job id is part of the dumps, so that the admin UI can act on the job
+    assert queue.get_dataset_pending_jobs_for_type(dataset="test_dataset", job_type=test_type)[0]["job_id"] == job_id
+
+    deleted_job = queue.delete_job(job_id=job_id)
+    assert deleted_job.dataset == "test_dataset"
+    assert JobDocument.objects().count() == 0
+    assert queue.get_dataset_pending_jobs_for_type(dataset="test_dataset", job_type=test_type) == []
+    assert_metric_jobs_per_type(job_type=test_type, status=Status.WAITING, total=0)
+    assert_metric_jobs_per_worker(worker_size=WorkerSize.medium, jobs_count=0)
+
+    # deleting twice raises: the job does not exist anymore, and the metrics are not decreased twice
+    with pytest.raises(JobDoesNotExistError):
+        queue.delete_job(job_id=job_id)
+    assert_metric_jobs_per_type(job_type=test_type, status=Status.WAITING, total=0)
+    assert_metric_jobs_per_worker(worker_size=WorkerSize.medium, jobs_count=0)
+
+
+def test_delete_started_job() -> None:
+    test_type = "test_type"
+    test_difficulty = 50
+    queue = Queue()
+    queue.add_job(job_type=test_type, dataset="test_dataset", revision="test_revision", difficulty=test_difficulty)
+    job_id = queue.start_job()["job_id"]
+    assert_metric_jobs_per_type(job_type=test_type, status=Status.STARTED, total=1)
+
+    # a started job can be deleted from the queue: the worker is not interrupted, but it won't be able to
+    # finish the job anymore (finish_job is a no-op, and it does not decrease the metrics twice)
+    deleted_job = queue.delete_job(job_id=job_id)
+    assert deleted_job.status == Status.STARTED
+    assert JobDocument.objects().count() == 0
+    assert_metric_jobs_per_type(job_type=test_type, status=Status.STARTED, total=0)
+    assert queue.finish_job(job_id=job_id) is None
+    assert_metric_jobs_per_type(job_type=test_type, status=Status.STARTED, total=0)
 
 
 def check_job(queue: Queue, expected_dataset: str, expected_split: str, expected_priority: Priority) -> None:

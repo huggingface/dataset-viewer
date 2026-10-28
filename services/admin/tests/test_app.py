@@ -4,7 +4,9 @@
 from typing import Optional
 
 import pytest
+from libcommon.dtos import Priority, WorkerSize
 from libcommon.processing_graph import processing_graph
+from libcommon.queue.jobs import JobDocument, Queue
 from starlette.testclient import TestClient
 
 from admin.app import create_app
@@ -87,6 +89,76 @@ def test_dataset_status(client: TestClient) -> None:
     for processing_step in processing_graph.get_processing_steps():
         assert not json[processing_step.job_type]["cached_responses"]
         assert not json[processing_step.job_type]["jobs"]
+
+
+@pytest.mark.parametrize(
+    "params,http_status,error_code",
+    [
+        # the job id is required
+        ({"priority": "high"}, 422, "MissingRequiredParameter"),
+        # the job id must be a valid one
+        ({"job_id": "not-a-valid-job-id", "priority": "high"}, 422, "InvalidParameter"),
+        # at least one field to update is required
+        ({"job_id": "5f9a6b3d71b4c8c0b8e0d123"}, 422, "InvalidParameter"),
+        ({"job_id": "5f9a6b3d71b4c8c0b8e0d123", "priority": "not-a-valid-priority"}, 422, "InvalidParameter"),
+        ({"job_id": "5f9a6b3d71b4c8c0b8e0d123", "difficulty": "not-a-number"}, 422, "InvalidParameter"),
+        ({"job_id": "5f9a6b3d71b4c8c0b8e0d123", "difficulty": "101"}, 422, "InvalidParameter"),
+        ({"job_id": "5f9a6b3d71b4c8c0b8e0d123", "difficulty": "-1"}, 422, "InvalidParameter"),
+        # the job does not exist
+        ({"job_id": "5f9a6b3d71b4c8c0b8e0d123", "priority": "high"}, 404, "JobNotFound"),
+        ({"job_id": "5f9a6b3d71b4c8c0b8e0d123", "difficulty": "50"}, 404, "JobNotFound"),
+    ],
+)
+def test_update_job_errors(
+    client: TestClient,
+    params: dict[str, str],
+    http_status: int,
+    error_code: str,
+) -> None:
+    response = client.request("post", "/admin/update-job", params=params)
+    assert response.status_code == http_status
+    assert response.headers["X-Error-Code"] == error_code
+    assert isinstance(response.json()["error"], str)
+
+
+def test_update_and_delete_job(client: TestClient) -> None:
+    queue = Queue()
+    job = queue.add_job(job_type="test_type", dataset="test-dataset", revision="test-revision", difficulty=50)
+    job_id = job.info()["job_id"]
+
+    response = client.request("post", "/admin/update-job", params={"job_id": job_id, "priority": "high"})
+    assert response.status_code == 200
+    assert response.json()["status"] == "ok"
+    assert response.json()["job"]["job_id"] == job_id
+    assert response.json()["job"]["priority"] == "high"
+    assert response.json()["job"]["difficulty"] == 50
+    assert JobDocument.get(job_id).priority is Priority.HIGH
+
+    response = client.request("post", "/admin/update-job", params={"job_id": job_id, "difficulty": "80"})
+    assert response.status_code == 200
+    assert response.json()["job"]["priority"] == "high"
+    assert response.json()["job"]["difficulty"] == 80
+    # the worker size is derived from the difficulty
+    assert JobDocument.get(job_id).worker_size is WorkerSize.heavy
+
+    response = client.request("post", "/admin/delete-job", params={"job_id": job_id})
+    assert response.status_code == 200
+    assert response.json() == {"status": "ok", "job_id": job_id}
+    assert JobDocument.objects().count() == 0
+
+    # the job cannot be deleted twice
+    response = client.request("post", "/admin/delete-job", params={"job_id": job_id})
+    assert response.status_code == 404
+    assert response.headers["X-Error-Code"] == "JobNotFound"
+
+
+def test_delete_job_errors(client: TestClient) -> None:
+    response = client.request("post", "/admin/delete-job")
+    assert response.status_code == 422
+    assert response.headers["X-Error-Code"] == "MissingRequiredParameter"
+    response = client.request("post", "/admin/delete-job", params={"job_id": "not-a-valid-job-id"})
+    assert response.status_code == 422
+    assert response.headers["X-Error-Code"] == "InvalidParameter"
 
 
 @pytest.mark.parametrize(
