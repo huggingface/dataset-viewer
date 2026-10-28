@@ -409,11 +409,86 @@ def test_get_mesh_cell_value_with_point_cloud(
         storage_client_with_url_preparator.get_full_path(f"{asset_path}/mesh.ply.png"), "rb"
     ) as file:
         pixels = np.asarray(Image.open(file).convert("RGBA")).astype(int)
-    drawn = pixels[pixels[:, :, 3] > 0]
+    # the antialiased edges of the points are partly transparent, and darker
+    drawn = pixels[pixels[:, :, 3] > 127]
     assert len(drawn), "the points are drawn"
     if with_splat_colors:
         # the splats get their color from the f_dc coefficients: red, darkened by the shading
         assert (drawn[:, 0] > 4 * drawn[:, 1:3].max(axis=1)).all()
+
+
+def splat_ply(
+    positions: np.ndarray, red: np.ndarray, camera: Optional[tuple[np.ndarray, np.ndarray, list[int]]] = None
+) -> bytes:
+    """A binary Gaussian splat ply file of opaque red or blue splats, with the capture camera of SHARP files."""
+    fields = ["x", "y", "z", "f_dc_0", "f_dc_1", "f_dc_2", "opacity", "scale_0", "scale_1", "scale_2"]
+    splats = np.zeros(len(positions), dtype=[(name, "<f4") for name in fields])
+    for i, name in enumerate(["x", "y", "z"]):
+        splats[name] = positions[:, i]
+    # f_dc = 1.7 is a full channel: 0.5 + 0.282 * 1.7 > 0.98, and 0.5 + 0.282 * -1.7 < 0.02
+    splats["f_dc_0"] = np.where(red, 1.7, -1.7)
+    splats["f_dc_2"] = np.where(red, -1.7, 1.7)
+    splats["f_dc_1"] = -1.7
+    splats["opacity"] = 5.0
+    for name in ["scale_0", "scale_1", "scale_2"]:
+        splats[name] = np.log(0.05)
+    header = ["ply", "format binary_little_endian 1.0", f"element vertex {len(splats)}"]
+    header += [f"property float {name}" for name in fields]
+    body = splats.tobytes()
+    if camera:
+        extrinsic, intrinsic, image_size = camera
+        header += [
+            "element extrinsic 16",
+            "property float extrinsic",
+            "element intrinsic 9",
+            "property float intrinsic",
+        ]
+        header += ["element image_size 2", "property uint image_size"]
+        body += extrinsic.astype("<f4").tobytes() + intrinsic.astype("<f4").tobytes()
+        body += np.array(image_size, dtype="<u4").tobytes()
+    return "\n".join(header + ["end_header", ""]).encode() + body
+
+
+def thumbnail_pixels(value: Any, storage_client: StorageClient) -> np.ndarray:
+    from PIL import Image
+
+    path = parse.urlparse(value["thumbnail"]["src"]).path.removeprefix(f"{parse.urlparse(ASSETS_BASE_URL).path}/")
+    with storage_client._fs.open(storage_client.get_full_path(path), "rb") as file:
+        return np.asarray(Image.open(file).convert("RGBA")).astype(int)
+
+
+def test_get_mesh_cell_value_with_gaussian_splats(storage_client_with_url_preparator: StorageClient) -> None:
+    """Splats with a size and an opacity are drawn as discs of their color."""
+    ensure_mesh_rendering()
+    points = trimesh.creation.icosphere(subdivisions=3).vertices
+    ply_bytes = splat_ply(points, red=np.ones(len(points), dtype=bool))
+    value = get_mesh_cell_value({"path": "splats.ply", "bytes": ply_bytes}, storage_client_with_url_preparator, 4)
+    pixels = thumbnail_pixels(value, storage_client_with_url_preparator)
+    drawn = pixels[pixels[:, :, 3] > 127]
+    assert len(drawn) > 0.2 * MESH_THUMBNAIL_WIDTH * MESH_THUMBNAIL_HEIGHT, "the discs cover the sphere"
+    assert (drawn[:, 0] > 4 * drawn[:, 1:3].max(axis=1)).all(), "the splats are red"
+
+
+def test_get_mesh_cell_value_with_gaussian_splats_and_capture_camera(
+    storage_client_with_url_preparator: StorageClient,
+) -> None:
+    """Splats are seen from the camera stored in the file: the thumbnail has the size of its photo."""
+    ensure_mesh_rendering()
+    # a camera at the origin looking along +z, with a 160x60 photo: red splats in front of it, blue ones behind
+    grid = np.stack(np.meshgrid(np.linspace(-4, 4, 80), np.linspace(-1.5, 1.5, 30)), axis=-1).reshape(-1, 2)
+    in_front = np.column_stack([grid, np.full(len(grid), 5.0)])
+    behind = in_front * [1, 1, -1]
+    camera = (np.eye(4), np.array([[100.0, 0, 80], [0, 100.0, 30], [0, 0, 1]]), [160, 60])
+    red = np.arange(2 * len(grid)) < len(grid)
+    ply_bytes = splat_ply(np.concatenate([in_front, behind]), red=red, camera=camera)
+    value = get_mesh_cell_value({"path": "scene.ply", "bytes": ply_bytes}, storage_client_with_url_preparator, 4)
+    pixels = thumbnail_pixels(value, storage_client_with_url_preparator)
+    # the 160x60 photo fits in the 800x600 thumbnail as 800x300, centered
+    assert (pixels[:140, :, 3] == 0).all() and (pixels[-140:, :, 3] == 0).all()
+    center = pixels[160:440, 20:780]
+    assert (center[:, :, 3] > 127).mean() > 0.9, "the splats in front of the camera fill the photo"
+    drawn = center[center[:, :, 3] > 127]
+    assert (drawn[:, 0] > 4 * drawn[:, 1:3].max(axis=-1)).all(), "the blue splats behind the camera are not drawn"
 
 
 @pytest.mark.parametrize("cell", ["a string", 42, {"path": None, "bytes": None}])
