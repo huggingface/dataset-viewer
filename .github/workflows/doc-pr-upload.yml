@@ -15,7 +15,7 @@ permissions:
 
 jobs:
   build:
-    uses: huggingface/doc-builder/.github/workflows/upload_pr_documentation.yml@90ddd199e07144a13408c523680c76987343c95f  # main
+    uses: huggingface/doc-builder/.github/workflows/upload_pr_documentation.yml@2a673ad9ee663a28e02e8aab4ceb7ec3b5a385b0  # main
     with:
       package_name: dataset-viewer
     secrets:
