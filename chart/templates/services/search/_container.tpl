@@ -49,6 +49,9 @@
   volumeMounts:
     {{ include "datasetsServer.csi.volumeMount" . | nindent 2 }}
   {{ include "volumeMountParquetMetadataRW" . | nindent 2 }}
+  # An emptyDir survives container restarts, so a liveness kill no longer drops every built index
+  - mountPath: {{ .Values.duckDBIndex.cacheDirectory | quote }}
+    name: duckdb-index-cache
   securityContext:
     allowPrivilegeEscalation: false
   readinessProbe:
@@ -60,6 +63,7 @@
   livenessProbe:
     failureThreshold: 30
     periodSeconds: 5
+    timeoutSeconds: {{ .Values.search.livenessProbeTimeoutSeconds }}
     httpGet:
       path: /healthcheck
       port: {{ .Values.search.uvicornPort }}
