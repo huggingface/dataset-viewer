@@ -587,7 +587,7 @@ workers:
     # The executor, the worker loop and the web app use ~975Mi together before any job, so a
     # 1Gi limit OOM-killed the pod on almost every job (~2,900 restarts a day). The request
     # matches that idle usage; the CPU request already caps a node at ~17 light workers, and
-    # 17 x 1536Mi still fits in the 32 GiB of the r6id.xlarge nodes.
+    # 17 x 1536Mi (25.5Gi) stays under the ~30Gi allocatable of an r6id.xlarge.
     resources:
       requests:
         cpu: 200m
