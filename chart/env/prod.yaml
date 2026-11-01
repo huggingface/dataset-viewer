@@ -584,13 +584,17 @@ workers:
         - targetQueueName: "worker_size_jobs_count"
           targetQueueLength: 150
           targetWorkerSize: "light"
+    # The executor, the worker loop and the web app use ~975Mi together before any job, so a
+    # 1Gi limit OOM-killed the pod on almost every job (~2,900 restarts a day). The request
+    # matches that idle usage; the CPU request already caps a node at ~17 light workers, and
+    # 17 x 1536Mi still fits in the 32 GiB of the r6id.xlarge nodes.
     resources:
       requests:
         cpu: 200m
-        memory: "100Mi"
+        memory: "1Gi"
       limits:
         cpu: 2
-        memory: "1Gi"
+        memory: "1536Mi"
 
 webhook:
   # Number of uvicorn workers for running the application
