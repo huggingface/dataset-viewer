@@ -37,4 +37,6 @@ spec:
       volumes:
         {{ include "datasetsServer.csi.volume" (dict "context" $ "workload" "search") | nindent 8 }}
         {{ include "volumeParquetMetadata" . | nindent 8 }}
+        - name: duckdb-index-cache
+          emptyDir: {}
       securityContext: {{ include "securityContext" . | nindent 8 }}

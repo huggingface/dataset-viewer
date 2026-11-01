@@ -618,6 +618,8 @@ search:
   cleanCacheProba: 0.05
   # Retention period for downloads.
   expiredTimeIntervalSeconds: 43_200 # 12 hours
+  # Seconds the kubelet waits for /healthcheck before counting a liveness failure
+  livenessProbeTimeoutSeconds: 1
 
   nodeSelector: {}
   replicas: 1

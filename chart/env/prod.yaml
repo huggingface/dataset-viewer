@@ -400,6 +400,9 @@ search:
   # https://docs.gunicorn.org/en/stable/design.html#how-many-workers
   # but we only set to 2 to avoid OOM
   uvicornNumWorkers: "2"
+  # /healthcheck shares the 2 uvicorn workers with search queries; at the 1s default the kubelet
+  # killed the pods ~100 times a day under load. Same reason as the ALB health check timeout below.
+  livenessProbeTimeoutSeconds: 10
   nodeSelector:
     role-datasets-server-search: "true"
   tolerations:
