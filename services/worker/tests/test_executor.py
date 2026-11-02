@@ -23,7 +23,7 @@ from libcommon.utils import get_datetime
 from mirakuru import ProcessExitedWithError, TimeoutExpired
 from pytest import fixture
 
-from worker.config import AppConfig, UvicornConfig
+from worker.config import AppConfig
 from worker.executor import WorkerExecutor
 from worker.job_runner_factory import JobRunnerFactory
 from worker.loop import Loop, WorkerState
@@ -492,12 +492,14 @@ def test_executor_stops_on_long_job(
     assert response.details == expected_error
 
 
-def test_executor_web_app_answers_after_a_pipe_buffer_of_logs(executor: WorkerExecutor) -> None:
+def test_executor_web_app_answers_after_a_pipe_buffer_of_logs(
+    executor: WorkerExecutor, monkeypatch: pytest.MonkeyPatch
+) -> None:
     # uvicorn logs the full URL of each request to its stdout: these long URLs write more than a 64 KiB pipe
     # buffer, which blocked the web app while nobody read its stdout.
-    uvicorn_config = UvicornConfig.from_env()
-    url = f"http://{uvicorn_config.hostname}:{uvicorn_config.port}/healthcheck?padding={'x' * 4_096}"
-    with executor._create_web_app_executor():
+    monkeypatch.setenv("WORKER_UVICORN_NUM_WORKERS", "1")  # as in prod, and it starts twice as fast
+    with executor._create_web_app_executor() as web_app:
+        url = f"http://{web_app.host}:{web_app.port}/healthcheck?padding={'x' * 4_096}"
         for _ in range(64):
             with urlopen(url, timeout=5) as response:
                 assert response.status == HTTPStatus.OK
