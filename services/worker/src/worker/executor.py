@@ -4,6 +4,7 @@ import asyncio
 import logging
 import os
 import signal
+import subprocess  # nosec
 import sys
 from collections.abc import Callable
 from datetime import datetime, timedelta
@@ -95,6 +96,10 @@ class WorkerExecutor:
             host=uvicorn_config.hostname,
             port=uvicorn_config.port,
             timeout=WEB_APP_STARTUP_TIMEOUT_SECONDS,
+            # mirakuru pipes stdout by default and nothing reads that pipe. uvicorn writes one access log
+            # line per request to it, so the default probes fill it in about 40 minutes: the web app then
+            # blocks on the write and the liveness probe restarts the pod. Errors still reach stderr.
+            stdout=subprocess.DEVNULL,
         )
 
     def start(self) -> None:
