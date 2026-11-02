@@ -7,6 +7,7 @@ from datetime import timedelta
 from http import HTTPStatus
 from pathlib import Path
 from unittest.mock import patch
+from urllib.request import urlopen
 
 import orjson
 import pytest
@@ -489,6 +490,19 @@ def test_executor_stops_on_long_job(
     assert response.split == long_job.split
     assert response.content == expected_error
     assert response.details == expected_error
+
+
+def test_executor_web_app_answers_after_a_pipe_buffer_of_logs(
+    executor: WorkerExecutor, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # uvicorn logs the full URL of each request to its stdout: these long URLs write more than a 64 KiB pipe
+    # buffer, which blocked the web app while nobody read its stdout.
+    monkeypatch.setenv("WORKER_UVICORN_NUM_WORKERS", "1")  # as in prod, and it starts twice as fast
+    with executor._create_web_app_executor() as web_app:
+        url = f"http://{web_app.host}:{web_app.port}/healthcheck?padding={'x' * 4_096}"
+        for _ in range(64):
+            with urlopen(url, timeout=5) as response:
+                assert response.status == HTTPStatus.OK
 
 
 if __name__ == "__main__":
