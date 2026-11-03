@@ -559,11 +559,20 @@ class Queue:
             # jobs) made each poll examine all its keys. Instead, list the namespaces that have waiting jobs
             # (a DISTINCT_SCAN: one key per namespace), keep those without started jobs, and query them with $in:
             # the index bounds then skip the excluded namespaces entirely.
-            waiting_namespaces = JobDocument._get_collection().distinct(
-                "namespace",
-                {"priority": priority.value, "status": Status.WAITING.value, "worker_size": worker_size.value},
-                hint=NEXT_WAITING_JOB_BY_NAMESPACE_INDEX,
-            )
+            # The distinct command is used directly: the pymongo type stubs do not expose its hint option.
+            jobs_collection = JobDocument._get_collection()
+            waiting_namespaces: list[str] = jobs_collection.database.command(
+                {
+                    "distinct": jobs_collection.name,
+                    "key": "namespace",
+                    "query": {
+                        "priority": priority.value,
+                        "status": Status.WAITING.value,
+                        "worker_size": worker_size.value,
+                    },
+                    "hint": NEXT_WAITING_JOB_BY_NAMESPACE_INDEX,
+                }
+            )["values"]
             excluded_namespaces = set(started_job_namespaces)
             candidate_namespaces = [
                 namespace for namespace in waiting_namespaces if namespace not in excluded_namespaces
