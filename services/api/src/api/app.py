@@ -98,6 +98,7 @@ def create_app_with_config(app_config: AppConfig, endpoint_config: EndpointConfi
                 assets_storage_client=assets_storage_client,
                 hf_jwt_public_keys=hf_jwt_public_keys,
                 hf_jwt_algorithm=app_config.api.hf_jwt_algorithm,
+                hf_jwt_issuers=app_config.api.hf_jwt_issuers,
                 external_auth_url=app_config.api.external_auth_url,
                 hf_timeout_seconds=app_config.api.hf_timeout_seconds,
                 max_age_long=app_config.api.max_age_long,

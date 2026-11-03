@@ -100,6 +100,7 @@ def create_endpoint(
     hf_token: Optional[str] = None,
     hf_jwt_public_keys: Optional[list[str]] = None,
     hf_jwt_algorithm: Optional[str] = None,
+    hf_jwt_issuers: Optional[list[str]] = None,
     external_auth_url: Optional[str] = None,
     hf_timeout_seconds: Optional[float] = None,
     max_age_long: int = 0,
@@ -133,6 +134,7 @@ def create_endpoint(
                         request=request,
                         hf_jwt_public_keys=hf_jwt_public_keys,
                         hf_jwt_algorithm=hf_jwt_algorithm,
+                        hf_jwt_issuers=hf_jwt_issuers,
                         hf_timeout_seconds=hf_timeout_seconds,
                     )
                 # getting result based on processing steps

@@ -30,6 +30,7 @@ from jwt.algorithms import (
 
 from libapi.exceptions import (
     JWTExpiredSignature,
+    JWTInvalidClaimIss,
     JWTInvalidClaimRead,
     JWTInvalidClaimSub,
     JWTInvalidKeyOrAlgorithm,
@@ -252,7 +253,14 @@ def get_jwt_public_keys(
 READ_PERMISSIONS = ["repo.content.read", "repo.content.write", "repo.read", "repo.write"]
 
 
-def validate_jwt(dataset: str, token: Any, public_keys: list[str], algorithm: str, verify_exp: bool = True) -> None:
+def validate_jwt(
+    dataset: str,
+    token: Any,
+    public_keys: list[str],
+    algorithm: str,
+    issuers: list[str],
+    verify_exp: bool = True,
+) -> None:
     """
     Check if the JWT is valid for the dataset.
 
@@ -261,6 +269,8 @@ def validate_jwt(dataset: str, token: Any, public_keys: list[str], algorithm: st
     or
       {"sub": "/datasets/<...dataset identifier...>", "read": true, "exp": <...date...>}
 
+    The 'iss' claim is required and must be one of `issuers`.
+
     Raise an exception if any of the condition is not met.
 
     Args:
@@ -268,25 +278,30 @@ def validate_jwt(dataset: str, token: Any, public_keys: list[str], algorithm: st
         token (`Any`): the JWT token to decode
         public_keys (`list[str]`): the public keys to use to decode the JWT token. They are tried in order.
         algorithm (`str`): the algorithm to use to decode the JWT token
+        issuers (`list[str]`): the accepted values of the 'iss' claim. Must not be empty.
         verify_exp (`bool`): whether to verify the expiration of the JWT token. Default to True.
 
     Raise:
         JWTInvalidSignature: if the signature verification failed
         JWTMissingRequiredClaim: if a claim is missing in the JWT payload
+        JWTInvalidClaimIss: if the 'iss' claim in JWT payload is not one of the accepted issuers
         JWTExpiredSignature: if the JWT signature has expired
         JWTInvalidKeyOrAlgorithm: if the key used to verify the signature is not compatible with the algorithm
         JWTInvalidClaimSub: if the 'sub' claim in JWT payload is invalid
         JWTInvalidClaimRead: if the 'read' claim in JWT payload is invalid
         UnexpectedApiError: if another error occurred while decoding the JWT
     """
+    if not issuers:
+        raise JWTInvalidClaimIss("No trusted JWT issuer is configured. Refusing to validate the JWT.")
     for key_index, public_key in enumerate(public_keys):
         logging.debug(f"Trying to decode the JWT with key #{key_index}: {public_key}.")
-        options = jwt.types.Options(require=["exp", "sub", "permissions"], verify_exp=verify_exp)
+        options = jwt.types.Options(require=["exp", "sub", "permissions", "iss"], verify_exp=verify_exp)
         try:
             decoded = jwt.decode(
                 jwt=token,
                 key=public_key,
                 algorithms=[algorithm],
+                issuer=issuers,
                 options=options,
             )
             logging.debug(f"Decoded JWT is: '{public_key}'.")
@@ -299,6 +314,8 @@ def validate_jwt(dataset: str, token: Any, public_keys: list[str], algorithm: st
             logging.debug(f"JWT signature verification failed with key: '{public_key}'. Trying next key.")
         except jwt.exceptions.MissingRequiredClaimError as e:
             raise JWTMissingRequiredClaim("A claim is missing in the JWT payload.", e) from e
+        except jwt.exceptions.InvalidIssuerError as e:
+            raise JWTInvalidClaimIss("The 'iss' claim in the JWT payload is not a trusted issuer.", e) from e
         except jwt.exceptions.ExpiredSignatureError as e:
             raise JWTExpiredSignature("The JWT signature has expired. Try to refresh the token.", e) from e
 

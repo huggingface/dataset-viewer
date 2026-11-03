@@ -72,6 +72,7 @@ async def auth_check(
     request: Optional[Request] = None,
     hf_jwt_public_keys: Optional[list[str]] = None,
     hf_jwt_algorithm: Optional[str] = None,
+    hf_jwt_issuers: Optional[list[str]] = None,
     hf_timeout_seconds: Optional[float] = None,
 ) -> Literal[True]:
     """check if the dataset is authorized for the request
@@ -90,6 +91,8 @@ async def auth_check(
           "authorization" or "X-Api-Key"
         hf_jwt_public_keys (`list[str]`, *optional*): the public keys to use to decode the JWT token
         hf_jwt_algorithm (`str`): the algorithm to use to decode the JWT token
+        hf_jwt_issuers (`list[str]`, *optional*): the accepted values of the JWT 'iss' claim. If empty or None, any
+          JWT is rejected.
         hf_timeout_seconds (`float`, *optional*): the timeout in seconds for the external authentication service. It
           is used both for the connection timeout and the read timeout. If None, the request never timeouts.
 
@@ -100,7 +103,11 @@ async def auth_check(
         with StepProfiler(method="auth_check", step="check JWT"):
             if (jwt_token := get_jwt_token(request)) and hf_jwt_public_keys and hf_jwt_algorithm:
                 validate_jwt(
-                    dataset=dataset, token=jwt_token, public_keys=hf_jwt_public_keys, algorithm=hf_jwt_algorithm
+                    dataset=dataset,
+                    token=jwt_token,
+                    public_keys=hf_jwt_public_keys,
+                    algorithm=hf_jwt_algorithm,
+                    issuers=hf_jwt_issuers or [],
                 )
                 logging.debug(
                     "By-passing the authentication step, because a valid JWT was passed in headers"

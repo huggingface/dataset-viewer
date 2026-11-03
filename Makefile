@@ -18,6 +18,7 @@ export WORKER_UVICORN_PORT := ${PORT_WORKER}
 export WEBHOOK_UVICORN_PORT := ${PORT_WEBHOOK}
 
 export API_HF_JWT_PUBLIC_KEY_URL := https://hub-ci.huggingface.co/api/keys/jwt
+export API_HF_JWT_ISSUERS := https://hub-ci.huggingface.co
 export API_HF_JWT_ADDITIONAL_PUBLIC_KEYS :=
 
 # environment variables per target

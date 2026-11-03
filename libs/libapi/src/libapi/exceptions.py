@@ -15,6 +15,7 @@ ApiErrorCode = Literal[
     "InvalidParameter",
     "JobNotFound",
     "JWTExpiredSignature",
+    "JWTInvalidClaimIss",
     "JWTInvalidClaimRead",
     "JWTInvalidClaimSub",
     "JWTInvalidKeyOrAlgorithm",
@@ -165,6 +166,13 @@ class JWTExpiredSignature(ApiError):
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.UNAUTHORIZED, "JWTExpiredSignature", cause, True)
+
+
+class JWTInvalidClaimIss(ApiError):
+    """The 'iss' claim in the JWT payload is not one of the trusted issuers."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.UNAUTHORIZED, "JWTInvalidClaimIss", cause, True)
 
 
 class JWTInvalidClaimRead(ApiError):
