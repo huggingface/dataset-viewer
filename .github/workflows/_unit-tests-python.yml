@@ -56,6 +56,9 @@ jobs:
           if ! docker compose -f docker-compose-mongo.yml up -d --wait --wait-timeout 20; then
             docker ps -a
             for c in $(docker ps -aq); do docker inspect "$c" --format '{{json .State}} {{json .Config.Cmd}} {{json .Config.Entrypoint}}'; docker logs "$c" 2>&1 | tail -50; done
+            IMAGE=$(docker compose -f docker-compose-mongo.yml config --images | head -1)
+            docker run --rm "$IMAGE" mongod --version; echo "rc=$?"
+            timeout 10 docker run --rm "$IMAGE" mongod --port 27017 --replSet rs0 --bind_ip_all 2>&1 | tail -30; echo "rc=$?"
             exit 1
           fi
         working-directory: ./tools
