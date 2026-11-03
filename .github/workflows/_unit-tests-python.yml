@@ -18,7 +18,7 @@ env:
   # required to get access to use a cached poetry venv in "/home/runner/.cache/pypoetry/virtualenvs"
   POETRY_VIRTUALENVS_IN_PROJECT: false
   mongo-port: "27017"
-  mongo-version: "6.0.9"
+  mongo-version: "8.3.13-4"
   python-version: "3.14.5"
   poetry-version: "2.1.4"
   replicaset: "rs0"
@@ -32,7 +32,9 @@ jobs:
       run:
         shell: bash
         working-directory: ${{ inputs.working-directory }}
-    runs-on: "ubuntu-latest"
+    # MongoDB 8.x refuses to start on Linux kernel 6.19+ (SERVER-121912), which ubuntu-latest now runs.
+    # Move back to ubuntu-latest once the test image supports its kernel (8.3.14+ on kernel 7.0.14+).
+    runs-on: "ubuntu-22.04"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Install poetry
@@ -52,7 +54,9 @@ jobs:
         env:
           MONGO_PORT: ${{ env.mongo-port }}
           MONGO_REPLICASET: ${{ env.replicaset }}
-        run: docker compose -f docker-compose-mongo.yml up -d --wait --wait-timeout 20
+        run: |
+          uname -r
+          docker compose -f docker-compose-mongo.yml up -d --wait --wait-timeout 20
         working-directory: ./tools
       - name: Run unit tests
         env:
