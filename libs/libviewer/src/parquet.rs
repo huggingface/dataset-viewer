@@ -94,8 +94,9 @@ impl<T: AsyncFileReader> AsyncFileReader for LimitedAsyncReader<T> {
 /// parallel downloads into one serial stream
 const MAX_MERGED_RANGE_BYTES: u64 = 16 * 1024 * 1024;
 
-/// Returns the sorted ranges that cover `ranges`, merging the ones at most `coalesce` bytes apart
-/// as long as the merged range stays under `MAX_MERGED_RANGE_BYTES`
+/// Returns the sorted, non-overlapping ranges that cover `ranges`. Overlapping ranges are always
+/// merged; ranges at most `coalesce` bytes apart are merged while the result stays under
+/// `MAX_MERGED_RANGE_BYTES`
 fn merge_ranges(ranges: &[Range<u64>], coalesce: u64) -> Vec<Range<u64>> {
     let mut sorted = ranges.to_vec();
     sorted.sort_unstable_by_key(|range| range.start);
@@ -104,8 +105,9 @@ fn merge_ranges(ranges: &[Range<u64>], coalesce: u64) -> Vec<Range<u64>> {
     for range in sorted {
         match merged.last_mut() {
             Some(last)
-                if range.start <= last.end.saturating_add(coalesce)
-                    && range.end.max(last.end) - last.start <= MAX_MERGED_RANGE_BYTES =>
+                if range.start < last.end
+                    || (range.start <= last.end.saturating_add(coalesce)
+                        && range.end.max(last.end) - last.start <= MAX_MERGED_RANGE_BYTES) =>
             {
                 last.end = last.end.max(range.end);
             }
@@ -551,6 +553,27 @@ mod tests {
             vec![0..10 * mib, 10 * mib..21 * mib],
             "merged ranges stay under MAX_MERGED_RANGE_BYTES"
         );
+        assert_eq!(
+            merge_ranges(&[0..mib, 0..20 * mib, mib..2 * mib], 0),
+            vec![0..20 * mib],
+            "overlapping ranges are merged past the cap"
+        );
+    }
+
+    #[test]
+    fn slice_merged_ranges_handles_ranges_sharing_a_start_past_the_cap() {
+        let mib: u64 = 1024 * 1024;
+        let ranges = vec![0..20 * mib, 0..mib, mib..2 * mib, 30 * mib..30 * mib];
+        let fetch_ranges = merge_ranges(&ranges, 0);
+        let data = Bytes::from((0..31 * mib).map(|i| i as u8).collect::<Vec<_>>());
+        let fetched: Vec<Bytes> = fetch_ranges
+            .iter()
+            .map(|r| data.slice(r.start as usize..r.end as usize))
+            .collect();
+        let sliced = slice_merged_ranges(&ranges, &fetch_ranges, &fetched);
+        for (range, bytes) in ranges.iter().zip(sliced) {
+            assert_eq!(bytes, data.slice(range.start as usize..range.end as usize));
+        }
     }
 
     #[test]
