@@ -13,6 +13,7 @@ from ecdsa import Ed25519, SigningKey
 from libapi.config import ApiConfig
 from libapi.exceptions import (
     JWTExpiredSignature,
+    JWTInvalidClaimIss,
     JWTInvalidClaimRead,
     JWTInvalidClaimSub,
     JWTInvalidKeyOrAlgorithm,
@@ -216,6 +217,7 @@ def test_is_jwt_valid_with_ec() -> None:
         token=token_for_severo_glue,
         public_keys=[eddsa_public_key_pem],
         algorithm=algorithm_name_eddsa,
+        issuers=["https://huggingface.co"],
         verify_exp=False,
         # This is a test token generated on 2024/03/22, so we don't want to verify the exp.
     )
@@ -242,19 +244,30 @@ read_wrong_2 = "True"
 payload_ok = {"sub": sub_ok_1, "permissions": {"repo.content.read": read_ok}, "exp": exp_ok}
 algorithm_ok = algorithm_name_eddsa
 algorithm_wrong = algorithm_name_rs256
+iss_ok = "https://huggingface.co"
+iss_other = "https://other.example.com"
+issuers_ok = [iss_ok]
 
 
-def encode_jwt(payload: dict[str, Any]) -> str:
+def encode_jwt(payload: dict[str, Any], with_iss: bool = True) -> str:
+    if with_iss:
+        payload = {"iss": iss_ok, **payload}
     return jwt.encode(payload, private_key_pem_ok, algorithm=algorithm_ok)
 
 
 def assert_jwt(
-    token: str, expectation: Any, public_keys: Optional[list[str]] = None, algorithm: str = algorithm_ok
+    token: str,
+    expectation: Any,
+    public_keys: Optional[list[str]] = None,
+    algorithm: str = algorithm_ok,
+    issuers: Optional[list[str]] = None,
 ) -> None:
     if public_keys is None:
         public_keys = [public_key_pem_ok]
+    if issuers is None:
+        issuers = issuers_ok
     with expectation:
-        validate_jwt(dataset=dataset_ok, token=token, public_keys=public_keys, algorithm=algorithm)
+        validate_jwt(dataset=dataset_ok, token=token, public_keys=public_keys, algorithm=algorithm, issuers=issuers)
 
 
 @pytest.mark.parametrize(
@@ -271,7 +284,7 @@ def test_validate_jwt_public_keys(public_keys: list[str], expectation: Any) -> N
 
 
 def encode_jwt_with_kid(payload: dict[str, Any], kid: str) -> str:
-    return jwt.encode(payload, private_key_pem_ok, algorithm=algorithm_ok, headers={"kid": kid})
+    return jwt.encode({"iss": iss_ok, **payload}, private_key_pem_ok, algorithm=algorithm_ok, headers={"kid": kid})
 
 
 @pytest.mark.parametrize(
@@ -412,4 +425,41 @@ def test_validate_jwt_expiration(expiration: str, expectation: Any) -> None:
     assert_jwt(
         encode_jwt({"sub": sub_ok_1, "permissions": {"repo.content.read": read_ok}, "exp": expiration}),
         expectation,
+    )
+
+
+@pytest.mark.parametrize(
+    "iss,issuers,expectation",
+    [
+        (iss_other, [iss_ok], pytest.raises(JWTInvalidClaimIss)),
+        ("https://huggingface.co.example.com", [iss_ok], pytest.raises(JWTInvalidClaimIss)),
+        ("", [iss_ok], pytest.raises(JWTInvalidClaimIss)),
+        (iss_ok, [iss_ok], does_not_raise()),
+        (iss_other, [iss_other], does_not_raise()),
+        (iss_other, [iss_ok, iss_other], does_not_raise()),
+        # no issuer configured: every JWT is rejected
+        (iss_ok, [], pytest.raises(JWTInvalidClaimIss)),
+    ],
+)
+def test_validate_jwt_issuer(iss: str, issuers: list[str], expectation: Any) -> None:
+    assert_jwt(
+        encode_jwt({"iss": iss, "sub": sub_ok_1, "permissions": {"repo.content.read": read_ok}, "exp": exp_ok}),
+        expectation,
+        issuers=issuers,
+    )
+
+
+def test_validate_jwt_missing_issuer() -> None:
+    assert_jwt(
+        encode_jwt({"sub": sub_ok_1, "permissions": {"repo.content.read": read_ok}, "exp": exp_ok}, with_iss=False),
+        pytest.raises(JWTMissingRequiredClaim),
+    )
+
+
+def test_validate_jwt_issuer_with_several_keys() -> None:
+    # the issuer is checked whatever the key that verifies the signature
+    assert_jwt(
+        encode_jwt({"iss": iss_other, "sub": sub_ok_1, "permissions": {"repo.content.read": read_ok}, "exp": exp_ok}),
+        pytest.raises(JWTInvalidClaimIss),
+        public_keys=[other_public_key_pem, public_key_pem_ok],
     )

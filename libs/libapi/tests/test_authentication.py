@@ -21,6 +21,7 @@ from libapi.exceptions import (
     AuthCheckHubRequestError,
     ExternalAuthenticatedError,
     ExternalUnauthenticatedError,
+    JWTInvalidClaimIss,
     RenamedDatasetError,
 )
 
@@ -182,7 +183,12 @@ def create_request(headers: Mapping[str, str]) -> Request:
 
 def get_jwt(dataset: str) -> str:
     return jwt.encode(
-        {"sub": f"/datasets/{dataset}", "permissions": {"repo.content.read": read_ok}, "exp": exp_ok},
+        {
+            "iss": "https://huggingface.co",
+            "sub": f"/datasets/{dataset}",
+            "permissions": {"repo.content.read": read_ok},
+            "exp": exp_ok,
+        },
         private_key,
         algorithm=algorithm_rs256,
     )
@@ -205,6 +211,7 @@ async def assert_auth_headers(
             request=create_request(headers=headers),
             hf_jwt_public_keys=[public_key],
             hf_jwt_algorithm=algorithm_rs256,
+            hf_jwt_issuers=["https://huggingface.co"],
         )
 
 
@@ -360,3 +367,24 @@ async def test_external_auth_service_dataset_public_renamed(
 )
 def test_get_auth_kind(headers: Mapping[str, str], expected_auth_kind: str) -> None:
     assert get_auth_kind(create_request(headers)) == expected_auth_kind
+
+
+async def test_jwt_with_unknown_issuer() -> None:
+    token = jwt.encode(
+        {
+            "iss": "https://other.example.com",
+            "sub": f"/datasets/{dataset_protected_with_access}",
+            "permissions": {"repo.content.read": read_ok},
+            "exp": exp_ok,
+        },
+        private_key,
+        algorithm=algorithm_rs256,
+    )
+    with pytest.raises(JWTInvalidClaimIss):
+        await auth_check(
+            dataset_protected_with_access,
+            request=create_request(headers={"X-Api-Key": token}),
+            hf_jwt_public_keys=[public_key],
+            hf_jwt_algorithm=algorithm_rs256,
+            hf_jwt_issuers=["https://huggingface.co"],
+        )

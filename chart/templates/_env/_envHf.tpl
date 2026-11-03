@@ -20,6 +20,8 @@
 {{- end }}
 - name: API_HF_JWT_ALGORITHM
   value: {{ .Values.hf.jwtAlgorithm | quote }}
+- name: API_HF_JWT_ISSUERS
+  value: {{ .Values.hf.jwtIssuers | quote }}
 - name: API_HF_TIMEOUT_SECONDS
   value: {{ .Values.hf.timeoutSeconds | quote }}
 - name: API_HUB_ORIGINS

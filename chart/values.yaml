@@ -522,6 +522,9 @@ hf:
   jwtPublicKeyUrl: "https://huggingface.co/api/keys/jwt"
   # the algorithm used to encode the JWT.
   jwtAlgorithm: "EdDSA"
+  # comma-separated list of the accepted values of the JWT 'iss' claim. Only list the issuers that this deployment
+  # serves: trusting a key in API_HF_JWT_ADDITIONAL_PUBLIC_KEYS does not make its issuer appropriate here.
+  jwtIssuers: "https://huggingface.co"
   # the timeout in seconds for the requests to the Hugging Face Hub.
   timeoutSeconds: "0.2"
   # comma-separated list of "Origin" header values identifying the Hugging Face Hub UI in the browser.

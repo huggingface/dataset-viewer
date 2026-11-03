@@ -104,6 +104,7 @@ def create_app_with_config(app_config: AppConfig) -> Starlette:
                 blocked_datasets=app_config.common.blocked_datasets,
                 hf_jwt_public_keys=hf_jwt_public_keys,
                 hf_jwt_algorithm=app_config.api.hf_jwt_algorithm,
+                hf_jwt_issuers=app_config.api.hf_jwt_issuers,
                 external_auth_url=app_config.api.external_auth_url,
                 hub_origins=app_config.api.hub_origins,
                 hub_networks=app_config.api.hub_networks,

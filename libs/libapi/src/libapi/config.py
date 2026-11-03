@@ -34,6 +34,7 @@ API_HF_AUTH_PATH = "/api/datasets/%s/auth-check"
 API_HF_JWT_PUBLIC_KEY_URL = None
 API_HF_JWT_ADDITIONAL_PUBLIC_KEYS: list[str] = []
 API_HF_JWT_ALGORITHM = "EdDSA"
+API_HF_JWT_ISSUERS = ["https://huggingface.co"]
 API_HF_TIMEOUT_SECONDS = 0.2
 API_HF_WEBHOOK_SECRET = None
 API_HUB_ORIGINS = ["https://huggingface.co"]
@@ -49,6 +50,7 @@ class ApiConfig:
     hf_jwt_public_key_url: Optional[str] = API_HF_JWT_PUBLIC_KEY_URL
     hf_jwt_additional_public_keys: list[str] = field(default_factory=API_HF_JWT_ADDITIONAL_PUBLIC_KEYS.copy)
     hf_jwt_algorithm: Optional[str] = API_HF_JWT_ALGORITHM
+    hf_jwt_issuers: list[str] = field(default_factory=API_HF_JWT_ISSUERS.copy)
     hf_timeout_seconds: Optional[float] = API_HF_TIMEOUT_SECONDS
     hf_webhook_secret: Optional[str] = API_HF_WEBHOOK_SECRET
     hub_origins: list[str] = field(default_factory=API_HUB_ORIGINS.copy)
@@ -73,6 +75,7 @@ class ApiConfig:
                     API_HF_JWT_ADDITIONAL_PUBLIC_KEYS.copy(),
                 ),
                 hf_jwt_algorithm=env.str(name="HF_JWT_ALGORITHM", default=API_HF_JWT_ALGORITHM),
+                hf_jwt_issuers=env.list(name="HF_JWT_ISSUERS", default=API_HF_JWT_ISSUERS.copy()),
                 hf_timeout_seconds=env.float(name="HF_TIMEOUT_SECONDS", default=API_HF_TIMEOUT_SECONDS),
                 hf_webhook_secret=resolve_secret(env, "HF_WEBHOOK_SECRET", "WEBHOOK_SECRET", API_HF_WEBHOOK_SECRET),
                 hub_origins=env.list(name="HUB_ORIGINS", default=API_HUB_ORIGINS.copy()),
