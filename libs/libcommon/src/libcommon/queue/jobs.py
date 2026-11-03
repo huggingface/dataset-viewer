@@ -47,6 +47,8 @@ from libcommon.utils import get_datetime, inputs_to_string
 # see https://github.com/sbdchd/mongo-types#install
 U = TypeVar("U", bound=Document)
 
+NEXT_WAITING_JOB_BY_NAMESPACE_INDEX = "priority_1_status_1_worker_size_1_namespace_1_created_at_1_dataset_1"
+
 
 def no_op(self, _):  # type: ignore
     return self
@@ -171,11 +173,15 @@ class JobDocument(Document):
         "indexes": [
             ("dataset", "status"),
             ("type", "dataset", "status"),
-            # Index for the next-waiting-job query; hinted by name in _get_next_waiting_job_for_priority.
-            # worker_size (equality) comes before created_at (sort), so a light worker never walks past the
-            # medium/heavy jobs that sit at the head of the queue. The difficulty variant below is kept until
-            # every worker runs with the worker_size filter; it is removed in a follow-up.
+            # Former index of the next-waiting-job query with a worker size, replaced by the namespace variant
+            # below. Kept until every worker runs the new query; it is removed in a follow-up. The difficulty
+            # variant further below is kept until every worker runs with the worker_size filter.
             ("priority", "status", "worker_size", "created_at", "dataset", "namespace"),
+            # Index for the next-waiting-job query with a worker size; hinted by name (see
+            # NEXT_WAITING_JOB_BY_NAMESPACE_INDEX). namespace comes before created_at, so the namespaces that
+            # already have a started job are skipped by the index bounds instead of being walked key by key.
+            # It also serves the distinct() on namespace with a DISTINCT_SCAN.
+            ("priority", "status", "worker_size", "namespace", "created_at", "dataset"),
             ("priority", "status", "created_at", "difficulty", "dataset", "namespace"),
             ("priority", "status", "type", "namespace", "unicity_id", "created_at", "-difficulty"),
             ("status", "type"),
@@ -532,7 +538,7 @@ class Queue:
             # Equality on worker_size is served by the index prefix; a range on difficulty is a residual filter
             # applied after the created_at sort, which made every poll scan all the older jobs of the other sizes.
             filters["worker_size"] = worker_size
-            index_hint = "priority_1_status_1_worker_size_1_created_at_1_dataset_1_namespace_1"
+            index_hint = NEXT_WAITING_JOB_BY_NAMESPACE_INDEX
         else:
             if difficulty_min is not None and difficulty_min > DEFAULT_DIFFICULTY_MIN:
                 filters["difficulty__gt"] = difficulty_min
@@ -546,21 +552,61 @@ class Queue:
         started_job_namespaces = [job.namespace for job in started_jobs.only("namespace")]
         logging.debug(f"Started job namespaces: {started_job_namespaces}")
 
-        next_waiting_job = (
-            JobDocument.objects(
-                status=Status.WAITING,
-                namespace__nin=set(started_job_namespaces),
-                priority=priority,
-                **filters,
+        next_waiting_job: Optional[JobDocument] = None
+        if worker_size is not None:
+            # With namespace__nin, the index is walked in created_at order and every key of an excluded namespace
+            # is examined and discarded. A namespace with a huge backlog and one started job (e.g. 680k waiting
+            # jobs) made each poll examine all its keys. Instead, list the namespaces that have waiting jobs
+            # (a DISTINCT_SCAN: one key per namespace), keep those without started jobs, and query them with $in:
+            # the index bounds then skip the excluded namespaces entirely.
+            # The distinct command is used directly: the pymongo type stubs do not expose its hint option.
+            jobs_collection = JobDocument._get_collection()
+            waiting_namespaces: list[str] = jobs_collection.database.command(
+                {
+                    "distinct": jobs_collection.name,
+                    "key": "namespace",
+                    "query": {
+                        "priority": priority.value,
+                        "status": Status.WAITING.value,
+                        "worker_size": worker_size.value,
+                    },
+                    "hint": NEXT_WAITING_JOB_BY_NAMESPACE_INDEX,
+                }
+            )["values"]
+            excluded_namespaces = set(started_job_namespaces)
+            candidate_namespaces = [
+                namespace for namespace in waiting_namespaces if namespace not in excluded_namespaces
+            ]
+            if candidate_namespaces:
+                next_waiting_job = (
+                    JobDocument.objects(
+                        status=Status.WAITING,
+                        namespace__in=candidate_namespaces,
+                        priority=priority,
+                        **filters,
+                    )
+                    .order_by("+created_at")
+                    .only("type", "dataset", "revision", "config", "split", "priority", "unicity_id")
+                    .hint(NEXT_WAITING_JOB_BY_NAMESPACE_INDEX)
+                    .no_cache()
+                    .first()
+                )
+        else:
+            next_waiting_job = (
+                JobDocument.objects(
+                    status=Status.WAITING,
+                    namespace__nin=set(started_job_namespaces),
+                    priority=priority,
+                    **filters,
+                )
+                .order_by("+created_at")
+                .only("type", "dataset", "revision", "config", "split", "priority", "unicity_id")
+                # Pin the index: another index shares the (priority, status) prefix and the planner kept
+                # trialing both on every plan-cache miss, replanning constantly and saturating the primary CPU.
+                .hint(index_hint)
+                .no_cache()
+                .first()
             )
-            .order_by("+created_at")
-            .only("type", "dataset", "revision", "config", "split", "priority", "unicity_id")
-            # Pin the index: another index shares the (priority, status) prefix and the planner kept
-            # trialing both on every plan-cache miss, replanning constantly and saturating the primary CPU.
-            .hint(index_hint)
-            .no_cache()
-            .first()
-        )
 
         # ^ no_cache should generate a query on every iteration, which should solve concurrency issues between workers
         if next_waiting_job is not None:
