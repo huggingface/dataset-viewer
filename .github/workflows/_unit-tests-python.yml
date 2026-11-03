@@ -18,7 +18,7 @@ env:
   # required to get access to use a cached poetry venv in "/home/runner/.cache/pypoetry/virtualenvs"
   POETRY_VIRTUALENVS_IN_PROJECT: false
   mongo-port: "27017"
-  mongo-version: "8.3.13-4"
+  mongo-version: "6.0.9"
   python-version: "3.14.5"
   poetry-version: "2.1.4"
   replicaset: "rs0"
@@ -52,17 +52,7 @@ jobs:
         env:
           MONGO_PORT: ${{ env.mongo-port }}
           MONGO_REPLICASET: ${{ env.replicaset }}
-        run: |
-          if ! docker compose -f docker-compose-mongo.yml up -d --wait --wait-timeout 20; then
-            docker ps -a
-            for c in $(docker ps -aq); do docker inspect "$c" --format '{{json .State}} {{json .Config.Cmd}} {{json .Config.Entrypoint}}'; docker logs "$c" 2>&1 | tail -50; done
-            IMAGE=$(docker compose -f docker-compose-mongo.yml config --images | head -1)
-            set +e
-            docker run --rm "$IMAGE" mongod --version; echo "entrypoint rc=$?"
-            docker run --rm --entrypoint mongod "$IMAGE" --version; echo "no-entrypoint rc=$?"
-            docker run --rm --entrypoint sh "$IMAGE" -c 'grep -m1 flags /proc/cpuinfo; ldd "$(command -v mongod)" | grep -i "not found"; head -40 /entrypoint.sh'
-            exit 1
-          fi
+        run: docker compose -f docker-compose-mongo.yml up -d --wait --wait-timeout 20
         working-directory: ./tools
       - name: Run unit tests
         env:
