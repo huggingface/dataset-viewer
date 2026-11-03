@@ -52,7 +52,7 @@ jobs:
         env:
           MONGO_PORT: ${{ env.mongo-port }}
           MONGO_REPLICASET: ${{ env.replicaset }}
-        run: docker compose -f docker-compose-mongo.yml up -d --wait --wait-timeout 20
+        run: docker compose -f docker-compose-mongo.yml up -d --wait --wait-timeout 20 || (docker compose -f docker-compose-mongo.yml logs; exit 1)
         working-directory: ./tools
       - name: Run unit tests
         env:
