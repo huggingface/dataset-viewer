@@ -66,9 +66,13 @@ impl<T: AsyncFileReader> AsyncFileReader for LimitedAsyncReader<T> {
         } else {
             // The opendal object store issues one HTTP request per range, so a wide schema turns
             // into hundreds of requests per row group unless nearby ranges are merged first.
-            let fetch_ranges = merge_ranges(&ranges, OBJECT_STORE_COALESCE_DEFAULT);
+            let mut fetch_ranges = merge_ranges(&ranges, OBJECT_STORE_COALESCE_DEFAULT);
             let fetch_bytes: u64 = fetch_ranges.iter().map(|r| r.end - r.start).sum();
-            if fetch_ranges.len() == ranges.len() || fetch_bytes > self.scan_size_limit {
+            if fetch_bytes > self.scan_size_limit {
+                // the gaps do not fit in the limit: only merge ranges that touch, which adds no bytes
+                fetch_ranges = merge_ranges(&ranges, 0);
+            }
+            if fetch_ranges.len() == ranges.len() {
                 return self.inner.get_byte_ranges(ranges);
             }
             Box::pin(async move {
@@ -86,7 +90,12 @@ impl<T: AsyncFileReader> AsyncFileReader for LimitedAsyncReader<T> {
     }
 }
 
+/// The store fetches several ranges in parallel: past this size, a merged range would turn
+/// parallel downloads into one serial stream
+const MAX_MERGED_RANGE_BYTES: u64 = 16 * 1024 * 1024;
+
 /// Returns the sorted ranges that cover `ranges`, merging the ones at most `coalesce` bytes apart
+/// as long as the merged range stays under `MAX_MERGED_RANGE_BYTES`
 fn merge_ranges(ranges: &[Range<u64>], coalesce: u64) -> Vec<Range<u64>> {
     let mut sorted = ranges.to_vec();
     sorted.sort_unstable_by_key(|range| range.start);
@@ -94,7 +103,10 @@ fn merge_ranges(ranges: &[Range<u64>], coalesce: u64) -> Vec<Range<u64>> {
     let mut merged: Vec<Range<u64>> = Vec::with_capacity(sorted.len());
     for range in sorted {
         match merged.last_mut() {
-            Some(last) if range.start <= last.end.saturating_add(coalesce) => {
+            Some(last)
+                if range.start <= last.end.saturating_add(coalesce)
+                    && range.end.max(last.end) - last.start <= MAX_MERGED_RANGE_BYTES =>
+            {
                 last.end = last.end.max(range.end);
             }
             _ => merged.push(range),
@@ -445,7 +457,6 @@ mod tests {
     use std::sync::Mutex;
 
     /// In-memory parquet file recording every range it is asked for
-    #[derive(Clone)]
     struct CountingReader {
         data: Bytes,
         requested: Arc<Mutex<Vec<Range<u64>>>>,
@@ -458,31 +469,11 @@ mod tests {
             Box::pin(async move { Ok(bytes) })
         }
 
-        fn get_byte_ranges(
-            &mut self,
-            ranges: Vec<Range<u64>>,
-        ) -> BoxFuture<'_, Result<Vec<Bytes>>> {
-            self.requested
-                .lock()
-                .unwrap()
-                .extend(ranges.iter().cloned());
-            let bytes = ranges
-                .iter()
-                .map(|r| self.data.slice(r.start as usize..r.end as usize))
-                .collect();
-            Box::pin(async move { Ok(bytes) })
-        }
-
         fn get_metadata<'a>(
             &'a mut self,
             _options: Option<&'a ArrowReaderOptions>,
         ) -> BoxFuture<'a, Result<Arc<ParquetMetaData>>> {
-            let data = self.data.clone();
-            Box::pin(async move {
-                Ok(Arc::new(
-                    ParquetMetaDataReader::new().parse_and_finish(&data)?,
-                ))
-            })
+            unimplemented!("the tests pass the metadata to the stream builder")
         }
     }
 
@@ -512,13 +503,16 @@ mod tests {
         even_columns_only: bool,
         scan_size_limit: u64,
     ) -> (Vec<RecordBatch>, Vec<Range<u64>>) {
+        let metadata = Arc::new(
+            ParquetMetaDataReader::new()
+                .parse_and_finish(&data)
+                .unwrap(),
+        );
         let requested = Arc::new(Mutex::new(Vec::new()));
-        let mut reader = CountingReader {
+        let reader = CountingReader {
             data,
             requested: requested.clone(),
         };
-        let metadata = reader.get_metadata(None).await.unwrap();
-        requested.lock().unwrap().clear();
 
         let reader_metadata =
             ArrowReaderMetadata::try_new(metadata, ArrowReaderOptions::default()).unwrap();
@@ -550,6 +544,13 @@ mod tests {
         );
         assert_eq!(merge_ranges(&[0..10, 5..8, 8..30], 0), vec![0..30]);
         assert_eq!(merge_ranges(&[0..10, 11..20], 0), vec![0..10, 11..20]);
+
+        let mib = 1024 * 1024;
+        assert_eq!(
+            merge_ranges(&[0..10 * mib, 10 * mib..20 * mib, 20 * mib..21 * mib], 0),
+            vec![0..10 * mib, 10 * mib..21 * mib],
+            "merged ranges stay under MAX_MERGED_RANGE_BYTES"
+        );
     }
 
     #[test]
@@ -582,7 +583,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn merging_is_skipped_when_it_would_exceed_the_scan_size_limit() {
+    async fn only_touching_ranges_are_merged_when_gaps_exceed_the_scan_size_limit() {
         // reading every other column leaves gaps that merging would download too
         let (data, _) = wide_parquet(200, 10);
         let (_, merged) = read(data.clone(), true, u64::MAX).await;
