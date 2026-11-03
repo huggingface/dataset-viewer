@@ -619,6 +619,24 @@ def test_worker_size_is_set_on_creation(difficulty: int, expected_worker_size: W
     assert {job.worker_size for job in JobDocument.objects()} == {expected_worker_size}
 
 
+def test_next_waiting_job_skips_namespaces_with_started_jobs() -> None:
+    # A namespace with a started job and an old backlog must not hide a newer job of another namespace,
+    # and the query must not walk the backlog (it is excluded by the index bounds, not filtered key by key).
+    queue = Queue()
+    medium = {"difficulty_min": 40, "difficulty_max": 70}
+    for i in range(3):
+        queue.add_job(job_type="test_type", dataset=f"busy/dataset{i}", revision="rev", difficulty=50)
+    queue.start_job(**medium)
+    # ^ starts busy/dataset0
+    queue.add_job(job_type="test_type", dataset="other/dataset", revision="rev", difficulty=50)
+    queue.add_job(job_type="test_type", dataset="light/dataset", revision="rev", difficulty=10)
+    job_info = queue.start_job(**medium)
+    assert job_info["params"]["dataset"] == "other/dataset"
+    # only the busy namespace is left: the fallback picks its oldest waiting job
+    job_info = queue.start_job(**medium)
+    assert job_info["params"]["dataset"] == "busy/dataset1"
+
+
 def test_backfill_missing_worker_size() -> None:
     queue = Queue()
     queue.add_job(job_type="test_type", dataset="test_dataset", revision="test_revision", difficulty=20)
