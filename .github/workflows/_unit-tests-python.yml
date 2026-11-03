@@ -57,8 +57,10 @@ jobs:
             docker ps -a
             for c in $(docker ps -aq); do docker inspect "$c" --format '{{json .State}} {{json .Config.Cmd}} {{json .Config.Entrypoint}}'; docker logs "$c" 2>&1 | tail -50; done
             IMAGE=$(docker compose -f docker-compose-mongo.yml config --images | head -1)
-            docker run --rm "$IMAGE" mongod --version; echo "rc=$?"
-            timeout 10 docker run --rm "$IMAGE" mongod --port 27017 --replSet rs0 --bind_ip_all 2>&1 | tail -30; echo "rc=$?"
+            set +e
+            docker run --rm "$IMAGE" mongod --version; echo "entrypoint rc=$?"
+            docker run --rm --entrypoint mongod "$IMAGE" --version; echo "no-entrypoint rc=$?"
+            docker run --rm --entrypoint sh "$IMAGE" -c 'grep -m1 flags /proc/cpuinfo; ldd "$(command -v mongod)" | grep -i "not found"; head -40 /entrypoint.sh'
             exit 1
           fi
         working-directory: ./tools
