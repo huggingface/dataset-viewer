@@ -50,6 +50,8 @@ jobs:
         run: cargo check --all --all-targets
       - name: Cargo Clippy
         run: cargo clippy --all --all-targets -- -D warnings
+      - name: Cargo Test
+        run: cargo test --all
       - name: Ruff Check
         run: poetry run ruff check .
       - name: Ruff Format
