@@ -418,10 +418,27 @@ def test_get_mesh_cell_value_with_point_cloud(
 
 
 def splat_ply(
-    positions: np.ndarray, red: np.ndarray, camera: Optional[tuple[np.ndarray, np.ndarray, list[int]]] = None
+    positions: np.ndarray,
+    red: np.ndarray,
+    camera: Optional[tuple[np.ndarray, np.ndarray, list[int]]] = None,
+    scales: tuple[float, float, float] = (0.05, 0.05, 0.05),
+    rotation: tuple[float, float, float, float] = (1.0, 0.0, 0.0, 0.0),
 ) -> bytes:
     """A binary Gaussian splat ply file of opaque red or blue splats, with the capture camera of SHARP files."""
-    fields = ["x", "y", "z", "f_dc_0", "f_dc_1", "f_dc_2", "opacity", "scale_0", "scale_1", "scale_2"]
+    rotation_fields = ["rot_0", "rot_1", "rot_2", "rot_3"]
+    fields = [
+        "x",
+        "y",
+        "z",
+        "f_dc_0",
+        "f_dc_1",
+        "f_dc_2",
+        "opacity",
+        "scale_0",
+        "scale_1",
+        "scale_2",
+        *rotation_fields,
+    ]
     splats = np.zeros(len(positions), dtype=[(name, "<f4") for name in fields])
     for i, name in enumerate(["x", "y", "z"]):
         splats[name] = positions[:, i]
@@ -430,8 +447,10 @@ def splat_ply(
     splats["f_dc_2"] = np.where(red, -1.7, 1.7)
     splats["f_dc_1"] = -1.7
     splats["opacity"] = 5.0
-    for name in ["scale_0", "scale_1", "scale_2"]:
-        splats[name] = np.log(0.05)
+    for name, scale in zip(["scale_0", "scale_1", "scale_2"], scales):
+        splats[name] = np.log(scale)
+    for name, component in zip(rotation_fields, rotation):
+        splats[name] = component
     header = ["ply", "format binary_little_endian 1.0", f"element vertex {len(splats)}"]
     header += [f"property float {name}" for name in fields]
     body = splats.tobytes()
@@ -458,14 +477,14 @@ def thumbnail_pixels(value: Any, storage_client: StorageClient) -> np.ndarray:
 
 
 def test_get_mesh_cell_value_with_gaussian_splats(storage_client_with_url_preparator: StorageClient) -> None:
-    """Splats with a size and an opacity are drawn as discs of their color."""
+    """Splats with a shape and an opacity are drawn as ellipses of their color."""
     ensure_mesh_rendering()
     points = trimesh.creation.icosphere(subdivisions=3).vertices
     ply_bytes = splat_ply(points, red=np.ones(len(points), dtype=bool))
     value = get_mesh_cell_value({"path": "splats.ply", "bytes": ply_bytes}, storage_client_with_url_preparator, 4)
     pixels = thumbnail_pixels(value, storage_client_with_url_preparator)
     drawn = pixels[pixels[:, :, 3] > 127]
-    assert len(drawn) > 0.2 * MESH_THUMBNAIL_WIDTH * MESH_THUMBNAIL_HEIGHT, "the discs cover the sphere"
+    assert len(drawn) > 0.2 * MESH_THUMBNAIL_WIDTH * MESH_THUMBNAIL_HEIGHT, "the ellipses cover the sphere"
     assert (drawn[:, 0] > 4 * drawn[:, 1:3].max(axis=1)).all(), "the splats are red"
 
 
@@ -489,6 +508,49 @@ def test_get_mesh_cell_value_with_gaussian_splats_and_capture_camera(
     assert (center[:, :, 3] > 127).mean() > 0.9, "the splats in front of the camera fill the photo"
     drawn = center[center[:, :, 3] > 127]
     assert (drawn[:, 0] > 4 * drawn[:, 1:3].max(axis=-1)).all(), "the blue splats behind the camera are not drawn"
+
+
+# a camera at the origin looking along +z, with a 200x200 photo: the thumbnail shows it at 600x600
+SPLAT_TEST_CAMERA = (np.eye(4), np.array([[100.0, 0, 100], [0, 100.0, 100], [0, 0, 1]]), [200, 200])
+
+
+@pytest.mark.parametrize(
+    "rotation,long_axis",
+    [((1.0, 0.0, 0.0, 0.0), "x"), ((np.sqrt(0.5), 0.0, 0.0, np.sqrt(0.5)), "y")],
+    ids=["not rotated", "rotated by 90 degrees around the view"],
+)
+def test_get_mesh_cell_value_with_gaussian_splats_shape(
+    rotation: tuple[float, float, float, float], long_axis: str, storage_client_with_url_preparator: StorageClient
+) -> None:
+    """A long and thin splat is drawn long and thin, along the direction its rotation gives it."""
+    ensure_mesh_rendering()
+    ply_bytes = splat_ply(
+        np.array([[0.0, 0.0, 5.0]]),
+        red=np.array([True]),
+        camera=SPLAT_TEST_CAMERA,
+        scales=(0.5, 0.01, 0.01),
+        rotation=rotation,
+    )
+    value = get_mesh_cell_value({"path": "scene.ply", "bytes": ply_bytes}, storage_client_with_url_preparator, 4)
+    rows, columns = np.nonzero(thumbnail_pixels(value, storage_client_with_url_preparator)[:, :, 3] > 127)
+    extent_x, extent_y = np.ptp(columns) + 1, np.ptp(rows) + 1
+    assert (extent_x > 5 * extent_y) if long_axis == "x" else (extent_y > 5 * extent_x)
+
+
+@pytest.mark.parametrize("near_first_in_file", [True, False], ids=["near one first", "far one first"])
+def test_get_mesh_cell_value_with_gaussian_splats_order(
+    near_first_in_file: bool, storage_client_with_url_preparator: StorageClient
+) -> None:
+    """The nearest of two opaque splats hides the other one, whatever their order in the file."""
+    ensure_mesh_rendering()
+    near_then_far = np.array([[0.0, 0.0, 5.0], [0.0, 0.0, 10.0]])
+    positions = near_then_far if near_first_in_file else near_then_far[::-1]
+    # the near splat is blue, and the far one is red
+    red = np.array([False, True]) if near_first_in_file else np.array([True, False])
+    ply_bytes = splat_ply(positions, red=red, camera=SPLAT_TEST_CAMERA, scales=(0.2, 0.2, 0.2))
+    value = get_mesh_cell_value({"path": "scene.ply", "bytes": ply_bytes}, storage_client_with_url_preparator, 4)
+    center = thumbnail_pixels(value, storage_client_with_url_preparator)[300, 400]
+    assert center[2] > 4 * center[0], "the near blue splat is in front"
 
 
 @pytest.mark.parametrize("cell", ["a string", 42, {"path": None, "bytes": None}])

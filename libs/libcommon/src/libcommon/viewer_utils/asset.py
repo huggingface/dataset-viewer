@@ -529,8 +529,24 @@ MESH_THUMBNAIL_POINT_COLOR = (0.35, 0.35, 0.35)
 # Gaussian splat files have millions of splats: a random subset of them is enough for a thumbnail
 MESH_THUMBNAIL_MAX_SPLATS = 300_000
 # The largest radius of a splat in the thumbnail, in pixels: a few huge ones would hide the scene
-MESH_THUMBNAIL_MAX_SPLAT_RADIUS = 12
-SPLAT_FIELDS = {"f_dc_0", "f_dc_1", "f_dc_2", "opacity", "scale_0", "scale_1", "scale_2"}
+MESH_THUMBNAIL_MAX_SPLAT_RADIUS = 24
+# The most pixels the splats can cover in total, counting every overlap: it bounds the memory of a thumbnail
+MESH_THUMBNAIL_MAX_SPLAT_COVERAGE = 15_000_000
+# How many candidate pixels are computed at once while drawing the splats
+MESH_THUMBNAIL_SPLAT_CHUNK_SIZE = 2_000_000
+SPLAT_FIELDS = {
+    "f_dc_0",
+    "f_dc_1",
+    "f_dc_2",
+    "opacity",
+    "scale_0",
+    "scale_1",
+    "scale_2",
+    "rot_0",
+    "rot_1",
+    "rot_2",
+    "rot_3",
+}
 
 
 def _ply_element(point_cloud: "trimesh.PointCloud", name: str) -> Optional[dict[str, np.ndarray]]:
@@ -582,11 +598,114 @@ def _ply_capture_camera(point_cloud: "trimesh.PointCloud") -> Optional[tuple[np.
     return extrinsic.reshape(4, 4).astype(float), intrinsic.reshape(3, 3).astype(float), *image_size.astype(int)
 
 
-def _render_splats(point_cloud: "trimesh.PointCloud", width: int, height: int) -> "Image.Image":
-    """Render a Gaussian splat file: every splat is a soft disc of its color, size and opacity.
+def _rotation_matrices(quaternions: np.ndarray) -> np.ndarray:
+    """Return the rotation matrices of (w, x, y, z) quaternions, the order of the rot_* fields of a splat file."""
+    w, x, y, z = (quaternions / np.linalg.norm(quaternions, axis=1, keepdims=True)).T
+    return np.stack(
+        [
+            1 - 2 * (y * y + z * z),
+            2 * (x * y - w * z),
+            2 * (x * z + w * y),
+            2 * (x * y + w * z),
+            1 - 2 * (x * x + z * z),
+            2 * (y * z - w * x),
+            2 * (x * z - w * y),
+            2 * (y * z + w * x),
+            1 - 2 * (x * x + y * y),
+        ],
+        axis=1,
+    ).reshape(-1, 3, 3)
 
-    pyrender can only draw them as points. It's an approximation of a real splat renderer (round
-    discs, blended without sorting), enough for a thumbnail. The splats are seen from the camera
+
+def _draw_splats(
+    camera_positions: np.ndarray,
+    camera_axes: np.ndarray,
+    colors: np.ndarray,
+    opacities: np.ndarray,
+    lens: np.ndarray,
+    width: int,
+    height: int,
+) -> np.ndarray:
+    """Return the RGBA pixels of splats given by their positions and the 3 axes of their ellipsoids, seen by a camera.
+
+    Every splat is the ellipse its gaussian projects to, up to two standard deviations. The ellipses
+    of a pixel are blended from the nearest one to the farthest one.
+    """
+    order = np.argsort(-camera_positions[:, 2])
+    camera_positions, camera_axes = camera_positions[order], camera_axes[order]
+    colors, opacities = colors[order], opacities[order]
+    x, y, depths = camera_positions.T
+    focal_x, focal_y = lens[0, 0], lens[1, 1]
+    centers_x, centers_y = focal_x * x / depths + lens[0, 2], focal_y * y / depths + lens[1, 2]
+
+    # the projection of the axes on the image, with the jacobian of the perspective projection
+    axes_x = focal_x / depths[:, None] * (camera_axes[:, 0] - (x / depths)[:, None] * camera_axes[:, 2])
+    axes_y = focal_y / depths[:, None] * (camera_axes[:, 1] - (y / depths)[:, None] * camera_axes[:, 2])
+    # the 2D covariances, with a minimum so that the thinnest splats still cover a pixel
+    cov_xx, cov_yy, cov_xy = (
+        (axes_x**2).sum(axis=1) + 0.25,
+        (axes_y**2).sum(axis=1) + 0.25,
+        (axes_x * axes_y).sum(axis=1),
+    )
+    largest = (cov_xx + cov_yy + np.hypot(cov_xx - cov_yy, 2 * cov_xy)) / 2
+    shrink = np.minimum(1.0, (MESH_THUMBNAIL_MAX_SPLAT_RADIUS / 2) ** 2 / largest)
+    areas = 4 * np.pi * np.sqrt(np.maximum(cov_xx * cov_yy - cov_xy**2, 1e-9)) * shrink
+    shrink = shrink * min(1.0, MESH_THUMBNAIL_MAX_SPLAT_COVERAGE / areas.sum())
+    cov_xx, cov_yy, cov_xy, largest = cov_xx * shrink, cov_yy * shrink, cov_xy * shrink, largest * shrink
+    determinants = np.maximum(cov_xx * cov_yy - cov_xy**2, 1e-9)
+    inverse_xx, inverse_yy, inverse_xy = cov_yy / determinants, cov_xx / determinants, -cov_xy / determinants
+    radii = np.ceil(2 * np.sqrt(largest)).astype(int)
+
+    all_pixels, all_alphas, all_splats = [], [], []
+    for radius in np.unique(radii):
+        offsets_y, offsets_x = np.mgrid[-radius : radius + 1, -radius : radius + 1].reshape(2, -1)
+        same_radius = np.flatnonzero(radii == radius)
+        chunk_count = len(same_radius) * offsets_x.size // MESH_THUMBNAIL_SPLAT_CHUNK_SIZE + 1
+        for chunk in np.array_split(same_radius, chunk_count):
+            columns = np.round(centers_x[chunk]).astype(int)[:, None] + offsets_x
+            rows = np.round(centers_y[chunk]).astype(int)[:, None] + offsets_y
+            dx, dy = columns - centers_x[chunk, None], rows - centers_y[chunk, None]
+            distances2 = (
+                inverse_xx[chunk, None] * dx * dx
+                + 2 * inverse_xy[chunk, None] * dx * dy
+                + inverse_yy[chunk, None] * dy * dy
+            )
+            covered = (distances2 <= 4) & (columns >= 0) & (columns < width) & (rows >= 0) & (rows < height)
+            splats = chunk[np.nonzero(covered)[0]]
+            all_pixels.append((rows[covered] * width + columns[covered]).astype(np.int32))
+            all_alphas.append(np.minimum(opacities[splats] * np.exp(-0.5 * distances2[covered]), 0.99))
+            all_splats.append(splats.astype(np.int32))
+    pixels, alphas, splats = np.concatenate(all_pixels), np.concatenate(all_alphas), np.concatenate(all_splats)
+    del all_pixels, all_alphas, all_splats
+
+    # the splats are sorted from the farthest to the nearest: the highest index comes first in a pixel
+    nearest_first = np.lexsort((-splats, pixels))
+    pixels, alphas, splats = pixels[nearest_first], alphas[nearest_first], splats[nearest_first]
+    # the light of a splat that reaches the camera is its alpha times the transparency of the splats in front of it
+    log_transparency = np.concatenate([[0.0], np.cumsum(np.log1p(-alphas))])
+    starts = np.concatenate([[0], np.flatnonzero(pixels[1:] != pixels[:-1]) + 1])
+    counts = np.diff(np.concatenate([starts, [len(pixels)]]))
+    contributions = alphas * np.exp(log_transparency[:-1] - np.repeat(log_transparency[starts], counts))
+    pixel_count = width * height
+    coverage = np.bincount(pixels, contributions, minlength=pixel_count)
+    rgb = (
+        np.stack(
+            [
+                np.bincount(pixels, contributions * colors[splats, channel], minlength=pixel_count)
+                for channel in range(3)
+            ],
+            axis=1,
+        )
+        / np.maximum(coverage, 1e-12)[:, None]
+    )
+    return np.concatenate([rgb, coverage[:, None]], axis=1).reshape(height, width, 4)
+
+
+def _render_splats(point_cloud: "trimesh.PointCloud", width: int, height: int) -> "Image.Image":
+    """Render a Gaussian splat file: every splat is a soft ellipse of its color, shape and opacity.
+
+    pyrender can only draw them as points. It's an approximation of a real splat renderer, on the
+    CPU and with the base color only, enough for a thumbnail. The splats are seen from the camera
     they were captured from if the file has one, or else from a three-quarter view of the bulk of
     the splats.
     """
@@ -597,10 +716,12 @@ def _render_splats(point_cloud: "trimesh.PointCloud", width: int, height: int) -
     positions = np.asarray(point_cloud.vertices, dtype=float)
     colors = np.clip(0.5 + SH_C0 * np.stack([splats[f"f_dc_{i}"] for i in range(3)], axis=-1), 0.0, 1.0)
     opacities = 1.0 / (1.0 + np.exp(-splats["opacity"].astype(float)))
-    sizes = np.exp(np.stack([splats[f"scale_{i}"] for i in range(3)], axis=-1).astype(float)).max(axis=-1)
+    scales = np.exp(np.stack([splats[f"scale_{i}"] for i in range(3)], axis=-1).astype(float))
+    rotations = np.stack([splats[f"rot_{i}"] for i in range(4)], axis=-1).astype(float)
     if len(positions) > MESH_THUMBNAIL_MAX_SPLATS:
         subset = np.random.default_rng(0).choice(len(positions), MESH_THUMBNAIL_MAX_SPLATS, replace=False)
-        positions, colors, opacities, sizes = positions[subset], colors[subset], opacities[subset], sizes[subset]
+        positions, colors, opacities = positions[subset], colors[subset], opacities[subset]
+        scales, rotations = scales[subset], rotations[subset]
 
     capture_camera = _ply_capture_camera(point_cloud)
     if capture_camera:
@@ -614,7 +735,8 @@ def _render_splats(point_cloud: "trimesh.PointCloud", width: int, height: int) -
         low, high = np.percentile(positions, [10, 90], axis=0)
         margin = (high - low) * 0.1
         bulk = ((positions >= low - margin) & (positions <= high + margin)).all(axis=1)
-        positions, colors, opacities, sizes = positions[bulk], colors[bulk], opacities[bulk], sizes[bulk]
+        positions, colors, opacities = positions[bulk], colors[bulk], opacities[bulk]
+        scales, rotations = scales[bulk], rotations[bulk]
         center, radius = (low + high) / 2, float(np.linalg.norm(high - low) / 2)
         elevation, azimuth = np.radians(30.0), np.radians(MESH_CAMERA_AZIMUTH_DEG)
         # splats are trained in the OpenCV convention, with y down: the camera is above them at -y
@@ -633,43 +755,13 @@ def _render_splats(point_cloud: "trimesh.PointCloud", width: int, height: int) -
         frame_width, frame_height = width, height
 
     camera_positions = positions @ world_to_camera[:3, :3].T + world_to_camera[:3, 3]
-    depths = camera_positions[:, 2]
-    in_front = depths > 1e-6
-    depths, camera_positions = depths[in_front], camera_positions[in_front]
-    colors, opacities, sizes = colors[in_front], opacities[in_front], sizes[in_front]
-    if not len(depths):
+    in_front = camera_positions[:, 2] > 1e-6
+    if not in_front.any():
         raise ValueError("The 3D scene doesn't contain any splat in front of the camera.")
-    columns = np.round(lens[0, 0] * camera_positions[:, 0] / depths + lens[0, 2]).astype(int)
-    rows = np.round(lens[1, 1] * camera_positions[:, 1] / depths + lens[1, 2]).astype(int)
-    # the disc of a splat covers two standard deviations of its gaussian
-    radii = np.clip(2 * lens[0, 0] * sizes / depths, 0.7, MESH_THUMBNAIL_MAX_SPLAT_RADIUS)
-    # weighted blended order-independent transparency: the colors of the nearest splats dominate, and
-    # the coverage of a pixel is the product of the transparencies of the splats over it
-    depth_weights = (np.percentile(depths, 5) / depths) ** 6
-    pixel_count = frame_width * frame_height
-    weighted_colors = np.zeros((pixel_count, 3))
-    weights = np.zeros(pixel_count)
-    log_transparency = np.zeros(pixel_count)
-    max_radius = int(np.ceil(radii.max()))
-    for dy in range(-max_radius, max_radius + 1):
-        for dx in range(-max_radius, max_radius + 1):
-            distance2 = dx * dx + dy * dy
-            x, y = columns + dx, rows + dy
-            covered = (distance2 <= radii**2) & (x >= 0) & (x < frame_width) & (y >= 0) & (y < frame_height)
-            if not covered.any():
-                continue
-            pixels = y[covered] * frame_width + x[covered]
-            alphas = np.minimum(opacities[covered] * np.exp(-2 * distance2 / radii[covered] ** 2), 0.99)
-            splat_weights = alphas * depth_weights[covered]
-            for channel in range(3):
-                weighted_colors[:, channel] += np.bincount(
-                    pixels, splat_weights * colors[covered, channel], minlength=pixel_count
-                )
-            weights += np.bincount(pixels, splat_weights, minlength=pixel_count)
-            log_transparency += np.bincount(pixels, np.log1p(-alphas), minlength=pixel_count)
-    rgb = weighted_colors / np.maximum(weights, 1e-12)[:, None]
-    coverage = 1 - np.exp(log_transparency)
-    pixels_rgba = np.concatenate([rgb, coverage[:, None]], axis=1).reshape(frame_height, frame_width, 4)
+    camera_axes = world_to_camera[:3, :3] @ _rotation_matrices(rotations[in_front]) * scales[in_front][:, None, :]
+    pixels_rgba = _draw_splats(
+        camera_positions[in_front], camera_axes, colors[in_front], opacities[in_front], lens, frame_width, frame_height
+    )
     image = PILImage.fromarray(np.round(np.clip(pixels_rgba, 0, 1) * 255).astype(np.uint8), mode="RGBA")
     if capture_camera:
         # the photo fills the frame: it's not cropped to the scene, only centered
