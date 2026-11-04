@@ -526,8 +526,8 @@ def _delete_pyrender_platform(platform: Any) -> None:
 MESH_THUMBNAIL_POINT_SIZE = 8
 # The color of the points of a point cloud without colors
 MESH_THUMBNAIL_POINT_COLOR = (0.35, 0.35, 0.35)
-# Gaussian splat files have millions of splats: a random subset of them is enough for a thumbnail
-MESH_THUMBNAIL_MAX_SPLATS = 300_000
+# Point clouds and Gaussian splat files can have millions of points: a random subset is enough for a thumbnail
+MESH_THUMBNAIL_MAX_POINTS = 300_000
 # The largest radius of a splat in the thumbnail, in pixels: a few huge ones would hide the scene
 MESH_THUMBNAIL_MAX_SPLAT_RADIUS = 24
 # The most pixels the splats can cover in total, counting every overlap: it bounds the memory of a thumbnail
@@ -581,6 +581,17 @@ def _point_cloud_colors(point_cloud: "trimesh.PointCloud") -> np.ndarray:
     return np.tile(MESH_THUMBNAIL_POINT_COLOR, (len(point_cloud.vertices), 1))
 
 
+def _point_cloud_to_pyrender(point_cloud: "trimesh.PointCloud") -> Any:
+    """Return the points of a point cloud to render, without more of them than a thumbnail needs."""
+    import pyrender
+
+    positions, colors = np.asarray(point_cloud.vertices), _point_cloud_colors(point_cloud)
+    if len(positions) > MESH_THUMBNAIL_MAX_POINTS:
+        subset = np.random.default_rng(0).choice(len(positions), MESH_THUMBNAIL_MAX_POINTS, replace=False)
+        positions, colors = positions[subset], colors[subset]
+    return pyrender.Mesh.from_points(positions, colors=colors)
+
+
 def _ply_capture_camera(point_cloud: "trimesh.PointCloud") -> Optional[tuple[np.ndarray, np.ndarray, int, int]]:
     """Return the camera a Gaussian splat file was captured from, if it has one, or None.
 
@@ -595,7 +606,17 @@ def _ply_capture_camera(point_cloud: "trimesh.PointCloud") -> Optional[tuple[np.
     extrinsic, intrinsic, image_size = (np.concatenate(list(element.values())) for element in elements if element)
     if extrinsic.size != 16 or intrinsic.size != 9 or image_size.size != 2:
         return None
-    return extrinsic.reshape(4, 4).astype(float), intrinsic.reshape(3, 3).astype(float), *image_size.astype(int)
+    extrinsic, intrinsic = extrinsic.reshape(4, 4).astype(float), intrinsic.reshape(3, 3).astype(float)
+    # the size of the frame and the coverage of the splats are computed from these values: negative ones would
+    # make a frame of billions of pixels from a small file
+    is_valid = (
+        np.isfinite(extrinsic).all()
+        and np.isfinite(intrinsic).all()
+        and intrinsic[0, 0] > 0
+        and intrinsic[1, 1] > 0
+        and ((image_size >= 1) & (image_size < 2**31)).all()
+    )
+    return (extrinsic, intrinsic, *image_size.astype(int)) if is_valid else None
 
 
 def _rotation_matrices(quaternions: np.ndarray) -> np.ndarray:
@@ -711,15 +732,14 @@ def _render_splats(point_cloud: "trimesh.PointCloud", width: int, height: int) -
     """
     from PIL import Image as PILImage
 
-    splats = _ply_element(point_cloud, "vertex")
-    assert splats is not None
+    splats = _ply_element(point_cloud, "vertex") or {}
     positions = np.asarray(point_cloud.vertices, dtype=float)
     colors = np.clip(0.5 + SH_C0 * np.stack([splats[f"f_dc_{i}"] for i in range(3)], axis=-1), 0.0, 1.0)
     opacities = 1.0 / (1.0 + np.exp(-splats["opacity"].astype(float)))
     scales = np.exp(np.stack([splats[f"scale_{i}"] for i in range(3)], axis=-1).astype(float))
     rotations = np.stack([splats[f"rot_{i}"] for i in range(4)], axis=-1).astype(float)
-    if len(positions) > MESH_THUMBNAIL_MAX_SPLATS:
-        subset = np.random.default_rng(0).choice(len(positions), MESH_THUMBNAIL_MAX_SPLATS, replace=False)
+    if len(positions) > MESH_THUMBNAIL_MAX_POINTS:
+        subset = np.random.default_rng(0).choice(len(positions), MESH_THUMBNAIL_MAX_POINTS, replace=False)
         positions, colors, opacities = positions[subset], colors[subset], opacities[subset]
         scales, rotations = scales[subset], rotations[subset]
 
@@ -814,7 +834,7 @@ def _render_trimesh_scene_to_png(
     for name, geom in trimesh_scene.geometry.items():
         try:
             geometries[name] = (
-                pyrender.Mesh.from_points(geom.vertices, colors=_point_cloud_colors(geom))
+                _point_cloud_to_pyrender(geom)
                 if isinstance(geom, trimesh.PointCloud)
                 else pyrender.Mesh.from_trimesh(geom)
             )

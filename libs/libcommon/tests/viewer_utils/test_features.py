@@ -462,9 +462,9 @@ def splat_ply(
             "element intrinsic 9",
             "property float intrinsic",
         ]
-        header += ["element image_size 2", "property uint image_size"]
+        header += ["element image_size 2", "property int image_size"]
         body += extrinsic.astype("<f4").tobytes() + intrinsic.astype("<f4").tobytes()
-        body += np.array(image_size, dtype="<u4").tobytes()
+        body += np.array(image_size, dtype="<i4").tobytes()
     return "\n".join(header + ["end_header", ""]).encode() + body
 
 
@@ -551,6 +551,56 @@ def test_get_mesh_cell_value_with_gaussian_splats_order(
     value = get_mesh_cell_value({"path": "scene.ply", "bytes": ply_bytes}, storage_client_with_url_preparator, 4)
     center = thumbnail_pixels(value, storage_client_with_url_preparator)[300, 400]
     assert center[2] > 4 * center[0], "the near blue splat is in front"
+
+
+@pytest.mark.parametrize(
+    "extrinsic,intrinsic,image_size",
+    [
+        (np.eye(4), SPLAT_TEST_CAMERA[1], [-1, -100_000]),
+        (np.eye(4), SPLAT_TEST_CAMERA[1], [0, 0]),
+        (np.eye(4), np.zeros((3, 3)), [200, 200]),
+        (np.eye(4), np.full((3, 3), np.nan), [200, 200]),
+        (np.full((4, 4), np.inf), SPLAT_TEST_CAMERA[1], [200, 200]),
+    ],
+    ids=["negative size", "empty size", "no focal length", "invalid lens", "invalid pose"],
+)
+def test_get_mesh_cell_value_with_gaussian_splats_and_invalid_capture_camera(
+    extrinsic: np.ndarray,
+    intrinsic: np.ndarray,
+    image_size: list[int],
+    storage_client_with_url_preparator: StorageClient,
+) -> None:
+    """An invalid camera is ignored: the splats behind it are drawn from the default view, in a normal frame."""
+    ensure_mesh_rendering()
+    points = trimesh.creation.icosphere(subdivisions=3).vertices - [0.0, 0.0, 5.0]
+    ply_bytes = splat_ply(points, red=np.ones(len(points), dtype=bool), camera=(extrinsic, intrinsic, image_size))
+    value = get_mesh_cell_value({"path": "splats.ply", "bytes": ply_bytes}, storage_client_with_url_preparator, 4)
+    pixels = thumbnail_pixels(value, storage_client_with_url_preparator)
+    assert pixels.shape[:2] == (MESH_THUMBNAIL_HEIGHT, MESH_THUMBNAIL_WIDTH)
+    assert (pixels[:, :, 3] > 127).sum() > 0.2 * MESH_THUMBNAIL_WIDTH * MESH_THUMBNAIL_HEIGHT
+
+
+def test_get_mesh_cell_value_with_too_many_points(
+    monkeypatch: pytest.MonkeyPatch, storage_client_with_url_preparator: StorageClient
+) -> None:
+    """A point cloud with too many points only renders a subset of them, with the colors of these points."""
+    ensure_mesh_rendering()
+    import pyrender
+
+    rendered_counts = []
+    from_points = pyrender.Mesh.from_points
+
+    def spy(points: np.ndarray, colors: np.ndarray) -> Any:
+        assert len(colors) == len(points)
+        rendered_counts.append(len(points))
+        return from_points(points, colors=colors)
+
+    monkeypatch.setattr(pyrender.Mesh, "from_points", spy)
+    monkeypatch.setattr("libcommon.viewer_utils.asset.MESH_THUMBNAIL_MAX_POINTS", 100)
+    ply_bytes = point_cloud_ply(with_splat_colors=False)
+    value = get_mesh_cell_value({"path": "points.ply", "bytes": ply_bytes}, storage_client_with_url_preparator, 4)
+    assert_output_has_valid_files(value, storage_client_with_url_preparator)
+    assert rendered_counts == [100]
 
 
 @pytest.mark.parametrize("cell", ["a string", 42, {"path": None, "bytes": None}])
