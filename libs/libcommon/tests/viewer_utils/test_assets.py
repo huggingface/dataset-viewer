@@ -362,7 +362,7 @@ def test_create_mesh_thumbnail_without_geometry(storage_client_with_url_preparat
             row_idx=MESH_ROW_IDX,
             column=DEFAULT_COLUMN_NAME,
             filename="mesh.ply",
-            mesh=trimesh.Scene([trimesh.PointCloud(np.random.rand(10, 3))]),  # type: ignore
+            mesh=trimesh.Scene(),
             storage_client=storage_client_with_url_preparator,
         )
 

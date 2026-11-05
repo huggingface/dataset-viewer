@@ -439,7 +439,8 @@ def _as_mesh_scene(value: Any) -> "trimesh.Scene":
     """Return the trimesh scene of a decoded mesh cell, which can be a single mesh or a whole scene."""
     import trimesh
 
-    if isinstance(value, trimesh.Trimesh):
+    # a ply file without faces, like a point cloud or a Gaussian splat, is loaded as a point cloud
+    if isinstance(value, (trimesh.Trimesh, trimesh.PointCloud)):
         return value.scene()
     if isinstance(value, trimesh.Scene):
         return value

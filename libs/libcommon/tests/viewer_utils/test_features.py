@@ -11,6 +11,7 @@ from unittest.mock import patch
 from urllib import parse
 
 import boto3
+import numpy as np
 import pytest
 import trimesh
 from aiobotocore.response import StreamingBody
@@ -22,7 +23,7 @@ from urllib3._collections import HTTPHeaderDict
 from libcommon.config import S3Config
 from libcommon.storage_client import StorageClient
 from libcommon.url_preparator import URLPreparator
-from libcommon.viewer_utils.asset import MESH_THUMBNAIL_HEIGHT, MESH_THUMBNAIL_WIDTH
+from libcommon.viewer_utils.asset import MESH_THUMBNAIL_HEIGHT, MESH_THUMBNAIL_WIDTH, create_mesh_thumbnail
 from libcommon.viewer_utils.features import (
     MESH_FILE_TYPE_ERROR,
     _infer_mesh_file_type,
@@ -378,6 +379,315 @@ def test_get_mesh_cell_value_with_mesh_object(
         mesh = trimesh.load(BytesIO(file.read()), file_type="glb")
         assert isinstance(mesh, trimesh.Scene)
         assert len(mesh.geometry) == 1, "the exported mesh loads back"
+
+
+def point_cloud_ply(with_splat_colors: bool) -> bytes:
+    """A ply file of points on a sphere, without faces: a point cloud, or a Gaussian splat (red splats)."""
+    points = trimesh.creation.icosphere(subdivisions=3).vertices
+    properties = ["x", "y", "z"] + (["f_dc_0", "f_dc_1", "f_dc_2", "opacity"] if with_splat_colors else [])
+    header = ["ply", "format ascii 1.0", f"element vertex {len(points)}"]
+    header += [f"property float {name}" for name in properties] + ["end_header"]
+    # f_dc_0 = 1.7 is a red splat: 0.5 + 0.282 * 1.7 > 0.98, and 0.5 + 0.282 * -1.7 < 0.02
+    rows = [" ".join(map(str, [*point, *([1.7, -1.7, -1.7, 1.0] if with_splat_colors else [])])) for point in points]
+    return "\n".join(header + rows + [""]).encode()
+
+
+@pytest.mark.parametrize("with_splat_colors", [False, True], ids=["point cloud", "gaussian splat"])
+def test_get_mesh_cell_value_with_point_cloud(
+    with_splat_colors: bool, storage_client_with_url_preparator: StorageClient
+) -> None:
+    """A ply file without faces is loaded as a point cloud: the thumbnail renders its points."""
+    ensure_mesh_rendering()
+    from PIL import Image
+
+    asset_path = mesh_asset_path(4)
+    ply_bytes = point_cloud_ply(with_splat_colors)
+    value = get_mesh_cell_value({"path": "points.ply", "bytes": ply_bytes}, storage_client_with_url_preparator, 4)
+    assert value["src"] == f"{ASSETS_BASE_URL}/{asset_path}/mesh.ply"
+    assert_output_has_valid_files(value, storage_client_with_url_preparator)
+    with storage_client_with_url_preparator._fs.open(
+        storage_client_with_url_preparator.get_full_path(f"{asset_path}/mesh.ply.png"), "rb"
+    ) as file:
+        pixels = np.asarray(Image.open(file).convert("RGBA")).astype(int)
+    # the antialiased edges of the points are partly transparent, and darker
+    drawn = pixels[pixels[:, :, 3] > 127]
+    assert len(drawn), "the points are drawn"
+    if with_splat_colors:
+        # the splats get their color from the f_dc coefficients: red, darkened by the shading
+        assert (drawn[:, 0] > 4 * drawn[:, 1:3].max(axis=1)).all()
+
+
+def splat_ply(
+    positions: np.ndarray,
+    red: np.ndarray,
+    camera: Optional[tuple[np.ndarray, np.ndarray, list[int]]] = None,
+    scales: tuple[float, float, float] = (0.05, 0.05, 0.05),
+    rotation: tuple[float, float, float, float] = (1.0, 0.0, 0.0, 0.0),
+) -> bytes:
+    """A binary Gaussian splat ply file of opaque red or blue splats, with the capture camera of SHARP files."""
+    rotation_fields = ["rot_0", "rot_1", "rot_2", "rot_3"]
+    fields = [
+        "x",
+        "y",
+        "z",
+        "f_dc_0",
+        "f_dc_1",
+        "f_dc_2",
+        "opacity",
+        "scale_0",
+        "scale_1",
+        "scale_2",
+        *rotation_fields,
+    ]
+    splats = np.zeros(len(positions), dtype=[(name, "<f4") for name in fields])
+    for i, name in enumerate(["x", "y", "z"]):
+        splats[name] = positions[:, i]
+    # f_dc = 1.7 is a full channel: 0.5 + 0.282 * 1.7 > 0.98, and 0.5 + 0.282 * -1.7 < 0.02
+    splats["f_dc_0"] = np.where(red, 1.7, -1.7)
+    splats["f_dc_2"] = np.where(red, -1.7, 1.7)
+    splats["f_dc_1"] = -1.7
+    splats["opacity"] = 5.0
+    for name, scale in zip(["scale_0", "scale_1", "scale_2"], scales):
+        splats[name] = np.log(scale)
+    for name, component in zip(rotation_fields, rotation):
+        splats[name] = component
+    header = ["ply", "format binary_little_endian 1.0", f"element vertex {len(splats)}"]
+    header += [f"property float {name}" for name in fields]
+    body = splats.tobytes()
+    if camera:
+        extrinsic, intrinsic, image_size = camera
+        header += [
+            "element extrinsic 16",
+            "property float extrinsic",
+            "element intrinsic 9",
+            "property float intrinsic",
+        ]
+        header += ["element image_size 2", "property int image_size"]
+        body += extrinsic.astype("<f4").tobytes() + intrinsic.astype("<f4").tobytes()
+        body += np.array(image_size, dtype="<i4").tobytes()
+    return "\n".join(header + ["end_header", ""]).encode() + body
+
+
+def thumbnail_pixels(value: Any, storage_client: StorageClient) -> np.ndarray:
+    from PIL import Image
+
+    path = parse.urlparse(value["thumbnail"]["src"]).path.removeprefix(f"{parse.urlparse(ASSETS_BASE_URL).path}/")
+    with storage_client._fs.open(storage_client.get_full_path(path), "rb") as file:
+        return np.asarray(Image.open(file).convert("RGBA")).astype(int)
+
+
+def test_get_mesh_cell_value_with_gaussian_splats(storage_client_with_url_preparator: StorageClient) -> None:
+    """Splats with a shape and an opacity are drawn as ellipses of their color."""
+    ensure_mesh_rendering()
+    points = trimesh.creation.icosphere(subdivisions=3).vertices
+    ply_bytes = splat_ply(points, red=np.ones(len(points), dtype=bool))
+    value = get_mesh_cell_value({"path": "splats.ply", "bytes": ply_bytes}, storage_client_with_url_preparator, 4)
+    pixels = thumbnail_pixels(value, storage_client_with_url_preparator)
+    drawn = pixels[pixels[:, :, 3] > 127]
+    assert len(drawn) > 0.2 * MESH_THUMBNAIL_WIDTH * MESH_THUMBNAIL_HEIGHT, "the ellipses cover the sphere"
+    assert (drawn[:, 0] > 4 * drawn[:, 1:3].max(axis=1)).all(), "the splats are red"
+
+
+def test_get_mesh_cell_value_with_gaussian_splats_and_capture_camera(
+    storage_client_with_url_preparator: StorageClient,
+) -> None:
+    """Splats are seen from the camera stored in the file: the thumbnail has the size of its photo."""
+    ensure_mesh_rendering()
+    # a camera at the origin looking along +z, with a 160x60 photo: red splats in front of it, blue ones behind
+    grid = np.stack(np.meshgrid(np.linspace(-4, 4, 80), np.linspace(-1.5, 1.5, 30)), axis=-1).reshape(-1, 2)
+    in_front = np.column_stack([grid, np.full(len(grid), 5.0)])
+    behind = in_front * [1, 1, -1]
+    camera = (np.eye(4), np.array([[100.0, 0, 80], [0, 100.0, 30], [0, 0, 1]]), [160, 60])
+    red = np.arange(2 * len(grid)) < len(grid)
+    ply_bytes = splat_ply(np.concatenate([in_front, behind]), red=red, camera=camera)
+    value = get_mesh_cell_value({"path": "scene.ply", "bytes": ply_bytes}, storage_client_with_url_preparator, 4)
+    pixels = thumbnail_pixels(value, storage_client_with_url_preparator)
+    # the 160x60 photo fits in the 800x600 thumbnail as 800x300, centered
+    assert (pixels[:140, :, 3] == 0).all() and (pixels[-140:, :, 3] == 0).all()
+    center = pixels[160:440, 20:780]
+    assert (center[:, :, 3] > 127).mean() > 0.9, "the splats in front of the camera fill the photo"
+    drawn = center[center[:, :, 3] > 127]
+    assert (drawn[:, 0] > 4 * drawn[:, 1:3].max(axis=-1)).all(), "the blue splats behind the camera are not drawn"
+
+
+# a camera at the origin looking along +z, with a 200x200 photo: the thumbnail shows it at 600x600
+SPLAT_TEST_CAMERA = (np.eye(4), np.array([[100.0, 0, 100], [0, 100.0, 100], [0, 0, 1]]), [200, 200])
+
+
+@pytest.mark.parametrize(
+    "rotation,long_axis",
+    [((1.0, 0.0, 0.0, 0.0), "x"), ((np.sqrt(0.5), 0.0, 0.0, np.sqrt(0.5)), "y")],
+    ids=["not rotated", "rotated by 90 degrees around the view"],
+)
+def test_get_mesh_cell_value_with_gaussian_splats_shape(
+    rotation: tuple[float, float, float, float], long_axis: str, storage_client_with_url_preparator: StorageClient
+) -> None:
+    """A long and thin splat is drawn long and thin, along the direction its rotation gives it."""
+    ensure_mesh_rendering()
+    ply_bytes = splat_ply(
+        np.array([[0.0, 0.0, 5.0]]),
+        red=np.array([True]),
+        camera=SPLAT_TEST_CAMERA,
+        scales=(0.5, 0.01, 0.01),
+        rotation=rotation,
+    )
+    value = get_mesh_cell_value({"path": "scene.ply", "bytes": ply_bytes}, storage_client_with_url_preparator, 4)
+    rows, columns = np.nonzero(thumbnail_pixels(value, storage_client_with_url_preparator)[:, :, 3] > 127)
+    extent_x, extent_y = np.ptp(columns) + 1, np.ptp(rows) + 1
+    assert (extent_x > 5 * extent_y) if long_axis == "x" else (extent_y > 5 * extent_x)
+
+
+@pytest.mark.parametrize("near_first_in_file", [True, False], ids=["near one first", "far one first"])
+def test_get_mesh_cell_value_with_gaussian_splats_order(
+    near_first_in_file: bool, storage_client_with_url_preparator: StorageClient
+) -> None:
+    """The nearest of two opaque splats hides the other one, whatever their order in the file."""
+    ensure_mesh_rendering()
+    near_then_far = np.array([[0.0, 0.0, 5.0], [0.0, 0.0, 10.0]])
+    positions = near_then_far if near_first_in_file else near_then_far[::-1]
+    # the near splat is blue, and the far one is red
+    red = np.array([False, True]) if near_first_in_file else np.array([True, False])
+    ply_bytes = splat_ply(positions, red=red, camera=SPLAT_TEST_CAMERA, scales=(0.2, 0.2, 0.2))
+    value = get_mesh_cell_value({"path": "scene.ply", "bytes": ply_bytes}, storage_client_with_url_preparator, 4)
+    center = thumbnail_pixels(value, storage_client_with_url_preparator)[300, 400]
+    assert center[2] > 4 * center[0], "the near blue splat is in front"
+
+
+@pytest.mark.parametrize(
+    "extrinsic,intrinsic,image_size",
+    [
+        (np.eye(4), SPLAT_TEST_CAMERA[1], [-1, -100_000]),
+        (np.eye(4), SPLAT_TEST_CAMERA[1], [0, 0]),
+        (np.eye(4), np.zeros((3, 3)), [200, 200]),
+        (np.eye(4), np.full((3, 3), np.nan), [200, 200]),
+        (np.full((4, 4), np.inf), SPLAT_TEST_CAMERA[1], [200, 200]),
+    ],
+    ids=["negative size", "empty size", "no focal length", "invalid lens", "invalid pose"],
+)
+def test_get_mesh_cell_value_with_gaussian_splats_and_invalid_capture_camera(
+    extrinsic: np.ndarray,
+    intrinsic: np.ndarray,
+    image_size: list[int],
+    storage_client_with_url_preparator: StorageClient,
+) -> None:
+    """An invalid camera is ignored: the splats behind it are drawn from the default view, in a normal frame."""
+    ensure_mesh_rendering()
+    points = trimesh.creation.icosphere(subdivisions=3).vertices - [0.0, 0.0, 5.0]
+    ply_bytes = splat_ply(points, red=np.ones(len(points), dtype=bool), camera=(extrinsic, intrinsic, image_size))
+    value = get_mesh_cell_value({"path": "splats.ply", "bytes": ply_bytes}, storage_client_with_url_preparator, 4)
+    pixels = thumbnail_pixels(value, storage_client_with_url_preparator)
+    assert pixels.shape[:2] == (MESH_THUMBNAIL_HEIGHT, MESH_THUMBNAIL_WIDTH)
+    assert (pixels[:, :, 3] > 127).sum() > 0.2 * MESH_THUMBNAIL_WIDTH * MESH_THUMBNAIL_HEIGHT
+
+
+def test_get_mesh_cell_value_with_too_many_points(
+    monkeypatch: pytest.MonkeyPatch, storage_client_with_url_preparator: StorageClient
+) -> None:
+    """A point cloud with too many points only renders a subset of them, with the colors of these points."""
+    ensure_mesh_rendering()
+    import pyrender
+
+    rendered_counts = []
+    from_points = pyrender.Mesh.from_points
+
+    def spy(points: np.ndarray, colors: np.ndarray) -> Any:
+        assert len(colors) == len(points)
+        rendered_counts.append(len(points))
+        return from_points(points, colors=colors)
+
+    monkeypatch.setattr(pyrender.Mesh, "from_points", spy)
+    monkeypatch.setattr("libcommon.viewer_utils.asset.MESH_THUMBNAIL_MAX_POINTS", 100)
+    ply_bytes = point_cloud_ply(with_splat_colors=False)
+    value = get_mesh_cell_value({"path": "points.ply", "bytes": ply_bytes}, storage_client_with_url_preparator, 4)
+    assert_output_has_valid_files(value, storage_client_with_url_preparator)
+    assert rendered_counts == [100]
+
+
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("scale_0", np.nan),
+        ("scale_1", np.inf),
+        ("scale_2", 700.0),
+        ("x", np.nan),
+        ("opacity", np.nan),
+        ("f_dc_0", np.inf),
+    ],
+)
+def test_get_mesh_cell_value_with_gaussian_splats_with_invalid_values(
+    field: str, value: float, monkeypatch: pytest.MonkeyPatch, storage_client_with_url_preparator: StorageClient
+) -> None:
+    """One invalid splat is left out, and doesn't disable the limit of the pixels covered by the splats."""
+    ensure_mesh_rendering()
+    monkeypatch.setattr("libcommon.viewer_utils.asset.MESH_THUMBNAIL_MAX_SPLAT_COVERAGE", 2_000)
+    points = trimesh.creation.icosphere(subdivisions=3).vertices - [0.0, 0.0, 5.0]
+    valid_ply = splat_ply(points, red=np.ones(len(points), dtype=bool), scales=(0.5, 0.5, 0.5))
+    head, body = valid_ply.split(b"end_header\n")
+    fields = [line.split()[-1].decode() for line in head.splitlines() if line.startswith(b"property")]
+    splats = np.frombuffer(body, dtype=[(name, "<f4") for name in fields]).copy()
+    splats[0][field] = value
+    invalid_ply = head + b"end_header\n" + splats.tobytes()
+
+    def drawn_pixels(ply_bytes: bytes, row_idx: int) -> int:
+        cell = {"path": "splats.ply", "bytes": ply_bytes}
+        cell_value = get_mesh_cell_value(cell, storage_client_with_url_preparator, row_idx)
+        return int((thumbnail_pixels(cell_value, storage_client_with_url_preparator)[:, :, 3] > 0).sum())
+
+    valid_pixels = drawn_pixels(valid_ply, 0)
+    assert 0 < drawn_pixels(invalid_ply, 1) < 1.5 * valid_pixels
+
+
+def test_get_mesh_cell_value_with_only_invalid_gaussian_splats(
+    storage_client_with_url_preparator: StorageClient,
+) -> None:
+    ensure_mesh_rendering()
+    points = trimesh.creation.icosphere(subdivisions=1).vertices - [0.0, 0.0, 5.0]
+    ply_bytes = splat_ply(points, red=np.ones(len(points), dtype=bool), rotation=(0.0, 0.0, 0.0, 0.0))
+    with pytest.raises(ValueError, match="valid splat"):
+        get_mesh_cell_value({"path": "splats.ply", "bytes": ply_bytes}, storage_client_with_url_preparator, 4)
+
+
+def test_create_mesh_thumbnail_limit_of_points_is_for_the_whole_scene(
+    monkeypatch: pytest.MonkeyPatch, storage_client_with_url_preparator: StorageClient
+) -> None:
+    """Point clouds repeated in a scene don't get around the limit of points."""
+    ensure_mesh_rendering()
+    import pyrender
+
+    rendered_counts = []
+    from_points = pyrender.Mesh.from_points
+
+    def spy(points: np.ndarray, colors: np.ndarray) -> Any:
+        rendered_counts.append(len(points))
+        return from_points(points, colors=colors)
+
+    monkeypatch.setattr(pyrender.Mesh, "from_points", spy)
+    monkeypatch.setattr("libcommon.viewer_utils.asset.MESH_THUMBNAIL_MAX_POINTS", 1000)
+    vertices = trimesh.creation.icosphere(subdivisions=4).vertices
+    scene = trimesh.Scene()
+    for i in range(10):
+        cloud = trimesh.PointCloud(vertices + [i, 0.0, 0.0])  # type: ignore[no-untyped-call]
+        scene.add_geometry(cloud, node_name=f"cloud_{i}")
+    shared = trimesh.PointCloud(vertices)  # type: ignore[no-untyped-call]
+    scene.add_geometry(shared, geom_name="shared", node_name="shared")
+    for i in range(10):
+        pose = np.eye(4)
+        pose[1, 3] = i
+        scene.graph.update(frame_to=f"copy_{i}", geometry="shared", matrix=pose)  # type: ignore[no-untyped-call]
+    create_mesh_thumbnail(
+        dataset="dataset",
+        revision="revision",
+        config="config",
+        split="split",
+        row_idx=0,
+        column="col",
+        filename="points.glb",
+        mesh=scene,
+        storage_client=storage_client_with_url_preparator,
+    )
+    # 11 geometries, one of them drawn 11 times: 21 point clouds in the image
+    assert len(rendered_counts) == 11
+    assert 21 * max(rendered_counts) <= 1000
 
 
 @pytest.mark.parametrize("cell", ["a string", 42, {"path": None, "bytes": None}])
