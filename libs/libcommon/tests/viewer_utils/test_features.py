@@ -23,7 +23,7 @@ from urllib3._collections import HTTPHeaderDict
 from libcommon.config import S3Config
 from libcommon.storage_client import StorageClient
 from libcommon.url_preparator import URLPreparator
-from libcommon.viewer_utils.asset import MESH_THUMBNAIL_HEIGHT, MESH_THUMBNAIL_WIDTH
+from libcommon.viewer_utils.asset import MESH_THUMBNAIL_HEIGHT, MESH_THUMBNAIL_WIDTH, create_mesh_thumbnail
 from libcommon.viewer_utils.features import (
     MESH_FILE_TYPE_ERROR,
     _infer_mesh_file_type,
@@ -601,6 +601,93 @@ def test_get_mesh_cell_value_with_too_many_points(
     value = get_mesh_cell_value({"path": "points.ply", "bytes": ply_bytes}, storage_client_with_url_preparator, 4)
     assert_output_has_valid_files(value, storage_client_with_url_preparator)
     assert rendered_counts == [100]
+
+
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("scale_0", np.nan),
+        ("scale_1", np.inf),
+        ("scale_2", 700.0),
+        ("x", np.nan),
+        ("opacity", np.nan),
+        ("f_dc_0", np.inf),
+    ],
+)
+def test_get_mesh_cell_value_with_gaussian_splats_with_invalid_values(
+    field: str, value: float, monkeypatch: pytest.MonkeyPatch, storage_client_with_url_preparator: StorageClient
+) -> None:
+    """One invalid splat is left out, and doesn't disable the limit of the pixels covered by the splats."""
+    ensure_mesh_rendering()
+    monkeypatch.setattr("libcommon.viewer_utils.asset.MESH_THUMBNAIL_MAX_SPLAT_COVERAGE", 2_000)
+    points = trimesh.creation.icosphere(subdivisions=3).vertices - [0.0, 0.0, 5.0]
+    valid_ply = splat_ply(points, red=np.ones(len(points), dtype=bool), scales=(0.5, 0.5, 0.5))
+    head, body = valid_ply.split(b"end_header\n")
+    fields = [line.split()[-1].decode() for line in head.splitlines() if line.startswith(b"property")]
+    splats = np.frombuffer(body, dtype=[(name, "<f4") for name in fields]).copy()
+    splats[0][field] = value
+    invalid_ply = head + b"end_header\n" + splats.tobytes()
+
+    def drawn_pixels(ply_bytes: bytes, row_idx: int) -> int:
+        cell = {"path": "splats.ply", "bytes": ply_bytes}
+        cell_value = get_mesh_cell_value(cell, storage_client_with_url_preparator, row_idx)
+        return int((thumbnail_pixels(cell_value, storage_client_with_url_preparator)[:, :, 3] > 0).sum())
+
+    valid_pixels = drawn_pixels(valid_ply, 0)
+    assert 0 < drawn_pixels(invalid_ply, 1) < 1.5 * valid_pixels
+
+
+def test_get_mesh_cell_value_with_only_invalid_gaussian_splats(
+    storage_client_with_url_preparator: StorageClient,
+) -> None:
+    ensure_mesh_rendering()
+    points = trimesh.creation.icosphere(subdivisions=1).vertices - [0.0, 0.0, 5.0]
+    ply_bytes = splat_ply(points, red=np.ones(len(points), dtype=bool), rotation=(0.0, 0.0, 0.0, 0.0))
+    with pytest.raises(ValueError, match="valid splat"):
+        get_mesh_cell_value({"path": "splats.ply", "bytes": ply_bytes}, storage_client_with_url_preparator, 4)
+
+
+def test_create_mesh_thumbnail_limit_of_points_is_for_the_whole_scene(
+    monkeypatch: pytest.MonkeyPatch, storage_client_with_url_preparator: StorageClient
+) -> None:
+    """Point clouds repeated in a scene don't get around the limit of points."""
+    ensure_mesh_rendering()
+    import pyrender
+
+    rendered_counts = []
+    from_points = pyrender.Mesh.from_points
+
+    def spy(points: np.ndarray, colors: np.ndarray) -> Any:
+        rendered_counts.append(len(points))
+        return from_points(points, colors=colors)
+
+    monkeypatch.setattr(pyrender.Mesh, "from_points", spy)
+    monkeypatch.setattr("libcommon.viewer_utils.asset.MESH_THUMBNAIL_MAX_POINTS", 1000)
+    vertices = trimesh.creation.icosphere(subdivisions=4).vertices
+    scene = trimesh.Scene()
+    for i in range(10):
+        cloud = trimesh.PointCloud(vertices + [i, 0.0, 0.0])  # type: ignore[no-untyped-call]
+        scene.add_geometry(cloud, node_name=f"cloud_{i}")
+    shared = trimesh.PointCloud(vertices)  # type: ignore[no-untyped-call]
+    scene.add_geometry(shared, geom_name="shared", node_name="shared")
+    for i in range(10):
+        pose = np.eye(4)
+        pose[1, 3] = i
+        scene.graph.update(frame_to=f"copy_{i}", geometry="shared", matrix=pose)  # type: ignore[no-untyped-call]
+    create_mesh_thumbnail(
+        dataset="dataset",
+        revision="revision",
+        config="config",
+        split="split",
+        row_idx=0,
+        column="col",
+        filename="points.glb",
+        mesh=scene,
+        storage_client=storage_client_with_url_preparator,
+    )
+    # 11 geometries, one of them drawn 11 times: 21 point clouds in the image
+    assert len(rendered_counts) == 11
+    assert 21 * max(rendered_counts) <= 1000
 
 
 @pytest.mark.parametrize("cell", ["a string", 42, {"path": None, "bytes": None}])

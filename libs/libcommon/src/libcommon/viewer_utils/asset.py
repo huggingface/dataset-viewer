@@ -4,6 +4,7 @@
 import logging
 import os
 import threading
+from collections import Counter
 from collections.abc import Hashable
 from io import BufferedReader, BytesIO
 from tempfile import NamedTemporaryFile
@@ -526,12 +527,15 @@ def _delete_pyrender_platform(platform: Any) -> None:
 MESH_THUMBNAIL_POINT_SIZE = 8
 # The color of the points of a point cloud without colors
 MESH_THUMBNAIL_POINT_COLOR = (0.35, 0.35, 0.35)
-# Point clouds and Gaussian splat files can have millions of points: a random subset is enough for a thumbnail
+# Point clouds and Gaussian splat files can have millions of points: a random subset is enough for a thumbnail.
+# It's the limit of a whole file: a small 3D file can reuse the same points in many geometries.
 MESH_THUMBNAIL_MAX_POINTS = 300_000
-# The largest radius of a splat in the thumbnail, in pixels: a few huge ones would hide the scene
-MESH_THUMBNAIL_MAX_SPLAT_RADIUS = 24
+# The splats are drawn on the CPU, at a fraction of the size of the thumbnail: it's about twice faster
+MESH_THUMBNAIL_SPLAT_DOWNSCALE = 2
+# The largest radius of a splat, in pixels of the downscaled image: a few huge ones would hide the scene
+MESH_THUMBNAIL_MAX_SPLAT_RADIUS = 12
 # The most pixels the splats can cover in total, counting every overlap: it bounds the memory of a thumbnail
-MESH_THUMBNAIL_MAX_SPLAT_COVERAGE = 15_000_000
+MESH_THUMBNAIL_MAX_SPLAT_COVERAGE = 4_000_000
 # How many candidate pixels are computed at once while drawing the splats
 MESH_THUMBNAIL_SPLAT_CHUNK_SIZE = 2_000_000
 SPLAT_FIELDS = {
@@ -581,13 +585,13 @@ def _point_cloud_colors(point_cloud: "trimesh.PointCloud") -> np.ndarray:
     return np.tile(MESH_THUMBNAIL_POINT_COLOR, (len(point_cloud.vertices), 1))
 
 
-def _point_cloud_to_pyrender(point_cloud: "trimesh.PointCloud") -> Any:
+def _point_cloud_to_pyrender(point_cloud: "trimesh.PointCloud", max_points: int) -> Any:
     """Return the points of a point cloud to render, without more of them than a thumbnail needs."""
     import pyrender
 
     positions, colors = np.asarray(point_cloud.vertices), _point_cloud_colors(point_cloud)
-    if len(positions) > MESH_THUMBNAIL_MAX_POINTS:
-        subset = np.random.default_rng(0).choice(len(positions), MESH_THUMBNAIL_MAX_POINTS, replace=False)
+    if len(positions) > max_points:
+        subset = np.random.default_rng(0).choice(len(positions), max_points, replace=False)
         positions, colors = positions[subset], colors[subset]
     return pyrender.Mesh.from_points(positions, colors=colors)
 
@@ -671,6 +675,16 @@ def _draw_splats(
     largest = (cov_xx + cov_yy + np.hypot(cov_xx - cov_yy, 2 * cov_xy)) / 2
     shrink = np.minimum(1.0, (MESH_THUMBNAIL_MAX_SPLAT_RADIUS / 2) ** 2 / largest)
     areas = 4 * np.pi * np.sqrt(np.maximum(cov_xx * cov_yy - cov_xy**2, 1e-9)) * shrink
+    # finite values can overflow here, and the coverage limit below would not apply to a sum that isn't finite
+    drawable = np.isfinite(areas) & (shrink > 0) & np.isfinite(centers_x) & np.isfinite(centers_y)
+    if not drawable.any():
+        raise ValueError("The 3D scene doesn't contain any splat that can be drawn.")
+    centers_x, centers_y, cov_xx, cov_yy, cov_xy = (
+        values[drawable] for values in (centers_x, centers_y, cov_xx, cov_yy, cov_xy)
+    )
+    largest, shrink, areas, colors, opacities = (
+        values[drawable] for values in (largest, shrink, areas, colors, opacities)
+    )
     shrink = shrink * min(1.0, MESH_THUMBNAIL_MAX_SPLAT_COVERAGE / areas.sum())
     cov_xx, cov_yy, cov_xy, largest = cov_xx * shrink, cov_yy * shrink, cov_xy * shrink, largest * shrink
     determinants = np.maximum(cov_xx * cov_yy - cov_xy**2, 1e-9)
@@ -722,6 +736,7 @@ def _draw_splats(
     return np.concatenate([rgb, coverage[:, None]], axis=1).reshape(height, width, 4)
 
 
+@np.errstate(over="ignore", invalid="ignore")
 def _render_splats(point_cloud: "trimesh.PointCloud", width: int, height: int) -> "Image.Image":
     """Render a Gaussian splat file: every splat is a soft ellipse of its color, shape and opacity.
 
@@ -742,6 +757,14 @@ def _render_splats(point_cloud: "trimesh.PointCloud", width: int, height: int) -
         subset = np.random.default_rng(0).choice(len(positions), MESH_THUMBNAIL_MAX_POINTS, replace=False)
         positions, colors, opacities = positions[subset], colors[subset], opacities[subset]
         scales, rotations = scales[subset], rotations[subset]
+    # the values of a file can be anything: one that isn't finite would spread to the whole image and its limits
+    is_valid = np.isfinite(np.column_stack([positions, colors, opacities, scales, rotations])).all(axis=1) & (
+        np.abs(rotations).sum(axis=1) > 0
+    )
+    if not is_valid.any():
+        raise ValueError("The 3D scene doesn't contain any valid splat.")
+    positions, colors, opacities = positions[is_valid], colors[is_valid], opacities[is_valid]
+    scales, rotations = scales[is_valid], rotations[is_valid]
 
     capture_camera = _ply_capture_camera(point_cloud)
     if capture_camera:
@@ -822,7 +845,10 @@ def _render_trimesh_scene_to_png(
         and isinstance(geometries_to_render[0], trimesh.PointCloud)
         and SPLAT_FIELDS <= set(_ply_element(geometries_to_render[0], "vertex") or {})
     ):
-        _render_splats(geometries_to_render[0], width, height).save(output_buffer, "PNG")
+        splats_image = _render_splats(
+            geometries_to_render[0], width // MESH_THUMBNAIL_SPLAT_DOWNSCALE, height // MESH_THUMBNAIL_SPLAT_DOWNSCALE
+        )
+        splats_image.resize((width, height), PILImage.Resampling.LANCZOS).save(output_buffer, "PNG")
         return
 
     # pyrender formats the textures with its own format_texture_source, which refuses some of the
@@ -830,11 +856,18 @@ def _render_trimesh_scene_to_png(
     _patch_pyrender_texture_formatting()
 
     # 1. Convert trimesh.Scene to pyrender.Scene
+    instances = Counter(trimesh_scene.graph[node][1] for node in trimesh_scene.graph.nodes_geometry)
+    total_points = sum(
+        len(geom.vertices) * instances[name]
+        for name, geom in trimesh_scene.geometry.items()
+        if isinstance(geom, trimesh.PointCloud)
+    )
+    points_ratio = min(1.0, MESH_THUMBNAIL_MAX_POINTS / max(total_points, 1))
     geometries: dict[Hashable, Any] = {}
     for name, geom in trimesh_scene.geometry.items():
         try:
             geometries[name] = (
-                _point_cloud_to_pyrender(geom)
+                _point_cloud_to_pyrender(geom, max(1, int(len(geom.vertices) * points_ratio)))
                 if isinstance(geom, trimesh.PointCloud)
                 else pyrender.Mesh.from_trimesh(geom)
             )
