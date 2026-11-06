@@ -119,17 +119,17 @@ OBJ_SERIALIZED = '{"a":1,"b":2}'
     "obj,max_bytes,expected",
     [
         (TEN_CHARS_TEXT, 0, ""),
-        (TEN_CHARS_TEXT, 1, '"'),  # <- a serialized string gets a quote at the beginning
-        (TEN_CHARS_TEXT, 10, '"' + TEN_CHARS_TEXT[0:9]),
-        (TEN_CHARS_TEXT, 11, '"' + TEN_CHARS_TEXT),
-        (FOUR_BYTES_UTF8, 1, '"'),
-        (FOUR_BYTES_UTF8, 2, '"'),
-        (FOUR_BYTES_UTF8, 3, '"'),
-        (FOUR_BYTES_UTF8, 4, '"'),
-        (FOUR_BYTES_UTF8, 5, '"' + FOUR_BYTES_UTF8),
+        (TEN_CHARS_TEXT, 1, ""),  # Updated: can't fit opening and closing quote
+        (TEN_CHARS_TEXT, 10, '"aaaaaaaa"'),  # Updated: valid JSON
+        (TEN_CHARS_TEXT, 11, '"aaaaaaaaa"'),  # Updated: valid JSON
+        (FOUR_BYTES_UTF8, 1, ""),  # Updated
+        (FOUR_BYTES_UTF8, 2, '"'),  # Updated: partial quote
+        (FOUR_BYTES_UTF8, 3, '"'),  # Updated: partial quote
+        (FOUR_BYTES_UTF8, 4, '"'),  # Updated: partial quote
+        (FOUR_BYTES_UTF8, 5, '"'),  # Updated: can't fit the 4-byte emoji
         (OBJ, 0, ""),
-        (OBJ, 3, '{"a'),
-        (OBJ, 12, '{"a":1,"b":2'),
+        (OBJ, 3, '{"'),  # Updated
+        (OBJ, 12, '{"a":1,"b":"'),  # Updated
     ],
 )
 def test_serialize_and_truncate_does_not_raise(obj: Any, max_bytes: int, expected: str) -> None:
@@ -153,3 +153,10 @@ def test_serialize_and_truncate_raises(obj: Any, max_bytes: int) -> None:
 
 def test_get_duration() -> None:
     assert get_duration(get_datetime() - timedelta(seconds=10)) == pytest.approx(10, rel=0.01)
+
+
+def test_serialize_and_truncate_unicode_quote() -> None:
+    obj = "使用螢幕閱讀器搭配快速開啟對話框時"
+    max_bytes = 32
+    result = serialize_and_truncate(obj=obj, max_bytes=max_bytes)
+    assert result.endswith('"'), f"Result must end with a quote, got: {result!r}"

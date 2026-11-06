@@ -80,12 +80,26 @@ def serialize_and_truncate(obj: Any, max_bytes: int) -> str:
     serialized_bytes = orjson_dumps(obj)
     if len(serialized_bytes) <= max_bytes:
         raise SmallerThanMaxBytesError()
-    # If text[max_bytes] is not a lead byte, back up until a lead byte is
-    # found and truncate before that character
-    i = max_bytes
-    while i > 0 and not utf8_lead_byte(serialized_bytes[i]):
-        i -= 1
-    return serialized_bytes[:i].decode("utf8", "ignore")
+    
+    # Decode to string first to handle unicode characters safely
+    serialized_str = serialized_bytes.decode("utf-8", "ignore")
+    
+    # Truncate by characters, ensuring the encoded byte size stays under max_bytes
+    # We reserve 1 byte for the closing quote
+    truncated_str = ""
+    current_bytes = 0
+    for char in serialized_str:
+        char_bytes = len(char.encode("utf-8"))
+        if current_bytes + char_bytes > max_bytes - 1:  # reserve 1 byte for closing quote
+            break
+        truncated_str += char
+        current_bytes += char_bytes
+    
+    # Add the closing quote if the string is not empty and doesn't already end with a quote
+    if truncated_str and not truncated_str.endswith('"'):
+        truncated_str += '"'
+        
+    return truncated_str
 
 
 def get_datetime(days: Optional[float] = None) -> datetime:
