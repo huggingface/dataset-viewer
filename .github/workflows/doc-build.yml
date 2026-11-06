@@ -16,7 +16,7 @@ permissions:
 
 jobs:
   build:
-    uses: huggingface/doc-builder/.github/workflows/build_main_documentation.yml@90ddd199e07144a13408c523680c76987343c95f  # main
+    uses: huggingface/doc-builder/.github/workflows/build_main_documentation.yml@0dfcf5df8e8a75af74f8a01ddb34dc3324aee291  # main
     with:
       commit_sha: ${{ github.sha }}
       package: dataset-viewer
