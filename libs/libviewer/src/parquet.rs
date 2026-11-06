@@ -6,7 +6,7 @@ use std::sync::Arc;
 
 use arrow::record_batch::RecordBatch;
 use object_store::path::Path;
-use object_store::{ObjectStore, ObjectStoreExt};
+use object_store::{ObjectStore, ObjectStoreExt, OBJECT_STORE_COALESCE_DEFAULT};
 use parquet::arrow::arrow_reader::{ArrowReaderMetadata, ArrowReaderOptions};
 // ParquetObjectReader is deprecated in parquet 59 in favor of implementing AsyncFileReader
 // directly (https://github.com/apache/arrow-rs/issues/10308); migrating is out of scope for
@@ -64,7 +64,21 @@ impl<T: AsyncFileReader> AsyncFileReader for LimitedAsyncReader<T> {
                 )))
             })
         } else {
-            self.inner.get_byte_ranges(ranges)
+            // The opendal object store issues one HTTP request per range, so a wide schema turns
+            // into hundreds of requests per row group unless nearby ranges are merged first.
+            let mut fetch_ranges = merge_ranges(&ranges, OBJECT_STORE_COALESCE_DEFAULT);
+            let fetch_bytes: u64 = fetch_ranges.iter().map(|r| r.end - r.start).sum();
+            if fetch_bytes > self.scan_size_limit {
+                // the gaps do not fit in the limit: only merge ranges that touch, which adds no bytes
+                fetch_ranges = merge_ranges(&ranges, 0);
+            }
+            if fetch_ranges.len() == ranges.len() {
+                return self.inner.get_byte_ranges(ranges);
+            }
+            Box::pin(async move {
+                let fetched = self.inner.get_byte_ranges(fetch_ranges.clone()).await?;
+                Ok(slice_merged_ranges(&ranges, &fetch_ranges, &fetched))
+            })
         }
     }
 
@@ -74,6 +88,52 @@ impl<T: AsyncFileReader> AsyncFileReader for LimitedAsyncReader<T> {
     ) -> BoxFuture<'a, Result<Arc<ParquetMetaData>>> {
         self.inner.get_metadata(options)
     }
+}
+
+/// The store fetches several ranges in parallel: past this size, a merged range would turn
+/// parallel downloads into one serial stream
+const MAX_MERGED_RANGE_BYTES: u64 = 16 * 1024 * 1024;
+
+/// Returns the sorted, non-overlapping ranges that cover `ranges`. Overlapping ranges are always
+/// merged; ranges at most `coalesce` bytes apart are merged while the result stays under
+/// `MAX_MERGED_RANGE_BYTES`
+fn merge_ranges(ranges: &[Range<u64>], coalesce: u64) -> Vec<Range<u64>> {
+    let mut sorted = ranges.to_vec();
+    sorted.sort_unstable_by_key(|range| range.start);
+
+    let mut merged: Vec<Range<u64>> = Vec::with_capacity(sorted.len());
+    for range in sorted {
+        match merged.last_mut() {
+            Some(last)
+                if range.start < last.end
+                    || (range.start <= last.end.saturating_add(coalesce)
+                        && range.end.max(last.end) - last.start <= MAX_MERGED_RANGE_BYTES) =>
+            {
+                last.end = last.end.max(range.end);
+            }
+            _ => merged.push(range),
+        }
+    }
+    merged
+}
+
+/// Cuts each of `ranges` out of the bytes fetched for the merged `fetch_ranges`
+fn slice_merged_ranges(
+    ranges: &[Range<u64>],
+    fetch_ranges: &[Range<u64>],
+    fetched: &[Bytes],
+) -> Vec<Bytes> {
+    ranges
+        .iter()
+        .map(|range| {
+            let idx = fetch_ranges.partition_point(|fetch| fetch.start <= range.start) - 1;
+            let fetch_start = fetch_ranges[idx].start;
+            let bytes = &fetched[idx];
+            let end = ((range.end - fetch_start) as usize).min(bytes.len());
+            let start = ((range.start - fetch_start) as usize).min(end);
+            bytes.slice(start..end)
+        })
+        .collect()
 }
 
 pub async fn read_metadata(
@@ -388,4 +448,175 @@ pub async fn read_metadata_from_hub(
     }
 
     Ok(Arc::new(metadata_reader.finish()?))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use arrow::array::{ArrayRef, Int64Array, StringArray};
+    use futures::TryStreamExt;
+    use parquet::arrow::ArrowWriter;
+    use std::sync::Mutex;
+
+    /// In-memory parquet file recording every range it is asked for
+    struct CountingReader {
+        data: Bytes,
+        requested: Arc<Mutex<Vec<Range<u64>>>>,
+    }
+
+    impl AsyncFileReader for CountingReader {
+        fn get_bytes(&mut self, range: Range<u64>) -> BoxFuture<'_, Result<Bytes>> {
+            self.requested.lock().unwrap().push(range.clone());
+            let bytes = self.data.slice(range.start as usize..range.end as usize);
+            Box::pin(async move { Ok(bytes) })
+        }
+
+        fn get_metadata<'a>(
+            &'a mut self,
+            _options: Option<&'a ArrowReaderOptions>,
+        ) -> BoxFuture<'a, Result<Arc<ParquetMetaData>>> {
+            unimplemented!("the tests pass the metadata to the stream builder")
+        }
+    }
+
+    fn wide_parquet(num_columns: usize, num_rows: i64) -> (Bytes, RecordBatch) {
+        let columns: Vec<(String, ArrayRef)> = (0..num_columns)
+            .map(|i| {
+                let array: ArrayRef = if i % 2 == 0 {
+                    Arc::new(Int64Array::from_iter_values(0..num_rows))
+                } else {
+                    Arc::new(StringArray::from_iter_values(
+                        (0..num_rows).map(|r| format!("row {r} column {i}")),
+                    ))
+                };
+                (format!("c{i}"), array)
+            })
+            .collect();
+        let batch = RecordBatch::try_from_iter(columns).unwrap();
+        let mut buffer = Vec::new();
+        let mut writer = ArrowWriter::try_new(&mut buffer, batch.schema(), None).unwrap();
+        writer.write(&batch).unwrap();
+        writer.close().unwrap();
+        (Bytes::from(buffer), batch)
+    }
+
+    async fn read(
+        data: Bytes,
+        even_columns_only: bool,
+        scan_size_limit: u64,
+    ) -> (Vec<RecordBatch>, Vec<Range<u64>>) {
+        let metadata = Arc::new(
+            ParquetMetaDataReader::new()
+                .parse_and_finish(&data)
+                .unwrap(),
+        );
+        let requested = Arc::new(Mutex::new(Vec::new()));
+        let reader = CountingReader {
+            data,
+            requested: requested.clone(),
+        };
+
+        let reader_metadata =
+            ArrowReaderMetadata::try_new(metadata, ArrowReaderOptions::default()).unwrap();
+        let schema = reader_metadata.metadata().file_metadata().schema_descr();
+        let projection = if even_columns_only {
+            ProjectionMask::roots(schema, (0..schema.num_columns()).step_by(2))
+        } else {
+            ProjectionMask::all()
+        };
+        let limited_reader = LimitedAsyncReader::new(reader, scan_size_limit);
+        let batches =
+            ParquetRecordBatchStreamBuilder::new_with_metadata(limited_reader, reader_metadata)
+                .with_projection(projection)
+                .build()
+                .unwrap()
+                .try_collect::<Vec<_>>()
+                .await
+                .unwrap();
+        let requested = requested.lock().unwrap().clone();
+        (batches, requested)
+    }
+
+    #[test]
+    fn merge_ranges_merges_close_ranges_only() {
+        assert_eq!(merge_ranges(&[], 10), Vec::<Range<u64>>::new());
+        assert_eq!(
+            merge_ranges(&[30..40, 0..10, 15..20], 5),
+            vec![0..20, 30..40]
+        );
+        assert_eq!(merge_ranges(&[0..10, 5..8, 8..30], 0), vec![0..30]);
+        assert_eq!(merge_ranges(&[0..10, 11..20], 0), vec![0..10, 11..20]);
+
+        let mib = 1024 * 1024;
+        assert_eq!(
+            merge_ranges(&[0..10 * mib, 10 * mib..20 * mib, 20 * mib..21 * mib], 0),
+            vec![0..10 * mib, 10 * mib..21 * mib],
+            "merged ranges stay under MAX_MERGED_RANGE_BYTES"
+        );
+        assert_eq!(
+            merge_ranges(&[0..mib, 0..20 * mib, mib..2 * mib], 0),
+            vec![0..20 * mib],
+            "overlapping ranges are merged past the cap"
+        );
+    }
+
+    #[test]
+    fn slice_merged_ranges_handles_ranges_sharing_a_start_past_the_cap() {
+        let mib: u64 = 1024 * 1024;
+        let ranges = vec![0..20 * mib, 0..mib, mib..2 * mib, 30 * mib..30 * mib];
+        let fetch_ranges = merge_ranges(&ranges, 0);
+        let data = Bytes::from((0..31 * mib).map(|i| i as u8).collect::<Vec<_>>());
+        let fetched: Vec<Bytes> = fetch_ranges
+            .iter()
+            .map(|r| data.slice(r.start as usize..r.end as usize))
+            .collect();
+        let sliced = slice_merged_ranges(&ranges, &fetch_ranges, &fetched);
+        for (range, bytes) in ranges.iter().zip(sliced) {
+            assert_eq!(bytes, data.slice(range.start as usize..range.end as usize));
+        }
+    }
+
+    #[test]
+    fn slice_merged_ranges_returns_the_requested_bytes() {
+        let ranges = vec![30..40, 0..10, 15..20, 5..8];
+        let fetch_ranges = merge_ranges(&ranges, 5);
+        let data = Bytes::from((0..50u8).collect::<Vec<_>>());
+        let fetched: Vec<Bytes> = fetch_ranges
+            .iter()
+            .map(|r| data.slice(r.start as usize..r.end as usize))
+            .collect();
+        let sliced = slice_merged_ranges(&ranges, &fetch_ranges, &fetched);
+        for (range, bytes) in ranges.iter().zip(sliced) {
+            assert_eq!(bytes, data.slice(range.start as usize..range.end as usize));
+        }
+    }
+
+    #[tokio::test]
+    async fn wide_row_group_is_read_in_one_request() {
+        let (data, expected) = wide_parquet(200, 10);
+        let (batches, requested) = read(data, false, u64::MAX).await;
+
+        assert_eq!(
+            requested.len(),
+            1,
+            "column chunks should be fetched in one range"
+        );
+        let batch = arrow::compute::concat_batches(&expected.schema(), &batches).unwrap();
+        assert_eq!(batch, expected);
+    }
+
+    #[tokio::test]
+    async fn only_touching_ranges_are_merged_when_gaps_exceed_the_scan_size_limit() {
+        // reading every other column leaves gaps that merging would download too
+        let (data, _) = wide_parquet(200, 10);
+        let (_, merged) = read(data.clone(), true, u64::MAX).await;
+        assert_eq!(merged.len(), 1);
+        let merged_bytes = merged[0].end - merged[0].start;
+
+        let (batches, requested) = read(data, true, merged_bytes - 1).await;
+        assert_eq!(requested.len(), 100);
+        let requested_bytes: u64 = requested.iter().map(|r| r.end - r.start).sum();
+        assert!(requested_bytes < merged_bytes);
+        assert_eq!(batches.iter().map(|b| b.num_columns()).max(), Some(100));
+    }
 }
