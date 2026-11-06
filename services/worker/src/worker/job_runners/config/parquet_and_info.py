@@ -706,7 +706,8 @@ class track_reads:
 
     Supported file-systems are local, http and hf.
     Tracking results are stored in the `tracker.files` dictionary,
-    with the format "urlpath with protocol" -> {"read": int, "size": int}
+    with the format "urlpath with protocol" -> {"read": int, "size": int}.
+    The "size" is omitted when the file size is unknown, e.g. for streaming files.
 
     Since tracking is applied directly on the file from `fs.open`, reads from file-wrappers
     like ZipFile or GZipFile are also taken into account.
@@ -791,7 +792,10 @@ class track_reads:
                 if hasattr(f, "readlines"):
                     f.readlines = functools.partial(tracker.track_read, urlpath, f.readlines)
                 if urlpath not in tracker.files:
-                    tracker.files[urlpath] = {"read": 0, "size": int(f.size)}
+                    tracker.files[urlpath] = {"read": 0}
+                    # streaming files (opened with block_size=0) don't know their size
+                    if f.size is not None:
+                        tracker.files[urlpath]["size"] = int(f.size)
             return f
 
         # Use an exit_stack to be able to un-do all the replacements once the track_reads context ends.
