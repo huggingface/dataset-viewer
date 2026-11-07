@@ -92,13 +92,9 @@ def process_payload(
         delete_dataset(dataset=dataset, storage_clients=storage_clients)
     elif event in ["add", "update", "move"]:
         revision = payload["repo"].get("headSha")
-        if (
-            event == "update"
-            and get_current_revision(dataset) == revision
-            and not (payload.get("updatedConfig") or {}).get("private", False)
-        ):
+        visibility_changed = "private" in (payload.get("updatedConfig") or {})
+        if event == "update" and get_current_revision(dataset) == revision and not visibility_changed:
             # ^ it filters out the webhook calls when the refs/convert/parquet branch is updated
-            # ^ it also filters switching from private to public if the headSha is in the cache (i.e. if the user is PRO/Enterprise)
             logging.warning(
                 f"Webhook revision for {dataset} is the same as the current revision in the db - skipping update."
             )
