@@ -106,4 +106,4 @@ LONG_DURATION_PROMETHEUS_HISTOGRAM_BUCKETS = (
     float("inf"),
 )
 
-YAML_FIELDS_TO_CHECK = ["dataset_info", "configs", "viewer", "language"]
+YAML_FIELDS_TO_CHECK = ["dataset_info", "configs", "viewer", "language", "tags", "library_name"]
