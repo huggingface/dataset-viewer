@@ -5,7 +5,18 @@ import logging
 from collections.abc import Iterator
 from http import HTTPStatus
 
-from datasets import Audio, Features, Image, LargeList, List, Pdf, Translation, TranslationVariableLanguages, Value
+from datasets import (
+    Audio,
+    Features,
+    Image,
+    LargeList,
+    List,
+    Mesh,
+    Pdf,
+    Translation,
+    TranslationVariableLanguages,
+    Value,
+)
 from datasets.features.features import FeatureType, _visit
 from libcommon.exceptions import PreviousStepFormatError
 from libcommon.simple_cache import (
@@ -47,6 +58,8 @@ def detect_features_modalities(features: Features) -> set[DatasetModality]:
             modalities.add("text")
         elif isinstance(feature, Pdf):
             modalities.add("document")
+        elif isinstance(feature, Mesh):
+            modalities.add("3d")
 
     _visit(features, classify_modality)
 
