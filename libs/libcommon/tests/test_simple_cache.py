@@ -35,6 +35,7 @@ from libcommon.simple_cache import (
     get_response_without_content,
     get_responses_count_by_kind_status_and_error_code,
     is_successful_response,
+    update_revision_of_dataset_responses,
     upsert_response,
 )
 from libcommon.utils import get_datetime
@@ -265,6 +266,60 @@ def test_upsert_response_keeps_the_revision_timings_on_recompute() -> None:
     assert upsert(REVISION_NAME, HTTPStatus.INTERNAL_SERVER_ERROR, jan[3]) == (jan[0], jan[1])
     assert upsert("new_revision", HTTPStatus.INTERNAL_SERVER_ERROR, jan[4]) == (jan[4], None)
     assert upsert("new_revision", HTTPStatus.OK, jan[5]) == (jan[4], jan[5])
+
+
+def test_upsert_response_keeps_unknown_revision_timings_unknown() -> None:
+    upsert_response(
+        kind=CACHE_KIND,
+        dataset=DATASET_NAME,
+        dataset_git_revision=REVISION_NAME,
+        content={},
+        http_status=HTTPStatus.OK,
+    )
+    # computed before the timing fields existed
+    CachedResponseDocument.objects(kind=CACHE_KIND, dataset=DATASET_NAME).update(unset__first_success_at=True)
+
+    kept = upsert_response(
+        kind=CACHE_KIND,
+        dataset=DATASET_NAME,
+        dataset_git_revision=REVISION_NAME,
+        content={},
+        http_status=HTTPStatus.OK,
+        first_job_created_at=datetime(2026, 1, 2),
+    )
+
+    entry = CachedResponseDocument.objects(kind=CACHE_KIND, dataset=DATASET_NAME).get()
+    assert kept is None
+    assert (entry.first_job_created_at, entry.first_success_at) == (None, None)
+
+
+def test_update_revision_of_dataset_responses_forgets_the_revision_timings() -> None:
+    jan = [datetime(2026, 1, day) for day in range(1, 3)]
+    upsert_response(
+        kind=CACHE_KIND,
+        dataset=DATASET_NAME,
+        dataset_git_revision=REVISION_NAME,
+        content={},
+        http_status=HTTPStatus.OK,
+        updated_at=jan[0],
+        first_job_created_at=jan[0],
+    )
+
+    update_revision_of_dataset_responses(dataset=DATASET_NAME, old_revision=REVISION_NAME, new_revision="new_revision")
+    # recomputing the new revision must not make up a start or a first success
+    upsert_response(
+        kind=CACHE_KIND,
+        dataset=DATASET_NAME,
+        dataset_git_revision="new_revision",
+        content={},
+        http_status=HTTPStatus.OK,
+        updated_at=jan[1],
+        first_job_created_at=jan[1],
+    )
+
+    entry = CachedResponseDocument.objects(kind=CACHE_KIND, dataset=DATASET_NAME).get()
+    assert entry.dataset_git_revision == "new_revision"
+    assert (entry.first_job_created_at, entry.first_success_at) == (None, None)
 
 
 def test_upsert_response_types() -> None:

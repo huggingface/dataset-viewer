@@ -619,6 +619,34 @@ def test_worker_size_is_set_on_creation(difficulty: int, expected_worker_size: W
     assert {job.worker_size for job in JobDocument.objects()} == {expected_worker_size}
 
 
+def test_create_jobs_sets_first_job_created_at() -> None:
+    Queue().create_jobs(
+        [
+            {
+                "job_id": "unused",
+                "type": "root_type",
+                "params": {"dataset": "test_dataset", "revision": "test_revision", "config": None, "split": None},
+                "priority": Priority.NORMAL,
+                "difficulty": 50,
+                "started_at": None,
+            },
+            {
+                "job_id": "unused",
+                "type": "child_type",
+                "params": {"dataset": "test_dataset", "revision": "test_revision", "config": None, "split": None},
+                "priority": Priority.NORMAL,
+                "difficulty": 50,
+                "started_at": None,
+                # the parent was queued before the field existed
+                "first_job_created_at": None,
+            },
+        ]
+    )
+    root_job = JobDocument.objects(type="root_type").get()
+    assert root_job.first_job_created_at == root_job.created_at
+    assert JobDocument.objects(type="child_type").get().first_job_created_at is None
+
+
 def test_next_waiting_job_skips_namespaces_with_started_jobs() -> None:
     # A namespace with a started job and an old backlog must not hide a newer job of another namespace,
     # and the query must not walk the backlog (it is excluded by the index bounds, not filtered key by key).

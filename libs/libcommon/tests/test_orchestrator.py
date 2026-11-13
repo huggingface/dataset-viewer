@@ -1,11 +1,12 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2023 The HuggingFace Authors.
 
+from datetime import datetime
 from http import HTTPStatus
 
 import pytest
 
-from libcommon.dtos import JobOutput, JobResult, Priority, Status
+from libcommon.dtos import JobOutput, JobParams, JobResult, Priority, Status
 from libcommon.orchestrator import (
     AfterJobPlan,
     finish_job,
@@ -211,6 +212,52 @@ def test_finish_job(
     assert waiting_jobs.count() == len(artifacts_to_create)
     assert {job.type for job in waiting_jobs} == {Artifact.parse_id(artifact)[4] for artifact in artifacts_to_create}
     assert all(job.first_job_created_at == cached_response.first_job_created_at for job in waiting_jobs)
+
+
+def test_finish_job_of_a_retried_step_passes_on_the_original_start() -> None:
+    original_start = datetime(2026, 1, 1)
+    job_params = JobParams(dataset=DATASET_NAME, revision=REVISION_NAME, config=None, split=None)
+    # the first run failed
+    upsert_response_params(
+        kind=STEP_DA,
+        job_params=job_params,
+        content={},
+        http_status=HTTPStatus.INTERNAL_SERVER_ERROR,
+        first_job_created_at=original_start,
+    )
+    # the retry is planned by the backfill, which starts a new clock on the job
+    Queue().create_jobs(
+        [
+            {
+                "job_id": "unused",
+                "type": STEP_DA,
+                "params": job_params,
+                "priority": Priority.LOW,
+                "difficulty": DIFFICULTY,
+                "started_at": None,
+            }
+        ]
+    )
+    job_info = Queue().start_job()
+    assert job_info.get("first_job_created_at") != original_start
+
+    save_job_result(
+        JobResult(
+            job_info=job_info,
+            job_runner_version=JOB_RUNNER_VERSION,
+            is_success=True,
+            output=JobOutput(
+                content=CONFIG_NAMES_CONTENT, http_status=HTTPStatus.OK, error_code=None, details=None, progress=1.0
+            ),
+            duration=1,
+        ),
+        failed_runs=1,
+    )
+    finish_job(job_info=job_info, shortcut_jobs_by_key={}, processing_graph=PROCESSING_GRAPH_GENEALOGY)
+
+    child_jobs = JobDocument.objects(dataset=DATASET_NAME, status=Status.WAITING)
+    assert child_jobs.count() == 1
+    assert child_jobs.get().first_job_created_at == original_start
 
 
 @pytest.mark.parametrize(
