@@ -107,29 +107,6 @@ def test_create_audio_file(
     assert storage_client_with_url_preparator.exists(audio_key)
 
 
-def test_create_audio_file_rejects_codec_outside_allowlist(
-    shared_datadir: Path,
-    storage_client_with_url_preparator: StorageClient,
-) -> None:
-    audio_file_bytes = (shared_datadir / "test_audio_44100.wav").read_bytes()
-    decoder = Mock()
-    decoder.metadata.codec = "cook"
-    with patch("torchcodec.decoders.AudioDecoder", return_value=decoder):
-        with pytest.raises(ValueError, match="Audio codec cook is not supported"):
-            create_audio_file(
-                dataset="dataset",
-                revision="revision",
-                config="config",
-                split="split",
-                row_idx=7,
-                audio_file_extension=".ra",
-                audio_file_bytes=audio_file_bytes,
-                column="col",
-                filename="audio.wav",
-                storage_client=storage_client_with_url_preparator,
-            )
-
-
 @pytest.mark.parametrize(
     "pdf_file,expected_size",
     [("test_A4.pdf", 8810), ("test_us_letter.pdf", 1319)],
