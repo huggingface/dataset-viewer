@@ -1,0 +1,41 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 The HuggingFace Authors.
+
+import logging
+
+from libcommon.constants import (
+    CACHE_COLLECTION_RESPONSES,
+    CACHE_MONGOENGINE_ALIAS,
+    QUEUE_COLLECTION_JOBS,
+    QUEUE_MONGOENGINE_ALIAS,
+)
+from libcommon.queue.jobs import JobDocument
+from libcommon.simple_cache import CachedResponseDocument
+from mongoengine.connection import get_db
+
+from mongodb_migration.check import check_documents
+from mongodb_migration.migration import Migration
+
+CACHE_FIELDS = ["job_created_at", "job_started_at", "first_job_created_at", "first_success_at"]
+
+
+# connection already occurred in the main.py (caveat: we use globals)
+class MigrationAddJobTimings(Migration):
+    def up(self) -> None:
+        # only down() is needed: code without the fields fails to load documents that have them
+        logging.info("Nothing to do: the job timing fields are optional")
+
+    def down(self) -> None:
+        logging.info("Remove the job timing fields from the cached results and the jobs")
+        get_db(CACHE_MONGOENGINE_ALIAS)[CACHE_COLLECTION_RESPONSES].update_many(
+            {}, {"$unset": dict.fromkeys(CACHE_FIELDS, "")}
+        )
+        get_db(QUEUE_MONGOENGINE_ALIAS)[QUEUE_COLLECTION_JOBS].update_many(
+            {}, {"$unset": {"first_job_created_at": ""}}
+        )
+
+    def validate(self) -> None:
+        logging.info("Ensure that a random selection of cached results and jobs can be loaded")
+
+        check_documents(DocCls=CachedResponseDocument, sample_size=10)
+        check_documents(DocCls=JobDocument, sample_size=10)

@@ -134,6 +134,12 @@ class CachedResponseDocument(Document):
         updated_at (`datetime`): When the cache entry has been last updated.
           When read, it's an offset-naive datetime. Use pytz.UTC.localize() to make it timezone-aware.
         duration (`float`, *optional*): Duration of a corresponding job in seconds.
+        job_created_at (`datetime`, *optional*): When the job that produced this entry joined the queue.
+        job_started_at (`datetime`, *optional*): When a worker started that job (wait = job_started_at - job_created_at).
+        first_job_created_at (`datetime`, *optional*): When the first job for dataset_git_revision was queued (not the
+          git commit time). Kept across recomputes of the same revision.
+        first_success_at (`datetime`, *optional*): When this step first succeeded for dataset_git_revision. Kept
+          across recomputes of the same revision, even failed ones.
         job_runner_version (`int`): The version of the job runner that cached the response.
         failed_runs (`int`): The number of failed_runs to get cached result.
         dataset_git_revision (`str`): The commit (of the git dataset repo) used to generate the response.
@@ -157,6 +163,10 @@ class CachedResponseDocument(Document):
     details = DictField()
     updated_at = DateTimeField(default=get_datetime)
     duration = FloatField()
+    job_created_at = DateTimeField()
+    job_started_at = DateTimeField()
+    first_job_created_at = DateTimeField()
+    first_success_at = DateTimeField()
 
     meta = {
         "collection": CACHE_COLLECTION_RESPONSES,
@@ -286,9 +296,27 @@ def upsert_response(
     progress: Optional[float] = None,
     updated_at: Optional[datetime] = None,
     duration: Optional[float] = None,
+    job_created_at: Optional[datetime] = None,
+    job_started_at: Optional[datetime] = None,
+    first_job_created_at: Optional[datetime] = None,
     failed_runs: int = 0,
-) -> None:
-    decrease_metric_for_artifact(kind=kind, dataset=dataset, config=config, split=split)
+) -> Optional[datetime]:
+    """Returns the first_job_created_at stored on the entry, which is kept from earlier computes of the revision."""
+    updated_at = updated_at or get_datetime()
+    first_success_at = updated_at if http_status == HTTPStatus.OK else None
+    previous = (
+        CachedResponseDocument.objects(kind=kind, dataset=dataset, config=config, split=split)
+        .only("http_status", "error_code", "dataset_git_revision", "first_job_created_at", "first_success_at")
+        .first()
+    )
+    if previous is not None:
+        decrease_metric(kind=kind, http_status=previous.http_status, error_code=previous.error_code)
+        if previous.dataset_git_revision == dataset_git_revision:
+            # a recompute (eg. from parquet after streaming, or a retry) keeps the per-revision timings, and missing
+            # ones stay unknown (entry computed before the fields existed, or moved by a smart update)
+            first_job_created_at = previous.first_job_created_at
+            if previous.first_success_at is not None or previous.http_status == HTTPStatus.OK:
+                first_success_at = previous.first_success_at
     CachedResponseDocument.objects(kind=kind, dataset=dataset, config=config, split=split).upsert_one(
         content=content,
         http_status=http_status,
@@ -296,12 +324,17 @@ def upsert_response(
         details=details,
         dataset_git_revision=dataset_git_revision,
         progress=progress,
-        updated_at=updated_at or get_datetime(),
+        updated_at=updated_at,
         job_runner_version=job_runner_version,
         failed_runs=failed_runs,
         duration=duration,
+        job_created_at=job_created_at,
+        job_started_at=job_started_at,
+        first_job_created_at=first_job_created_at,
+        first_success_at=first_success_at,
     )
     increase_metric(kind=kind, http_status=http_status, error_code=error_code)
+    return first_job_created_at
 
 
 def upsert_response_params(
@@ -315,15 +348,18 @@ def upsert_response_params(
     progress: Optional[float] = None,
     updated_at: Optional[datetime] = None,
     duration: Optional[float] = None,
+    job_created_at: Optional[datetime] = None,
+    job_started_at: Optional[datetime] = None,
+    first_job_created_at: Optional[datetime] = None,
     failed_runs: int = 0,
-) -> None:
+) -> Optional[datetime]:
     dataset, config, split, revision = (
         job_params["dataset"],
         job_params["config"],
         job_params["split"],
         job_params["revision"],
     )
-    upsert_response(
+    return upsert_response(
         kind=kind,
         dataset=dataset,
         config=config,
@@ -337,6 +373,9 @@ def upsert_response_params(
         progress=progress,
         updated_at=updated_at,
         duration=duration,
+        job_created_at=job_created_at,
+        job_started_at=job_started_at,
+        first_job_created_at=first_job_created_at,
         failed_runs=failed_runs,
     )
 
@@ -378,7 +417,10 @@ def update_revision_of_dataset_responses(dataset: str, old_revision: str, new_re
         `int`: The number of updated documents.
     """
     existing_cache = CachedResponseDocument.objects(dataset=dataset, dataset_git_revision=old_revision)
-    num_updated_cache_responses = existing_cache.update(dataset_git_revision=new_revision)
+    # the entries were computed for the old revision, so their per-revision timings are unknown for the new one
+    num_updated_cache_responses = existing_cache.update(
+        dataset_git_revision=new_revision, unset__first_job_created_at=True, unset__first_success_at=True
+    )
     return 0 if num_updated_cache_responses is None else num_updated_cache_responses
 
 

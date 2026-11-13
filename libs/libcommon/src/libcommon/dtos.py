@@ -6,7 +6,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import datetime
 from http import HTTPStatus
-from typing import Any, Optional, TypedDict
+from typing import Any, NotRequired, Optional, TypedDict
 
 Row = dict[str, Any]
 
@@ -49,6 +49,8 @@ class JobInfo(TypedDict):
     priority: Priority
     difficulty: int
     started_at: Optional[datetime]
+    created_at: NotRequired[Optional[datetime]]
+    first_job_created_at: NotRequired[Optional[datetime]]
 
 
 class FlatJobInfo(TypedDict):
