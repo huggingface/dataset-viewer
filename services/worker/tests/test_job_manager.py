@@ -216,6 +216,9 @@ def test_run_job_and_finish_with_shortcuts(app_config: AppConfig) -> None:
     # check that the shortcut cache entry has been created
     cached_response = get_response(kind=JOB_TYPE, dataset="dataset", config=None, split=None)
     assert cached_response is not None
+    shortcut_entry = CachedResponseDocument.objects(kind=JOB_TYPE, dataset="dataset").get()
+    assert shortcut_entry.revision_created_at is not None
+    assert shortcut_entry.revision_created_at == job_info.get("revision_created_at")
     assert cached_response["http_status"] == HTTPStatus.OK
     assert cached_response["error_code"] is None
     assert cached_response["content"] == {"config_names": [{"dataset": "dataset", "config": "default"}]}

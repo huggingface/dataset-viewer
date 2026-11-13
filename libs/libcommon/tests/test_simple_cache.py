@@ -243,6 +243,30 @@ def test_upsert_response(config: Optional[str], split: Optional[str]) -> None:
     }
 
 
+def test_upsert_response_keeps_the_revision_timings_on_recompute() -> None:
+    def upsert(revision: str, http_status: HTTPStatus, at: datetime) -> tuple[Optional[datetime], Optional[datetime]]:
+        upsert_response(
+            kind=CACHE_KIND,
+            dataset=DATASET_NAME,
+            dataset_git_revision=revision,
+            content={},
+            http_status=http_status,
+            updated_at=at,
+            revision_created_at=at,
+        )
+        entry = CachedResponseDocument.objects(kind=CACHE_KIND, dataset=DATASET_NAME).get()
+        return entry.revision_created_at, entry.first_success_at
+
+    jan = [datetime(2026, 1, day) for day in range(1, 7)]
+    assert upsert(REVISION_NAME, HTTPStatus.INTERNAL_SERVER_ERROR, jan[0]) == (jan[0], None)
+    assert upsert(REVISION_NAME, HTTPStatus.OK, jan[1]) == (jan[0], jan[1])
+    # eg. split-first-rows computed from streaming, then recomputed from parquet
+    assert upsert(REVISION_NAME, HTTPStatus.OK, jan[2]) == (jan[0], jan[1])
+    assert upsert(REVISION_NAME, HTTPStatus.INTERNAL_SERVER_ERROR, jan[3]) == (jan[0], jan[1])
+    assert upsert("new_revision", HTTPStatus.INTERNAL_SERVER_ERROR, jan[4]) == (jan[4], None)
+    assert upsert("new_revision", HTTPStatus.OK, jan[5]) == (jan[4], jan[5])
+
+
 def test_upsert_response_types() -> None:
     kind = CACHE_KIND
     dataset = DATASET_NAME

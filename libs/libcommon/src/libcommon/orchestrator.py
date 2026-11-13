@@ -628,6 +628,7 @@ class AfterJobPlan(Plan):
                 "priority": self.priority,
                 "difficulty": difficulty,
                 "started_at": None,
+                "revision_created_at": self.job_info.get("revision_created_at"),
             }
 
 
@@ -1301,6 +1302,9 @@ def save_job_result(job_result: JobResult, failed_runs: int) -> None:
         progress=output["progress"],
         failed_runs=failed_runs,
         duration=job_result["duration"],
+        job_created_at=job_info.get("created_at"),
+        job_started_at=job_info["started_at"],
+        revision_created_at=job_info.get("revision_created_at"),
     )
     logging.debug("the job output has been written to the cache.")
 
