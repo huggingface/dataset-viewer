@@ -140,7 +140,6 @@ class CachedResponseDocument(Document):
           git commit time). Kept across recomputes of the same revision.
         first_success_at (`datetime`, *optional*): When this step first succeeded for dataset_git_revision. Kept
           across recomputes of the same revision, even failed ones.
-          The four timing fields are missing on entries written before they existed: read them as unknown.
         job_runner_version (`int`): The version of the job runner that cached the response.
         failed_runs (`int`): The number of failed_runs to get cached result.
         dataset_git_revision (`str`): The commit (of the git dataset repo) used to generate the response.
@@ -313,9 +312,8 @@ def upsert_response(
     if previous is not None:
         decrease_metric(kind=kind, http_status=previous.http_status, error_code=previous.error_code)
         if previous.dataset_git_revision == dataset_git_revision:
-            # a recompute of the same revision (eg. split-first-rows from streaming, then from parquet, or a retry)
-            # must not move the per-revision timings. Missing ones stay unknown: the entry was computed before the
-            # fields existed, or its revision was moved by a smart update.
+            # a recompute (eg. from parquet after streaming, or a retry) keeps the per-revision timings, and missing
+            # ones stay unknown (entry computed before the fields existed, or moved by a smart update)
             first_job_created_at = previous.first_job_created_at
             if previous.first_success_at is not None or previous.http_status == HTTPStatus.OK:
                 first_success_at = previous.first_success_at

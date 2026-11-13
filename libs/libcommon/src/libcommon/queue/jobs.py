@@ -396,11 +396,8 @@ class Queue:
                     namespace=job_info["params"]["dataset"].split("/")[0],
                     priority=job_info["priority"],
                     created_at=created_at,
-                    # Jobs planned without a parent (backfill, update) start the clock. Children carry their
-                    # parent's value, even None (unknown, e.g. the parent was queued before the field existed).
-                    first_job_created_at=(
-                        job_info["first_job_created_at"] if "first_job_created_at" in job_info else created_at
-                    ),
+                    # only jobs planned without a parent start the clock: a child keeps its parent's None (unknown)
+                    first_job_created_at=job_info.get("first_job_created_at", created_at),
                     status=Status.WAITING,
                     difficulty=job_info["difficulty"],
                     worker_size=WorkerSizeJobsCountDocument.get_worker_size(job_info["difficulty"]),

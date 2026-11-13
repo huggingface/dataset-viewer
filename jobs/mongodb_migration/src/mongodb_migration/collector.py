@@ -426,7 +426,6 @@ class MigrationsCollector:
                 version="20261013120000", description="add 'worker_size' field and index to the jobs"
             ),
             MigrationAddJobTimings(
-                version="20261113120000",
-                description="add job timing fields to the cache records and the jobs (no-op up, unset on down)",
+                version="20261113120000", description="add job timing fields to the cache records and the jobs"
             ),
         ]

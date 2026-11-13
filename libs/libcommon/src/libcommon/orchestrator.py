@@ -1289,8 +1289,7 @@ def save_job_result(job_result: JobResult, failed_runs: int) -> None:
     if output["http_status"] != HTTPStatus.OK:
         failed_runs += 1
 
-    # the children (planned from job_info in finish_job) inherit the start kept on the entry, so a retried step
-    # passes on the original start of its revision instead of the retry's
+    # finish_job plans the children from job_info: give them the start kept on the entry, not a retry's
     job_info["first_job_created_at"] = upsert_response_params(
         # inputs
         kind=processing_step.cache_kind,
