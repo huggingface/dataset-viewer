@@ -197,8 +197,8 @@ def test_finish_job(
     assert cached_response.dataset_git_revision == REVISION_NAME
     assert cached_response.job_created_at == job_info.get("created_at")
     assert cached_response.job_started_at == job_info["started_at"]
-    assert cached_response.revision_created_at == job_info.get("revision_created_at")
-    assert cached_response.job_created_at is not None and cached_response.revision_created_at is not None
+    assert cached_response.first_job_created_at == job_info.get("first_job_created_at")
+    assert cached_response.job_created_at is not None and cached_response.first_job_created_at is not None
 
     finish_job(job_info=job_result["job_info"], shortcut_jobs_by_key={}, processing_graph=processing_graph)
 
@@ -210,7 +210,7 @@ def test_finish_job(
     waiting_jobs = JobDocument.objects(dataset=DATASET_NAME, status=Status.WAITING)
     assert waiting_jobs.count() == len(artifacts_to_create)
     assert {job.type for job in waiting_jobs} == {Artifact.parse_id(artifact)[4] for artifact in artifacts_to_create}
-    assert all(job.revision_created_at == cached_response.revision_created_at for job in waiting_jobs)
+    assert all(job.first_job_created_at == cached_response.first_job_created_at for job in waiting_jobs)
 
 
 @pytest.mark.parametrize(

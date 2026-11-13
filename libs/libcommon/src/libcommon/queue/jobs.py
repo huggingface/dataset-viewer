@@ -165,8 +165,8 @@ class JobDocument(Document):
           Use pytz.UTC.localize() to make it timezone-aware.
         last_heartbeat (`datetime`, *optional*): Last time the running job got a heartbeat from the worker.
           When read, it's an offset-naive datetime. Use pytz.UTC.localize() to make it timezone-aware.
-        revision_created_at (`datetime`, *optional*): When the first job for this dataset revision was created
-          (inherited from the parent job). Missing on jobs created before the field existed.
+        first_job_created_at (`datetime`, *optional*): When the first job for this dataset revision was queued
+          (not the git commit time), inherited from the parent job. Missing on jobs created before the field existed.
     """
 
     meta = {
@@ -205,7 +205,7 @@ class JobDocument(Document):
     worker_size = EnumField(WorkerSize)
     created_at = DateTimeField(required=True)
     started_at = DateTimeField()
-    revision_created_at = DateTimeField()
+    first_job_created_at = DateTimeField()
     last_heartbeat = DateTimeField()
     # Time at which the worker process received SIGTERM for this job (set by the executor signal handler)
     # If set and the job is still running, it means SIGKILL arrived before the job could finish
@@ -255,7 +255,7 @@ class JobDocument(Document):
                 "difficulty": self.difficulty,
                 "started_at": self.started_at,
                 "created_at": self.created_at,
-                "revision_created_at": self.revision_created_at,
+                "first_job_created_at": self.first_job_created_at,
             }
         )
 
@@ -360,7 +360,7 @@ class Queue:
             namespace=dataset.split("/")[0],
             priority=priority,
             created_at=created_at,
-            revision_created_at=created_at,
+            first_job_created_at=created_at,
             status=Status.WAITING,
             difficulty=difficulty,
             worker_size=WorkerSizeJobsCountDocument.get_worker_size(difficulty),
@@ -395,7 +395,7 @@ class Queue:
                     namespace=job_info["params"]["dataset"].split("/")[0],
                     priority=job_info["priority"],
                     created_at=get_datetime(),
-                    revision_created_at=job_info.get("revision_created_at") or get_datetime(),
+                    first_job_created_at=job_info.get("first_job_created_at") or get_datetime(),
                     status=Status.WAITING,
                     difficulty=job_info["difficulty"],
                     worker_size=WorkerSizeJobsCountDocument.get_worker_size(job_info["difficulty"]),

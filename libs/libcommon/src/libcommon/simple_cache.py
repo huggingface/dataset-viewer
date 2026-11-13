@@ -136,8 +136,8 @@ class CachedResponseDocument(Document):
         duration (`float`, *optional*): Duration of a corresponding job in seconds.
         job_created_at (`datetime`, *optional*): When the job that produced this entry joined the queue.
         job_started_at (`datetime`, *optional*): When a worker started that job (wait = job_started_at - job_created_at).
-        revision_created_at (`datetime`, *optional*): When the first job for dataset_git_revision was created. Kept
-          across recomputes of the same revision.
+        first_job_created_at (`datetime`, *optional*): When the first job for dataset_git_revision was queued (not the
+          git commit time). Kept across recomputes of the same revision.
         first_success_at (`datetime`, *optional*): When this step first succeeded for dataset_git_revision. Kept
           across recomputes of the same revision, even failed ones.
           The four timing fields are missing on entries written before they existed: read them as unknown.
@@ -166,7 +166,7 @@ class CachedResponseDocument(Document):
     duration = FloatField()
     job_created_at = DateTimeField()
     job_started_at = DateTimeField()
-    revision_created_at = DateTimeField()
+    first_job_created_at = DateTimeField()
     first_success_at = DateTimeField()
 
     meta = {
@@ -299,14 +299,14 @@ def upsert_response(
     duration: Optional[float] = None,
     job_created_at: Optional[datetime] = None,
     job_started_at: Optional[datetime] = None,
-    revision_created_at: Optional[datetime] = None,
+    first_job_created_at: Optional[datetime] = None,
     failed_runs: int = 0,
 ) -> None:
     updated_at = updated_at or get_datetime()
     first_success_at = updated_at if http_status == HTTPStatus.OK else None
     previous = (
         CachedResponseDocument.objects(kind=kind, dataset=dataset, config=config, split=split)
-        .only("http_status", "error_code", "dataset_git_revision", "revision_created_at", "first_success_at")
+        .only("http_status", "error_code", "dataset_git_revision", "first_job_created_at", "first_success_at")
         .first()
     )
     if previous is not None:
@@ -314,7 +314,7 @@ def upsert_response(
         if previous.dataset_git_revision == dataset_git_revision:
             # a recompute of the same revision (eg. split-first-rows from streaming, then from parquet, or a retry)
             # must not move the per-revision timings
-            revision_created_at = previous.revision_created_at or revision_created_at
+            first_job_created_at = previous.first_job_created_at or first_job_created_at
             first_success_at = previous.first_success_at or first_success_at
     CachedResponseDocument.objects(kind=kind, dataset=dataset, config=config, split=split).upsert_one(
         content=content,
@@ -329,7 +329,7 @@ def upsert_response(
         duration=duration,
         job_created_at=job_created_at,
         job_started_at=job_started_at,
-        revision_created_at=revision_created_at,
+        first_job_created_at=first_job_created_at,
         first_success_at=first_success_at,
     )
     increase_metric(kind=kind, http_status=http_status, error_code=error_code)
@@ -348,7 +348,7 @@ def upsert_response_params(
     duration: Optional[float] = None,
     job_created_at: Optional[datetime] = None,
     job_started_at: Optional[datetime] = None,
-    revision_created_at: Optional[datetime] = None,
+    first_job_created_at: Optional[datetime] = None,
     failed_runs: int = 0,
 ) -> None:
     dataset, config, split, revision = (
@@ -373,7 +373,7 @@ def upsert_response_params(
         duration=duration,
         job_created_at=job_created_at,
         job_started_at=job_started_at,
-        revision_created_at=revision_created_at,
+        first_job_created_at=first_job_created_at,
         failed_runs=failed_runs,
     )
 

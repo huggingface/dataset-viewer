@@ -252,10 +252,10 @@ def test_upsert_response_keeps_the_revision_timings_on_recompute() -> None:
             content={},
             http_status=http_status,
             updated_at=at,
-            revision_created_at=at,
+            first_job_created_at=at,
         )
         entry = CachedResponseDocument.objects(kind=CACHE_KIND, dataset=DATASET_NAME).get()
-        return entry.revision_created_at, entry.first_success_at
+        return entry.first_job_created_at, entry.first_success_at
 
     jan = [datetime(2026, 1, day) for day in range(1, 7)]
     assert upsert(REVISION_NAME, HTTPStatus.INTERNAL_SERVER_ERROR, jan[0]) == (jan[0], None)

@@ -16,8 +16,8 @@ from mongoengine.connection import get_db
 from mongodb_migration.check import check_documents
 from mongodb_migration.migration import Migration
 
-CACHE_FIELDS = ["job_created_at", "job_started_at", "revision_created_at", "first_success_at"]
-JOB_FIELDS = ["revision_created_at"]
+CACHE_FIELDS = ["job_created_at", "job_started_at", "first_job_created_at", "first_success_at"]
+JOB_FIELDS = ["first_job_created_at"]
 
 
 # connection already occurred in the main.py (caveat: we use globals)

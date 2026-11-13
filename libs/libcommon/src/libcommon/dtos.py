@@ -50,8 +50,9 @@ class JobInfo(TypedDict):
     difficulty: int
     started_at: Optional[datetime]
     created_at: NotRequired[Optional[datetime]]
-    # When the first job for this dataset revision was created; children and shortcut jobs inherit it.
-    revision_created_at: NotRequired[Optional[datetime]]
+    # When the first job for this dataset revision was queued (not the git commit time); children and shortcut jobs
+    # inherit it.
+    first_job_created_at: NotRequired[Optional[datetime]]
 
 
 class FlatJobInfo(TypedDict):

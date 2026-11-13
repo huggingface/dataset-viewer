@@ -162,7 +162,7 @@ class JobManager:
                             difficulty=self.job_info["difficulty"],
                             started_at=self.job_info["started_at"],
                             created_at=self.job_info.get("created_at"),
-                            revision_created_at=self.job_info.get("revision_created_at"),
+                            first_job_created_at=self.job_info.get("first_job_created_at"),
                         )
                         try:
                             processing_step = processing_graph.get_processing_step_by_job_type(job_result.job["kind"])
