@@ -26,7 +26,7 @@ jobs:
   quality-libviewer:
     permissions:
       contents: read
-    runs-on: "ubuntu-latest"
+    runs-on: "ubuntu-24.04"
     defaults:
       run:
         shell: bash
@@ -60,7 +60,7 @@ jobs:
   unit-tests-libviewer:
     permissions:
       contents: read
-    runs-on: "ubuntu-latest"
+    runs-on: "ubuntu-24.04"
     defaults:
       run:
         shell: bash
