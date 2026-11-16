@@ -99,7 +99,6 @@ from mongodb_migration.migrations._20240731143600_queue_add_dataset_status_to_qu
 from mongodb_migration.migrations._20261013120000_queue_add_worker_size_to_jobs import (
     MigrationQueueAddWorkerSizeToJobs,
 )
-from mongodb_migration.migrations._20261113120000_add_job_timings import MigrationAddJobTimings
 from mongodb_migration.renaming_migrations import (
     CacheRenamingMigration,
     QueueRenamingMigration,
@@ -424,8 +423,5 @@ class MigrationsCollector:
             ),
             MigrationQueueAddWorkerSizeToJobs(
                 version="20261013120000", description="add 'worker_size' field and index to the jobs"
-            ),
-            MigrationAddJobTimings(
-                version="20261113120000", description="add job timing fields to the cache records and the jobs"
             ),
         ]
