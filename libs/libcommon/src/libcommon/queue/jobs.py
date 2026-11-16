@@ -165,6 +165,8 @@ class JobDocument(Document):
           Use pytz.UTC.localize() to make it timezone-aware.
         last_heartbeat (`datetime`, *optional*): Last time the running job got a heartbeat from the worker.
           When read, it's an offset-naive datetime. Use pytz.UTC.localize() to make it timezone-aware.
+        first_job_created_at (`datetime`, *optional*): When the first job for this dataset revision was queued
+          (not the git commit time), inherited from the parent job. Missing on jobs created before the field existed.
     """
 
     meta = {
@@ -203,6 +205,7 @@ class JobDocument(Document):
     worker_size = EnumField(WorkerSize)
     created_at = DateTimeField(required=True)
     started_at = DateTimeField()
+    first_job_created_at = DateTimeField()
     last_heartbeat = DateTimeField()
     # Time at which the worker process received SIGTERM for this job (set by the executor signal handler)
     # If set and the job is still running, it means SIGKILL arrived before the job could finish
@@ -251,6 +254,8 @@ class JobDocument(Document):
                 "priority": self.priority,
                 "difficulty": self.difficulty,
                 "started_at": self.started_at,
+                "created_at": self.created_at,
+                "first_job_created_at": self.first_job_created_at,
             }
         )
 
@@ -342,6 +347,7 @@ class Queue:
             `JobDocument`: the new job added to the queue
         """
         increase_metric(dataset=dataset, job_type=job_type, status=Status.WAITING, difficulty=difficulty)
+        created_at = get_datetime()
         return JobDocument(
             type=job_type,
             dataset=dataset,
@@ -353,7 +359,8 @@ class Queue:
             ),
             namespace=dataset.split("/")[0],
             priority=priority,
-            created_at=get_datetime(),
+            created_at=created_at,
+            first_job_created_at=created_at,
             status=Status.WAITING,
             difficulty=difficulty,
             worker_size=WorkerSizeJobsCountDocument.get_worker_size(difficulty),
@@ -371,6 +378,7 @@ class Queue:
             `int`: The number of created jobs. 0 if we had an exception.
         """
         try:
+            created_at = get_datetime()
             jobs = [
                 JobDocument(
                     type=job_info["type"],
@@ -387,7 +395,9 @@ class Queue:
                     ),
                     namespace=job_info["params"]["dataset"].split("/")[0],
                     priority=job_info["priority"],
-                    created_at=get_datetime(),
+                    created_at=created_at,
+                    # only jobs planned without a parent start the clock: a child keeps its parent's None (unknown)
+                    first_job_created_at=job_info.get("first_job_created_at", created_at),
                     status=Status.WAITING,
                     difficulty=job_info["difficulty"],
                     worker_size=WorkerSizeJobsCountDocument.get_worker_size(job_info["difficulty"]),

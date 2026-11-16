@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2023 The HuggingFace Authors.
 
+from datetime import datetime
 from http import HTTPStatus
 
 import pytest
@@ -195,6 +196,10 @@ def test_finish_job(
     assert cached_response.progress == 1.0
     assert cached_response.job_runner_version == JOB_RUNNER_VERSION
     assert cached_response.dataset_git_revision == REVISION_NAME
+    assert cached_response.job_created_at == job_info.get("created_at")
+    assert cached_response.job_started_at == job_info["started_at"]
+    assert cached_response.first_job_created_at == job_info.get("first_job_created_at")
+    assert cached_response.job_created_at is not None and cached_response.first_job_created_at is not None
 
     finish_job(job_info=job_result["job_info"], shortcut_jobs_by_key={}, processing_graph=processing_graph)
 
@@ -206,6 +211,37 @@ def test_finish_job(
     waiting_jobs = JobDocument.objects(dataset=DATASET_NAME, status=Status.WAITING)
     assert waiting_jobs.count() == len(artifacts_to_create)
     assert {job.type for job in waiting_jobs} == {Artifact.parse_id(artifact)[4] for artifact in artifacts_to_create}
+    assert all(job.first_job_created_at == cached_response.first_job_created_at for job in waiting_jobs)
+
+
+def test_finish_job_of_a_retried_step_passes_on_the_original_start() -> None:
+    original_start = datetime(2026, 1, 1)
+    job_info = artifact_id_to_job_info(ARTIFACT_DA)
+    # the first run failed, then the backfill plans the retry, which starts a new clock on the job
+    upsert_response_params(
+        kind=STEP_DA,
+        job_params=job_info["params"],
+        content={},
+        http_status=HTTPStatus.INTERNAL_SERVER_ERROR,
+        first_job_created_at=original_start,
+    )
+    Queue().create_jobs([job_info])
+    job_info = Queue().start_job()
+    assert job_info.get("first_job_created_at") == job_info.get("created_at")
+
+    output = JobOutput(
+        content=CONFIG_NAMES_CONTENT, http_status=HTTPStatus.OK, error_code=None, details=None, progress=1.0
+    )
+    save_job_result(
+        JobResult(
+            job_info=job_info, job_runner_version=JOB_RUNNER_VERSION, is_success=True, output=output, duration=1
+        ),
+        failed_runs=1,
+    )
+    finish_job(job_info=job_info, shortcut_jobs_by_key={}, processing_graph=PROCESSING_GRAPH_GENEALOGY)
+
+    child_jobs = JobDocument.objects(dataset=DATASET_NAME, status=Status.WAITING)
+    assert [job.first_job_created_at for job in child_jobs] == [original_start]
 
 
 @pytest.mark.parametrize(
