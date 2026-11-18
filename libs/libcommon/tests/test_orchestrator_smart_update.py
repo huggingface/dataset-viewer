@@ -120,7 +120,6 @@ ONE_CONFIG_README = (
     f"---\nconfigs:\n- config_name: foo\n  data_files: foo.csv\n---\n\n# Dataset Card for {DATASET_NAME}"
 )
 TWO_CONFIGS_README = f"---\nconfigs:\n- config_name: foo\n  data_files: foo.csv\n- config_name: bar\n  data_files: bar.csv\n---\n\n# Dataset Card for {DATASET_NAME}"
-ONE_CONFIG_AND_ONE_TAG_README = f"---\nconfigs:\n- config_name: foo\n  data_files: foo.csv\ntags:\n- test\n---\n\n# Dataset Card for {DATASET_NAME}"
 
 
 @pytest.fixture(autouse=True)
@@ -226,22 +225,18 @@ def test_add_second_config_commit() -> None:
             get_smart_dataset_update_plan(processing_graph=PROCESSING_GRAPH_TWO_STEPS)
 
 
-def test_add_tag_commit() -> None:
-    # Add tag: update the revision of the cache entries
+@pytest.mark.parametrize("metadata", ["tags:\n- rl-environment\n- harbor", "library_name: harbor"])
+@pytest.mark.parametrize("remove", [False, True])
+def test_framework_metadata_commit(metadata: str, remove: bool) -> None:
     put_cache(step=STEP_DA, dataset=DATASET_NAME, revision=OTHER_REVISION_NAME)
+    readme_with_metadata = ONE_CONFIG_README.replace("\n---", f"\n{metadata}\n---")
     with (
         put_diff(ADD_TAG_DIFF),
-        put_readme(ONE_CONFIG_README, revision=OTHER_REVISION_NAME),
-        put_readme(ONE_CONFIG_AND_ONE_TAG_README),
+        put_readme(readme_with_metadata if remove else ONE_CONFIG_README, revision=OTHER_REVISION_NAME),
+        put_readme(ONE_CONFIG_README if remove else readme_with_metadata),
     ):
-        plan = get_smart_dataset_update_plan(processing_graph=PROCESSING_GRAPH_TWO_STEPS)
-        assert_smart_dataset_update_plan(
-            plan,
-            cached_revision=OTHER_REVISION_NAME,
-            files_impacted_by_commit=["README.md"],
-            updated_yaml_fields_in_dataset_card=["tags"],
-            tasks=["UpdateRevisionOfDatasetCacheEntriesTask,1"],
-        )
+        with pytest.raises(SmartUpdateImpossibleBecauseOfUpdatedYAMLField):
+            get_smart_dataset_update_plan(processing_graph=PROCESSING_GRAPH_TWO_STEPS)
 
 
 def test_run() -> None:
