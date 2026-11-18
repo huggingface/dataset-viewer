@@ -36,7 +36,7 @@ The `/parquet` endpoint accepts the dataset name as its query parameter:
 ```python
 import requests
 headers = {"Authorization": f"Bearer {API_TOKEN}"}
-API_URL = "https://datasets-server.huggingface.co/parquet?dataset=ibm/duorc"
+API_URL = "https://datasets-server.huggingface.co/parquet?dataset=ibm-research/duorc"
 def query():
     response = requests.get(API_URL, headers=headers)
     return response.json()
@@ -48,7 +48,7 @@ data = query()
 import fetch from "node-fetch";
 async function query(data) {
     const response = await fetch(
-        "https://datasets-server.huggingface.co/parquet?dataset=ibm/duorc",
+        "https://datasets-server.huggingface.co/parquet?dataset=ibm-research/duorc",
         {
             headers: { Authorization: `Bearer ${API_TOKEN}` },
             method: "GET"
@@ -64,14 +64,14 @@ query().then((response) => {
 </js>
 <curl>
 ```curl
-curl https://datasets-server.huggingface.co/parquet?dataset=ibm/duorc \
+curl https://datasets-server.huggingface.co/parquet?dataset=ibm-research/duorc \
         -X GET \
         -H "Authorization: Bearer ${API_TOKEN}"
 ```
 </curl>
 </inferencesnippet>
 
-The endpoint response is a JSON containing a list of the dataset's files in the Parquet format. For example, the [`ibm/duorc`](https://huggingface.co/datasets/ibm/duorc) dataset has six Parquet files, which corresponds to the `test`, `train` and `validation` splits of its two subsets, `ParaphraseRC` and `SelfRC` (see the [List splits and subsets](./splits) guide for more details about splits and subsets).
+The endpoint response is a JSON containing a list of the dataset's files in the Parquet format. For example, the [`ibm-research/duorc`](https://huggingface.co/datasets/ibm-research/duorc) dataset has six Parquet files, which corresponds to the `test`, `train` and `validation` splits of its two subsets, `ParaphraseRC` and `SelfRC` (see the [List splits and subsets](./splits) guide for more details about splits and subsets).
 
 The endpoint also gives the filename and size of each file:
 
@@ -79,50 +79,50 @@ The endpoint also gives the filename and size of each file:
 {
    "parquet_files":[
       {
-         "dataset":"ibm/duorc",
+         "dataset":"ibm-research/duorc",
          "config":"ParaphraseRC",
          "split":"test",
-         "url":"https://huggingface.co/datasets/ibm/duorc/resolve/refs%2Fconvert%2Fparquet/ParaphraseRC/test/0000.parquet",
+         "url":"https://huggingface.co/datasets/ibm-research/duorc/resolve/refs%2Fconvert%2Fparquet/ParaphraseRC/test/0000.parquet",
          "filename":"0000.parquet",
          "size":6136591
       },
       {
-         "dataset":"ibm/duorc",
+         "dataset":"ibm-research/duorc",
          "config":"ParaphraseRC",
          "split":"train",
-         "url":"https://huggingface.co/datasets/ibm/duorc/resolve/refs%2Fconvert%2Fparquet/ParaphraseRC/train/0000.parquet",
+         "url":"https://huggingface.co/datasets/ibm-research/duorc/resolve/refs%2Fconvert%2Fparquet/ParaphraseRC/train/0000.parquet",
          "filename":"0000.parquet",
          "size":26005668
       },
       {
-         "dataset":"ibm/duorc",
+         "dataset":"ibm-research/duorc",
          "config":"ParaphraseRC",
          "split":"validation",
-         "url":"https://huggingface.co/datasets/ibm/duorc/resolve/refs%2Fconvert%2Fparquet/ParaphraseRC/validation/0000.parquet",
+         "url":"https://huggingface.co/datasets/ibm-research/duorc/resolve/refs%2Fconvert%2Fparquet/ParaphraseRC/validation/0000.parquet",
          "filename":"0000.parquet",
          "size":5566868
       },
       {
-         "dataset":"ibm/duorc",
+         "dataset":"ibm-research/duorc",
          "config":"SelfRC",
          "split":"test",
-         "url":"https://huggingface.co/datasets/ibm/duorc/resolve/refs%2Fconvert%2Fparquet/SelfRC/test/0000.parquet",
+         "url":"https://huggingface.co/datasets/ibm-research/duorc/resolve/refs%2Fconvert%2Fparquet/SelfRC/test/0000.parquet",
          "filename":"0000.parquet",
          "size":3035736
       },
       {
-         "dataset":"ibm/duorc",
+         "dataset":"ibm-research/duorc",
          "config":"SelfRC",
          "split":"train",
-         "url":"https://huggingface.co/datasets/ibm/duorc/resolve/refs%2Fconvert%2Fparquet/SelfRC/train/0000.parquet",
+         "url":"https://huggingface.co/datasets/ibm-research/duorc/resolve/refs%2Fconvert%2Fparquet/SelfRC/train/0000.parquet",
          "filename":"0000.parquet",
          "size":14851720
       },
       {
-         "dataset":"ibm/duorc",
+         "dataset":"ibm-research/duorc",
          "config":"SelfRC",
          "split":"validation",
-         "url":"https://huggingface.co/datasets/ibm/duorc/resolve/refs%2Fconvert%2Fparquet/SelfRC/validation/0000.parquet",
+         "url":"https://huggingface.co/datasets/ibm-research/duorc/resolve/refs%2Fconvert%2Fparquet/SelfRC/validation/0000.parquet",
          "filename":"0000.parquet",
          "size":3114390
       }
@@ -224,7 +224,7 @@ For convenience, you can directly use the Hugging Face Hub `/api/parquet` endpoi
 ```python
 import requests
 headers = {"Authorization": f"Bearer {API_TOKEN}"}
-API_URL = "https://huggingface.co/api/datasets/ibm/duorc/parquet"
+API_URL = "https://huggingface.co/api/datasets/ibm-research/duorc/parquet"
 def query():
     response = requests.get(API_URL, headers=headers)
     return response.json()
@@ -236,7 +236,7 @@ urls = query()
 import fetch from "node-fetch";
 async function query(data) {
     const response = await fetch(
-        "https://huggingface.co/api/datasets/ibm/duorc/parquet",
+        "https://huggingface.co/api/datasets/ibm-research/duorc/parquet",
         {
             headers: { Authorization: `Bearer ${API_TOKEN}` },
             method: "GET"
@@ -252,37 +252,37 @@ query().then((response) => {
 </js>
 <curl>
 ```curl
-curl https://huggingface.co/api/datasets/ibm/duorc/parquet \
+curl https://huggingface.co/api/datasets/ibm-research/duorc/parquet \
         -X GET \
         -H "Authorization: Bearer ${API_TOKEN}"
 ```
 </curl>
 </inferencesnippet>
 
-The endpoint response is a JSON containing a list of the dataset's files URLs in the Parquet format for each split and subset. For example, the [`ibm/duorc`](https://huggingface.co/datasets/ibm/duorc) dataset has one Parquet file for the train split of the "ParaphraseRC" subset (see the [List splits and subsets](./splits) guide for more details about splits and subsets).
+The endpoint response is a JSON containing a list of the dataset's files URLs in the Parquet format for each split and subset. For example, the [`ibm-research/duorc`](https://huggingface.co/datasets/ibm-research/duorc) dataset has one Parquet file for the train split of the "ParaphraseRC" subset (see the [List splits and subsets](./splits) guide for more details about splits and subsets).
 
 ```json
 {
    "ParaphraseRC":{
       "test":[
-         "https://huggingface.co/api/datasets/ibm/duorc/parquet/ParaphraseRC/test/0.parquet"
+         "https://huggingface.co/api/datasets/ibm-research/duorc/parquet/ParaphraseRC/test/0.parquet"
       ],
       "train":[
-         "https://huggingface.co/api/datasets/ibm/duorc/parquet/ParaphraseRC/train/0.parquet"
+         "https://huggingface.co/api/datasets/ibm-research/duorc/parquet/ParaphraseRC/train/0.parquet"
       ],
       "validation":[
-         "https://huggingface.co/api/datasets/ibm/duorc/parquet/ParaphraseRC/validation/0.parquet"
+         "https://huggingface.co/api/datasets/ibm-research/duorc/parquet/ParaphraseRC/validation/0.parquet"
       ]
    },
    "SelfRC":{
       "test":[
-         "https://huggingface.co/api/datasets/ibm/duorc/parquet/SelfRC/test/0.parquet"
+         "https://huggingface.co/api/datasets/ibm-research/duorc/parquet/SelfRC/test/0.parquet"
       ],
       "train":[
-         "https://huggingface.co/api/datasets/ibm/duorc/parquet/SelfRC/train/0.parquet"
+         "https://huggingface.co/api/datasets/ibm-research/duorc/parquet/SelfRC/train/0.parquet"
       ],
       "validation":[
-         "https://huggingface.co/api/datasets/ibm/duorc/parquet/SelfRC/validation/0.parquet"
+         "https://huggingface.co/api/datasets/ibm-research/duorc/parquet/SelfRC/validation/0.parquet"
       ]
    }
 }
@@ -295,7 +295,7 @@ Optionally you can specify which subset name to return, as well as which split:
 ```python
 import requests
 headers = {"Authorization": f"Bearer {API_TOKEN}"}
-API_URL = "https://huggingface.co/api/datasets/ibm/duorc/parquet/ParaphraseRC/train"
+API_URL = "https://huggingface.co/api/datasets/ibm-research/duorc/parquet/ParaphraseRC/train"
 def query():
     response = requests.get(API_URL, headers=headers)
     return response.json()
@@ -307,7 +307,7 @@ urls = query()
 import fetch from "node-fetch";
 async function query(data) {
     const response = await fetch(
-        "https://huggingface.co/api/datasets/ibm/duorc/parquet/ParaphraseRC/train",
+        "https://huggingface.co/api/datasets/ibm-research/duorc/parquet/ParaphraseRC/train",
         {
             headers: { Authorization: `Bearer ${API_TOKEN}` },
             method: "GET"
@@ -323,7 +323,7 @@ query().then((response) => {
 </js>
 <curl>
 ```curl
-curl https://huggingface.co/api/datasets/ibm/duorc/parquet/ParaphraseRC/train \
+curl https://huggingface.co/api/datasets/ibm-research/duorc/parquet/ParaphraseRC/train \
         -X GET \
         -H "Authorization: Bearer ${API_TOKEN}"
 ```
@@ -332,8 +332,8 @@ curl https://huggingface.co/api/datasets/ibm/duorc/parquet/ParaphraseRC/train \
 
 ```json
 [
-  "https://huggingface.co/api/datasets/ibm/duorc/parquet/ParaphraseRC/train/0.parquet"
+  "https://huggingface.co/api/datasets/ibm-research/duorc/parquet/ParaphraseRC/train/0.parquet"
 ]
 ```
 
-Each parquet file can also be accessed using its shard index: `https://huggingface.co/api/datasets/ibm/duorc/parquet/ParaphraseRC/train/0.parquet` redirects to `https://huggingface.co/datasets/ibm/duorc/resolve/refs%2Fconvert%2Fparquet/ParaphraseRC/train/0000.parquet` for example.
+Each parquet file can also be accessed using its shard index: `https://huggingface.co/api/datasets/ibm-research/duorc/parquet/ParaphraseRC/train/0.parquet` redirects to `https://huggingface.co/datasets/ibm-research/duorc/resolve/refs%2Fconvert%2Fparquet/ParaphraseRC/train/0000.parquet` for example.
