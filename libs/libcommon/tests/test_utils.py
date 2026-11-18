@@ -1,6 +1,8 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+import threading
+import time
 from contextlib import nullcontext as does_not_raise
 from datetime import datetime, timedelta, timezone
 from typing import Any
@@ -21,6 +23,7 @@ from libcommon.utils import (
     orjson_dumps,
     raise_if_blocked,
     serialize_and_truncate,
+    thread_map,
 )
 
 from .constants import TEN_CHARS_TEXT
@@ -153,3 +156,23 @@ def test_serialize_and_truncate_raises(obj: Any, max_bytes: int) -> None:
 
 def test_get_duration() -> None:
     assert get_duration(get_datetime() - timedelta(seconds=10)) == pytest.approx(10, rel=0.01)
+
+
+def test_thread_map() -> None:
+    assert thread_map(lambda x, y: x + y, [1, 2, 3], [10, 20, 30]) == [11, 22, 33]
+    assert thread_map(str, []) == []
+
+
+def test_thread_map_concurrent_calls_do_not_deadlock() -> None:
+    # tqdm.contrib.concurrent.thread_map left its global lock held under this load, blocking all the callers
+    def call() -> None:
+        for _ in range(100):
+            thread_map(lambda _: time.sleep(0.0005), range(30), max_workers=4)
+
+    callers = [threading.Thread(target=call, daemon=True) for _ in range(40)]
+    for caller in callers:
+        caller.start()
+    deadline = time.monotonic() + 60
+    for caller in callers:
+        caller.join(timeout=max(0.0, deadline - time.monotonic()))
+    assert not any(caller.is_alive() for caller in callers)

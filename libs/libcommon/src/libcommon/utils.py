@@ -6,7 +6,8 @@ import functools
 import logging
 import mimetypes
 import time
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Iterable, Sequence
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
 from fnmatch import fnmatch
 from pathlib import Path
@@ -247,6 +248,7 @@ def raise_if_blocked(
 
 
 FuncT = TypeVar("FuncT", bound=Callable[..., Any])
+T = TypeVar("T")
 RETRY_SLEEPS = (1, 1, 1, 10, 10, 10, 60, 60, 60, 10 * 60)
 RETRY_ON: tuple[type[Exception]] = (Exception,)
 
@@ -304,3 +306,15 @@ def download_file_from_hub(
         force_download=force_download,
         cache_dir=Path(cache_dir) if cache_dir is not None else None,
     )
+
+
+def thread_map(fn: Callable[..., T], *iterables: Iterable[Any], max_workers: Optional[int] = None) -> list[T]:
+    """
+    Like `list(map(fn, *iterables))`, run in a thread pool.
+
+    Do not use `tqdm.contrib.concurrent.thread_map` in the API services: it shares one global tqdm lock between all
+    the concurrent calls of the process, and concurrent calls leave the lock held forever, which blocks every thread
+    that later starts a progress bar.
+    """
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        return list(executor.map(fn, *iterables))
