@@ -237,6 +237,7 @@ def test_float_statistics(
         "int__large_values_column",
         "int__only_one_value_column",
         "int__only_one_value_null_column",
+        "int__two_adjacent_values_column",
     ],
 )
 def test_int_statistics(
@@ -322,6 +323,7 @@ def test_class_label_statistics(
         "list__int_column",
         "list__int_null_column",
         "list__int_all_null_column",
+        "list__int_two_adjacent_lengths_column",
         "list__string_column",
         "list__string_null_column",
         "list__string_all_null_column",
