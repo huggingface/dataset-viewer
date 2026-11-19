@@ -56,6 +56,10 @@ T = TypeVar("T")
 _all_tasks: list[asyncio.Task[Any]] = []  # kinda like threading.all_threads()
 _index_builds: dict[str, asyncio.Task[None]] = {}
 INDEX_BUILD_WAIT_SECONDS = 20
+# Builds take their threads from their own limiter, not from the default anyio one (40 threads): past this number they
+# wait for a slot, and the default threads stay free for the queries and the Hub auth check
+MAX_CONCURRENT_INDEX_BUILDS = 4
+_index_build_limiter = anyio.CapacityLimiter(MAX_CONCURRENT_INDEX_BUILDS)
 
 
 def _handle_errors(task: asyncio.Task[Any]) -> None:
@@ -205,7 +209,7 @@ async def _build_index_file_once(index_file_location: str, *build_args: Any) -> 
     # loop, without holding a thread) instead of building again.
     async with AsyncFileLock(index_file_location + ".lock"):
         if not await anyio.Path(index_file_location).is_file():
-            await anyio.to_thread.run_sync(build_index_file, *build_args)
+            await anyio.to_thread.run_sync(build_index_file, *build_args, limiter=_index_build_limiter)
 
 
 async def get_index_file_location_and_build_if_missing(

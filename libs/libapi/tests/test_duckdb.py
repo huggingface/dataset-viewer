@@ -1,9 +1,11 @@
 import asyncio
+import threading
 import time
 from pathlib import Path
 from typing import Any, Optional
 from unittest.mock import patch
 
+import anyio
 import pyarrow as pa
 import pyarrow.parquet as pq
 import pytest
@@ -90,3 +92,40 @@ async def test_index_is_built_once_and_never_read_before_complete(tmp_path: Path
 
     assert builds == 1
     assert set(contents) == {None, b"complete"}
+
+
+@pytest.mark.anyio
+async def test_index_builds_do_not_take_the_default_threads(tmp_path: Path) -> None:
+    running = 0
+    max_running = 0
+    lock = threading.Lock()
+
+    def build_index_file(*_: Any) -> None:
+        nonlocal running, max_running
+        with lock:
+            running += 1
+            max_running = max(max_running, running)
+        time.sleep(0.3)
+        with lock:
+            running -= 1
+
+    async def build(i: int) -> None:
+        await duckdb._build_index_file_once(str(tmp_path / f"{i}.duckdb"), i)
+
+    async def to_thread_latency() -> float:
+        await asyncio.sleep(0.1)
+        start = time.perf_counter()
+        await anyio.to_thread.run_sync(lambda: None)
+        return time.perf_counter() - start
+
+    # more builds than the 40 threads of the default anyio limiter
+    with (
+        patch.object(duckdb, "build_index_file", build_index_file),
+        patch.object(duckdb, "_index_build_limiter", anyio.CapacityLimiter(2)),
+    ):
+        builds = [asyncio.create_task(build(i)) for i in range(50)]
+        latency = await to_thread_latency()
+        await asyncio.gather(*builds)
+
+    assert max_running == 2
+    assert latency < 0.2
