@@ -49,7 +49,8 @@ LOCK_CONFIG_COMMAND = "SET lock_configuration=true;"
 # By default each DuckDB connection takes one thread per CPU and 80% of the memory, and the search service opens many at
 # once: cap them, and let DuckDB spill to disk past the memory cap (the tokenize jobs already run in parallel)
 DUCKDB_BUILD_CONFIG = {"threads": 8, "memory_limit": "16GB"}
-DUCKDB_TOKENIZE_CONFIG = {"threads": 1, "memory_limit": "512MB"}
+DUCKDB_TOKENIZE_CONFIG = {"threads": 1, "memory_limit": "2GB"}
+DUCKDB_TOKENIZE_JOBS = 8  # tokenize jobs run at once: 8 x 2GB keeps a build within its 16GB, like the other phases
 SET_EXTENSIONS_DIRECTORY_COMMAND = "SET extension_directory={directory};"
 
 CREATE_INDEX_COMMAND = (
@@ -362,7 +363,7 @@ def create_index(
             ) as rank_con:
                 _sql(rank_con, command)
 
-        thread_map(_parallel_sql, commands, job_databases, ranks, field_ids)
+        thread_map(_parallel_sql, commands, job_databases, ranks, field_ids, max_workers=DUCKDB_TOKENIZE_JOBS)
 
         # # NON-PARALEL VERSION HERE FOR DOCUMENTATION:
         #

@@ -308,7 +308,7 @@ def download_file_from_hub(
     )
 
 
-def thread_map(fn: Callable[..., T], *iterables: Iterable[Any]) -> list[T]:
+def thread_map(fn: Callable[..., T], *iterables: Iterable[Any], max_workers: Optional[int] = None) -> list[T]:
     """Like `list(map(fn, *iterables))` in a thread pool, without the global lock of tqdm's `thread_map`."""
-    with ThreadPoolExecutor() as executor:
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
         return list(executor.map(fn, *iterables))
