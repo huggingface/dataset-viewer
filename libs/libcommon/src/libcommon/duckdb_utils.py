@@ -49,6 +49,10 @@ LOCK_CONFIG_COMMAND = "SET lock_configuration=true;"
 # DuckDB starts one thread per CPU for each connection, and the search service opens many connections at once
 DUCKDB_BUILD_THREADS = 8
 DUCKDB_TOKENIZE_THREADS = 1  # the tokenize jobs already run in parallel, one connection each
+# DuckDB lets each connection use 80% of the memory it sees (200 GiB on a search pod), and several builds run at once:
+# cap each connection, and let DuckDB spill to disk past the cap
+DUCKDB_BUILD_MEMORY_LIMIT = "16GB"
+DUCKDB_TOKENIZE_MEMORY_LIMIT = "512MB"
 SET_EXTENSIONS_DIRECTORY_COMMAND = "SET extension_directory={directory};"
 
 CREATE_INDEX_COMMAND = (
@@ -272,7 +276,13 @@ def create_index(
 
     with tempfile.TemporaryDirectory(suffix=".duckdb") as tmp_dir:
         with duckdb_connect(
-            database=database, extensions_directory=extensions_directory, config={"threads": DUCKDB_BUILD_THREADS}
+            database=database,
+            extensions_directory=extensions_directory,
+            config={
+                "threads": DUCKDB_BUILD_THREADS,
+                "memory_limit": DUCKDB_BUILD_MEMORY_LIMIT,
+                "temp_directory": f"{tmp_dir}/spill",
+            },
         ) as con:
             # check input_table and get number of rows
             _count = _sql(con, "SELECT count(*) FROM %input_table%;").fetchone()
@@ -358,7 +368,11 @@ def create_index(
                 tmp_subprocess_job_databases=[job_database],
                 tmp_subprocess_job_database_ranks=[rank],
                 tmp_subprocess_job_database_field_ids=[field_id],
-                config={"threads": DUCKDB_TOKENIZE_THREADS},
+                config={
+                    "threads": DUCKDB_TOKENIZE_THREADS,
+                    "memory_limit": DUCKDB_TOKENIZE_MEMORY_LIMIT,
+                    "temp_directory": f"{tmp_dir}/spill_{rank}_{field_id}",
+                },
             ) as rank_con:
                 _sql(rank_con, command)
 
@@ -385,7 +399,11 @@ def create_index(
             tmp_subprocess_job_database_ranks=ranks,
             tmp_subprocess_job_database_field_ids=field_ids,
             tmp_subprocess_job_databases_read_only=True,
-            config={"threads": DUCKDB_BUILD_THREADS},
+            config={
+                "threads": DUCKDB_BUILD_THREADS,
+                "memory_limit": DUCKDB_BUILD_MEMORY_LIMIT,
+                "temp_directory": f"{tmp_dir}/spill",
+            },
         ) as con:
             # merge tokenizations
             union_fields_query = " UNION ALL ".join(

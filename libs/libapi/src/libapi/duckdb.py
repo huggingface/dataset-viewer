@@ -21,6 +21,7 @@ from libcommon.duckdb_utils import (
     CREATE_INDEX_ID_COLUMN_COMMANDS,
     CREATE_TABLE_COMMAND_FROM_LIST_OF_PARQUET_FILES,
     CREATE_TABLE_JOIN_WITH_TRANSFORMED_DATA_COMMAND_FROM_LIST_OF_PARQUET_FILES,
+    DUCKDB_BUILD_MEMORY_LIMIT,
     DUCKDB_BUILD_THREADS,
     DUCKDB_DEFAULT_INDEX_FILENAME,
     DUCKDB_DEFAULT_PARTIAL_INDEX_FILENAME,
@@ -159,7 +160,11 @@ def build_index_file(
             extensions_directory=extensions_directory,
             allowed_paths=all_split_parquets,
             transformed_df=transformed_df,
-            config={"threads": DUCKDB_BUILD_THREADS},
+            config={
+                "threads": DUCKDB_BUILD_THREADS,
+                "memory_limit": DUCKDB_BUILD_MEMORY_LIMIT,
+                "temp_directory": f"{tmp_index_file_location}.spill",
+            },
         ) as con:
             if transformed_df is not None:
                 logging.debug(transformed_df.head())
