@@ -1,9 +1,11 @@
 import asyncio
+import threading
 import time
 from pathlib import Path
 from typing import Any, Optional
 from unittest.mock import patch
 
+import anyio
 import pyarrow as pa
 import pyarrow.parquet as pq
 import pytest
@@ -90,3 +92,24 @@ async def test_index_is_built_once_and_never_read_before_complete(tmp_path: Path
 
     assert builds == 1
     assert set(contents) == {None, b"complete"}
+
+
+@pytest.mark.anyio
+async def test_index_builds_do_not_take_the_default_threads(tmp_path: Path) -> None:
+    release = threading.Event()
+    limiter = anyio.CapacityLimiter(2)
+    with (
+        patch.object(duckdb, "build_index_file", lambda *_: release.wait()),
+        patch.object(duckdb, "_index_build_limiter", limiter),
+    ):
+        # more builds than the 40 threads of the default anyio limiter
+        builds = [asyncio.create_task(duckdb._build_index_file_once(str(tmp_path / f"{i}.duckdb"))) for i in range(50)]
+        await asyncio.sleep(0.2)  # let the builds take their threads
+        with anyio.move_on_after(1) as scope:
+            await anyio.to_thread.run_sync(lambda: None)
+        borrowed = limiter.borrowed_tokens
+        release.set()
+        await asyncio.gather(*builds)
+
+    assert not scope.cancelled_caught  # a thread was free for the auth check and the queries
+    assert borrowed == 2
