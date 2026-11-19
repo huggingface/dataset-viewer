@@ -90,11 +90,12 @@ class HubCacheWatcher:
             read_preference=ReadPreference.SECONDARY_PREFERRED,
         )
         self._publisher = HubCachePublisher(_watchers={})
+        self._stream_opened = asyncio.Event()
 
     def run_initialization(self, suscriber: str) -> asyncio.Task[Any]:
         return asyncio.create_task(self._init_loop(suscriber=suscriber))
 
-    def start_watching(self) -> None:
+    async def start_watching(self) -> None:
         self._watch_task = asyncio.create_task(self._watch_loop())
 
         def _log_watch_task_result(task: asyncio.Task[None]) -> None:
@@ -105,6 +106,9 @@ class HubCacheWatcher:
                 logging.error("hub-cache watch task ended unexpectedly", exc_info=exc)
 
         self._watch_task.add_done_callback(_log_watch_task_result)
+
+        # Changes made before the change stream opens are never sent, so don't serve until it's open.
+        await self._stream_opened.wait()
 
     async def stop_watching(self) -> None:
         self._watch_task.cancel()
@@ -185,6 +189,7 @@ class HubCacheWatcher:
                     full_document_before_change="whenAvailable",
                     max_await_time_ms=30_000,
                 ) as stream:
+                    self._stream_opened.set()
                     async for change in stream:
                         resume_token = stream.resume_token
                         operation = change["operationType"]

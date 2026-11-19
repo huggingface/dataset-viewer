@@ -73,9 +73,8 @@ def create_app_with_config(app_config: AppConfig) -> Starlette:
 
     @asynccontextmanager
     async def lifespan(_app: Starlette):  # type: ignore[no-untyped-def]
-        # Starlette 1.0 removed on_startup/on_shutdown in favor of the ASGI lifespan
-        # protocol. start_watching is sync; stop_watching is async.
-        hub_cache_watcher.start_watching()
+        # Starlette 1.0 removed on_startup/on_shutdown in favor of the ASGI lifespan protocol.
+        await hub_cache_watcher.start_watching()
         try:
             yield
         finally:
