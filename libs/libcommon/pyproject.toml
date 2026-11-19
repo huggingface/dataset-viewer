@@ -142,4 +142,8 @@ extend-select = [
     # flake8-pep585:
     "UP006",  # non-pep585-annotation
     "UP035",  # deprecated-import
+    "TID251",  # banned-api
 ]
+
+[tool.ruff.lint.flake8-tidy-imports.banned-api]
+"tqdm.contrib.concurrent".msg = "its global lock deadlocks under concurrent calls, use libcommon.utils.thread_map"

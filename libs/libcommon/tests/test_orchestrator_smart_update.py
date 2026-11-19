@@ -4,7 +4,6 @@ import time
 
 import httpx2 as httpx
 import pytest
-from tqdm.contrib.concurrent import thread_map
 
 from libcommon.orchestrator import (
     SmartUpdateImpossibleBecauseCachedRevisionIsNotParentOfNewRevision,
@@ -16,6 +15,7 @@ from libcommon.orchestrator import (
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import get_cache_entries_df
 from libcommon.storage_client import StorageClient
+from libcommon.utils import thread_map
 
 from .utils import (
     DATASET_NAME,

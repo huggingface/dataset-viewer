@@ -308,13 +308,7 @@ def download_file_from_hub(
     )
 
 
-def thread_map(fn: Callable[..., T], *iterables: Iterable[Any], max_workers: Optional[int] = None) -> list[T]:
-    """
-    Like `list(map(fn, *iterables))`, run in a thread pool.
-
-    Do not use `tqdm.contrib.concurrent.thread_map` in the API services: it shares one global tqdm lock between all
-    the concurrent calls of the process, and concurrent calls leave the lock held forever, which blocks every thread
-    that later starts a progress bar.
-    """
-    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+def thread_map(fn: Callable[..., T], *iterables: Iterable[Any]) -> list[T]:
+    """Like `list(map(fn, *iterables))` in a thread pool, without the global lock of tqdm's `thread_map`."""
+    with ThreadPoolExecutor() as executor:
         return list(executor.map(fn, *iterables))
