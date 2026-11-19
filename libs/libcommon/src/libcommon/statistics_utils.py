@@ -15,12 +15,11 @@ import polars as pl
 import pyarrow.parquet as pq
 from datasets import Features
 from huggingface_hub import HfFileSystem
-from tqdm.contrib.concurrent import thread_map
 
 from libcommon.exceptions import (
     StatisticsComputationError,
 )
-from libcommon.utils import datetime_to_string, get_timezone, identify_datetime_format, is_datetime
+from libcommon.utils import datetime_to_string, get_timezone, identify_datetime_format, is_datetime, thread_map
 
 DECIMALS = 5
 NUM_BINS = 10
@@ -638,12 +637,7 @@ class MediaColumn(Column):
         transformed_values = []
         for filename in parquet_paths:
             shard_items = pq.read_table(filename, columns=[self.name]).to_pydict()[self.name]  # type: ignore
-            shard_transformed_values = thread_map(
-                transform_func,
-                shard_items,
-                desc=f"Transforming values of {self.__class__.__name__} {self.name} for {filename.name}",
-                leave=False,
-            )
+            shard_transformed_values = thread_map(transform_func, shard_items)
             transformed_values.extend(shard_transformed_values)
         return transformed_values
 

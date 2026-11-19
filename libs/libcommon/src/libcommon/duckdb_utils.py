@@ -15,7 +15,6 @@ from datasets.features.features import (
     _visit,
 )
 from huggingface_hub.repocard_data import DatasetCardData
-from tqdm.contrib.concurrent import thread_map
 
 from libcommon.constants import ROW_IDX_COLUMN
 from libcommon.parquet_utils import is_list_pa_type
@@ -27,6 +26,7 @@ from libcommon.statistics_utils import (
     StringColumn,
     VideoColumn,
 )
+from libcommon.utils import thread_map
 
 DISABLED_DUCKDB_REF_BRANCH_DATASET_NAME_PATTERNS = ["*"]  # all datasets
 DISABLED_DUCKDB_REF_BRANCH_USER_OR_ORG_NAME_MIN_LENGTH = 10  # TODO: remove since enabled for "*"
@@ -356,7 +356,7 @@ def create_index(
             ) as rank_con:
                 _sql(rank_con, command)
 
-        thread_map(_parallel_sql, commands, job_databases, ranks, field_ids, desc="Tokenize")
+        thread_map(_parallel_sql, commands, job_databases, ranks, field_ids)
 
         # # NON-PARALEL VERSION HERE FOR DOCUMENTATION:
         #
