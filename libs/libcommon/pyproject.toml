@@ -11,7 +11,7 @@ anyio = ">=3.4.0,<5"
 appdirs = "^1.4.4"
 async-lru = "^2.0.5"
 cryptography = "^50.0.0"
-datasets = { git = "https://github.com/huggingface/datasets", rev = "062399091924f21b2089c84e5824a26efc9514a9" }
+datasets = { git = "https://github.com/huggingface/datasets", rev = "167807008ac3aa96f9b377efde58767e53a7f3b3" }
 duckdb = "^1.5.5"
 environs = "^14.3.0"
 filelock = "^3.18.0"
@@ -42,7 +42,7 @@ s3fs = "2026.9.0"  # Aligned with fsspec[s3] version
 scipy = "^1.18.1"
 soundfile = ">=0.12.1"
 starlette-prometheus = "^0.9.0"
-teich = { git = "https://github.com/lhoestq/teich", rev = "b18cb66dc7fbb2c0d59bee761b236273aeecccc5" }  # to fix traces streaming
+teich = "0.3.8"
 torch = [
     { url = "https://download.pytorch.org/whl/cpu/torch-2.13.0%2Bcpu-cp314-cp314-manylinux_2_28_x86_64.whl", markers = "sys_platform == 'linux' and platform_machine != 'aarch64'"},
     { url = "https://download.pytorch.org/whl/cpu/torch-2.13.0%2Bcpu-cp314-cp314-manylinux_2_28_x86_64.whl", markers = "sys_platform == 'darwin' and platform_machine != 'arm64'"},
