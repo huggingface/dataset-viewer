@@ -29,7 +29,7 @@ def test_check_available_disk_space(tmp_path_factory: TempPathFactory, subpath: 
 async def test_index_is_built_once_and_never_read_before_complete(tmp_path: Path) -> None:
     parquet_metadata_directory = tmp_path / "parquet-metadata"
     (parquet_metadata_directory / "ds/default/train").mkdir(parents=True)
-    pq.write_table(pa.table({"a": [1, 2, 3]}), parquet_metadata_directory / "ds/default/train/0000.parquet")
+    pq.write_table(pa.table({"a": [1, 2, 3]}), parquet_metadata_directory / "ds/default/train/0000.parquet")  # type: ignore
     split_parquet_files: list[ParquetFileMetadataItem] = [
         {
             "dataset": "ds",
