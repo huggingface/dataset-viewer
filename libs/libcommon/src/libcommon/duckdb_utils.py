@@ -46,6 +46,9 @@ LOAD_FTS_COMMAND = "LOAD 'fts';"
 DISABLE_EXTERNAL_ACCESS_COMMAND = "SET enable_external_access=false;"
 SET_ALLOWED_PATHS_COMMAND = "SET allowed_paths={allowed_paths};"
 LOCK_CONFIG_COMMAND = "SET lock_configuration=true;"
+# DuckDB starts one thread per CPU for each connection, and the search service opens many connections at once
+DUCKDB_BUILD_THREADS = 8
+DUCKDB_TOKENIZE_THREADS = 1  # the tokenize jobs already run in parallel, one connection each
 SET_EXTENSIONS_DIRECTORY_COMMAND = "SET extension_directory={directory};"
 
 CREATE_INDEX_COMMAND = (
@@ -268,7 +271,9 @@ def create_index(
         return out
 
     with tempfile.TemporaryDirectory(suffix=".duckdb") as tmp_dir:
-        with duckdb_connect(database=database, extensions_directory=extensions_directory) as con:
+        with duckdb_connect(
+            database=database, extensions_directory=extensions_directory, config={"threads": DUCKDB_BUILD_THREADS}
+        ) as con:
             # check input_table and get number of rows
             _count = _sql(con, "SELECT count(*) FROM %input_table%;").fetchone()
             if _count and isinstance(_count[0], int):
@@ -353,6 +358,7 @@ def create_index(
                 tmp_subprocess_job_databases=[job_database],
                 tmp_subprocess_job_database_ranks=[rank],
                 tmp_subprocess_job_database_field_ids=[field_id],
+                config={"threads": DUCKDB_TOKENIZE_THREADS},
             ) as rank_con:
                 _sql(rank_con, command)
 
@@ -379,6 +385,7 @@ def create_index(
             tmp_subprocess_job_database_ranks=ranks,
             tmp_subprocess_job_database_field_ids=field_ids,
             tmp_subprocess_job_databases_read_only=True,
+            config={"threads": DUCKDB_BUILD_THREADS},
         ) as con:
             # merge tokenizations
             union_fields_query = " UNION ALL ".join(
