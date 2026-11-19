@@ -6,10 +6,8 @@ import pytest
 from datasets import Dataset
 
 from libcommon.duckdb_utils import (
-    DUCKDB_BUILD_MEMORY_LIMIT,
-    DUCKDB_BUILD_THREADS,
-    DUCKDB_TOKENIZE_MEMORY_LIMIT,
-    DUCKDB_TOKENIZE_THREADS,
+    DUCKDB_BUILD_CONFIG,
+    DUCKDB_TOKENIZE_CONFIG,
     compute_length_column,
     create_index,
     duckdb_connect,
@@ -34,31 +32,20 @@ def test_create_index_limits_duckdb_resources(tmp_path_factory: pytest.TempPathF
     with duckdb_connect(database=database) as con:
         con.sql("CREATE TABLE data AS SELECT range AS __hf_index_id, 'hello world ' || range AS text FROM range(100);")
         con.sql("CHECKPOINT;")
-    settings: list[tuple[int, str, str]] = []
+    configs: list[dict[str, Any]] = []
 
     def recording_connect(*args: Any, **kwargs: Any) -> duckdb.DuckDBPyConnection:
-        con = duckdb_connect(*args, **kwargs)
-        row = con.sql(
-            "SELECT current_setting('threads'), current_setting('memory_limit'), current_setting('temp_directory')"
-        ).fetchone()
-        settings.append(row)  # type: ignore
-        return con
+        configs.append(kwargs.get("config", {}))
+        return duckdb_connect(*args, **kwargs)  # duckdb raises if a setting is invalid
 
     with patch("libcommon.duckdb_utils.duckdb_connect", recording_connect):
         create_index(database, "data", ["text"], "porter", "__hf_index_id", "fts_main_data")
 
-    def memory_limit(value: str) -> str:
-        row = duckdb.connect(config={"memory_limit": value}).sql("SELECT current_setting('memory_limit')").fetchone()
-        assert row is not None
-        return str(row[0])
-
     # the main connection, the parallel tokenize connections and the merge connection
-    build, *tokenize, merge = settings
-    assert tokenize
-    for threads, limit, _ in (build, merge):
-        assert (threads, limit) == (DUCKDB_BUILD_THREADS, memory_limit(DUCKDB_BUILD_MEMORY_LIMIT))
-    for threads, limit, _ in tokenize:
-        assert (threads, limit) == (DUCKDB_TOKENIZE_THREADS, memory_limit(DUCKDB_TOKENIZE_MEMORY_LIMIT))
+    build, *tokenize, merge = [dict(config) for config in configs]
+    spill_directories = [config.pop("temp_directory") for config in (build, *tokenize, merge)]
+    assert build == merge == DUCKDB_BUILD_CONFIG
+    assert tokenize and all(config == DUCKDB_TOKENIZE_CONFIG for config in tokenize)
     # one spill directory per connection: DuckDB names its temporary files the same way in every connection
-    assert len({temp_directory for *_, temp_directory in tokenize}) == len(tokenize)
-    assert build[2] == merge[2] not in {temp_directory for *_, temp_directory in tokenize}
+    assert spill_directories[0] == spill_directories[-1]
+    assert len(set(spill_directories)) == len(tokenize) + 1
