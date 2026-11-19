@@ -96,36 +96,20 @@ async def test_index_is_built_once_and_never_read_before_complete(tmp_path: Path
 
 @pytest.mark.anyio
 async def test_index_builds_do_not_take_the_default_threads(tmp_path: Path) -> None:
-    running = 0
-    max_running = 0
-    lock = threading.Lock()
-
-    def build_index_file(*_: Any) -> None:
-        nonlocal running, max_running
-        with lock:
-            running += 1
-            max_running = max(max_running, running)
-        time.sleep(0.3)
-        with lock:
-            running -= 1
-
-    async def build(i: int) -> None:
-        await duckdb._build_index_file_once(str(tmp_path / f"{i}.duckdb"), i)
-
-    async def to_thread_latency() -> float:
-        await asyncio.sleep(0.1)
-        start = time.perf_counter()
-        await anyio.to_thread.run_sync(lambda: None)
-        return time.perf_counter() - start
-
-    # more builds than the 40 threads of the default anyio limiter
+    release = threading.Event()
+    limiter = anyio.CapacityLimiter(2)
     with (
-        patch.object(duckdb, "build_index_file", build_index_file),
-        patch.object(duckdb, "_index_build_limiter", anyio.CapacityLimiter(2)),
+        patch.object(duckdb, "build_index_file", lambda *_: release.wait()),
+        patch.object(duckdb, "_index_build_limiter", limiter),
     ):
-        builds = [asyncio.create_task(build(i)) for i in range(50)]
-        latency = await to_thread_latency()
+        # more builds than the 40 threads of the default anyio limiter
+        builds = [asyncio.create_task(duckdb._build_index_file_once(str(tmp_path / f"{i}.duckdb"))) for i in range(50)]
+        await asyncio.sleep(0.2)  # let the builds take their threads
+        with anyio.move_on_after(1) as scope:
+            await anyio.to_thread.run_sync(lambda: None)
+        borrowed = limiter.borrowed_tokens
+        release.set()
         await asyncio.gather(*builds)
 
-    assert max_running == 2
-    assert latency < 0.2
+    assert not scope.cancelled_caught  # a thread was free for the auth check and the queries
+    assert borrowed == 2

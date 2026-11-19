@@ -56,8 +56,7 @@ T = TypeVar("T")
 _all_tasks: list[asyncio.Task[Any]] = []  # kinda like threading.all_threads()
 _index_builds: dict[str, asyncio.Task[None]] = {}
 INDEX_BUILD_WAIT_SECONDS = 20
-# Builds take their threads from their own limiter, not from the default anyio one (40 threads): past this number they
-# wait for a slot, and the default threads stay free for the queries and the Hub auth check
+# builds get their own threads, so they never take the default ones the queries and the Hub auth check need
 MAX_CONCURRENT_INDEX_BUILDS = 4
 _index_build_limiter = anyio.CapacityLimiter(MAX_CONCURRENT_INDEX_BUILDS)
 
