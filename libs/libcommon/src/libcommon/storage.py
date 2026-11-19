@@ -122,6 +122,9 @@ def remove_dir(directory: StrPath) -> None:
     logging.debug(f"Directory removed: {directory}")
 
 
+EMPTY_DIRECTORY_GRACE_SECONDS = 60
+
+
 def clean_dir(root_folder: StrPath, expired_time_interval_seconds: int) -> None:
     """
     Delete temporary cache directories under a root folder.
@@ -145,12 +148,16 @@ def clean_dir(root_folder: StrPath, expired_time_interval_seconds: int) -> None:
                     logging.info(f"deleting file {path=} {last_access_datetime=}")
                     os.remove(path)
                     total_files += 1
-            try:
-                os.rmdir(root)
-                logging.info(f"deleting directory {root=} because it was empty")
-                total_dirs += 1
-            except OSError:
-                pass  # Ignore non-empty directories
+            # a new directory stays empty for a moment (hf_hub_download creates snapshots/<sha>/... before it writes
+            # the symlink in it): leave the empty directories created in the last minute
+            created_datetime = datetime.fromtimestamp(os.stat(root).st_ctime).replace(tzinfo=None)
+            if created_datetime + timedelta(seconds=EMPTY_DIRECTORY_GRACE_SECONDS) <= now:
+                try:
+                    os.rmdir(root)
+                    logging.info(f"deleting directory {root=} because it was empty")
+                    total_dirs += 1
+                except OSError:
+                    pass  # Ignore non-empty directories
         except FileNotFoundError:
             logging.error(f"failed to delete {path=} because it has disappeared during the loop")
             total_disappeared_paths += 1

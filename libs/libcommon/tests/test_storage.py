@@ -4,6 +4,7 @@
 import time
 from pathlib import Path
 from typing import Optional
+from unittest.mock import patch
 
 import pytest
 from pytest import TempPathFactory
@@ -98,6 +99,18 @@ def test_clean_directory(tmp_path_factory: TempPathFactory) -> None:
     # try to delete it after more that time interval, it should be deleted
     cache_file.touch()
     time.sleep(expired_time_interval_seconds + 2)
-    clean_dir(root_folder, expired_time_interval_seconds)
+    with patch("libcommon.storage.EMPTY_DIRECTORY_GRACE_SECONDS", 0):
+        clean_dir(root_folder, expired_time_interval_seconds)
     assert not cache_file.is_file()
     assert not test_dataset_cache.is_dir()  # it should be deleted because is empty
+
+
+def test_clean_dir_keeps_new_empty_directories(tmp_path_factory: TempPathFactory) -> None:
+    root_folder = tmp_path_factory.mktemp("test_clean_dir_keeps_new_empty_directories")
+    # hf_hub_download creates snapshots/<sha>/<config>/<split> before writing the symlink in it
+    new_snapshot = root_folder / "datasets--ds/snapshots/sha/default/train"
+    new_snapshot.mkdir(parents=True)
+
+    clean_dir(root_folder, expired_time_interval_seconds=0)
+
+    assert new_snapshot.is_dir()

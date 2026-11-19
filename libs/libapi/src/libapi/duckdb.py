@@ -6,6 +6,7 @@ import json
 import logging
 import os
 import re
+import threading
 import traceback
 from collections.abc import Coroutine
 from hashlib import sha1
@@ -15,7 +16,6 @@ from typing import Any, Optional, TypeVar
 import anyio
 import filelock
 from datasets import Features
-from filelock import AsyncFileLock
 from huggingface_hub import HfApi
 from libcommon.constants import CONFIG_PARQUET_METADATA_KIND, PARQUET_REVISION, ROW_IDX_COLUMN
 from libcommon.duckdb_utils import (
@@ -54,6 +54,8 @@ HUB_DOWNLOAD_CACHE_FOLDER = "cache"
 T = TypeVar("T")
 
 _all_tasks: list[asyncio.Task[Any]] = []  # kinda like threading.all_threads()
+_index_builds: dict[str, asyncio.Task[None]] = {}
+INDEX_BUILD_WAIT_SECONDS = 20
 
 
 def _handle_errors(task: asyncio.Task[Any]) -> None:
@@ -144,10 +146,13 @@ def build_index_file(
     # create index
     index_file_location = f"{index_folder}/{repo_file_location}"
     Path(index_file_location).parent.mkdir(exist_ok=True, parents=True)
+    # Readers only look for the final path: build in a temporary file and rename it once complete, so that no
+    # request opens (and then deletes as corrupted) an index that is still being written.
+    tmp_index_file_location = f"{index_file_location}.{os.getpid()}.{threading.get_ident()}.tmp"
 
     try:
         with duckdb_connect(
-            database=index_file_location,
+            database=tmp_index_file_location,
             extensions_directory=extensions_directory,
             allowed_paths=all_split_parquets,
             transformed_df=transformed_df,
@@ -179,7 +184,7 @@ def build_index_file(
             stemmer = get_monolingual_stemmer(HfApi(token=hf_token).dataset_info(repo_id=dataset).card_data)
             logging.info(f"Indexing {dataset} ({config=}, {split=})")
             create_index(
-                database=index_file_location,
+                database=tmp_index_file_location,
                 input_table="data",
                 columns=indexable_columns,
                 stemmer=stemmer,
@@ -188,9 +193,47 @@ def build_index_file(
                 extensions_directory=extensions_directory,
             )
             logging.info(f"Done indexing {dataset} ({config=}, {split=})")
+        os.replace(tmp_index_file_location, index_file_location)
     except Exception:
-        os.remove(index_file_location)
+        Path(tmp_index_file_location).unlink(missing_ok=True)
         raise
+
+
+def build_index_file_once(
+    cache_folder: StrPath,
+    index_folder: StrPath,
+    dataset: str,
+    revision: str,
+    config: str,
+    split: str,
+    repo_file_location: str,
+    hf_token: Optional[str],
+    max_split_size_bytes: int,
+    extensions_directory: Optional[str],
+    parquet_metadata_directory: StrPath,
+    split_parquet_files: list[ParquetFileMetadataItem],
+    features: dict[str, Any],
+) -> None:
+    index_file_location = f"{index_folder}/{repo_file_location}"
+    # held for the whole build, so that the other uvicorn workers of the pod wait for it instead of building again
+    with filelock.FileLock(index_file_location + ".lock"):
+        if Path(index_file_location).is_file():
+            return
+        build_index_file(
+            cache_folder,
+            index_folder,
+            dataset,
+            revision,
+            config,
+            split,
+            repo_file_location,
+            hf_token,
+            max_split_size_bytes,
+            extensions_directory,
+            parquet_metadata_directory,
+            split_parquet_files,
+            features,
+        )
 
 
 async def get_index_file_location_and_build_if_missing(
@@ -235,42 +278,40 @@ async def get_index_file_location_and_build_if_missing(
         index_file_location = f"{index_folder}/{repo_file_location}"
         index_path = anyio.Path(index_file_location)
 
-        # use a lock in case another worker is currently writing
         Path(index_file_location).parent.mkdir(exist_ok=True, parents=True)
-        try:
-            async with AsyncFileLock(index_file_location + ".lock", timeout=20):
-                if not await index_path.is_file():
-                    cache_folder = Path(duckdb_index_file_directory) / HUB_DOWNLOAD_CACHE_FOLDER
-                    cache_folder.mkdir(exist_ok=True, parents=True)
-                    with StepProfiler(
-                        method="get_index_file_location_and_build_if_missing", step="build duckdb index"
-                    ):
-                        await asyncio.wait_for(
-                            asyncio.shield(
-                                create_task(
-                                    anyio.to_thread.run_sync(
-                                        build_index_file,
-                                        cache_folder,
-                                        index_folder,
-                                        dataset,
-                                        revision,
-                                        config,
-                                        split,
-                                        repo_file_location,
-                                        hf_token,
-                                        max_split_size_bytes,
-                                        extensions_directory,
-                                        parquet_metadata_directory,
-                                        split_parquet_files,
-                                        features,
-                                    )
-                                )
-                            ),
-                            timeout=20,
-                        )
-        except (filelock.Timeout, asyncio.TimeoutError):
-            _msg = "this can take a minute" if len(_all_tasks) < 20 else "this may take longer than usual"
-            raise ResponseNotReadyError("the dataset index is loading, " + _msg)
+        if not await index_path.is_file():
+            # One build per index: the requests that come while it runs wait for the same task instead of starting
+            # another build. The task is shielded, so it goes on after a request gives up waiting.
+            build = _index_builds.get(index_file_location)
+            if build is None:
+                cache_folder = Path(duckdb_index_file_directory) / HUB_DOWNLOAD_CACHE_FOLDER
+                cache_folder.mkdir(exist_ok=True, parents=True)
+                build = create_task(
+                    anyio.to_thread.run_sync(
+                        build_index_file_once,
+                        cache_folder,
+                        index_folder,
+                        dataset,
+                        revision,
+                        config,
+                        split,
+                        repo_file_location,
+                        hf_token,
+                        max_split_size_bytes,
+                        extensions_directory,
+                        parquet_metadata_directory,
+                        split_parquet_files,
+                        features,
+                    )
+                )
+                _index_builds[index_file_location] = build
+                build.add_done_callback(lambda _: _index_builds.pop(index_file_location, None))
+            with StepProfiler(method="get_index_file_location_and_build_if_missing", step="build duckdb index"):
+                try:
+                    await asyncio.wait_for(asyncio.shield(build), timeout=INDEX_BUILD_WAIT_SECONDS)
+                except asyncio.TimeoutError:
+                    _msg = "this can take a minute" if len(_all_tasks) < 20 else "this may take longer than usual"
+                    raise ResponseNotReadyError("the dataset index is loading, " + _msg)
         # Update its modification time
         await index_path.touch()
         return index_file_location, partial
