@@ -44,8 +44,9 @@ async def test_index_is_built_once_and_never_read_before_complete(tmp_path: Path
     ]
     builds = 0
 
-    def slow_build(index_folder: Path, repo_file_location: str) -> None:
+    def build_index_file(_cache_folder: Path, index_folder: Path, *args: Any) -> None:
         nonlocal builds
+        _dataset, _revision, _config, _split, repo_file_location, *_ = args
         builds += 1
         index_file = Path(f"{index_folder}/{repo_file_location}")
         tmp_index_file = Path(f"{index_file}.tmp")
@@ -53,9 +54,6 @@ async def test_index_is_built_once_and_never_read_before_complete(tmp_path: Path
         time.sleep(0.6)
         tmp_index_file.write_bytes(b"complete")
         tmp_index_file.replace(index_file)
-
-    def build_index_file(_: Any, index_folder: Path, *args: Any) -> None:
-        slow_build(index_folder, args[4])
 
     async def request() -> Optional[bytes]:
         try:

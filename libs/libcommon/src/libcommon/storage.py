@@ -4,6 +4,7 @@
 import logging
 import os
 import shutil
+import time
 from datetime import datetime, timedelta
 from os import PathLike, makedirs
 from pathlib import Path
@@ -148,10 +149,8 @@ def clean_dir(root_folder: StrPath, expired_time_interval_seconds: int) -> None:
                     logging.info(f"deleting file {path=} {last_access_datetime=}")
                     os.remove(path)
                     total_files += 1
-            # a new directory stays empty for a moment (hf_hub_download creates snapshots/<sha>/... before it writes
-            # the symlink in it): leave the empty directories created in the last minute
-            created_datetime = datetime.fromtimestamp(os.stat(root).st_ctime).replace(tzinfo=None)
-            if created_datetime + timedelta(seconds=EMPTY_DIRECTORY_GRACE_SECONDS) <= now:
+            # hf_hub_download creates empty directories before it writes in them: keep the recent ones
+            if time.time() - os.stat(root).st_ctime >= EMPTY_DIRECTORY_GRACE_SECONDS:
                 try:
                     os.rmdir(root)
                     logging.info(f"deleting directory {root=} because it was empty")

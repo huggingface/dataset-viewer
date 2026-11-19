@@ -6,7 +6,6 @@ import json
 import logging
 import os
 import re
-import threading
 import traceback
 from collections.abc import Coroutine
 from hashlib import sha1
@@ -14,8 +13,8 @@ from pathlib import Path
 from typing import Any, Optional, TypeVar
 
 import anyio
-import filelock
 from datasets import Features
+from filelock import AsyncFileLock
 from huggingface_hub import HfApi
 from libcommon.constants import CONFIG_PARQUET_METADATA_KIND, PARQUET_REVISION, ROW_IDX_COLUMN
 from libcommon.duckdb_utils import (
@@ -148,7 +147,7 @@ def build_index_file(
     Path(index_file_location).parent.mkdir(exist_ok=True, parents=True)
     # Readers only look for the final path: build in a temporary file and rename it once complete, so that no
     # request opens (and then deletes as corrupted) an index that is still being written.
-    tmp_index_file_location = f"{index_file_location}.{os.getpid()}.{threading.get_ident()}.tmp"
+    tmp_index_file_location = f"{index_file_location}.tmp"
 
     try:
         with duckdb_connect(
@@ -199,41 +198,12 @@ def build_index_file(
         raise
 
 
-def build_index_file_once(
-    cache_folder: StrPath,
-    index_folder: StrPath,
-    dataset: str,
-    revision: str,
-    config: str,
-    split: str,
-    repo_file_location: str,
-    hf_token: Optional[str],
-    max_split_size_bytes: int,
-    extensions_directory: Optional[str],
-    parquet_metadata_directory: StrPath,
-    split_parquet_files: list[ParquetFileMetadataItem],
-    features: dict[str, Any],
-) -> None:
-    index_file_location = f"{index_folder}/{repo_file_location}"
-    # held for the whole build, so that the other uvicorn workers of the pod wait for it instead of building again
-    with filelock.FileLock(index_file_location + ".lock"):
-        if Path(index_file_location).is_file():
-            return
-        build_index_file(
-            cache_folder,
-            index_folder,
-            dataset,
-            revision,
-            config,
-            split,
-            repo_file_location,
-            hf_token,
-            max_split_size_bytes,
-            extensions_directory,
-            parquet_metadata_directory,
-            split_parquet_files,
-            features,
-        )
+async def _build_index_file_once(index_file_location: str, *build_args: Any) -> None:
+    # The lock is held for the whole build, so that the other uvicorn workers of the pod wait for it (in their event
+    # loop, without holding a thread) instead of building again.
+    async with AsyncFileLock(index_file_location + ".lock"):
+        if not await anyio.Path(index_file_location).is_file():
+            await anyio.to_thread.run_sync(build_index_file, *build_args)
 
 
 async def get_index_file_location_and_build_if_missing(
@@ -287,8 +257,8 @@ async def get_index_file_location_and_build_if_missing(
                 cache_folder = Path(duckdb_index_file_directory) / HUB_DOWNLOAD_CACHE_FOLDER
                 cache_folder.mkdir(exist_ok=True, parents=True)
                 build = create_task(
-                    anyio.to_thread.run_sync(
-                        build_index_file_once,
+                    _build_index_file_once(
+                        index_file_location,
                         cache_folder,
                         index_folder,
                         dataset,
