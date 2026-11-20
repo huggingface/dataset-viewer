@@ -1,6 +1,8 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+import ctypes
+import ctypes.util
 import gc
 import logging
 import os
@@ -11,6 +13,7 @@ from datetime import datetime
 from typing import Optional, TypedDict
 
 import orjson
+import pyarrow as pa
 from filelock import FileLock
 from huggingface_hub import HfFileSystem
 from libcommon.dtos import JobInfo
@@ -28,6 +31,22 @@ from psutil import cpu_count, getloadavg, swap_memory, virtual_memory
 from worker.config import AppConfig
 from worker.job_manager import JobManager
 from worker.job_runner_factory import BaseJobRunnerFactory
+
+# glibc keeps freed memory in its arenas until asked to return it to the OS; malloc_trim is glibc-only.
+_MALLOC_TRIM = getattr(ctypes.CDLL(ctypes.util.find_library("c")), "malloc_trim", None)
+
+
+def free_memory() -> None:
+    """Drop the caches a job can leave behind and return the freed memory to the OS.
+
+    The HfFileSystem instance cache keeps the listing of every repo a job opened: one entry per file, which reaches
+    1M+ objects for a repo with tens of thousands of files.
+    """
+    HfFileSystem.clear_instance_cache()
+    gc.collect()
+    pa.default_memory_pool().release_unused()
+    if _MALLOC_TRIM is not None:
+        _MALLOC_TRIM(0)
 
 
 class WorkerState(TypedDict):
@@ -67,7 +86,8 @@ class Loop:
 
     def __post_init__(self) -> None:
         self.queue = Queue()
-        self.num_jobs_since_last_hffs_cache_clear = 0
+        self.blocked_by_pod_memory_since: Optional[float] = None
+        self.blocked_by_pod_memory_deadline = 0.0
 
     def has_memory(self) -> bool:
         """Deprecated: use has_pod_memory() + has_system_memory() instead.
@@ -110,23 +130,20 @@ class Loop:
         if self.app_config.worker.max_memory_pct <= 0:
             return True
 
-        pod_limit = self._get_pod_memory_limit_bytes()
-        pod_usage = self._get_pod_memory_usage_bytes()
-
-        if pod_limit and pod_usage:
-            # Pod-level check: compare against the pod's cgroup limit
-            percent = pod_usage / pod_limit
-            threshold = self.app_config.worker.max_memory_pct / 100
-        else:
+        percent = self.pod_memory_ratio()
+        source = "cgroup"
+        if percent is None:
             # Fallback to system memory if cgroup is not available
             total = swap_memory().total + virtual_memory().total
             used = swap_memory().used + virtual_memory().used
             percent = used / total if total > 0 else 0
-            threshold = self.app_config.worker.max_memory_pct / 100
+            source = "system"
+        threshold = self.app_config.worker.max_memory_pct / 100
 
         ok = percent < threshold
-        source = "cgroup" if (pod_limit and pod_usage) else "system"
         if not ok:
+            pod_limit = self._get_pod_memory_limit_bytes()
+            pod_usage = self._get_pod_memory_usage_bytes()
             logging.info(
                 f"pod memory usage too high: {percent:.0%} vs {threshold:.0%} "
                 f"(limit: {pod_limit // 1024**3 if pod_limit else 'N/A'}Gi, "
@@ -134,6 +151,14 @@ class Loop:
                 f"source: {source})"
             )
         return ok
+
+    def pod_memory_ratio(self) -> Optional[float]:
+        """The pod's memory usage as a share of its cgroup limit, or None if the cgroup doesn't report both."""
+        pod_limit = self._get_pod_memory_limit_bytes()
+        pod_usage = self._get_pod_memory_usage_bytes()
+        if not pod_limit or not pod_usage:
+            return None
+        return pod_usage / pod_limit
 
     def has_system_memory(self) -> bool:
         """Check if the NODE is within memory limits (prevents K8s eviction cascade).
@@ -167,18 +192,9 @@ class Loop:
             logging.info(f"cpu load is too high: {load_pct:.0f}% - max is {self.app_config.worker.max_load_pct}%")
         return ok
 
-    def has_resources(self) -> bool:
-        # Pod-level check: prevents THIS pod from OOM-SIGKILL
-        if not self.has_pod_memory():
-            return False
-        # System-level check: prevents system-wide pressure that triggers K8s eviction
-        if not self.has_system_memory():
-            return False
-        return self.has_cpu()
-
     def sleep(self) -> None:
         # Free memory accumulated between jobs (Python reference cycles, freed objects)
-        # This gives the GC a chance to reclaim memory before we re-check has_resources()
+        # This gives the GC a chance to reclaim memory before we re-check the memory limits
         gc.collect()
         jitter = 0.75 + random.random() / 2  # nosec
         # ^ between 0.75 and 1.25
@@ -195,10 +211,16 @@ class Loop:
         try:
             while True:
                 self.check_sigterm_notification()
-                if self.has_resources() and self.process_next_job():
-                    # loop immediately to try another job
-                    # see https://github.com/huggingface/dataset-viewer/issues/265
-                    continue
+                if not self.has_pod_memory():
+                    if self.should_exit_for_pod_memory():
+                        # return cleanly: the executor stops and Kubernetes restarts the container with fresh memory
+                        return
+                else:
+                    self.blocked_by_pod_memory_since = None
+                    if self.has_system_memory() and self.has_cpu() and self.process_next_job():
+                        # loop immediately to try another job
+                        # see https://github.com/huggingface/dataset-viewer/issues/265
+                        continue
                 self.check_sigterm_notification()
                 with StepProfiler("loop", "sleep"):
                     self.sleep()
@@ -208,13 +230,34 @@ class Loop:
             logging.exception(f"quit due to an uncaught error: {err}")
             raise
 
-    def process_next_job(self) -> bool:
-        if self.num_jobs_since_last_hffs_cache_clear >= self.app_config.worker.num_jobs_between_hffs_cache_clear:
-            HfFileSystem.clear_instance_cache()
-            self.num_jobs_since_last_hffs_cache_clear = 0
-        else:
-            self.num_jobs_since_last_hffs_cache_clear += 1
+    def should_exit_for_pod_memory(self) -> bool:
+        """Free memory the first time the pod memory is too high, and give up if it stays too high.
 
+        Without this, a worker above the limit would never reach the cache clear in process_next_job() and would
+        stay blocked until the pod is replaced.
+        """
+        now = time.monotonic()
+        if self.blocked_by_pod_memory_since is None:
+            self.blocked_by_pod_memory_since = now
+            # jitter so that workers blocked at the same time don't all restart together
+            self.blocked_by_pod_memory_deadline = now + self.app_config.worker.max_seconds_blocked_by_pod_memory * (
+                1 + random.random() / 4  # nosec
+            )
+            logging.info("pod memory usage too high: freeing caches and memory before checking again")
+            with StepProfiler("loop", "free_memory"):
+                free_memory()
+            return False
+        if now < self.blocked_by_pod_memory_deadline:
+            return False
+        blocked_seconds = now - self.blocked_by_pod_memory_since
+        logging.warning(f"pod memory usage still too high after {blocked_seconds:.0f}s: exiting to restart the worker")
+        return True
+
+    def is_pod_memory_above(self, pct: int) -> bool:
+        ratio = self.pod_memory_ratio()
+        return ratio is not None and ratio >= pct / 100
+
+    def process_next_job(self) -> bool:
         logging.debug("try to process a job")
 
         with StepProfiler("loop", "start_job"):
@@ -240,7 +283,11 @@ class Loop:
         with StepProfiler("loop", "finish_job"):
             job_manager.finish()
             self.set_worker_state(current_job_info=None)
-            return True
+
+        if self.is_pod_memory_above(self.app_config.worker.free_memory_after_job_pct):
+            with StepProfiler("loop", "free_memory"):
+                free_memory()
+        return True
 
     def set_worker_state(self, current_job_info: Optional[JobInfo]) -> None:
         worker_state: WorkerState = {"current_job_info": current_job_info, "last_updated": get_datetime()}
