@@ -6,6 +6,7 @@ import json
 import logging
 import os
 import re
+import time
 import traceback
 from collections.abc import Coroutine
 from hashlib import sha1
@@ -57,8 +58,11 @@ _all_tasks: list[asyncio.Task[Any]] = []  # kinda like threading.all_threads()
 _index_builds: dict[str, asyncio.Task[None]] = {}
 INDEX_BUILD_WAIT_SECONDS = 20
 # builds get their own threads, so they never take the default ones the queries and the Hub auth check need
-MAX_CONCURRENT_INDEX_BUILDS = 4
+MAX_CONCURRENT_INDEX_BUILDS = 6
 _index_build_limiter = anyio.CapacityLimiter(MAX_CONCURRENT_INDEX_BUILDS)
+# a queued build that nobody requested for this long is dropped when its turn comes: the next request starts it again
+INDEX_BUILD_STALE_SECONDS = 120
+_index_last_requested: dict[str, float] = {}
 
 
 def _handle_errors(task: asyncio.Task[Any]) -> None:
@@ -203,12 +207,23 @@ def build_index_file(
         raise
 
 
+def _build_index_file_unless_stale(index_file_location: str, *build_args: Any) -> None:
+    if time.monotonic() - _index_last_requested.get(index_file_location, 0) > INDEX_BUILD_STALE_SECONDS:
+        logging.info(
+            f"skip the build of {index_file_location}: not requested in the last {INDEX_BUILD_STALE_SECONDS}s"
+        )
+        return
+    build_index_file(*build_args)
+
+
 async def _build_index_file_once(index_file_location: str, *build_args: Any) -> None:
     # The lock is held for the whole build, so that the other uvicorn workers of the pod wait for it (in their event
     # loop, without holding a thread) instead of building again.
     async with AsyncFileLock(index_file_location + ".lock"):
         if not await anyio.Path(index_file_location).is_file():
-            await anyio.to_thread.run_sync(build_index_file, *build_args, limiter=_index_build_limiter)
+            await anyio.to_thread.run_sync(
+                _build_index_file_unless_stale, index_file_location, *build_args, limiter=_index_build_limiter
+            )
 
 
 async def get_index_file_location_and_build_if_missing(
@@ -255,6 +270,7 @@ async def get_index_file_location_and_build_if_missing(
 
         Path(index_file_location).parent.mkdir(exist_ok=True, parents=True)
         if not await index_path.is_file():
+            _index_last_requested[index_file_location] = time.monotonic()
             # One build per index: the requests that come while it runs wait for the same task instead of starting
             # another build. The task is shielded, so it goes on after a request gives up waiting.
             build = _index_builds.get(index_file_location)
@@ -281,6 +297,7 @@ async def get_index_file_location_and_build_if_missing(
                 )
                 _index_builds[index_file_location] = build
                 build.add_done_callback(lambda _: _index_builds.pop(index_file_location, None))
+                build.add_done_callback(lambda _: _index_last_requested.pop(index_file_location, None))
             with StepProfiler(method="get_index_file_location_and_build_if_missing", step="build duckdb index"):
                 try:
                     await asyncio.wait_for(asyncio.shield(build), timeout=INDEX_BUILD_WAIT_SECONDS)

@@ -101,6 +101,7 @@ async def test_index_builds_do_not_take_the_default_threads(tmp_path: Path) -> N
     with (
         patch.object(duckdb, "build_index_file", lambda *_: release.wait()),
         patch.object(duckdb, "_index_build_limiter", limiter),
+        patch.object(duckdb, "INDEX_BUILD_STALE_SECONDS", float("inf")),
     ):
         # more builds than the 40 threads of the default anyio limiter
         builds = [asyncio.create_task(duckdb._build_index_file_once(str(tmp_path / f"{i}.duckdb"))) for i in range(50)]
@@ -113,3 +114,18 @@ async def test_index_builds_do_not_take_the_default_threads(tmp_path: Path) -> N
 
     assert not scope.cancelled_caught  # a thread was free for the auth check and the queries
     assert borrowed == 2
+
+
+@pytest.mark.anyio
+async def test_stale_index_builds_are_skipped(tmp_path: Path) -> None:
+    built: list[str] = []
+    fresh, stale = str(tmp_path / "fresh.duckdb"), str(tmp_path / "stale.duckdb")
+    last_requested = {fresh: time.monotonic(), stale: time.monotonic() - duckdb.INDEX_BUILD_STALE_SECONDS - 1}
+    with (
+        patch.object(duckdb, "build_index_file", lambda name: built.append(name)),
+        patch.object(duckdb, "_index_last_requested", last_requested),
+    ):
+        await duckdb._build_index_file_once(fresh, "fresh")
+        await duckdb._build_index_file_once(stale, "stale")
+
+    assert built == ["fresh"]
