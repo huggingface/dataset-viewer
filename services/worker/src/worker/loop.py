@@ -87,7 +87,7 @@ class Loop:
     def __post_init__(self) -> None:
         self.queue = Queue()
         self.blocked_by_pod_memory_since: Optional[float] = None
-        self.max_seconds_blocked_by_pod_memory = 0.0
+        self.blocked_by_pod_memory_deadline = 0.0
 
     def has_memory(self) -> bool:
         """Deprecated: use has_pod_memory() + has_system_memory() instead.
@@ -130,23 +130,20 @@ class Loop:
         if self.app_config.worker.max_memory_pct <= 0:
             return True
 
-        pod_limit = self._get_pod_memory_limit_bytes()
-        pod_usage = self._get_pod_memory_usage_bytes()
-
-        if pod_limit and pod_usage:
-            # Pod-level check: compare against the pod's cgroup limit
-            percent = pod_usage / pod_limit
-            threshold = self.app_config.worker.max_memory_pct / 100
-        else:
+        percent = self.pod_memory_ratio()
+        source = "cgroup"
+        if percent is None:
             # Fallback to system memory if cgroup is not available
             total = swap_memory().total + virtual_memory().total
             used = swap_memory().used + virtual_memory().used
             percent = used / total if total > 0 else 0
-            threshold = self.app_config.worker.max_memory_pct / 100
+            source = "system"
+        threshold = self.app_config.worker.max_memory_pct / 100
 
         ok = percent < threshold
-        source = "cgroup" if (pod_limit and pod_usage) else "system"
         if not ok:
+            pod_limit = self._get_pod_memory_limit_bytes()
+            pod_usage = self._get_pod_memory_usage_bytes()
             logging.info(
                 f"pod memory usage too high: {percent:.0%} vs {threshold:.0%} "
                 f"(limit: {pod_limit // 1024**3 if pod_limit else 'N/A'}Gi, "
@@ -154,6 +151,14 @@ class Loop:
                 f"source: {source})"
             )
         return ok
+
+    def pod_memory_ratio(self) -> Optional[float]:
+        """The pod's memory usage as a share of its cgroup limit, or None if the cgroup doesn't report both."""
+        pod_limit = self._get_pod_memory_limit_bytes()
+        pod_usage = self._get_pod_memory_usage_bytes()
+        if not pod_limit or not pod_usage:
+            return None
+        return pod_usage / pod_limit
 
     def has_system_memory(self) -> bool:
         """Check if the NODE is within memory limits (prevents K8s eviction cascade).
@@ -235,25 +240,22 @@ class Loop:
         if self.blocked_by_pod_memory_since is None:
             self.blocked_by_pod_memory_since = now
             # jitter so that workers blocked at the same time don't all restart together
-            self.max_seconds_blocked_by_pod_memory = self.app_config.worker.max_seconds_blocked_by_pod_memory * (
+            self.blocked_by_pod_memory_deadline = now + self.app_config.worker.max_seconds_blocked_by_pod_memory * (
                 1 + random.random() / 4  # nosec
             )
             logging.info("pod memory usage too high: freeing caches and memory before checking again")
             with StepProfiler("loop", "free_memory"):
                 free_memory()
             return False
-        blocked_seconds = now - self.blocked_by_pod_memory_since
-        if blocked_seconds < self.max_seconds_blocked_by_pod_memory:
+        if now < self.blocked_by_pod_memory_deadline:
             return False
+        blocked_seconds = now - self.blocked_by_pod_memory_since
         logging.warning(f"pod memory usage still too high after {blocked_seconds:.0f}s: exiting to restart the worker")
         return True
 
     def is_pod_memory_above(self, pct: int) -> bool:
-        pod_limit = self._get_pod_memory_limit_bytes()
-        pod_usage = self._get_pod_memory_usage_bytes()
-        if not pod_limit or not pod_usage:
-            return False
-        return pod_usage / pod_limit >= pct / 100
+        ratio = self.pod_memory_ratio()
+        return ratio is not None and ratio >= pct / 100
 
     def process_next_job(self) -> bool:
         logging.debug("try to process a job")
