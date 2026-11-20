@@ -105,7 +105,9 @@ async def test_index_builds_do_not_take_the_default_threads(tmp_path: Path) -> N
         patch.object(duckdb, "INDEX_BUILD_STALE_SECONDS", float("inf")),
     ):
         # more builds than the 40 threads of the default anyio limiter
-        builds = [asyncio.create_task(duckdb._build_index_file_once(str(tmp_path / f"{i}.duckdb"))) for i in range(50)]
+        builds = [
+            asyncio.create_task(duckdb._build_index_file_once(str(tmp_path / f"{i}.duckdb"), None)) for i in range(50)
+        ]
         await asyncio.sleep(0.2)  # let the builds take their threads
         with anyio.move_on_after(1) as scope:
             await anyio.to_thread.run_sync(lambda: None)
@@ -127,7 +129,36 @@ async def test_stale_index_builds_are_skipped(tmp_path: Path) -> None:
     old = time.time() - duckdb.INDEX_BUILD_STALE_SECONDS - 1
     os.utime(stale + ".requested", (old, old))
     with patch.object(duckdb, "build_index_file", lambda name: built.append(name)):
-        await duckdb._build_index_file_once(fresh, "fresh")
-        await duckdb._build_index_file_once(stale, "stale")
+        await duckdb._build_index_file_once(fresh, None, "fresh")
+        await duckdb._build_index_file_once(stale, None, "stale")
 
     assert built == ["fresh"]
+
+
+@pytest.mark.anyio
+async def test_shared_index_cache(tmp_path: Path) -> None:
+    built: list[str] = []
+    local, shared = tmp_path / "local", tmp_path / "shared"
+
+    def build_index_file(name: str) -> None:
+        built.append(name)
+        Path(local / name / "index.duckdb").write_bytes(f"index of {name}".encode())
+
+    async def get_index(name: str) -> bytes:
+        index = local / name / "index.duckdb"
+        index.parent.mkdir(parents=True, exist_ok=True)
+        index.with_suffix(".duckdb.requested").touch()
+        await duckdb._build_index_file_once(str(index), str(shared / name / "index.duckdb"), name)
+        return index.read_bytes()
+
+    # another pod already built "a": it is copied from the shared cache, not built
+    (shared / "a").mkdir(parents=True)
+    (shared / "a" / "index.duckdb").write_bytes(b"index of a")
+    with patch.object(duckdb, "build_index_file", build_index_file):
+        assert await get_index("a") == b"index of a"
+        # "b" is built here, then copied to the shared cache for the other pods
+        assert await get_index("b") == b"index of b"
+
+    assert built == ["b"]
+    assert (shared / "b" / "index.duckdb").read_bytes() == b"index of b"
+    assert not list(shared.rglob("*.tmp"))

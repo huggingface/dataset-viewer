@@ -6,6 +6,8 @@ import json
 import logging
 import os
 import re
+import shutil
+import socket
 import time
 import traceback
 from collections.abc import Coroutine
@@ -207,7 +209,20 @@ def build_index_file(
         raise
 
 
-def _build_index_file_unless_stale(index_file_location: str, *build_args: Any) -> None:
+def _copy_file_atomically(source: str, destination: str) -> None:
+    # readers only look for the final name: a pod that reads the shared cache never sees a partial copy
+    Path(destination).parent.mkdir(exist_ok=True, parents=True)
+    tmp_destination = f"{destination}.{socket.gethostname()}.{os.getpid()}.tmp"
+    try:
+        shutil.copyfile(source, tmp_destination)
+        os.replace(tmp_destination, destination)
+    finally:
+        Path(tmp_destination).unlink(missing_ok=True)
+
+
+def _build_index_file_unless_stale(
+    index_file_location: str, shared_index_file_location: Optional[str], *build_args: Any
+) -> None:
     try:
         last_requested = os.path.getmtime(index_file_location + ".requested")
     except FileNotFoundError:
@@ -217,16 +232,35 @@ def _build_index_file_unless_stale(index_file_location: str, *build_args: Any) -
             f"skip the build of {index_file_location}: not requested in the last {INDEX_BUILD_STALE_SECONDS}s"
         )
         return
+    if shared_index_file_location:
+        try:
+            if os.path.isfile(shared_index_file_location):
+                _copy_file_atomically(shared_index_file_location, index_file_location)
+                logging.info(f"copied {index_file_location} from the shared index cache")
+                return
+        except OSError as err:
+            logging.warning(f"failed to copy {shared_index_file_location} from the shared index cache: {err}")
     build_index_file(*build_args)
+    if shared_index_file_location:
+        try:
+            _copy_file_atomically(index_file_location, shared_index_file_location)
+        except OSError as err:
+            logging.warning(f"failed to copy {index_file_location} to the shared index cache: {err}")
 
 
-async def _build_index_file_once(index_file_location: str, *build_args: Any) -> None:
+async def _build_index_file_once(
+    index_file_location: str, shared_index_file_location: Optional[str], *build_args: Any
+) -> None:
     # The lock is held for the whole build, so that the other uvicorn workers of the pod wait for it (in their event
     # loop, without holding a thread) instead of building again.
     async with AsyncFileLock(index_file_location + ".lock"):
         if not await anyio.Path(index_file_location).is_file():
             await anyio.to_thread.run_sync(
-                _build_index_file_unless_stale, index_file_location, *build_args, limiter=_index_build_limiter
+                _build_index_file_unless_stale,
+                index_file_location,
+                shared_index_file_location,
+                *build_args,
+                limiter=_index_build_limiter,
             )
 
 
@@ -242,6 +276,7 @@ async def get_index_file_location_and_build_if_missing(
     parquet_metadata_directory: StrPath,
     split_parquet_files: list[ParquetFileMetadataItem],
     features: dict[str, Any],
+    shared_index_directory: Optional[StrPath] = None,
 ) -> tuple[str, bool]:
     with StepProfiler(method="get_index_file_location_and_build_if_missing", step="all"):
         # For directories like "partial-train" for the file at "en/partial-train/0000.parquet" in the C4 dataset.
@@ -281,9 +316,17 @@ async def get_index_file_location_and_build_if_missing(
             if build is None:
                 cache_folder = Path(duckdb_index_file_directory) / HUB_DOWNLOAD_CACHE_FOLDER
                 cache_folder.mkdir(exist_ok=True, parents=True)
+                shared_index_file_location = (
+                    os.path.join(
+                        shared_index_directory, os.path.relpath(index_file_location, duckdb_index_file_directory)
+                    )
+                    if shared_index_directory
+                    else None
+                )
                 build = create_task(
                     _build_index_file_once(
                         index_file_location,
+                        shared_index_file_location,
                         cache_folder,
                         index_folder,
                         dataset,
