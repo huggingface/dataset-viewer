@@ -60,9 +60,9 @@ INDEX_BUILD_WAIT_SECONDS = 20
 # builds get their own threads, so they never take the default ones the queries and the Hub auth check need
 MAX_CONCURRENT_INDEX_BUILDS = 6
 _index_build_limiter = anyio.CapacityLimiter(MAX_CONCURRENT_INDEX_BUILDS)
-# a queued build that nobody requested for this long is dropped when its turn comes: the next request starts it again
+# a queued build that nobody requested for this long is dropped when its turn comes: the next request starts it again.
+# The last request time is the mtime of a file next to the index, so that every uvicorn worker of the pod sees it.
 INDEX_BUILD_STALE_SECONDS = 120
-_index_last_requested: dict[str, float] = {}
 
 
 def _handle_errors(task: asyncio.Task[Any]) -> None:
@@ -208,7 +208,11 @@ def build_index_file(
 
 
 def _build_index_file_unless_stale(index_file_location: str, *build_args: Any) -> None:
-    if time.monotonic() - _index_last_requested.get(index_file_location, 0) > INDEX_BUILD_STALE_SECONDS:
+    try:
+        last_requested = os.path.getmtime(index_file_location + ".requested")
+    except FileNotFoundError:
+        last_requested = 0
+    if time.time() - last_requested > INDEX_BUILD_STALE_SECONDS:
         logging.info(
             f"skip the build of {index_file_location}: not requested in the last {INDEX_BUILD_STALE_SECONDS}s"
         )
@@ -270,7 +274,7 @@ async def get_index_file_location_and_build_if_missing(
 
         Path(index_file_location).parent.mkdir(exist_ok=True, parents=True)
         if not await index_path.is_file():
-            _index_last_requested[index_file_location] = time.monotonic()
+            await anyio.Path(index_file_location + ".requested").touch()
             # One build per index: the requests that come while it runs wait for the same task instead of starting
             # another build. The task is shielded, so it goes on after a request gives up waiting.
             build = _index_builds.get(index_file_location)
@@ -297,7 +301,6 @@ async def get_index_file_location_and_build_if_missing(
                 )
                 _index_builds[index_file_location] = build
                 build.add_done_callback(lambda _: _index_builds.pop(index_file_location, None))
-                build.add_done_callback(lambda _: _index_last_requested.pop(index_file_location, None))
             with StepProfiler(method="get_index_file_location_and_build_if_missing", step="build duckdb index"):
                 try:
                     await asyncio.wait_for(asyncio.shield(build), timeout=INDEX_BUILD_WAIT_SECONDS)

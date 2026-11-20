@@ -331,11 +331,10 @@ def create_index(
                 f"""
                 CREATE TABLE tmp_{rank}_{field_id}.tokenized AS (
                     SELECT unnest(%fts_schema%.tokenize(fts_ii.{key_sql(column)})) AS w,
-                        {rank * batch_size} + row_number() OVER () - 1 AS docid,
+                        fts_ii.rowid AS docid,
                         {field_id} AS fieldid
-                    FROM (
-                        SELECT * FROM %input_table% LIMIT {batch_size} OFFSET {rank * batch_size}
-                    ) AS fts_ii
+                    FROM %input_table% AS fts_ii
+                    WHERE fts_ii.rowid >= {rank * batch_size} AND fts_ii.rowid < {(rank + 1) * batch_size}
                 );
                 CHECKPOINT;
                 """  # nosec - rank, batch_size and field_id are safe

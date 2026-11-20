@@ -1,4 +1,5 @@
 import asyncio
+import os
 import threading
 import time
 from pathlib import Path
@@ -120,11 +121,12 @@ async def test_index_builds_do_not_take_the_default_threads(tmp_path: Path) -> N
 async def test_stale_index_builds_are_skipped(tmp_path: Path) -> None:
     built: list[str] = []
     fresh, stale = str(tmp_path / "fresh.duckdb"), str(tmp_path / "stale.duckdb")
-    last_requested = {fresh: time.monotonic(), stale: time.monotonic() - duckdb.INDEX_BUILD_STALE_SECONDS - 1}
-    with (
-        patch.object(duckdb, "build_index_file", lambda name: built.append(name)),
-        patch.object(duckdb, "_index_last_requested", last_requested),
-    ):
+    # the last request time is shared by the uvicorn workers through the mtime of this file
+    Path(fresh + ".requested").touch()
+    Path(stale + ".requested").touch()
+    old = time.time() - duckdb.INDEX_BUILD_STALE_SECONDS - 1
+    os.utime(stale + ".requested", (old, old))
+    with patch.object(duckdb, "build_index_file", lambda name: built.append(name)):
         await duckdb._build_index_file_once(fresh, "fresh")
         await duckdb._build_index_file_once(stale, "stale")
 
