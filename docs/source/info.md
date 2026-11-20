@@ -12,7 +12,7 @@ The `/info` endpoint accepts two query parameters:
 ```python
 import requests
 headers = {"Authorization": f"Bearer {API_TOKEN}"}
-API_URL = "https://datasets-server.huggingface.co/info?dataset=ibm/duorc&config=SelfRC"
+API_URL = "https://datasets-server.huggingface.co/info?dataset=ibm-research/duorc&config=SelfRC"
 def query():
     response = requests.get(API_URL, headers=headers)
     return response.json()
@@ -24,7 +24,7 @@ data = query()
 import fetch from "node-fetch";
 async function query(data) {
     const response = await fetch(
-        "https://datasets-server.huggingface.co/info?dataset=ibm/duorc&config=SelfRC",
+        "https://datasets-server.huggingface.co/info?dataset=ibm-research/duorc&config=SelfRC",
         {
             headers: { Authorization: `Bearer ${API_TOKEN}` },
             method: "GET"
@@ -40,7 +40,7 @@ query().then((response) => {
 </js>
 <curl>
 ```curl
-curl https://datasets-server.huggingface.co/info?dataset=ibm/duorc&config=SelfRC \
+curl https://datasets-server.huggingface.co/info?dataset=ibm-research/duorc&config=SelfRC \
         -X GET \
         -H "Authorization: Bearer ${API_TOKEN}"
 ```

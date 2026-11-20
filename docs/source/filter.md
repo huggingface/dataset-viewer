@@ -44,14 +44,14 @@ either the string "name" column is equal to 'Simone' or the integer "children" c
 The `orderby` parameter must contain the column name (in double quotes) whose values will be sorted (in ascending order by default).
 To sort the rows in descending order, use the DESC keyword, like `orderby="age" DESC`.
 
-For example, let's filter those rows with no_answer=false in the `train` split of the `SelfRC` subset of the `ibm/duorc` dataset restricting the results to the slice 150-151:
+For example, let's filter those rows with no_answer=false in the `train` split of the `SelfRC` subset of the `ibm-research/duorc` dataset restricting the results to the slice 150-151:
 
 <inferencesnippet>
 <python>
 ```python
 import requests
 headers = {"Authorization": f"Bearer {API_TOKEN}"}
-API_URL = "https://datasets-server.huggingface.co/filter?dataset=ibm/duorc&config=SelfRC&split=train&where="no_answer"=true&offset=150&length=2"
+API_URL = "https://datasets-server.huggingface.co/filter?dataset=ibm-research/duorc&config=SelfRC&split=train&where="no_answer"=true&offset=150&length=2"
 def query():
     response = requests.get(API_URL, headers=headers)
     return response.json()
@@ -63,7 +63,7 @@ data = query()
 import fetch from "node-fetch";
 async function query(data) {
     const response = await fetch(
-        "https://datasets-server.huggingface.co/filter?dataset=ibm/duorc&config=SelfRC&split=train&where="no_answer"=true&offset=150&length=2",
+        "https://datasets-server.huggingface.co/filter?dataset=ibm-research/duorc&config=SelfRC&split=train&where="no_answer"=true&offset=150&length=2",
         {
             headers: { Authorization: `Bearer ${API_TOKEN}` },
             method: "GET"
@@ -79,7 +79,7 @@ query().then((response) => {
 </js>
 <curl>
 ```curl
-curl https://datasets-server.huggingface.co/filter?dataset=ibm/duorc&config=SelfRC&split=train&where="no_answer"=true&offset=150&length=2 \
+curl https://datasets-server.huggingface.co/filter?dataset=ibm-research/duorc&config=SelfRC&split=train&where="no_answer"=true&offset=150&length=2 \
         -X GET \
         -H "Authorization: Bearer ${API_TOKEN}"
 ```
@@ -93,7 +93,7 @@ The endpoint response is a JSON containing two keys (same format as [`/rows`](./
 
 The rows are ordered by the row index.
 
-For example, here are the `features` and the slice 150-151 of matching `rows` of the `ibm/duorc`/`SelfRC` train split for the `where` condition `no_answer=true`:
+For example, here are the `features` and the slice 150-151 of matching `rows` of the `ibm-research/duorc`/`SelfRC` train split for the `where` condition `no_answer=true`:
 
 ```json
 {
