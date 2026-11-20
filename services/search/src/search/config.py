@@ -32,8 +32,7 @@ class DuckDbIndexConfig:
     clean_cache_proba: float = DUCKDB_INDEX_CACHE_CLEAN_CACHE_PROBA
     expired_time_interval_seconds: int = DUCKDB_INDEX_CACHE_EXPIRED_TIME_INTERVAL_SECONDS
     extensions_directory: Optional[str] = DUCKDB_INDEX_EXTENSIONS_DIRECTORY
-    # a directory shared by the pods (an HF bucket mounted with hf-mount): indexes built by one pod are copied there,
-    # and the other pods copy them from there instead of building them again
+    # HF bucket shared by the pods through hf-mount, see search.sharedIndexCache in the chart values
     shared_cache_directory: Optional[str] = DUCKDB_INDEX_SHARED_CACHE_DIRECTORY
 
     @classmethod

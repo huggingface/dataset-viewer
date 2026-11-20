@@ -39,21 +39,21 @@ spec:
         {{ include "volumeParquetMetadata" . | nindent 8 }}
         - name: duckdb-index-cache
           emptyDir: {}
-        {{- with .Values.search.sharedIndexCache }}
-        {{- if .bucket }}
+        {{- if .Values.search.sharedIndexCache.bucket }}
+        {{- if hasPrefix .Values.duckDBIndex.cacheDirectory .Values.search.sharedIndexCache.mountPath }}
+        {{- fail "search.sharedIndexCache.mountPath must be outside duckDBIndex.cacheDirectory, that clean_dir walks" }}
+        {{- end }}
         - name: duckdb-index-shared
           csi:
             driver: hf.csi.huggingface.co
             volumeAttributes:
               sourceType: bucket
-              sourceId: {{ .bucket | quote }}
-              tokenKey: {{ .tokenKey | quote }}
-              memoryRequest: {{ .memoryRequest | quote }}
-              memoryLimit: {{ .memoryLimit | quote }}
-              # the search pods run as uid 1000 / gid 3000
-              mountFlags: "uid={{ $.Values.uid }},gid={{ $.Values.gid }}"
+              sourceId: {{ .Values.search.sharedIndexCache.bucket | quote }}
+              tokenKey: {{ .Values.search.sharedIndexCache.tokenKey | quote }}
+              memoryRequest: {{ .Values.search.sharedIndexCache.memoryRequest | quote }}
+              memoryLimit: {{ .Values.search.sharedIndexCache.memoryLimit | quote }}
+              mountFlags: "uid={{ .Values.uid }},gid={{ .Values.gid }}"
             nodePublishSecretRef:
-              name: {{ .secretName | required "search.sharedIndexCache.secretName is required with a bucket" | quote }}
-        {{- end }}
+              name: {{ .Values.search.sharedIndexCache.secretName | required "search.sharedIndexCache.secretName is required with a bucket" | quote }}
         {{- end }}
       securityContext: {{ include "securityContext" . | nindent 8 }}
