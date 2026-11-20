@@ -6,7 +6,7 @@ from typing import Any
 from unittest.mock import patch
 
 import pytest
-from datasets import List, Value
+from datasets import Image, List, Value
 
 from libcommon.croissant_utils import (
     escape_ids,
@@ -68,6 +68,32 @@ def test_escape_ids(id_to_escape: str, ids: set[str], expected_id: str) -> None:
 def test_escape_jsonpath_key(feature_name: str, expected_output: str) -> None:
     """Tests the escape_jsonpath_key function with various inputs."""
     assert escape_jsonpath_key(feature_name) == expected_output
+
+
+@pytest.mark.parametrize("nesting", [[], ["image"], ["camera", "image"], ["observation", "camera", "image"]])
+@pytest.mark.parametrize("is_list", [False, True])
+def test_image_croissant_transforms(nesting: list[str], is_list: bool) -> None:
+    feature: Any = Image()
+    for name in reversed(nesting):
+        feature = {name: feature}
+    if is_list:
+        feature = List(feature)
+
+    field = feature_to_croissant_field("distribution_name", "sample", "sample", feature, existing_ids=set())
+    assert field is not None
+    if is_list:
+        assert field["isArray"] is True
+        assert field["arrayShape"] == "-1"
+    for _ in nesting:
+        field = field["subField"][0]
+
+    transforms = [{"jsonPath": name} for name in [*nesting, "bytes"]]
+    assert field["dataType"] == "sc:ImageObject"
+    assert field["source"] == {
+        "fileSet": {"@id": "distribution_name"},
+        "extract": {"column": "sample"},
+        "transform": transforms if len(transforms) > 1 else transforms[0],
+    }
 
 
 @pytest.mark.parametrize(
