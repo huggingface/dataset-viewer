@@ -23,6 +23,7 @@ DUCKDB_INDEX_CACHE_CLEAN_CACHE_PROBA = 0.05
 DUCKDB_INDEX_CACHE_EXPIRED_TIME_INTERVAL_SECONDS = 3_600  # 1 hour
 
 DUCKDB_INDEX_EXTENSIONS_DIRECTORY: Optional[str] = None
+DUCKDB_INDEX_SHARED_CACHE_DIRECTORY: Optional[str] = None
 
 
 @dataclass(frozen=True)
@@ -31,6 +32,8 @@ class DuckDbIndexConfig:
     clean_cache_proba: float = DUCKDB_INDEX_CACHE_CLEAN_CACHE_PROBA
     expired_time_interval_seconds: int = DUCKDB_INDEX_CACHE_EXPIRED_TIME_INTERVAL_SECONDS
     extensions_directory: Optional[str] = DUCKDB_INDEX_EXTENSIONS_DIRECTORY
+    # HF bucket shared by the pods through hf-mount, see search.sharedIndexCache in the chart values
+    shared_cache_directory: Optional[str] = DUCKDB_INDEX_SHARED_CACHE_DIRECTORY
 
     @classmethod
     def from_env(cls) -> "DuckDbIndexConfig":
@@ -46,6 +49,9 @@ class DuckDbIndexConfig:
                     default=DUCKDB_INDEX_CACHE_EXPIRED_TIME_INTERVAL_SECONDS,
                 ),
                 extensions_directory=env.str(name="EXTENSIONS_DIRECTORY", default=DUCKDB_INDEX_EXTENSIONS_DIRECTORY),
+                shared_cache_directory=env.str(
+                    name="SHARED_CACHE_DIRECTORY", default=DUCKDB_INDEX_SHARED_CACHE_DIRECTORY
+                ),
             )
 
 

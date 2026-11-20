@@ -623,6 +623,16 @@ search:
   expiredTimeIntervalSeconds: 43_200 # 12 hours
   # Seconds the kubelet waits for /healthcheck before counting a liveness failure
   livenessProbeTimeoutSeconds: 1
+  # HF bucket shared by the search pods through hf-csi-driver (hf-mount): an index built by one pod is copied there, the
+  # other pods copy it from there instead of building it again. Disabled when bucket is empty.
+  sharedIndexCache:
+    bucket: ""
+    mountPath: "/mnt/duckdb-index-shared"
+    # Kubernetes Secret holding the HF token that can write to the bucket, and its key
+    secretName: ""
+    tokenKey: "token"
+    memoryRequest: "2Gi"
+    memoryLimit: "4Gi"
 
   nodeSelector: {}
   replicas: 1
