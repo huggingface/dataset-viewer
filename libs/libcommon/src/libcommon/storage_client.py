@@ -87,7 +87,8 @@ class StorageClient:
 
     def get_unprepared_url(self, path: str) -> str:
         # handle path in assets and hf/http urls
-        url = path if "://" in path else f"{self.base_url}/{path}"
+        # Keep the revision placeholder intact and encode literal percent signs in the storage key.
+        url = path if "://" in path else f"{self.base_url}/{parse.quote(path, safe='/{}')}"
         logging.debug(f"unprepared url: {url}")
         return url
 

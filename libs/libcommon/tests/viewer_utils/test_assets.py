@@ -5,6 +5,7 @@ from io import BytesIO
 from pathlib import Path
 from typing import Optional
 from unittest.mock import Mock, patch
+from urllib.parse import unquote
 
 import numpy as np
 import pymupdf
@@ -69,6 +70,27 @@ def test_create_image_file(
 
     image = PILImage.open(storage_client_with_url_preparator.get_full_path(image_path))
     assert image is not None
+
+
+def test_image_url_with_space_in_column(storage_client_with_url_preparator: StorageClient) -> None:
+    storage = storage_client_with_url_preparator
+    asset = create_image_file(
+        dataset="demo",
+        revision=DEFAULT_REVISION,
+        config=DEFAULT_CONFIG,
+        split=DEFAULT_SPLIT,
+        row_idx=0,
+        column="profile photo",
+        filename="image.png",
+        image=PILImage.new("RGB", (1, 1), color=(12, 120, 34)),
+        format="PNG",
+        storage_client=storage,
+    )
+
+    # A static file server decodes the URL path once before looking up the file.
+    key = unquote(asset["src"].removeprefix(f"{storage.base_url}/"))
+    with PILImage.open(storage.get_full_path(key)) as image:
+        assert image.getpixel((0, 0)) == (12, 120, 34)
 
 
 @pytest.mark.parametrize("audio_file_extension", ["WITH_EXTENSION", "WITHOUT_EXTENSION"])
