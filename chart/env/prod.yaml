@@ -409,7 +409,11 @@ search:
     - key: "huggingface.co/datasets-server-search"
       operator: "Exists"
       effect: "NoSchedule"
-  replicas: 3
+  replicas: 5
+  sharedIndexCache:
+    bucket: "huggingface/dataset-viewer-duckdb-index-cache"
+    secretName: "search-shared-index-cache"
+    infisicalSecretKey: "SHARED_INDEX_CACHE_HF_TOKEN"
   service:
     type: NodePort
   ingress:
