@@ -64,6 +64,30 @@ class DirectoryCleaning:
             )
 
 
+SHARED_INDEX_CACHE_CLEANING_BUCKET = None
+SHARED_INDEX_CACHE_CLEANING_EXPIRED_TIME_INTERVAL_SECONDS = 86_400  # 1 day
+
+
+@dataclass(frozen=True)
+class SharedIndexCacheCleaning:
+    bucket: Optional[str] = SHARED_INDEX_CACHE_CLEANING_BUCKET
+    hf_token: Optional[str] = None
+    expired_time_interval_seconds: int = SHARED_INDEX_CACHE_CLEANING_EXPIRED_TIME_INTERVAL_SECONDS
+
+    @classmethod
+    def from_env(cls) -> "SharedIndexCacheCleaning":
+        env = Env(expand_vars=True)
+        with env.prefixed("SHARED_INDEX_CACHE_CLEANING_"):
+            return cls(
+                bucket=env.str(name="BUCKET", default=SHARED_INDEX_CACHE_CLEANING_BUCKET),
+                hf_token=resolve_secret(env, "HF_TOKEN", "SHARED_INDEX_CACHE_HF_TOKEN", None),
+                expired_time_interval_seconds=env.int(
+                    name="EXPIRED_TIME_INTERVAL_SECONDS",
+                    default=SHARED_INDEX_CACHE_CLEANING_EXPIRED_TIME_INTERVAL_SECONDS,
+                ),
+            )
+
+
 CACHE_MAINTENANCE_ACTION = None
 
 
@@ -79,6 +103,7 @@ class JobConfig:
     s3: S3Config = field(default_factory=S3Config)
     assets: AssetsConfig = field(default_factory=AssetsConfig)
     cached_assets: CachedAssetsConfig = field(default_factory=CachedAssetsConfig)
+    shared_index_cache_cleaning: SharedIndexCacheCleaning = field(default_factory=SharedIndexCacheCleaning)
 
     @classmethod
     def from_env(cls) -> "JobConfig":
@@ -95,4 +120,5 @@ class JobConfig:
             s3=S3Config.from_env(),
             assets=AssetsConfig.from_env(),
             cached_assets=CachedAssetsConfig.from_env(),
+            shared_index_cache_cleaning=SharedIndexCacheCleaning.from_env(),
         )

@@ -14,6 +14,7 @@ from cache_maintenance.cache_metrics import collect_cache_metrics
 from cache_maintenance.config import JobConfig
 from cache_maintenance.discussions import post_messages
 from cache_maintenance.queue_metrics import collect_queue_metrics, collect_worker_size_jobs_count
+from cache_maintenance.shared_index_cache import clean_shared_index_cache
 
 
 def run_job() -> None:
@@ -99,6 +100,17 @@ def run_job() -> None:
                 bot_associated_user_name=job_config.discussions.bot_associated_user_name,
                 bot_token=job_config.discussions.bot_token,
                 parquet_revision=job_config.discussions.parquet_revision,
+            )
+        elif action == "clean-shared-index-cache":
+            cleaning = job_config.shared_index_cache_cleaning
+            if not cleaning.bucket:
+                logging.warning("No bucket was set for the shared index cache. The action is skipped.")
+                return
+            clean_shared_index_cache(
+                hf_endpoint=job_config.common.hf_endpoint,
+                bucket=cleaning.bucket,
+                hf_token=cleaning.hf_token,
+                expired_time_interval_seconds=cleaning.expired_time_interval_seconds,
             )
         elif action == "skip":
             pass

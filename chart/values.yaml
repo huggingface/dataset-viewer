@@ -172,6 +172,7 @@ secrets:
         queue-metrics-collector: [MONGO_URL, HF_TOKEN]
         post-messages: [MONGO_URL, HF_TOKEN, PARQUET_CONVERTER_HF_TOKEN]
         mongodb-migration: [MONGO_URL]
+        clean-shared-index-cache: [MONGO_URL, SHARED_INDEX_CACHE_HF_TOKEN]
   mongoUrl:
     fromSecret: false
     secretName: "mongo-url"
@@ -442,6 +443,20 @@ queueMetricsCollector:
   enabled: true
   action: "collect-queue-metrics"
   schedule: "14 00 * * *"
+  nodeSelector: {}
+  resources:
+    requests:
+      cpu: 0
+    limits:
+      cpu: 0
+  tolerations: []
+
+# Deletes from the bucket of search.sharedIndexCache the indexes uploaded more than expiredTimeIntervalSeconds ago (the
+# next search pod that needs one builds it again), and the copies interrupted more than an hour ago.
+cleanSharedIndexCache:
+  enabled: true
+  schedule: "17 * * * *"
+  expiredTimeIntervalSeconds: 43_200 # 12 hours, like the local index cache of the search pods
   nodeSelector: {}
   resources:
     requests:

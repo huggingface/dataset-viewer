@@ -85,6 +85,11 @@ app.kubernetes.io/component: "{{ include "name" . }}-queue-metrics-collector"
 app.kubernetes.io/component: "{{ include "name" . }}-cache-metrics-collector"
 {{- end -}}
 
+{{- define "labels.cleanSharedIndexCache" -}}
+{{ include "hf.labels.commons" . }}
+app.kubernetes.io/component: "{{ include "name" . }}-clean-shared-index-cache"
+{{- end -}}
+
 {{- define "labels.backfill" -}}
 {{ include "hf.labels.commons" . }}
 app.kubernetes.io/component: "{{ include "name" . }}-backfill"

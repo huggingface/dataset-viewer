@@ -245,6 +245,20 @@ queueMetricsCollector:
       cpu: 1
       memory: "512Mi"
 
+cleanSharedIndexCache:
+  nodeSelector:
+    role-datasets-server: "true"
+  tolerations:
+    - key: "huggingface.co/datasets-server"
+      operator: "Exists"
+      effect: "NoSchedule"
+  resources:
+    requests:
+      cpu: 1
+    limits:
+      cpu: 1
+      memory: "512Mi"
+
 cacheMetricsCollector:
   enabled: true
   action: "collect-cache-metrics"
