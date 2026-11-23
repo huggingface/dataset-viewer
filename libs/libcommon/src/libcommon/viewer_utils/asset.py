@@ -28,6 +28,11 @@ SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE = {
     ".opus": "audio/ogg",
     ".flac": "audio/flac",
 }
+# Codecs allowed when converting user-uploaded audio to WAV. User-controlled bytes
+# reach the system FFmpeg decoders during that conversion, so the long tail of
+# exotic decoders must stay unreachable (e.g. CVE-2026-125182 in the Cook decoder).
+# PCM variants (pcm_*) are also allowed.
+SUPPORTED_AUDIO_CONVERSION_CODECS = {"aac", "flac", "mp3", "opus", "vorbis"}
 SUPPORTED_AUDIO_EXTENSIONS = SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE.keys()
 DATASET_GIT_REVISION_PLACEHOLDER = "{dataset_git_revision}"
 LOCK = threading.Lock()
@@ -148,11 +153,18 @@ def create_audio_file(
                 f.write(audio_file_bytes)
         else:  # we need to convert
             # might spawn a process to convert the audio file using ffmpeg
+            from torchcodec.decoders import AudioDecoder  # type: ignore[attr-defined]
             from torchcodec.encoders import AudioEncoder  # type: ignore[attr-defined]
 
             with NamedTemporaryFile("wb", suffix=audio_file_extension, delete_on_close=False) as tmpfile:
                 tmpfile.write(audio_file_bytes)
                 tmpfile.close()
+                codec = AudioDecoder(tmpfile.name).metadata.codec
+                if codec is None or (codec not in SUPPORTED_AUDIO_CONVERSION_CODECS and not codec.startswith("pcm_")):
+                    raise ValueError(
+                        f"Audio codec {codec} is not supported for conversion to WAV. Supported codecs are"
+                        f" {', '.join(sorted(SUPPORTED_AUDIO_CONVERSION_CODECS))} and PCM."
+                    )
                 audio = Audio().decode_example({"path": tmpfile.name, "bytes": None})
                 samples = audio.get_all_samples()
                 buffer = BytesIO()

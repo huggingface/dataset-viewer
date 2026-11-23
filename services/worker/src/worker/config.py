@@ -55,7 +55,12 @@ WORKER_MAX_SYSTEM_MEMORY_PCT = 80
 WORKER_MAX_MISSING_HEARTBEATS = 5
 WORKER_SLEEP_SECONDS = 15
 WORKER_STATE_FILE_PATH = None
-WORKER_NUM_JOBS_BETWEEN_HFFS_CACHE_CLEAR = 20
+# After a job, free caches and memory if the pod memory is above this share of its limit (kept below max_memory_pct
+# so that a job leaving a large cache behind is cleaned up before the next job, not once the worker is blocked).
+WORKER_FREE_MEMORY_AFTER_JOB_PCT = 50
+# If the pod memory stays above max_memory_pct this long after freeing what we can, the loop exits so that the
+# container restarts with fresh memory (a blocked worker otherwise never takes another job).
+WORKER_MAX_SECONDS_BLOCKED_BY_POD_MEMORY = 5 * 60
 
 
 @dataclass(frozen=True)
@@ -73,7 +78,8 @@ class WorkerConfig:
     max_missing_heartbeats: int = WORKER_MAX_MISSING_HEARTBEATS
     sleep_seconds: float = WORKER_SLEEP_SECONDS
     state_file_path: Optional[str] = WORKER_STATE_FILE_PATH
-    num_jobs_between_hffs_cache_clear: int = WORKER_NUM_JOBS_BETWEEN_HFFS_CACHE_CLEAR
+    free_memory_after_job_pct: int = WORKER_FREE_MEMORY_AFTER_JOB_PCT
+    max_seconds_blocked_by_pod_memory: float = WORKER_MAX_SECONDS_BLOCKED_BY_POD_MEMORY
 
     @classmethod
     def from_env(cls) -> "WorkerConfig":
@@ -110,8 +116,11 @@ class WorkerConfig:
                 state_file_path=env.str(
                     name="STATE_FILE_PATH", default=WORKER_STATE_FILE_PATH
                 ),  # this environment variable is not expected to be set explicitly, it's set by the worker executor
-                num_jobs_between_hffs_cache_clear=env.int(
-                    name="NUM_JOBS_BETWEEN_HFFS_CACHE_CLEAR", default=WORKER_NUM_JOBS_BETWEEN_HFFS_CACHE_CLEAR
+                free_memory_after_job_pct=env.int(
+                    name="FREE_MEMORY_AFTER_JOB_PCT", default=WORKER_FREE_MEMORY_AFTER_JOB_PCT
+                ),
+                max_seconds_blocked_by_pod_memory=env.float(
+                    name="MAX_SECONDS_BLOCKED_BY_POD_MEMORY", default=WORKER_MAX_SECONDS_BLOCKED_BY_POD_MEMORY
                 ),
             )
 

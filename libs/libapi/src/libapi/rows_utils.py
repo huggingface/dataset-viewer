@@ -11,8 +11,8 @@ from datasets import Features
 from datasets.features.features import require_storage_embed
 from libcommon.dtos import Row
 from libcommon.storage_client import StorageClient
+from libcommon.utils import thread_map
 from libcommon.viewer_utils.features import get_cell_value
-from tqdm.contrib.concurrent import thread_map
 
 from libapi.exceptions import TransformRowsProcessingError
 
@@ -91,9 +91,7 @@ async def transform_rows(
         # Use multithreading to parallelize image/audio/video files uploads.
         # Also multithreading is ok to convert audio data
         # (we use torchcodec which which releases the GIL)
-        desc = f"_transform_row for {dataset}"
-        _thread_map = partial(thread_map, desc=desc, total=len(rows))
-        return await anyio.to_thread.run_sync(_thread_map, fn, enumerate(rows))
+        return await anyio.to_thread.run_sync(thread_map, fn, enumerate(rows))
     else:
 
         def _map(func: Callable[[Any], Any], *iterables: Any) -> list[Row]:

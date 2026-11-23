@@ -21,6 +21,7 @@ from libcommon.utils import (
     orjson_dumps,
     raise_if_blocked,
     serialize_and_truncate,
+    thread_map,
 )
 
 from .constants import TEN_CHARS_TEXT
@@ -153,3 +154,8 @@ def test_serialize_and_truncate_raises(obj: Any, max_bytes: int) -> None:
 
 def test_get_duration() -> None:
     assert get_duration(get_datetime() - timedelta(seconds=10)) == pytest.approx(10, rel=0.01)
+
+
+def test_thread_map() -> None:
+    assert thread_map(lambda x, y: x + y, [1, 2, 3], [10, 20, 30]) == [11, 22, 33]
+    assert thread_map(str, []) == []

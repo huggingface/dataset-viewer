@@ -9,7 +9,7 @@ import pytest
 import pytz
 
 from libcommon.constants import QUEUE_TTL_SECONDS
-from libcommon.dtos import Priority, Status, WorkerSize
+from libcommon.dtos import JobInfo, Priority, Status, WorkerSize
 from libcommon.queue.dataset_blockages import DATASET_STATUS_NORMAL, block_dataset
 from libcommon.queue.jobs import EmptyQueueError, JobDocument, JobDoesNotExistError, Queue
 from libcommon.queue.metrics import JobTotalMetricDocument, WorkerSizeJobsCountDocument
@@ -617,6 +617,22 @@ def test_worker_size_is_set_on_creation(difficulty: int, expected_worker_size: W
         ]
     )
     assert {job.worker_size for job in JobDocument.objects()} == {expected_worker_size}
+
+
+def test_create_jobs_sets_first_job_created_at() -> None:
+    job_info: JobInfo = {
+        "job_id": "unused",
+        "type": "root_type",
+        "params": {"dataset": "test_dataset", "revision": "test_revision", "config": None, "split": None},
+        "priority": Priority.NORMAL,
+        "difficulty": 50,
+        "started_at": None,
+    }
+    # the parent of the child was queued before the field existed
+    Queue().create_jobs([job_info, {**job_info, "type": "child_type", "first_job_created_at": None}])
+    root_job = JobDocument.objects(type="root_type").get()
+    assert root_job.first_job_created_at == root_job.created_at
+    assert JobDocument.objects(type="child_type").get().first_job_created_at is None
 
 
 def test_next_waiting_job_skips_namespaces_with_started_jobs() -> None:

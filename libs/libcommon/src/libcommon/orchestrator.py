@@ -628,6 +628,7 @@ class AfterJobPlan(Plan):
                 "priority": self.priority,
                 "difficulty": difficulty,
                 "started_at": None,
+                "first_job_created_at": self.job_info.get("first_job_created_at"),
             }
 
 
@@ -1288,7 +1289,8 @@ def save_job_result(job_result: JobResult, failed_runs: int) -> None:
     if output["http_status"] != HTTPStatus.OK:
         failed_runs += 1
 
-    upsert_response_params(
+    # finish_job plans the children from job_info: give them the start kept on the entry, not a retry's
+    job_info["first_job_created_at"] = upsert_response_params(
         # inputs
         kind=processing_step.cache_kind,
         job_params=params,
@@ -1301,6 +1303,9 @@ def save_job_result(job_result: JobResult, failed_runs: int) -> None:
         progress=output["progress"],
         failed_runs=failed_runs,
         duration=job_result["duration"],
+        job_created_at=job_info.get("created_at"),
+        job_started_at=job_info["started_at"],
+        first_job_created_at=job_info.get("first_job_created_at"),
     )
     logging.debug("the job output has been written to the cache.")
 
