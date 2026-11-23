@@ -5,6 +5,7 @@ from datetime import datetime
 from http import HTTPStatus
 
 import pytest
+from bson import ObjectId
 
 from libcommon.dtos import JobOutput, JobResult, Priority, Status
 from libcommon.orchestrator import (
@@ -196,7 +197,8 @@ def test_finish_job(
     assert cached_response.progress == 1.0
     assert cached_response.job_runner_version == JOB_RUNNER_VERSION
     assert cached_response.dataset_git_revision == REVISION_NAME
-    assert cached_response.job_created_at == job_info.get("created_at")
+    queued_at = ObjectId(job_info["job_id"]).generation_time  # type: ignore[attr-defined]
+    assert cached_response.job_created_at == queued_at.replace(tzinfo=None)
     assert cached_response.job_started_at == job_info["started_at"]
     assert cached_response.first_job_created_at == job_info.get("first_job_created_at")
     assert cached_response.job_created_at is not None and cached_response.first_job_created_at is not None
@@ -242,6 +244,39 @@ def test_finish_job_of_a_retried_step_passes_on_the_original_start() -> None:
 
     child_jobs = JobDocument.objects(dataset=DATASET_NAME, status=Status.WAITING)
     assert [job.first_job_created_at for job in child_jobs] == [original_start]
+
+
+def test_finish_job_preview_steps_keep_the_queue_place() -> None:
+    # on the real graph, config names triggers split names (a preview step) and the Parquet conversion
+    queued_at = datetime(2026, 1, 1)
+    Queue().add_job(
+        dataset=DATASET_NAME,
+        revision=REVISION_NAME,
+        config=None,
+        split=None,
+        job_type="dataset-config-names",
+        priority=Priority.NORMAL,
+        difficulty=DIFFICULTY,
+    )
+    JobDocument.objects(dataset=DATASET_NAME).update(created_at=queued_at)
+    job_info = Queue().start_job()
+    output = JobOutput(
+        content=CONFIG_NAMES_CONTENT, http_status=HTTPStatus.OK, error_code=None, details=None, progress=1.0
+    )
+    save_job_result(
+        JobResult(
+            job_info=job_info, job_runner_version=JOB_RUNNER_VERSION, is_success=True, output=output, duration=1
+        ),
+        failed_runs=0,
+    )
+    finish_job(job_info=job_info, shortcut_jobs_by_key={})
+
+    child_jobs = JobDocument.objects(dataset=DATASET_NAME, status=Status.WAITING)
+    split_names_jobs = [job for job in child_jobs if job.type == "config-split-names"]
+    parquet_jobs = [job for job in child_jobs if job.type == "config-parquet-and-info"]
+    # only the first config keeps the place, which is enough for a preview
+    assert [job.created_at == queued_at for job in split_names_jobs] == [True] + [False] * (len(split_names_jobs) - 1)
+    assert parquet_jobs and all(job.created_at > queued_at for job in parquet_jobs)
 
 
 @pytest.mark.parametrize(

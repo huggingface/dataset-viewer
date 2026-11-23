@@ -10,6 +10,7 @@ from http import HTTPStatus
 from typing import Optional, Union
 
 import pandas as pd
+from bson import ObjectId
 from huggingface_hub import DatasetCard, HfApi, HfFileSystem, get_session
 from huggingface_hub.errors import RepositoryNotFoundError, RevisionNotFoundError
 from huggingface_hub.utils._headers import build_hf_headers
@@ -20,6 +21,7 @@ from libcommon.constants import (
     DATASET_CONFIG_NAMES_KIND,
     DEFAULT_DIFFICULTY_MAX,
     DIFFICULTY_BONUS_BY_FAILED_RUNS,
+    SPLIT_HAS_PREVIEW_KIND,
     YAML_FIELDS_TO_CHECK,
 )
 from libcommon.dtos import CachedJob, JobInfo, JobResult, Priority
@@ -44,6 +46,10 @@ from libcommon.simple_cache import (
 )
 from libcommon.state import ArtifactState, DatasetState, FirstStepsDatasetState
 from libcommon.storage_client import StorageClient
+
+# Steps before a first preview: the first job of each keeps its parent's queue place (created_at)
+# instead of joining the back, so a preview waits in line once.
+PREVIEW_JOB_TYPES = {DATASET_CONFIG_NAMES_KIND, CONFIG_SPLIT_NAMES_KIND, SPLIT_HAS_PREVIEW_KIND}
 
 # TODO: clean dangling cache entries
 
@@ -464,6 +470,7 @@ class AfterJobPlan(Plan):
     split: Optional[str] = field(init=False)
     revision: str = field(init=False)
     priority: Priority = field(init=False)
+    queue_place_kept_for: set[str] = field(init=False, default_factory=set)
 
     def __post_init__(self) -> None:
         super().__post_init__()
@@ -630,6 +637,10 @@ class AfterJobPlan(Plan):
                 "started_at": None,
                 "first_job_created_at": self.job_info.get("first_job_created_at"),
             }
+            job_type = next_processing_step.job_type
+            if job_type in PREVIEW_JOB_TYPES and job_type not in self.queue_place_kept_for:
+                self.queue_place_kept_for.add(job_type)
+                self.job_infos_to_create[job_key]["created_at"] = self.job_info.get("created_at")
 
 
 @dataclass
@@ -1303,7 +1314,10 @@ def save_job_result(job_result: JobResult, failed_runs: int) -> None:
         progress=output["progress"],
         failed_runs=failed_runs,
         duration=job_result["duration"],
-        job_created_at=job_info.get("created_at"),
+        # created_at can be inherited (PREVIEW_JOB_TYPES): the job id has the real queue time
+        job_created_at=ObjectId(job_info["job_id"][:24]).generation_time  # type: ignore[attr-defined]
+        if ObjectId.is_valid(job_info["job_id"][:24])
+        else job_info.get("created_at"),
         job_started_at=job_info["started_at"],
         first_job_created_at=job_info.get("first_job_created_at"),
     )
