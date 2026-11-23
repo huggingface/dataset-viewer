@@ -59,6 +59,12 @@
   {{- if .Values.search.sharedIndexCache.bucket }}
   - mountPath: {{ .Values.search.sharedIndexCache.mountPath | quote }}
     name: duckdb-index-shared
+  {{- if and .Values.secrets.infisical.csi.enabled .Values.search.sharedIndexCache.infisicalSecretKey }}
+  # The kubelet only mounts the volumes a container uses.
+  - mountPath: "/mnt/duckdb-index-shared-token"
+    name: duckdb-index-shared-token
+    readOnly: true
+  {{- end }}
   {{- end }}
   securityContext:
     allowPrivilegeEscalation: false

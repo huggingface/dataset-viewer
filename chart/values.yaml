@@ -631,6 +631,9 @@ search:
     # Kubernetes Secret holding the HF token that can write to the bucket, and its key
     secretName: ""
     tokenKey: "token"
+    # Infisical secret holding that token. When set (with secrets.infisical.csi), the chart has the Secrets
+    # Store CSI driver create secretName from it, which needs syncSecret enabled on the driver.
+    infisicalSecretKey: ""
     memoryRequest: "2Gi"
     memoryLimit: "4Gi"
 

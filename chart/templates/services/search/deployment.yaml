@@ -55,5 +55,14 @@ spec:
               mountFlags: "uid={{ .Values.uid }},gid={{ .Values.gid }}"
             nodePublishSecretRef:
               name: {{ .Values.search.sharedIndexCache.secretName | required "search.sharedIndexCache.secretName is required with a bucket" | quote }}
+        {{- if and .Values.secrets.infisical.csi.enabled .Values.search.sharedIndexCache.infisicalSecretKey }}
+        # Mounting it is what makes the driver create the Secret above; hf-csi-driver retries until it exists.
+        - name: duckdb-index-shared-token
+          csi:
+            driver: secrets-store.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: {{ include "name" . }}-search-shared-index-cache-token
+        {{- end }}
         {{- end }}
       securityContext: {{ include "securityContext" . | nindent 8 }}
