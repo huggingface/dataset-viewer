@@ -20,7 +20,14 @@ def make_dataset(tmp_path: Path) -> tuple[lv.Dataset, int]:
         path = data_dir / f"{i:04d}.parquet"
         table = pa.table({"blob": [bytes([i]) * 100_000] * ROWS_PER_FILE})
         pq.write_table(table, path, compression="none")
-        files.append({"path": path.name, "size": path.stat().st_size, "num_rows": ROWS_PER_FILE, "metadata_path": path.name})
+        files.append(
+            {
+                "path": path.name,
+                "size": path.stat().st_size,
+                "num_rows": ROWS_PER_FILE,
+                "metadata_path": path.name,
+            }
+        )
     largest_file = max(f["size"] for f in files)
     dataset = lv.Dataset(
         name="many-files",
@@ -40,7 +47,14 @@ def scan(dataset: lv.Dataset, **kwargs):
 
 def test_the_limit_applies_to_all_the_files_of_a_scan(tmp_path: Path) -> None:
     dataset, largest_file = make_dataset(tmp_path)
-    batches, _ = scan(dataset, offset=0, limit=ROWS_PER_FILE, scan_size_limit=largest_file)
+    batches, _ = scan(
+        dataset, offset=0, limit=ROWS_PER_FILE, scan_size_limit=largest_file
+    )
     assert sum(batch.num_rows for batch in batches) == ROWS_PER_FILE
     with pytest.raises(lv.DatasetError, match="Scan size limit exceeded"):
-        scan(dataset, offset=0, limit=NUM_FILES * ROWS_PER_FILE, scan_size_limit=largest_file)
+        scan(
+            dataset,
+            offset=0,
+            limit=NUM_FILES * ROWS_PER_FILE,
+            scan_size_limit=largest_file,
+        )

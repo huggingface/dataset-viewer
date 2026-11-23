@@ -7,7 +7,9 @@ use std::sync::Arc;
 use arrow::record_batch::RecordBatch;
 use object_store::path::Path;
 use object_store::{ObjectStore, ObjectStoreExt, OBJECT_STORE_COALESCE_DEFAULT};
-use parquet::arrow::arrow_reader::{ArrowReaderMetadata, ArrowReaderOptions};
+use parquet::arrow::arrow_reader::{
+    ArrowReaderMetadata, ArrowReaderOptions, RowSelection, RowSelector,
+};
 // ParquetObjectReader is deprecated in parquet 59 in favor of implementing AsyncFileReader
 // directly (https://github.com/apache/arrow-rs/issues/10308); migrating is out of scope for
 // this security bump.
@@ -21,6 +23,12 @@ use parquet::file::metadata::{
 };
 
 type Result<T, E = ParquetError> = std::result::Result<T, E>;
+
+pub fn scan_size_exceeded(num_bytes: u64, limit: u64) -> ParquetError {
+    ParquetError::General(format!(
+        "Scan size limit exceeded: attempted to read {num_bytes} bytes, limit is {limit} bytes"
+    ))
+}
 
 struct LimitedAsyncReader<T: AsyncFileReader> {
     inner: T,
@@ -40,12 +48,8 @@ impl<T: AsyncFileReader> AsyncFileReader for LimitedAsyncReader<T> {
     fn get_bytes(&mut self, range: Range<u64>) -> BoxFuture<'_, Result<Bytes>> {
         let num_bytes = range.end - range.start;
         if num_bytes > self.scan_size_limit {
-            Box::pin(async move {
-                Err(ParquetError::General(format!(
-                    "Scan size limit exceeded: attempted to read {} bytes, limit is {} bytes",
-                    num_bytes, self.scan_size_limit
-                )))
-            })
+            let limit = self.scan_size_limit;
+            Box::pin(async move { Err(scan_size_exceeded(num_bytes, limit)) })
         } else {
             self.inner.get_bytes(range)
         }
@@ -57,12 +61,8 @@ impl<T: AsyncFileReader> AsyncFileReader for LimitedAsyncReader<T> {
     {
         let num_bytes: u64 = ranges.iter().map(|r| r.end - r.start).sum();
         if num_bytes > self.scan_size_limit {
-            Box::pin(async move {
-                Err(ParquetError::General(format!(
-                    "Scan size limit exceeded: attempted to read {} bytes, limit is {} bytes",
-                    num_bytes, self.scan_size_limit
-                )))
-            })
+            let limit = self.scan_size_limit;
+            Box::pin(async move { Err(scan_size_exceeded(num_bytes, limit)) })
         } else {
             // The opendal object store issues one HTTP request per range, so a wide schema turns
             // into hundreds of requests per row group unless nearby ranges are merged first.
@@ -190,46 +190,39 @@ pub async fn write_metadata(
 
 /// Returns the number of bytes a scan of `limit` rows from `offset` reads from a file: the column
 /// chunks of the row groups holding these rows, or only their pages holding them when the file has
-/// a page index
+/// a page index, as the reader selects them
 pub fn scan_size(metadata: &ParquetMetaData, offset: u64, limit: u64) -> u64 {
     let end = offset.saturating_add(limit);
     let mut row_group_start = 0u64;
     let mut num_bytes = 0u64;
     for (row_group_idx, row_group) in metadata.row_groups().iter().enumerate() {
+        if row_group_start >= end {
+            break;
+        }
         let row_group_end = row_group_start + row_group.num_rows() as u64;
-        if row_group_end > offset && row_group_start < end {
-            let first_row = offset.saturating_sub(row_group_start);
-            let last_row = end.min(row_group_end) - row_group_start;
+        if row_group_end > offset {
+            let skip = offset.saturating_sub(row_group_start) as usize;
+            let select = (end.min(row_group_end) - row_group_start) as usize - skip;
+            let selection =
+                RowSelection::from(vec![RowSelector::skip(skip), RowSelector::select(select)]);
+            let offset_index = metadata.offset_index().map(|index| &index[row_group_idx]);
             for (column_idx, column) in row_group.columns().iter().enumerate() {
-                let pages = metadata
-                    .offset_index()
-                    .and_then(|index| index.get(row_group_idx))
-                    .and_then(|columns| columns.get(column_idx))
-                    .map(|column_index| column_index.page_locations())
-                    .filter(|pages| !pages.is_empty());
-                num_bytes += match pages {
-                    Some(pages) => {
-                        // the dictionary page is not in the page index, and is read with any page
-                        let dictionary_bytes =
-                            column.dictionary_page_offset().map_or(0, |dictionary| {
-                                (column.data_page_offset() - dictionary) as u64
-                            });
-                        let page_bytes: u64 = pages
+                let (chunk_start, chunk_size) = column.byte_range();
+                let pages = offset_index
+                    .map(|columns| columns[column_idx].page_locations().as_slice())
+                    .unwrap_or_default();
+                num_bytes += match pages.first() {
+                    None => chunk_size,
+                    Some(first) => {
+                        // the dictionary page is before the first data page, and is read with any page
+                        let dictionary_bytes = first.offset as u64 - chunk_start;
+                        let page_bytes: u64 = selection
+                            .scan_ranges(pages)
                             .iter()
-                            .enumerate()
-                            .filter(|(i, page)| {
-                                let page_end = pages
-                                    .get(i + 1)
-                                    .map_or(row_group_end - row_group_start, |next| {
-                                        next.first_row_index as u64
-                                    });
-                                (page.first_row_index as u64) < last_row && page_end > first_row
-                            })
-                            .map(|(_, page)| page.compressed_page_size as u64)
+                            .map(|range| range.end - range.start)
                             .sum();
                         dictionary_bytes + page_bytes
                     }
-                    None => column.compressed_size() as u64,
                 };
             }
         }
@@ -670,19 +663,20 @@ mod tests {
         assert_eq!(batches.iter().map(|b| b.num_columns()).max(), Some(100));
     }
 
-    fn paged_parquet(num_rows: i64, rows_per_page: usize, rows_per_row_group: usize) -> Bytes {
+    /// 400 rows in 4 row groups of 100 rows, in pages of 10 rows
+    fn paged_parquet() -> Bytes {
         let batch = RecordBatch::try_from_iter([(
             "text",
             Arc::new(StringArray::from_iter_values(
-                (0..num_rows).map(|r| format!("{r:>1000}")),
+                (0..400).map(|r| format!("{r:>1000}")),
             )) as ArrayRef,
         )])
         .unwrap();
         let properties = parquet::file::properties::WriterProperties::builder()
             .set_dictionary_enabled(false)
-            .set_data_page_row_count_limit(rows_per_page)
-            .set_write_batch_size(rows_per_page)
-            .set_max_row_group_row_count(Some(rows_per_row_group))
+            .set_data_page_row_count_limit(10)
+            .set_write_batch_size(10)
+            .set_max_row_group_row_count(Some(100))
             .build();
         let mut buffer = Vec::new();
         let mut writer =
@@ -692,12 +686,7 @@ mod tests {
         Bytes::from(buffer)
     }
 
-    fn metadata_of(data: &Bytes, with_page_index: bool) -> ParquetMetaData {
-        let policy = if with_page_index {
-            PageIndexPolicy::Required
-        } else {
-            PageIndexPolicy::Skip
-        };
+    fn metadata_of(data: &Bytes, policy: PageIndexPolicy) -> ParquetMetaData {
         ParquetMetaDataReader::new()
             .with_offset_index_policy(policy)
             .parse_and_finish(data)
@@ -706,8 +695,7 @@ mod tests {
 
     #[test]
     fn scan_size_counts_the_row_groups_holding_the_rows() {
-        let data = paged_parquet(400, 10, 100);
-        let metadata = metadata_of(&data, false);
+        let metadata = metadata_of(&paged_parquet(), PageIndexPolicy::Skip);
         let row_group = |i: usize| metadata.row_group(i).compressed_size() as u64;
         assert_eq!(scan_size(&metadata, 0, 10), row_group(0));
         assert_eq!(scan_size(&metadata, 90, 20), row_group(0) + row_group(1));
@@ -720,13 +708,11 @@ mod tests {
 
     #[test]
     fn scan_size_counts_only_the_pages_holding_the_rows() {
-        let data = paged_parquet(400, 10, 100);
-        let metadata = metadata_of(&data, true);
+        let metadata = metadata_of(&paged_parquet(), PageIndexPolicy::Required);
         let pages = metadata.offset_index().unwrap()[0][0].page_locations();
         assert_eq!(pages.len(), 10);
         let page = |i: usize| pages[i].compressed_page_size as u64;
         assert_eq!(scan_size(&metadata, 0, 10), page(0));
         assert_eq!(scan_size(&metadata, 15, 10), page(1) + page(2));
-        assert!(scan_size(&metadata, 0, 10) < metadata.row_group(0).compressed_size() as u64);
     }
 }
