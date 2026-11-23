@@ -4,11 +4,13 @@
 import json
 import logging
 import os
+import zipfile
 from io import BytesIO
 from typing import TYPE_CHECKING, Any, Optional, Union
 from zlib import adler32
 
 import datasets.config
+import numpy as np
 import pdfplumber
 from datasets import (
     Array2D,
@@ -36,6 +38,7 @@ from libcommon.dtos import FeatureItem
 from libcommon.storage_client import StorageClient
 from libcommon.url_preparator import hf_to_https_url
 from libcommon.viewer_utils.asset import (
+    MESH_THUMBNAIL_MAX_POINTS,
     SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE,
     SUPPORTED_AUDIO_EXTENSIONS,
     AudioSource,
@@ -72,9 +75,14 @@ VIDEO_FILE_MAGIC_NUMBERS: dict[str, Any] = {
     ".mov": [b"\x00\x00\x01\xb3"],
 }
 
-# the mesh file types that trimesh reads without additional dependency, and that the viewer renders
-SUPPORTED_MESH_FILE_TYPES = {"glb", "ply", "stl", "obj"}
+# the mesh file types that the viewer renders: trimesh reads them without additional dependency, except "sog"
+SUPPORTED_MESH_FILE_TYPES = {"glb", "ply", "stl", "obj", "sog"}
 SUPPORTED_MESH_EXTENSIONS = ", ".join(f".{file_type}" for file_type in sorted(SUPPORTED_MESH_FILE_TYPES))
+# a SOG file stores one splat per pixel of each of its images: 8192x8192 pixels is 67M splats, more than any
+# scene we know of, and it bounds the memory of a file whose images are much larger than the scene they hold
+SOG_MAX_PIXELS = 8192 * 8192
+# the largest decompressed size of a file of a SOG archive: its WebP images are already compressed
+SOG_MAX_MEMBER_BYTES = 512 * 1024 * 1024
 MESH_FILE_TYPE_ERROR = (
     "Decoding mesh bytes requires a 'path' value with one of the supported mesh extensions "
     f"({SUPPORTED_MESH_EXTENSIONS}) to infer the mesh file type."
@@ -427,8 +435,8 @@ def pdf(
 def _infer_mesh_file_type(path: Optional[str]) -> Optional[str]:
     """Guess the type of a mesh file from its extension, or None if it's not a supported one.
 
-    The supported types are the ones trimesh reads without additional dependency, and that the viewer
-    renders: glTF binaries, ply, stl and obj files.
+    The supported types are the ones the viewer renders: glTF binaries, ply, stl and obj files, which
+    trimesh reads without additional dependency, and the SOG files of Gaussian splats (see _load_sog).
     """
     if path is None:
         return None
@@ -436,6 +444,86 @@ def _infer_mesh_file_type(path: Optional[str]) -> Optional[str]:
     path_without_query = path.split("::", 1)[0].split("?", 1)[0]
     extension = os.path.splitext(path_without_query)[1].lower().lstrip(".")
     return extension if extension in SUPPORTED_MESH_FILE_TYPES else None
+
+
+def _load_sog(file: Any) -> "trimesh.PointCloud":
+    """Load a SOG file (PlayCanvas' compressed Gaussian splats) as the point cloud of a 3DGS ply file.
+
+    A SOG file is a ZIP of a meta.json and WebP images, where each pixel holds a property of a splat
+    (https://developer.playcanvas.com/user-manual/gaussian-splatting/formats/sog/). Its splats are
+    decoded to the vertex properties of a 3DGS ply file, in the same raw ply metadata that trimesh
+    keeps, so that the thumbnail draws them as it draws the splats of a ply file. Only the splats a
+    thumbnail draws are decoded: a random subset of them in large scenes.
+    """
+    import trimesh
+    from PIL import Image
+
+    with zipfile.ZipFile(file) as archive:
+
+        def read_member(name: str) -> bytes:
+            if archive.getinfo(name).file_size > SOG_MAX_MEMBER_BYTES:
+                raise ValueError(f"The file {name} of the SOG archive is too large.")
+            return archive.read(name)
+
+        meta = json.loads(read_member("meta.json"))
+        version, count = meta.get("version"), meta["count"]
+        if version not in (2, 3):
+            raise ValueError(f"Unsupported SOG version: {version}. Only versions 2 and 3 are supported.")
+        subset = (
+            np.sort(np.random.default_rng(0).choice(count, MESH_THUMBNAIL_MAX_POINTS, replace=False))
+            if count > MESH_THUMBNAIL_MAX_POINTS
+            else slice(None)
+        )
+
+        def read_pixels(name: str) -> np.ndarray:
+            with Image.open(BytesIO(read_member(name))) as image:
+                if image.width * image.height > SOG_MAX_PIXELS:
+                    raise ValueError(f"The image {name} of the SOG archive is too large.")
+                return np.asarray(image.convert("RGBA")).reshape(-1, 4)[:count][subset]
+
+        means_lower, means_upper = (read_pixels(name) for name in meta["means"]["files"])
+        scales, quats, sh0 = (read_pixels(meta[name]["files"][0]) for name in ("scales", "quats", "sh0"))
+
+    # 16-bit positions, quantized in a symmetric log domain
+    mins, maxs = np.array(meta["means"]["mins"]), np.array(meta["means"]["maxs"])
+    logged = mins + (maxs - mins) * (means_upper[:, :3].astype(np.int32) << 8 | means_lower[:, :3]) / 65535
+    positions = np.sign(logged) * np.expm1(np.abs(logged))
+    if version == 3:
+        # the exponential map of the quaternion, scaled so that a half turn is on the unit sphere
+        axis = (quats[:, :3].astype(np.float64) - 128) / 127
+        length = np.linalg.norm(axis, axis=1)
+        half_angle = np.pi / 2 * length
+        rotations = np.column_stack(
+            [np.cos(half_angle), axis * (np.sin(half_angle) / np.maximum(length, 1e-12))[:, None]]
+        )
+        opacities = (sh0[:, 3] / 204) ** 2
+    else:
+        # "smallest three": the alpha byte tells which (w, x, y, z) component is left out, the largest one
+        kept = (quats[:, :3] / 255 - 0.5) * np.sqrt(2)
+        largest = np.sqrt(np.maximum(0.0, 1 - (kept**2).sum(axis=1)))
+        rotations = np.insert(kept, 0, largest, axis=1)
+        for omitted in range(1, 4):
+            rows = quats[:, 3] == 252 + omitted
+            rotations[rows] = np.insert(kept[rows], omitted, largest[rows], axis=1)
+        opacities = sh0[:, 3] / 255
+    # the ply files store the logit of the opacity, and opacities of SOG version 3 can go above 1
+    opacities = np.clip(opacities, 1e-6, 1 - 1e-6)
+    vertex = {
+        "opacity": np.log(opacities / (1 - opacities)),
+        **{f"f_dc_{i}": np.array(meta["sh0"]["codebook"])[sh0[:, i]] for i in range(3)},
+        **{f"scale_{i}": np.array(meta["scales"]["codebook"])[scales[:, i]] for i in range(3)},
+        **{f"rot_{i}": rotations[:, i] for i in range(4)},
+    }
+    point_cloud = trimesh.PointCloud(positions)  # type: ignore[no-untyped-call]
+    point_cloud.metadata["_ply_raw"] = {"vertex": {"data": vertex}}
+    return point_cloud
+
+
+def _load_mesh_scene(file: Any, file_type: str) -> "trimesh.Scene":
+    """Load the 3D scene of a mesh file of one of the supported types."""
+    import trimesh
+
+    return _as_mesh_scene(_load_sog(file) if file_type == "sog" else trimesh.load(file, file_type=file_type))
 
 
 def _as_mesh_scene(value: Any) -> "trimesh.Scene":
@@ -481,7 +569,6 @@ def mesh(
     creator of the dataset, and cannot be fetched by the viewer. A file larger than MESH_MAX_FILE_SIZE
     is skipped too: its thumbnail takes too much memory to render.
     """
-    import trimesh
 
     if value is None:
         return None
@@ -493,8 +580,8 @@ def mesh(
         raise ValueError(MESH_FILE_TYPE_ERROR)
 
     if isinstance(value, dict) and value.get("bytes") is not None:
-        file_type = _infer_mesh_file_type(value.get("path"))
-        if file_type is None:
+        mesh_file_type = _infer_mesh_file_type(value.get("path"))
+        if mesh_file_type is None:
             raise ValueError(MESH_FILE_TYPE_ERROR)
         mesh_bytes: bytes = value["bytes"]
         if len(mesh_bytes) > MESH_MAX_FILE_SIZE:
@@ -507,9 +594,9 @@ def mesh(
             split=split,
             row_idx=row_idx,
             column=featureName,
-            filename=f"{filename}.{file_type}",
+            filename=f"{filename}.{mesh_file_type}",
             mesh_bytes=mesh_bytes,
-            load_mesh=lambda: _as_mesh_scene(trimesh.load(BytesIO(mesh_bytes), file_type=file_type)),
+            load_mesh=lambda: _load_mesh_scene(BytesIO(mesh_bytes), mesh_file_type),
             storage_client=storage_client,
         )
 
@@ -530,7 +617,7 @@ def mesh(
 
         def load_mesh() -> "trimesh.Scene":
             with fs.open(path, "rb") as file:
-                return _as_mesh_scene(trimesh.load(file, file_type=file_type))
+                return _load_mesh_scene(file, file_type)
 
         # the mesh file stays on the Hub: it's already available at its own URL, we don't store a copy
         # this function can raise, we don't catch it
