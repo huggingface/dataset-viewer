@@ -24,6 +24,7 @@ from libcommon.config import S3Config
 from libcommon.storage_client import StorageClient
 from libcommon.url_preparator import URLPreparator
 from libcommon.viewer_utils.asset import (
+    MESH_RENDER_LOCK,
     MESH_THUMBNAIL_HEIGHT,
     MESH_THUMBNAIL_WIDTH,
     _render_trimesh_scene_to_png,
@@ -687,7 +688,7 @@ def test_create_mesh_thumbnail_limit_of_points_is_for_the_whole_scene(
         row_idx=0,
         column="col",
         filename="points.glb",
-        mesh=scene,
+        load_mesh=lambda: scene,
         storage_client=storage_client_with_url_preparator,
     )
     # 11 geometries, one of them drawn 11 times: 21 point clouds in the image
@@ -703,9 +704,11 @@ def test_get_mesh_cell_value_with_unsupported_value(
         get_mesh_cell_value(cell, storage_client_with_url_preparator)
 
 
-def test_get_mesh_cell_value_reuses_a_stored_thumbnail(tmp_path: Path) -> None:
+@pytest.mark.parametrize("on_the_hub", [True, False])
+def test_get_mesh_cell_value_reuses_a_stored_thumbnail(on_the_hub: bool, tmp_path: Path) -> None:
     """A mesh rendered by an earlier request is neither downloaded nor rendered again."""
     ensure_mesh_rendering()
+    # the storage client of the fixtures overwrites the stored assets
     storage_client = StorageClient(
         protocol="file",
         storage_root=str(tmp_path),
@@ -713,26 +716,24 @@ def test_get_mesh_cell_value_reuses_a_stored_thumbnail(tmp_path: Path) -> None:
         url_preparator=URLPreparator(url_signer=None, hf_endpoint=CI_HUB_ENDPOINT, assets_base_url=ASSETS_BASE_URL),
     )
     mesh_bytes = PATH_TO_MESH_GLB.read_bytes()
-    path = f"hf://datasets/{MESH_DATASET}@{DEFAULT_REVISION}/data/mesh.glb"
+    cell: dict[str, Any]
+    if on_the_hub:
+        cell = {"path": f"hf://datasets/{MESH_DATASET}@{DEFAULT_REVISION}/data/mesh.glb", "bytes": None}
+    else:
+        cell = {"path": "mesh.glb", "bytes": mesh_bytes}
+
+    def render(*args: Any, **kwargs: Any) -> None:
+        assert MESH_RENDER_LOCK.locked(), "the cells of a page are prepared in parallel: one render at a time"
+        _render_trimesh_scene_to_png(*args, **kwargs)
+
     with (
         patch("libcommon.viewer_utils.features.HfFileSystem") as HfFileSystem,
-        patch(
-            "libcommon.viewer_utils.asset._render_trimesh_scene_to_png", wraps=_render_trimesh_scene_to_png
-        ) as render,
+        patch("libcommon.viewer_utils.asset._render_trimesh_scene_to_png", side_effect=render) as render_mock,
     ):
-        HfFileSystem.return_value.open.return_value = FakeHfFile(mesh_bytes)
+        HfFileSystem.return_value.open.side_effect = lambda *args, **kwargs: FakeHfFile(mesh_bytes)
         HfFileSystem.return_value.size.return_value = len(mesh_bytes)
-        first = get_mesh_cell_value({"path": path, "bytes": None}, storage_client, row_idx=3)
-        second = get_mesh_cell_value({"path": path, "bytes": None}, storage_client, row_idx=3)
-        assert HfFileSystem.return_value.open.call_count == 1
-        assert render.call_count == 1
-    assert first == second
-
-    embedded = {"path": "mesh.glb", "bytes": mesh_bytes}
-    with patch(
-        "libcommon.viewer_utils.asset._render_trimesh_scene_to_png", wraps=_render_trimesh_scene_to_png
-    ) as render:
-        first = get_mesh_cell_value(embedded, storage_client, row_idx=4)
-        second = get_mesh_cell_value(embedded, storage_client, row_idx=4)
-        assert render.call_count == 1
+        first = get_mesh_cell_value(cell, storage_client, row_idx=3)
+        second = get_mesh_cell_value(cell, storage_client, row_idx=3)
+        assert render_mock.call_count == 1
+        assert HfFileSystem.return_value.open.call_count == (1 if on_the_hub else 0)
     assert first == second

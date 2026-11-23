@@ -36,12 +36,10 @@ from libcommon.dtos import FeatureItem
 from libcommon.storage_client import StorageClient
 from libcommon.url_preparator import hf_to_https_url
 from libcommon.viewer_utils.asset import (
-    MESH_RENDER_LOCK,
     SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE,
     SUPPORTED_AUDIO_EXTENSIONS,
     AudioSource,
     ImageSource,
-    MeshAsset,
     MeshSource,
     PDFSource,
     VideoSource,
@@ -51,8 +49,6 @@ from libcommon.viewer_utils.asset import (
     create_mesh_thumbnail,
     create_pdf_file,
     create_video_file,
-    get_mesh_file_url,
-    get_stored_mesh_thumbnail,
 )
 
 if TYPE_CHECKING:
@@ -497,28 +493,19 @@ def mesh(
         if file_type is None:
             raise ValueError(MESH_FILE_TYPE_ERROR)
         mesh_bytes: bytes = value["bytes"]
-        asset = MeshAsset(dataset, revision, config, split, row_idx, featureName, f"{filename}.{file_type}")
-        thumbnail = get_stored_mesh_thumbnail(asset, storage_client)
-        if thumbnail is not None:
-            # stored by an earlier request, with the mesh file: the mesh is not loaded and rendered again
-            return MeshSource(
-                src=get_mesh_file_url(asset, storage_client), size_bytes=len(mesh_bytes), thumbnail=thumbnail
-            )
-        with MESH_RENDER_LOCK:
-            scene = _as_mesh_scene(trimesh.load(BytesIO(mesh_bytes), file_type=file_type))
-            # this function can raise, we don't catch it
-            return create_mesh_file(
-                dataset=dataset,
-                revision=revision,
-                config=config,
-                split=split,
-                row_idx=row_idx,
-                column=featureName,
-                filename=f"{filename}.{file_type}",
-                mesh=scene,
-                mesh_bytes=mesh_bytes,
-                storage_client=storage_client,
-            )
+        # this function can raise, we don't catch it
+        return create_mesh_file(
+            dataset=dataset,
+            revision=revision,
+            config=config,
+            split=split,
+            row_idx=row_idx,
+            column=featureName,
+            filename=f"{filename}.{file_type}",
+            mesh_bytes=mesh_bytes,
+            load_mesh=lambda: _as_mesh_scene(trimesh.load(BytesIO(mesh_bytes), file_type=file_type)),
+            storage_client=storage_client,
+        )
 
     if isinstance(value, dict) and isinstance(value.get("path"), str):
         path = value["path"]
@@ -530,46 +517,48 @@ def mesh(
         file_type = _infer_mesh_file_type(path)
         if file_type is None:
             raise ValueError(MESH_FILE_TYPE_ERROR)
-        asset = MeshAsset(dataset, revision, config, split, row_idx, featureName, f"{filename}.{file_type}")
         fs = HfFileSystem(endpoint=hf_endpoint, token=hf_token)
-        # the mesh file stays on the Hub: it's already available at its own URL, we don't store a copy
-        thumbnail = get_stored_mesh_thumbnail(asset, storage_client)
-        if thumbnail is not None:
-            # rendered by an earlier request: the file is not downloaded again
-            return MeshSource(src=hf_to_https_url(path, hf_endpoint), size_bytes=fs.size(path), thumbnail=thumbnail)
-        with MESH_RENDER_LOCK:
-            # this function can raise, we don't catch it
-            with fs.open(path, "rb") as file:
-                scene = _as_mesh_scene(trimesh.load(file, file_type=file_type))
-                size_bytes = file.size
-            thumbnail = create_mesh_thumbnail(
-                dataset=dataset,
-                revision=revision,
-                config=config,
-                split=split,
-                row_idx=row_idx,
-                column=featureName,
-                filename=asset.filename,
-                mesh=scene,
-                storage_client=storage_client,
-            )
-        return MeshSource(src=hf_to_https_url(path, hf_endpoint), size_bytes=size_bytes, thumbnail=thumbnail)
+        size_bytes: Optional[int] = None
 
-    # a mesh or a scene object: it has not been encoded for storage, so we export it to glTF binary
-    with MESH_RENDER_LOCK:
-        scene = _as_mesh_scene(value)
-        return create_mesh_file(
+        def load_mesh() -> "trimesh.Scene":
+            nonlocal size_bytes
+            with fs.open(path, "rb") as file:
+                size_bytes = file.size
+                return _as_mesh_scene(trimesh.load(file, file_type=file_type))
+
+        # the mesh file stays on the Hub: it's already available at its own URL, we don't store a copy
+        # this function can raise, we don't catch it
+        thumbnail = create_mesh_thumbnail(
             dataset=dataset,
             revision=revision,
             config=config,
             split=split,
             row_idx=row_idx,
             column=featureName,
-            filename=f"{filename}.glb",
-            mesh=scene,
-            mesh_bytes=scene.export(file_type="glb"),  # type: ignore
+            filename=f"{filename}.{file_type}",
+            load_mesh=load_mesh,
             storage_client=storage_client,
         )
+        return MeshSource(
+            src=hf_to_https_url(path, hf_endpoint),
+            size_bytes=fs.size(path) if size_bytes is None else size_bytes,
+            thumbnail=thumbnail,
+        )
+
+    # a mesh or a scene object: it has not been encoded for storage, so we export it to glTF binary
+    scene = _as_mesh_scene(value)
+    return create_mesh_file(
+        dataset=dataset,
+        revision=revision,
+        config=config,
+        split=split,
+        row_idx=row_idx,
+        column=featureName,
+        filename=f"{filename}.glb",
+        mesh_bytes=scene.export(file_type="glb"),  # type: ignore
+        load_mesh=lambda: scene,
+        storage_client=storage_client,
+    )
 
 
 def get_cell_value(
