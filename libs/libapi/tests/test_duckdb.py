@@ -10,6 +10,7 @@ import anyio
 import pyarrow as pa
 import pyarrow.parquet as pq
 import pytest
+from duckdb import OutOfMemoryException
 from libcommon.parquet_utils import ParquetFileMetadataItem
 from pytest import TempPathFactory
 
@@ -187,3 +188,55 @@ async def test_incomplete_index_is_not_shared(tmp_path: Path) -> None:
 
     assert index.is_file()
     assert not shared.exists()
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize("error,builds", [(OutOfMemoryException("Out of Memory Error"), 1), (RuntimeError("Hub"), 2)])
+async def test_failed_index_builds_are_not_retried_right_away(tmp_path: Path, error: Exception, builds: int) -> None:
+    parquet_metadata_directory = tmp_path / "parquet-metadata"
+    (parquet_metadata_directory / "ds/default/train").mkdir(parents=True)
+    pq.write_table(pa.table({"a": [1, 2, 3]}), parquet_metadata_directory / "ds/default/train/0000.parquet")  # type: ignore
+    split_parquet_files: list[ParquetFileMetadataItem] = [
+        {
+            "dataset": "ds",
+            "config": "default",
+            "split": "train",
+            "url": "https://huggingface.co/datasets/ds/resolve/refs%2Fconvert%2Fparquet/default/train/0000.parquet",
+            "filename": "0000.parquet",
+            "size": 1,
+            "num_rows": 3,
+            "parquet_metadata_subpath": "ds/default/train/0000.parquet",
+        }
+    ]
+    started = 0
+
+    def build_index_file(*_: Any) -> bool:
+        nonlocal started
+        started += 1
+        raise error
+
+    async def request() -> None:
+        with pytest.raises(type(error)):
+            await duckdb.get_index_file_location_and_build_if_missing(
+                duckdb_index_file_directory=tmp_path / "duckdb-index",
+                dataset="ds",
+                revision="revision",
+                config="default",
+                split="train",
+                hf_token=None,
+                max_split_size_bytes=10**9,
+                extensions_directory=None,
+                parquet_metadata_directory=parquet_metadata_directory,
+                split_parquet_files=split_parquet_files,
+                features={"a": {"dtype": "int64", "_type": "Value"}},
+            )
+        await asyncio.sleep(0)  # let the build task end
+
+    with patch.object(duckdb, "build_index_file", build_index_file):
+        await request()
+        await request()
+        assert started == builds
+        with patch.object(duckdb, "FAILED_INDEX_BUILD_RETRY_SECONDS", 0):
+            await request()
+
+    assert started == builds + 1
