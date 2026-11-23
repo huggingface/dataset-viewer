@@ -1,9 +1,11 @@
 import os.path
 import threading
+import time
 from collections.abc import Mapping
+from concurrent.futures import ThreadPoolExecutor
 from io import BytesIO
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 from unittest.mock import Mock, patch
 
 import numpy as np
@@ -17,6 +19,7 @@ from PIL import Image as PILImage
 from libcommon.storage_client import StorageClient
 from libcommon.viewer_utils.asset import (
     DATASET_GIT_REVISION_PLACEHOLDER,
+    MESH_RENDER_LOCK,
     MESH_THUMBNAIL_HEIGHT,
     MESH_THUMBNAIL_WIDTH,
     SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE,
@@ -545,3 +548,39 @@ def test_robust_format_texture_source_with_pil_image() -> None:
 def test_robust_format_texture_source_with_unsupported_dtype() -> None:
     with pytest.raises(TypeError):
         _robust_format_texture_source(np.array([[1 + 1j]], dtype=np.complex128), "RGBA")
+
+
+def test_mesh_renders_run_one_at_a_time(storage_client: StorageClient) -> None:
+    """The cells of a page are prepared in parallel threads: only one of them loads and renders a mesh at a time."""
+    running = 0
+    max_running = 0
+    guard = threading.Lock()
+
+    def slow_render(*args: Any, **kwargs: Any) -> None:
+        nonlocal running, max_running
+        with guard:
+            running += 1
+            max_running = max(max_running, running)
+        time.sleep(0.05)
+        with guard:
+            running -= 1
+        PILImage.new("RGBA", (1, 1)).save(args[1], "PNG")
+
+    def render(row_idx: int) -> None:
+        with MESH_RENDER_LOCK:
+            create_mesh_thumbnail(
+                dataset="dataset",
+                revision="revision",
+                config="config",
+                split="split",
+                row_idx=row_idx,
+                column="col",
+                filename="mesh.glb",
+                mesh=trimesh.creation.box().scene(),
+                storage_client=storage_client,
+            )
+
+    with patch("libcommon.viewer_utils.asset._render_trimesh_scene_to_png", slow_render):
+        with ThreadPoolExecutor(8) as executor:
+            list(executor.map(render, range(8)))
+    assert max_running == 1

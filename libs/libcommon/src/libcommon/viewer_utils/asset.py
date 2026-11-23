@@ -6,6 +6,7 @@ import os
 import threading
 from collections import Counter
 from collections.abc import Hashable
+from dataclasses import dataclass
 from io import BufferedReader, BytesIO
 from tempfile import NamedTemporaryFile
 from typing import TYPE_CHECKING, Any, Optional, TypedDict, Union
@@ -39,6 +40,9 @@ LOCK = threading.Lock()
 # the size of the rendered 3D thumbnails, in pixels
 MESH_THUMBNAIL_WIDTH = 800
 MESH_THUMBNAIL_HEIGHT = 600
+# A 3D file of a few tens of MB takes more than 1GB to load and render, and a page of rows renders its cells in
+# parallel: one render at a time per process keeps a page of large meshes within the memory of the pod.
+MESH_RENDER_LOCK = threading.Lock()
 # has pyrender's format_texture_source already been replaced by the robust version? (see
 # _patch_pyrender_texture_formatting)
 PYRENDER_TEXTURES_ARE_PATCHED = False
@@ -962,6 +966,48 @@ def _render_trimesh_scene_to_png(
         _delete_pyrender_platform(platform)
 
 
+@dataclass(frozen=True)
+class MeshAsset:
+    """Where the assets of a mesh cell are stored: the mesh file (for embedded bytes) and its thumbnail."""
+
+    dataset: str
+    revision: str
+    config: str
+    split: str
+    row_idx: int
+    column: str
+    filename: str
+
+    def object_path(self, filename: str, storage_client: "StorageClient") -> str:
+        return storage_client.generate_object_path(
+            dataset=self.dataset,
+            revision=DATASET_GIT_REVISION_PLACEHOLDER,
+            config=self.config,
+            split=self.split,
+            row_idx=self.row_idx,
+            column=self.column,
+            filename=filename,
+        )
+
+
+def get_mesh_file_url(asset: MeshAsset, storage_client: "StorageClient") -> str:
+    return storage_client.get_url(asset.object_path(asset.filename, storage_client), revision=asset.revision)
+
+
+def get_stored_mesh_thumbnail(asset: MeshAsset, storage_client: "StorageClient") -> Optional[ImageSource]:
+    """The thumbnail of a 3D file rendered by an earlier request, or None: rendering it again is the costly part."""
+    if storage_client.overwrite:
+        return None
+    thumbnail_object_path = asset.object_path(f"{asset.filename}.png", storage_client)
+    if not storage_client.exists(replace_dataset_git_revision_placeholder(thumbnail_object_path, asset.revision)):
+        return None
+    return ImageSource(
+        src=storage_client.get_url(thumbnail_object_path, revision=asset.revision),
+        height=MESH_THUMBNAIL_HEIGHT,
+        width=MESH_THUMBNAIL_WIDTH,
+    )
+
+
 def create_mesh_thumbnail(
     dataset: str,
     revision: str,
@@ -1023,17 +1069,6 @@ def create_mesh_file(
     display it, to download it, or to rotate it. A cell whose mesh is already available at its own
     URL does not go through this function: only its thumbnail is created (see create_mesh_thumbnail).
     """
-    thumbnail = create_mesh_thumbnail(
-        dataset=dataset,
-        revision=revision,
-        config=config,
-        split=split,
-        row_idx=row_idx,
-        column=column,
-        filename=filename,
-        mesh=mesh,
-        storage_client=storage_client,
-    )
     mesh_object_path = storage_client.generate_object_path(
         dataset=dataset,
         revision=DATASET_GIT_REVISION_PLACEHOLDER,
@@ -1047,6 +1082,18 @@ def create_mesh_file(
     if storage_client.overwrite or not storage_client.exists(mesh_storage_path):
         with storage_client._fs.open(storage_client.get_full_path(mesh_storage_path), "wb") as mesh_file:
             mesh_file.write(mesh_bytes)
+    # rendered last: a stored thumbnail means that the mesh file is stored as well (see get_stored_mesh_thumbnail)
+    thumbnail = create_mesh_thumbnail(
+        dataset=dataset,
+        revision=revision,
+        config=config,
+        split=split,
+        row_idx=row_idx,
+        column=column,
+        filename=filename,
+        mesh=mesh,
+        storage_client=storage_client,
+    )
 
     return MeshSource(
         src=storage_client.get_url(mesh_object_path, revision=revision),
