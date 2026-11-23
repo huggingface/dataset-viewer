@@ -18,12 +18,14 @@ from fsspec import AbstractFileSystem
 
 from libcommon.exceptions import ParquetBrotliCompressionNotSupportedError
 from libcommon.parquet_utils import (
+    EmptyParquetMetadataError,
     ParquetFileMetadataItem,
     RowsIndex,
     SchemaMismatchError,
     TooBigRows,
     extract_split_directory_from_parquet_url,
     get_num_parquet_files_to_process,
+    get_split_parquet_files,
     parquet_export_is_partial,
 )
 from libcommon.resources import CacheMongoResource
@@ -611,3 +613,30 @@ def test_get_num_parquet_files_to_process_refuses_brotli(
             max_size_bytes=1_000_000,
         )
         assert (num_files, num_rows) == (1, 2)
+
+
+def test_get_split_parquet_files() -> None:
+    def item(config: str, split: str, filename: str) -> ParquetFileMetadataItem:
+        return ParquetFileMetadataItem(
+            dataset="ds",
+            config=config,
+            split=split,
+            url=f"https://huggingface.co/datasets/ds/resolve/refs%2Fconvert%2Fparquet/{config}/{split}/{filename}",
+            filename=filename,
+            size=1,
+            num_rows=1,
+            parquet_metadata_subpath=f"ds/{config}/{split}/{filename}",
+        )
+
+    parquet_files = [
+        item("default", "train", "0001.parquet"),
+        item("default", "test", "0000.parquet"),
+        item("default", "train", "0000.parquet"),
+    ]
+    assert [f["filename"] for f in get_split_parquet_files(parquet_files, config="default", split="train")] == [
+        "0000.parquet",
+        "0001.parquet",
+    ]
+    # a split the dataset does not have, like split=train on a dataset with only test
+    with pytest.raises(EmptyParquetMetadataError):
+        get_split_parquet_files([item("default", "test", "0000.parquet")], config="default", split="train")

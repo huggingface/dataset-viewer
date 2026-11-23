@@ -49,7 +49,7 @@ from libcommon.storage import StrPath, init_dir
 from libcommon.storage_client import StorageClient
 from libcommon.utils import download_file_from_hub
 
-from libapi.exceptions import DownloadIndexError, ResponseNotFoundError, ResponseNotReadyError
+from libapi.exceptions import DownloadIndexError, ResponseNotReadyError
 from libapi.utils import get_cache_entry_from_step
 
 REPO_TYPE = "dataset"
@@ -316,9 +316,6 @@ async def get_index_file_location_and_build_if_missing(
     shared_index_directory: Optional[StrPath] = None,
 ) -> tuple[str, bool]:
     with StepProfiler(method="get_index_file_location_and_build_if_missing", step="all"):
-        if not split_parquet_files:
-            # the split does not exist (anymore) in the parquet export, like a request for a renamed split
-            raise ResponseNotFoundError("Not found.")
         # For directories like "partial-train" for the file at "en/partial-train/0000.parquet" in the C4 dataset.
         # Note that "-" is forbidden for split names so it doesn't create directory names collisions.
         split_directory = extract_split_directory_from_parquet_url(split_parquet_files[0]["url"])

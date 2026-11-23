@@ -14,6 +14,7 @@ from libcommon.duckdb_utils import (
     compute_length_column,
     create_index,
     duckdb_connect,
+    varchar_sql,
 )
 
 
@@ -91,7 +92,7 @@ def test_create_table_reads_parquet_files_with_different_schemas(tmp_path_factor
     )  # type: ignore
     pq.write_table(pa.table({"text": ["b"], "target": ["t"]}), directory / "1.parquet")  # type: ignore
     files = [directory / "0.parquet", directory / "1.parquet"]
-    source = "[" + ",".join(f"'{path}'" for path in files) + "]"
+    source = "[" + ",".join(varchar_sql(str(path)) for path in files) + "]"
     with duckdb_connect(database=str(directory / "index.duckdb"), allowed_paths=files) as con:
         con.sql(
             CREATE_TABLE_COMMAND_FROM_LIST_OF_PARQUET_FILES.format(columns='"text","source","target"', source=source)
