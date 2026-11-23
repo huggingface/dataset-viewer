@@ -68,6 +68,11 @@ _index_build_limiter = anyio.CapacityLimiter(MAX_CONCURRENT_INDEX_BUILDS)
 _shared_cache_limiter = anyio.CapacityLimiter(4)
 # bump when the build changes the content of an index: indexes shared by older builds are then ignored
 SHARED_INDEX_FORMAT_VERSION = 1
+# Reading an index changes nothing in the bucket, and the pods read it from their local copy: they rewrite this file
+# next to the shared index instead, so that the cleaning job keeps the indexes that are still used.
+SHARED_INDEX_USED_SUFFIX = ".used"
+SHARED_INDEX_USED_INTERVAL_SECONDS = 6 * 3600
+_shared_index_marked_at: dict[str, float] = {}
 # a queued build that nobody requested for this long is dropped when its turn comes: the next request starts it again.
 # The last request time is the mtime of a file next to the index, so that every uvicorn worker of the pod sees it.
 INDEX_BUILD_STALE_SECONDS = 120
@@ -253,6 +258,15 @@ def _copy_to_shared_cache(index_file_location: str, shared_index_file_location: 
         logging.warning(f"failed to copy {index_file_location} to the shared index cache: {err}")
 
 
+def _mark_shared_index_used(shared_index_file_location: str) -> None:
+    try:
+        # an index that is not shared (incomplete, or still being uploaded) has nothing to keep
+        if os.path.isfile(shared_index_file_location):
+            Path(shared_index_file_location + SHARED_INDEX_USED_SUFFIX).write_text(str(time.time()))
+    except OSError as err:
+        logging.warning(f"failed to mark {shared_index_file_location} as used in the shared index cache: {err}")
+
+
 def _build_index_file_unless_stale(index_file_location: str, *build_args: Any) -> bool:
     """Returns True when it built a complete index."""
     try:
@@ -344,6 +358,13 @@ async def get_index_file_location_and_build_if_missing(
         index_file_location = f"{index_folder}/{repo_file_location}"
         index_path = anyio.Path(index_file_location)
 
+        shared_index_file_location = None
+        if shared_index_directory:
+            shared_index_file_location = os.path.join(
+                shared_index_directory,
+                f"v{SHARED_INDEX_FORMAT_VERSION}-duckdb{duckdb_version}",
+                os.path.relpath(index_file_location, duckdb_index_file_directory),
+            )
         Path(index_file_location).parent.mkdir(exist_ok=True, parents=True)
         if not await index_path.is_file():
             await anyio.Path(index_file_location + ".requested").touch()
@@ -359,13 +380,6 @@ async def get_index_file_location_and_build_if_missing(
             if build is None:
                 cache_folder = Path(duckdb_index_file_directory) / HUB_DOWNLOAD_CACHE_FOLDER
                 cache_folder.mkdir(exist_ok=True, parents=True)
-                shared_index_file_location = None
-                if shared_index_directory:
-                    shared_index_file_location = os.path.join(
-                        shared_index_directory,
-                        f"v{SHARED_INDEX_FORMAT_VERSION}-duckdb{duckdb_version}",
-                        os.path.relpath(index_file_location, duckdb_index_file_directory),
-                    )
                 build = create_task(
                     _build_index_file_once(
                         index_file_location,
@@ -395,6 +409,15 @@ async def get_index_file_location_and_build_if_missing(
                     raise ResponseNotReadyError("the dataset index is loading, " + _msg)
         # Update its modification time
         await index_path.touch()
+        if shared_index_file_location:
+            marked_at = _shared_index_marked_at.get(shared_index_file_location, 0)
+            if time.time() - marked_at > SHARED_INDEX_USED_INTERVAL_SECONDS:
+                _shared_index_marked_at[shared_index_file_location] = time.time()
+                create_task(
+                    anyio.to_thread.run_sync(
+                        _mark_shared_index_used, shared_index_file_location, limiter=_shared_cache_limiter
+                    )
+                )
         return index_file_location, partial
 
 

@@ -450,12 +450,12 @@ queueMetricsCollector:
       cpu: 0
   tolerations: []
 
-# Deletes from the bucket of search.sharedIndexCache the indexes uploaded more than expiredTimeIntervalSeconds ago (the
-# next search pod that needs one builds it again), and the copies interrupted more than an hour ago.
+# Deletes from the bucket of search.sharedIndexCache the indexes no search pod served for expiredTimeIntervalSeconds
+# (the next search pod that needs one builds it again), and the copies interrupted more than an hour ago.
 cleanSharedIndexCache:
   enabled: true
   schedule: "17 * * * *"
-  expiredTimeIntervalSeconds: 43_200 # 12 hours, like the local index cache of the search pods
+  expiredTimeIntervalSeconds: 172_800 # 48 hours
   nodeSelector: {}
   resources:
     requests:
