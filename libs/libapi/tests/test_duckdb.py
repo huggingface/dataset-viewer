@@ -287,7 +287,7 @@ async def test_served_shared_indexes_are_marked_as_used(tmp_path: Path) -> None:
         await request()  # built here, then uploaded to the shared cache
         [shared_index] = shared.rglob("index.duckdb")
         marker = Path(str(shared_index) + duckdb.SHARED_INDEX_USED_SUFFIX)
-        assert not marker.exists()  # the upload had not finished when the first request was served
+        # the first marker races with the upload, in the background: serve the shared index again
         duckdb._shared_index_marked_at.clear()
         await request()
         first_mark = marker.read_text()
