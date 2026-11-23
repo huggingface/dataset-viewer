@@ -293,3 +293,25 @@ async def test_served_shared_indexes_are_marked_as_used(tmp_path: Path) -> None:
         first_mark = marker.read_text()
         await request()  # marked less than SHARED_INDEX_USED_INTERVAL_SECONDS ago: not rewritten
         assert marker.read_text() == first_mark
+
+
+@pytest.mark.anyio
+async def test_markers_do_not_delay_the_copies_from_the_shared_cache(tmp_path: Path) -> None:
+    release = threading.Event()
+    with patch.object(duckdb, "_mark_shared_index_used", lambda _: release.wait()):
+        # more markers than their limiter takes, all blocked
+        markers = [
+            asyncio.create_task(
+                anyio.to_thread.run_sync(
+                    duckdb._mark_shared_index_used, str(i), limiter=duckdb._shared_index_marker_limiter
+                )
+            )
+            for i in range(10)
+        ]
+        await asyncio.sleep(0.2)
+        with anyio.move_on_after(1) as scope:
+            await anyio.to_thread.run_sync(lambda: None, limiter=duckdb._shared_cache_limiter)
+        release.set()
+        await asyncio.gather(*markers)
+
+    assert not scope.cancelled_caught  # a copy got a slot while the markers waited

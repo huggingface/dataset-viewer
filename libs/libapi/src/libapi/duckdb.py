@@ -73,6 +73,8 @@ SHARED_INDEX_FORMAT_VERSION = 1
 SHARED_INDEX_USED_SUFFIX = ".used"
 SHARED_INDEX_USED_INTERVAL_SECONDS = 6 * 3600
 _shared_index_marked_at: dict[str, float] = {}
+# a pod that starts marks many indexes at once: they must not delay the copies that requests wait for
+_shared_index_marker_limiter = anyio.CapacityLimiter(2)
 # a queued build that nobody requested for this long is dropped when its turn comes: the next request starts it again.
 # The last request time is the mtime of a file next to the index, so that every uvicorn worker of the pod sees it.
 INDEX_BUILD_STALE_SECONDS = 120
@@ -415,7 +417,7 @@ async def get_index_file_location_and_build_if_missing(
                 _shared_index_marked_at[shared_index_file_location] = time.time()
                 create_task(
                     anyio.to_thread.run_sync(
-                        _mark_shared_index_used, shared_index_file_location, limiter=_shared_cache_limiter
+                        _mark_shared_index_used, shared_index_file_location, limiter=_shared_index_marker_limiter
                     )
                 )
         return index_file_location, partial
