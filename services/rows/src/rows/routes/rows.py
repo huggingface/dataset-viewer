@@ -41,6 +41,7 @@ MAX_USER_AGENT_LENGTH = 200
 # get_caller_debug_info). An address is a personal data: only list a dataset here while its owner needs it.
 PROBE_DATASETS = {"lhoestq/probe-rows-service"}
 
+EXCLUDED_COLUMNS = {"vae_latents", "t5_prompt_embeds"}
 
 def create_rows_endpoint(
     cached_assets_storage_client: StorageClient,
@@ -132,6 +133,7 @@ def create_rows_endpoint(
                         except TooBigRows as err:
                             raise TooBigContentError(str(err)) from None
                     with StepProfiler(method="rows_endpoint", step="transform to a list"):
+                        pa_table = pa_table.drop([col for col in pa_table.column_names if col in EXCLUDED_COLUMNS])
                         response = await create_response(
                             dataset=dataset,
                             revision=revision,
