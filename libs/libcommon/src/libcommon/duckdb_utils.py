@@ -57,13 +57,15 @@ SET_EXTENSIONS_DIRECTORY_COMMAND = "SET extension_directory={directory};"
 CREATE_INDEX_COMMAND = (
     f"PRAGMA create_fts_index('data', '{ROW_IDX_COLUMN}', {{columns}}, stemmer='{{stemmer}}', overwrite=1);"
 )
+# union_by_name: the parquet files of a split can have different schemas (a column missing from one file, a string column
+# that is all null in another), which DuckDB refuses when it reads them by position
 CREATE_TABLE_COMMAND_FROM_LIST_OF_PARQUET_FILES = (
-    "CREATE OR REPLACE TABLE data AS SELECT {columns} FROM read_parquet({source});"
+    "CREATE OR REPLACE TABLE data AS SELECT {columns} FROM read_parquet({source}, union_by_name=true);"
 )
 CREATE_TRANSFORMED_DF_TABLE_COMMAND = "CREATE TABLE transformed_df_table AS (SELECT * FROM transformed_df);"
 CREATE_TABLE_JOIN_WITH_TRANSFORMED_DATA_COMMAND_FROM_LIST_OF_PARQUET_FILES = """
     CREATE OR REPLACE TABLE data AS
-    SELECT {columns}, transformed_df_table.* FROM read_parquet({source})
+    SELECT {columns}, transformed_df_table.* FROM read_parquet({source}, union_by_name=true)
     POSITIONAL JOIN transformed_df_table;
 """
 CREATE_SEQUENCE_COMMAND = "CREATE OR REPLACE SEQUENCE serial START 0 MINVALUE 0;"
@@ -145,7 +147,7 @@ def compute_length_column(
     dtype: LengthDtype,
 ) -> pl.DataFrame:
     column_class = ListColumn if dtype == "list" else StringColumn
-    df = pl.read_parquet(parquet_paths, columns=[column_name])
+    df = pl.read_parquet(parquet_paths, columns=[column_name], missing_columns="insert")
     lengths_column_name = f"{column_name}.length"
     lengths_df: pl.DataFrame = column_class(feature_name=column_name).compute_transformed_data(df)
     if target_df is None:

@@ -2,15 +2,19 @@ from typing import Any
 from unittest.mock import patch
 
 import duckdb
+import pyarrow as pa
+import pyarrow.parquet as pq
 import pytest
 from datasets import Dataset
 
 from libcommon.duckdb_utils import (
+    CREATE_TABLE_COMMAND_FROM_LIST_OF_PARQUET_FILES,
     DUCKDB_BUILD_CONFIG,
     DUCKDB_TOKENIZE_CONFIG,
     compute_length_column,
     create_index,
     duckdb_connect,
+    varchar_sql,
 )
 
 
@@ -78,3 +82,31 @@ def test_create_index_runs_out_of_memory_tokenize_jobs_again(tmp_path_factory: p
             " WHERE s IS NOT NULL"
         ).fetchone()
     assert hits == (100,)
+
+
+def test_create_table_reads_parquet_files_with_different_schemas(tmp_path_factory: pytest.TempPathFactory) -> None:
+    directory = tmp_path_factory.mktemp("data")
+    # a column missing from a file, a column all null in a file and a string in another one
+    pq.write_table(
+        pa.table({"text": ["a"], "source": ["x"], "target": pa.array([None], pa.null())}), directory / "0.parquet"
+    )  # type: ignore
+    pq.write_table(pa.table({"text": ["b"], "target": ["t"]}), directory / "1.parquet")  # type: ignore
+    files = [directory / "0.parquet", directory / "1.parquet"]
+    source = "[" + ",".join(varchar_sql(str(path)) for path in files) + "]"
+    with duckdb_connect(database=str(directory / "index.duckdb"), allowed_paths=files) as con:
+        con.sql(
+            CREATE_TABLE_COMMAND_FROM_LIST_OF_PARQUET_FILES.format(columns='"text","source","target"', source=source)
+        )
+        rows = con.sql('SELECT "text", "source", "target" FROM data ORDER BY "text"').fetchall()
+    assert rows == [("a", "x", None), ("b", None, "t")]
+
+
+def test_compute_length_column_when_a_file_misses_the_column(tmp_path_factory: pytest.TempPathFactory) -> None:
+    directory = tmp_path_factory.mktemp("data")
+    pq.write_table(pa.table({"text": ["ab"], "source": ["xyz"]}), directory / "0.parquet")  # type: ignore
+    pq.write_table(pa.table({"text": ["c"]}), directory / "1.parquet")  # type: ignore
+
+    length_column = compute_length_column(
+        [directory / "0.parquet", directory / "1.parquet"], "source", target_df=None, dtype="string"
+    )
+    assert length_column.to_dict(as_series=False) == {"source.length": [3, None]}

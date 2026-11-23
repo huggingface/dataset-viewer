@@ -16,6 +16,7 @@ from libapi.duckdb import (
 )
 from libapi.exceptions import (
     ApiError,
+    ResponseNotFoundError,
     UnexpectedApiError,
     UnprocessableIndexError,
 )
@@ -34,6 +35,7 @@ from libapi.utils import (
 from libcommon.constants import HF_FTS_SCORE, MAX_NUM_ROWS_PER_PAGE, ROW_IDX_COLUMN
 from libcommon.dtos import PaginatedResponse
 from libcommon.duckdb_utils import duckdb_connect, key_sql
+from libcommon.parquet_utils import EmptyParquetMetadataError, get_split_parquet_files
 from libcommon.prometheus import StepProfiler
 from libcommon.storage import StrPath, clean_dir
 from libcommon.storage_client import StorageClient
@@ -183,11 +185,12 @@ def create_search_endpoint(
                             revision=revision,
                         )
                     content_parquet_metadata = parquet_metadata_response["content"]
-                    split_parquet_files = [
-                        parquet_file
-                        for parquet_file in content_parquet_metadata["parquet_files_metadata"]
-                        if parquet_file["config"] == config and parquet_file["split"] == split
-                    ]
+                    try:
+                        split_parquet_files = get_split_parquet_files(
+                            content_parquet_metadata["parquet_files_metadata"], config=config, split=split
+                        )
+                    except EmptyParquetMetadataError:
+                        raise ResponseNotFoundError("Not found.") from None
                     index_file_location, partial = await get_index_file_location_and_build_if_missing(
                         duckdb_index_file_directory=duckdb_index_file_directory,
                         dataset=dataset,

@@ -59,6 +59,18 @@ class ParquetFileMetadataItem(TypedDict):
     parquet_metadata_subpath: str
 
 
+def get_split_parquet_files(
+    parquet_files: list[ParquetFileMetadataItem], config: str, split: str
+) -> list[ParquetFileMetadataItem]:
+    """The parquet files of one split, sorted by filename. Raises EmptyParquetMetadataError if the split has none."""
+    split_parquet_files = sorted(
+        (f for f in parquet_files if f["config"] == config and f["split"] == split), key=lambda f: f["filename"]
+    )
+    if not split_parquet_files:
+        raise EmptyParquetMetadataError("No parquet files found.")
+    return split_parquet_files
+
+
 def parquet_export_is_partial(parquet_file_url: str) -> bool:
     """
     Check if the Parquet export is the full dataset or if it's partial.
@@ -188,14 +200,9 @@ class RowsIndex:
         # set the revision of the dataset
         self.revision = response["dataset_git_revision"]
 
-        # get the list of parquet files
-        parquet_files = response["content"]["parquet_files_metadata"]
-        # filter only files for the current split and config
-        parquet_files = [f for f in parquet_files if f["split"] == self.split and f["config"] == self.config]
-        # sort by filename to have a deterministic order
-        parquet_files = sorted(parquet_files, key=lambda x: x["filename"])
-        if not parquet_files:
-            raise EmptyParquetMetadataError("No parquet files found.")
+        parquet_files = get_split_parquet_files(
+            response["content"]["parquet_files_metadata"], config=self.config, split=self.split
+        )
         self.parquet_files = parquet_files
 
         # calculate the total number of rows, required for the `first_rows` response
