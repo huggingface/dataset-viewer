@@ -18,10 +18,12 @@ from libcommon.storage_client import StorageClient
 from libcommon.viewer_utils.asset import (
     DATASET_GIT_REVISION_PLACEHOLDER,
     MESH_THUMBNAIL_HEIGHT,
+    MESH_THUMBNAIL_MAX_TEXTURE_SIZE,
     MESH_THUMBNAIL_WIDTH,
     SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE,
     ImageSource,
     _delete_pyrender_platform,
+    _patch_pyrender_texture_formatting,
     _render_trimesh_scene_to_png,
     _robust_format_texture_source,
     create_audio_file,
@@ -396,6 +398,33 @@ def test_create_mesh_file_stores_mesh_and_thumbnail(
     assert isinstance(reloaded, trimesh.Scene)
     assert len(reloaded.geometry) > 1
     assert_thumbnail(value["thumbnail"], storage_client_with_url_preparator, filename="mesh.glb")
+
+
+def test_render_trimesh_scene_to_png_shrinks_large_textures() -> None:
+    """The large textures are shrunk before pyrender loads them, and still color the thumbnail.
+
+    The 16-bit texture and the line (a geometry without textures) must not prevent the render.
+    """
+    ensure_mesh_rendering()
+    size = MESH_THUMBNAIL_MAX_TEXTURE_SIZE
+    box = trimesh.creation.box()
+    material = trimesh.visual.material.PBRMaterial(  # type: ignore[no-untyped-call]
+        baseColorTexture=PILImage.new("RGB", (2 * size, size), (255, 0, 0)),
+        # not occluded: pyrender reads the 16-bit values as bytes, 255 is white
+        occlusionTexture=PILImage.new("I;16", (4 * size, size // 16), 255),
+    )
+    box.visual = trimesh.visual.TextureVisuals(uv=np.zeros((len(box.vertices), 2)), material=material)  # type: ignore[no-untyped-call]
+    line = trimesh.load_path(np.array([[0.0, 0.0, 0.0], [1.0, 1.0, 1.0]]))
+    _patch_pyrender_texture_formatting()
+    output_buffer = BytesIO()
+    with patch("pyrender.texture.format_texture_source", wraps=_robust_format_texture_source) as format_texture:
+        _render_trimesh_scene_to_png(trimesh.Scene([box, line]), output_buffer)
+    # the textures pyrender loads, as arrays of (height, width, channels)
+    loaded_shapes = sorted(call.args[0].shape[:2] for call in format_texture.call_args_list)
+    assert loaded_shapes == [(size // 64, size), (size // 2, size)], "shrunk, keeping their aspect ratio"
+    pixels = np.array(PILImage.open(output_buffer))
+    red, green, blue = pixels[pixels[:, :, 3] > 0][:, :3].astype(int).mean(axis=0)
+    assert red > 2 * max(green, blue), "the box is red, the color of its texture"
 
 
 def test_render_trimesh_scene_to_png_without_alpha_channel() -> None:
