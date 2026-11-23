@@ -188,6 +188,56 @@ pub async fn write_metadata(
     Ok(())
 }
 
+/// Returns the number of bytes a scan of `limit` rows from `offset` reads from a file: the column
+/// chunks of the row groups holding these rows, or only their pages holding them when the file has
+/// a page index
+pub fn scan_size(metadata: &ParquetMetaData, offset: u64, limit: u64) -> u64 {
+    let end = offset.saturating_add(limit);
+    let mut row_group_start = 0u64;
+    let mut num_bytes = 0u64;
+    for (row_group_idx, row_group) in metadata.row_groups().iter().enumerate() {
+        let row_group_end = row_group_start + row_group.num_rows() as u64;
+        if row_group_end > offset && row_group_start < end {
+            let first_row = offset.saturating_sub(row_group_start);
+            let last_row = end.min(row_group_end) - row_group_start;
+            for (column_idx, column) in row_group.columns().iter().enumerate() {
+                let pages = metadata
+                    .offset_index()
+                    .and_then(|index| index.get(row_group_idx))
+                    .and_then(|columns| columns.get(column_idx))
+                    .map(|column_index| column_index.page_locations())
+                    .filter(|pages| !pages.is_empty());
+                num_bytes += match pages {
+                    Some(pages) => {
+                        // the dictionary page is not in the page index, and is read with any page
+                        let dictionary_bytes =
+                            column.dictionary_page_offset().map_or(0, |dictionary| {
+                                (column.data_page_offset() - dictionary) as u64
+                            });
+                        let page_bytes: u64 = pages
+                            .iter()
+                            .enumerate()
+                            .filter(|(i, page)| {
+                                let page_end = pages
+                                    .get(i + 1)
+                                    .map_or(row_group_end - row_group_start, |next| {
+                                        next.first_row_index as u64
+                                    });
+                                (page.first_row_index as u64) < last_row && page_end > first_row
+                            })
+                            .map(|(_, page)| page.compressed_page_size as u64)
+                            .sum();
+                        dictionary_bytes + page_bytes
+                    }
+                    None => column.compressed_size() as u64,
+                };
+            }
+        }
+        row_group_start = row_group_end;
+    }
+    num_bytes
+}
+
 pub fn read_batch_stream(
     store: Arc<dyn ObjectStore>,
     path: impl Into<Path>,
@@ -618,5 +668,65 @@ mod tests {
         let requested_bytes: u64 = requested.iter().map(|r| r.end - r.start).sum();
         assert!(requested_bytes < merged_bytes);
         assert_eq!(batches.iter().map(|b| b.num_columns()).max(), Some(100));
+    }
+
+    fn paged_parquet(num_rows: i64, rows_per_page: usize, rows_per_row_group: usize) -> Bytes {
+        let batch = RecordBatch::try_from_iter([(
+            "text",
+            Arc::new(StringArray::from_iter_values(
+                (0..num_rows).map(|r| format!("{r:>1000}")),
+            )) as ArrayRef,
+        )])
+        .unwrap();
+        let properties = parquet::file::properties::WriterProperties::builder()
+            .set_dictionary_enabled(false)
+            .set_data_page_row_count_limit(rows_per_page)
+            .set_write_batch_size(rows_per_page)
+            .set_max_row_group_row_count(Some(rows_per_row_group))
+            .build();
+        let mut buffer = Vec::new();
+        let mut writer =
+            ArrowWriter::try_new(&mut buffer, batch.schema(), Some(properties)).unwrap();
+        writer.write(&batch).unwrap();
+        writer.close().unwrap();
+        Bytes::from(buffer)
+    }
+
+    fn metadata_of(data: &Bytes, with_page_index: bool) -> ParquetMetaData {
+        let policy = if with_page_index {
+            PageIndexPolicy::Required
+        } else {
+            PageIndexPolicy::Skip
+        };
+        ParquetMetaDataReader::new()
+            .with_offset_index_policy(policy)
+            .parse_and_finish(data)
+            .unwrap()
+    }
+
+    #[test]
+    fn scan_size_counts_the_row_groups_holding_the_rows() {
+        let data = paged_parquet(400, 10, 100);
+        let metadata = metadata_of(&data, false);
+        let row_group = |i: usize| metadata.row_group(i).compressed_size() as u64;
+        assert_eq!(scan_size(&metadata, 0, 10), row_group(0));
+        assert_eq!(scan_size(&metadata, 90, 20), row_group(0) + row_group(1));
+        assert_eq!(
+            scan_size(&metadata, 0, 400),
+            (0..4).map(row_group).sum::<u64>()
+        );
+        assert_eq!(scan_size(&metadata, 400, 10), 0);
+    }
+
+    #[test]
+    fn scan_size_counts_only_the_pages_holding_the_rows() {
+        let data = paged_parquet(400, 10, 100);
+        let metadata = metadata_of(&data, true);
+        let pages = metadata.offset_index().unwrap()[0][0].page_locations();
+        assert_eq!(pages.len(), 10);
+        let page = |i: usize| pages[i].compressed_page_size as u64;
+        assert_eq!(scan_size(&metadata, 0, 10), page(0));
+        assert_eq!(scan_size(&metadata, 15, 10), page(1) + page(2));
+        assert!(scan_size(&metadata, 0, 10) < metadata.row_group(0).compressed_size() as u64);
     }
 }
