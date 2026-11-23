@@ -99,6 +99,7 @@ def create_filter_endpoint(
     max_age_short: int = 0,
     storage_clients: Optional[list[StorageClient]] = None,
     extensions_directory: Optional[str] = None,
+    shared_index_directory: Optional[str] = None,
     clean_cache_proba: float = 0.0,
     expiredTimeIntervalSeconds: int = 60,
     max_split_size_bytes: int = 5_000_000_000,
@@ -177,6 +178,7 @@ def create_filter_endpoint(
                         parquet_metadata_directory=parquet_metadata_directory,
                         split_parquet_files=split_parquet_files,
                         features=content_parquet_metadata["features"],
+                        shared_index_directory=shared_index_directory,
                     )
                     # features must contain the row idx column for full_text_search
                     features = Features.from_dict(content_parquet_metadata["features"])

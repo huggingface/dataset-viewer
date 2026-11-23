@@ -46,12 +46,26 @@
     value: {{ .Values.search.expiredTimeIntervalSeconds | quote }}
   - name: DUCKDB_INDEX_EXTENSIONS_DIRECTORY
     value: "/tmp/duckdb-extensions"
+  {{- if .Values.search.sharedIndexCache.bucket }}
+  - name: DUCKDB_INDEX_SHARED_CACHE_DIRECTORY
+    value: {{ .Values.search.sharedIndexCache.mountPath | quote }}
+  {{- end }}
   volumeMounts:
     {{ include "datasetsServer.csi.volumeMount" . | nindent 2 }}
   {{ include "volumeMountParquetMetadataRW" . | nindent 2 }}
   # An emptyDir survives container restarts, so a liveness kill no longer drops every built index
   - mountPath: {{ .Values.duckDBIndex.cacheDirectory | quote }}
     name: duckdb-index-cache
+  {{- if .Values.search.sharedIndexCache.bucket }}
+  - mountPath: {{ .Values.search.sharedIndexCache.mountPath | quote }}
+    name: duckdb-index-shared
+  {{- if and .Values.secrets.infisical.csi.enabled .Values.search.sharedIndexCache.infisicalSecretKey }}
+  # The kubelet only mounts the volumes a container uses.
+  - mountPath: "/mnt/duckdb-index-shared-token"
+    name: duckdb-index-shared-token
+    readOnly: true
+  {{- end }}
+  {{- end }}
   securityContext:
     allowPrivilegeEscalation: false
   readinessProbe:

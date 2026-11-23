@@ -39,4 +39,30 @@ spec:
         {{ include "volumeParquetMetadata" . | nindent 8 }}
         - name: duckdb-index-cache
           emptyDir: {}
+        {{- if .Values.search.sharedIndexCache.bucket }}
+        {{- if hasPrefix .Values.duckDBIndex.cacheDirectory .Values.search.sharedIndexCache.mountPath }}
+        {{- fail "search.sharedIndexCache.mountPath must be outside duckDBIndex.cacheDirectory, that clean_dir walks" }}
+        {{- end }}
+        - name: duckdb-index-shared
+          csi:
+            driver: hf.csi.huggingface.co
+            volumeAttributes:
+              sourceType: bucket
+              sourceId: {{ .Values.search.sharedIndexCache.bucket | quote }}
+              tokenKey: {{ .Values.search.sharedIndexCache.tokenKey | quote }}
+              memoryRequest: {{ .Values.search.sharedIndexCache.memoryRequest | quote }}
+              memoryLimit: {{ .Values.search.sharedIndexCache.memoryLimit | quote }}
+              mountFlags: "uid={{ .Values.uid }},gid={{ .Values.gid }}"
+            nodePublishSecretRef:
+              name: {{ .Values.search.sharedIndexCache.secretName | required "search.sharedIndexCache.secretName is required with a bucket" | quote }}
+        {{- if and .Values.secrets.infisical.csi.enabled .Values.search.sharedIndexCache.infisicalSecretKey }}
+        # Mounting it is what makes the driver create the Secret above; hf-csi-driver retries until it exists.
+        - name: duckdb-index-shared-token
+          csi:
+            driver: secrets-store.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: {{ include "name" . }}-search-shared-index-cache-token
+        {{- end }}
+        {{- end }}
       securityContext: {{ include "securityContext" . | nindent 8 }}

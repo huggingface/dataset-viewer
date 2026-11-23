@@ -6,6 +6,8 @@ import json
 import logging
 import os
 import re
+import shutil
+import socket
 import time
 import traceback
 from collections.abc import Coroutine
@@ -15,6 +17,7 @@ from typing import Any, Optional, TypeVar
 
 import anyio
 from datasets import Features
+from duckdb import __version__ as duckdb_version
 from filelock import AsyncFileLock
 from huggingface_hub import HfApi
 from libcommon.constants import CONFIG_PARQUET_METADATA_KIND, PARQUET_REVISION, ROW_IDX_COLUMN
@@ -60,6 +63,10 @@ INDEX_BUILD_WAIT_SECONDS = 20
 # builds get their own threads, so they never take the default ones the queries and the Hub auth check need
 MAX_CONCURRENT_INDEX_BUILDS = 6
 _index_build_limiter = anyio.CapacityLimiter(MAX_CONCURRENT_INDEX_BUILDS)
+# copies from and to the shared index cache are I/O: they don't take a build slot
+_shared_cache_limiter = anyio.CapacityLimiter(4)
+# bump when the build changes the content of an index: indexes shared by older builds are then ignored
+SHARED_INDEX_FORMAT_VERSION = 1
 # a queued build that nobody requested for this long is dropped when its turn comes: the next request starts it again.
 # The last request time is the mtime of a file next to the index, so that every uvicorn worker of the pod sees it.
 INDEX_BUILD_STALE_SECONDS = 120
@@ -104,7 +111,8 @@ def build_index_file(
     parquet_metadata_directory: StrPath,
     split_parquet_files: list[ParquetFileMetadataItem],
     features: dict[str, Any],
-) -> None:
+) -> bool:
+    """Returns False when the index was built without its transformed columns (string lengths, audio durations...)."""
     logging.info(f"compute and cache duckdb index on-the-fly for {dataset=} {config=} {split=}")
     if not split_parquet_files:
         raise DownloadIndexError("No parquet files found.")
@@ -143,12 +151,14 @@ def build_index_file(
         )
 
     transformed_df = None
+    complete = True
     try:
         transformed_df = compute_transformed_data(
             all_split_parquets, features, hf_token=hf_token, repo_id=dataset, hash=revision
         )
     except Exception as err:
         logging.info(f"Unable to compute transformed data {err}, skipping statistics.")
+        complete = False
 
     # create index
     index_file_location = f"{index_folder}/{repo_file_location}"
@@ -205,9 +215,41 @@ def build_index_file(
     except Exception:
         Path(tmp_index_file_location).unlink(missing_ok=True)
         raise
+    return complete
 
 
-def _build_index_file_unless_stale(index_file_location: str, *build_args: Any) -> None:
+def _copy_file_atomically(source: str, destination: str) -> None:
+    # readers only look for the final name: a pod that reads the shared cache never sees a partial copy
+    Path(destination).parent.mkdir(exist_ok=True, parents=True)
+    tmp_destination = f"{destination}.{socket.gethostname()}.{os.getpid()}.tmp"
+    try:
+        shutil.copyfile(source, tmp_destination)
+        os.replace(tmp_destination, destination)
+    finally:
+        Path(tmp_destination).unlink(missing_ok=True)
+
+
+def _copy_from_shared_cache(shared_index_file_location: str, index_file_location: str) -> bool:
+    try:
+        _copy_file_atomically(shared_index_file_location, index_file_location)
+    except FileNotFoundError:
+        return False
+    except OSError as err:
+        logging.warning(f"failed to copy {shared_index_file_location} from the shared index cache: {err}")
+        return False
+    logging.info(f"copied {index_file_location} from the shared index cache")
+    return True
+
+
+def _copy_to_shared_cache(index_file_location: str, shared_index_file_location: str) -> None:
+    try:
+        _copy_file_atomically(index_file_location, shared_index_file_location)
+    except OSError as err:
+        logging.warning(f"failed to copy {index_file_location} to the shared index cache: {err}")
+
+
+def _build_index_file_unless_stale(index_file_location: str, *build_args: Any) -> bool:
+    """Returns True when it built a complete index."""
     try:
         last_requested = os.path.getmtime(index_file_location + ".requested")
     except FileNotFoundError:
@@ -216,18 +258,35 @@ def _build_index_file_unless_stale(index_file_location: str, *build_args: Any) -
         logging.info(
             f"skip the build of {index_file_location}: not requested in the last {INDEX_BUILD_STALE_SECONDS}s"
         )
-        return
-    build_index_file(*build_args)
+        return False
+    return build_index_file(*build_args)
 
 
-async def _build_index_file_once(index_file_location: str, *build_args: Any) -> None:
+async def _build_index_file_once(
+    index_file_location: str, shared_index_file_location: Optional[str], *build_args: Any
+) -> None:
     # The lock is held for the whole build, so that the other uvicorn workers of the pod wait for it (in their event
     # loop, without holding a thread) instead of building again.
+    built = False
     async with AsyncFileLock(index_file_location + ".lock"):
-        if not await anyio.Path(index_file_location).is_file():
-            await anyio.to_thread.run_sync(
-                _build_index_file_unless_stale, index_file_location, *build_args, limiter=_index_build_limiter
+        if await anyio.Path(index_file_location).is_file():
+            return
+        if shared_index_file_location:
+            copied = await anyio.to_thread.run_sync(
+                _copy_from_shared_cache, shared_index_file_location, index_file_location, limiter=_shared_cache_limiter
             )
+            if copied:
+                return
+        built = await anyio.to_thread.run_sync(
+            _build_index_file_unless_stale, index_file_location, *build_args, limiter=_index_build_limiter
+        )
+    if built and shared_index_file_location:
+        # after the lock: the requests are served from the local index while it is copied for the other pods
+        create_task(
+            anyio.to_thread.run_sync(
+                _copy_to_shared_cache, index_file_location, shared_index_file_location, limiter=_shared_cache_limiter
+            )
+        )
 
 
 async def get_index_file_location_and_build_if_missing(
@@ -242,6 +301,7 @@ async def get_index_file_location_and_build_if_missing(
     parquet_metadata_directory: StrPath,
     split_parquet_files: list[ParquetFileMetadataItem],
     features: dict[str, Any],
+    shared_index_directory: Optional[StrPath] = None,
 ) -> tuple[str, bool]:
     with StepProfiler(method="get_index_file_location_and_build_if_missing", step="all"):
         # For directories like "partial-train" for the file at "en/partial-train/0000.parquet" in the C4 dataset.
@@ -281,9 +341,17 @@ async def get_index_file_location_and_build_if_missing(
             if build is None:
                 cache_folder = Path(duckdb_index_file_directory) / HUB_DOWNLOAD_CACHE_FOLDER
                 cache_folder.mkdir(exist_ok=True, parents=True)
+                shared_index_file_location = None
+                if shared_index_directory:
+                    shared_index_file_location = os.path.join(
+                        shared_index_directory,
+                        f"v{SHARED_INDEX_FORMAT_VERSION}-duckdb{duckdb_version}",
+                        os.path.relpath(index_file_location, duckdb_index_file_directory),
+                    )
                 build = create_task(
                     _build_index_file_once(
                         index_file_location,
+                        shared_index_file_location,
                         cache_folder,
                         index_folder,
                         dataset,
