@@ -35,6 +35,8 @@
     value: {{ .Values.rows.uvicornPort | quote }}
   - name: ROWS_INDEX_MAX_ARROW_DATA_IN_MEMORY
     value: {{ .Values.rowsIndex.maxArrowDataInMemory | quote }}
+  - name: ROWS_INDEX_MAX_CONCURRENT_QUERIES
+    value: {{ .Values.rowsIndex.maxConcurrentQueries | quote }}
   volumeMounts:
     {{ include "datasetsServer.csi.volumeMount" . | nindent 2 }}
   {{ include "volumeMountParquetMetadataRO" . | nindent 2 }}
