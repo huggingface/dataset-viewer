@@ -38,13 +38,14 @@ def request(split: str = "train") -> Request:
     return Request({"type": "http", "method": "GET", "path": "/rows", "query_string": query, "headers": []})
 
 
-def endpoint(tmp_path: Any) -> Any:
+def endpoint(tmp_path: Any, max_concurrent_queries: int = 8) -> Any:
     return create_rows_endpoint(
         cached_assets_storage_client=StorageClient(
             protocol="file", storage_root=str(tmp_path / "assets"), base_url="http://localhost/assets"
         ),
         parquet_metadata_directory=tmp_path,
         max_arrow_data_in_memory=10**9,
+        max_concurrent_queries=max_concurrent_queries,
         hf_endpoint="http://localhost",
         blocked_datasets=[],
     )
@@ -59,9 +60,8 @@ async def test_queries_wait_for_a_slot(tmp_path: Any) -> None:
     with (
         patch.object(rows, "RowsIndex", lambda **_: FakeRowsIndex()),
         patch.object(rows, "auth_check", no_auth_check),
-        patch.object(rows, "MAX_CONCURRENT_QUERIES", 3),
     ):
-        rows_endpoint = endpoint(tmp_path)
+        rows_endpoint = endpoint(tmp_path, max_concurrent_queries=3)
         responses = await asyncio.gather(*(rows_endpoint(request()) for _ in range(10)))
 
     assert [response.status_code for response in responses] == [HTTPStatus.OK] * 10
@@ -73,10 +73,9 @@ async def test_a_request_that_waits_too_long_for_a_slot_is_not_ready(tmp_path: A
     with (
         patch.object(rows, "RowsIndex", lambda **_: FakeRowsIndex()),
         patch.object(rows, "auth_check", no_auth_check),
-        patch.object(rows, "MAX_CONCURRENT_QUERIES", 1),
         patch.object(rows, "QUERY_SLOT_WAIT_SECONDS", 0.05),
     ):
-        rows_endpoint = endpoint(tmp_path)
+        rows_endpoint = endpoint(tmp_path, max_concurrent_queries=1)
         responses = await asyncio.gather(*(rows_endpoint(request()) for _ in range(2)))
 
     assert sorted(response.headers.get("X-Error-Code", "") for response in responses) == ["", "ResponseNotReady"]

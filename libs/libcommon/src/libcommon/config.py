@@ -154,11 +154,13 @@ class ParquetMetadataConfig:
 
 
 ROWS_INDEX_MAX_ARROW_DATA_IN_MEMORY = 300_000_000
+ROWS_INDEX_MAX_CONCURRENT_QUERIES = 8
 
 
 @dataclass(frozen=True)
 class RowsIndexConfig:
     max_arrow_data_in_memory: int = ROWS_INDEX_MAX_ARROW_DATA_IN_MEMORY
+    max_concurrent_queries: int = ROWS_INDEX_MAX_CONCURRENT_QUERIES
 
     @classmethod
     def from_env(cls) -> "RowsIndexConfig":
@@ -167,6 +169,9 @@ class RowsIndexConfig:
             return cls(
                 max_arrow_data_in_memory=env.int(
                     name="MAX_ARROW_DATA_IN_MEMORY", default=ROWS_INDEX_MAX_ARROW_DATA_IN_MEMORY
+                ),
+                max_concurrent_queries=env.int(
+                    name="MAX_CONCURRENT_QUERIES", default=ROWS_INDEX_MAX_CONCURRENT_QUERIES
                 ),
             )
 

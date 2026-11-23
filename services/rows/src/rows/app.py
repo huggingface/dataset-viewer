@@ -99,6 +99,7 @@ def create_app_with_config(app_config: AppConfig) -> Starlette:
                 cached_assets_storage_client=cached_assets_storage_client,
                 parquet_metadata_directory=parquet_metadata_directory,
                 max_arrow_data_in_memory=app_config.rows_index.max_arrow_data_in_memory,
+                max_concurrent_queries=app_config.rows_index.max_concurrent_queries,
                 hf_endpoint=app_config.common.hf_endpoint,
                 hf_token=app_config.common.hf_token,
                 blocked_datasets=app_config.common.blocked_datasets,
