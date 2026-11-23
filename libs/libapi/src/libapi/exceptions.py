@@ -132,10 +132,11 @@ class RenamedDatasetError(ApiError):
 
 
 class ResponseNotReadyError(ApiError):
-    """The response has not been processed yet."""
+    """The response has not been processed yet: the client can retry after `retry_after_seconds`."""
 
-    def __init__(self, message: str):
-        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "ResponseNotReady")
+    def __init__(self, message: str, retry_after_seconds: int = 10):
+        super().__init__(message, HTTPStatus.SERVICE_UNAVAILABLE, "ResponseNotReady")
+        self.retry_after_seconds = retry_after_seconds
 
 
 class SearchFeatureNotAvailableError(ApiError):

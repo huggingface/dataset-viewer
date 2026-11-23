@@ -62,6 +62,7 @@ def get_json_response(
 
 # these headers are exposed to the client (browser)
 EXPOSED_HEADERS = [
+    "Retry-After",
     "X-Error-Code",
     "X-Revision",
 ]
@@ -86,12 +87,14 @@ def get_json_error_response(
 
 
 def get_json_api_error_response(error: CustomError, max_age: int = 0, revision: Optional[str] = None) -> Response:
-    return get_json_error_response(
+    headers = {"Retry-After": str(error.retry_after_seconds)} if isinstance(error, ResponseNotReadyError) else None
+    return get_json_response(
         content=error.as_response(),
         status_code=error.status_code,
         max_age=max_age,
         error_code=error.code,
         revision=revision,
+        headers=headers,
     )
 
 
