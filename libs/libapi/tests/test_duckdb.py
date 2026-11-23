@@ -16,7 +16,7 @@ from pytest import TempPathFactory
 
 from libapi import duckdb
 from libapi.duckdb import check_available_disk_space
-from libapi.exceptions import ResponseNotReadyError
+from libapi.exceptions import ResponseNotFoundError, ResponseNotReadyError
 
 # TODO(QL): test duckdb indexing
 
@@ -240,3 +240,21 @@ async def test_failed_index_builds_are_not_retried_right_away(tmp_path: Path, er
             await request()
 
     assert started == builds + 1
+
+
+@pytest.mark.anyio
+async def test_split_without_parquet_files_is_not_found(tmp_path: Path) -> None:
+    with pytest.raises(ResponseNotFoundError):
+        await duckdb.get_index_file_location_and_build_if_missing(
+            duckdb_index_file_directory=tmp_path / "duckdb-index",
+            dataset="ds",
+            revision="revision",
+            config="default",
+            split="does-not-exist",
+            hf_token=None,
+            max_split_size_bytes=10**9,
+            extensions_directory=None,
+            parquet_metadata_directory=tmp_path / "parquet-metadata",
+            split_parquet_files=[],
+            features={"a": {"dtype": "int64", "_type": "Value"}},
+        )
