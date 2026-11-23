@@ -26,6 +26,7 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 
 from libapi.exceptions import (
+    ApiError,
     ResponseNotFoundError,
     ResponseNotReadyError,
 )
@@ -87,14 +88,13 @@ def get_json_error_response(
 
 
 def get_json_api_error_response(error: CustomError, max_age: int = 0, revision: Optional[str] = None) -> Response:
-    headers = {"Retry-After": str(error.retry_after_seconds)} if isinstance(error, ResponseNotReadyError) else None
     return get_json_response(
         content=error.as_response(),
         status_code=error.status_code,
         max_age=max_age,
         error_code=error.code,
         revision=revision,
-        headers=headers,
+        headers=dict(error.headers) if isinstance(error, ApiError) else None,
     )
 
 

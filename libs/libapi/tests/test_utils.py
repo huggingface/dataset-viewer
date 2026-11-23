@@ -269,10 +269,8 @@ def test_get_cache_entry_from_step_no_cache_blocked(hf_endpoint: str) -> None:
 
 
 def test_not_ready_response_is_a_503_with_retry_after() -> None:
-    response = get_json_api_error_response(
-        ResponseNotReadyError("the dataset index is loading", retry_after_seconds=7)
-    )
+    response = get_json_api_error_response(ResponseNotReadyError("the dataset index is loading"))
     assert response.status_code == HTTPStatus.SERVICE_UNAVAILABLE
-    assert response.headers["Retry-After"] == "7"
+    assert response.headers["Retry-After"] == "10"
     assert response.headers["X-Error-Code"] == "ResponseNotReady"
     assert response.headers["Cache-Control"] == "no-store"
