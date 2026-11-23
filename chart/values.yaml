@@ -172,7 +172,6 @@ secrets:
         queue-metrics-collector: [MONGO_URL, HF_TOKEN]
         post-messages: [MONGO_URL, HF_TOKEN, PARQUET_CONVERTER_HF_TOKEN]
         mongodb-migration: [MONGO_URL]
-        clean-shared-index-cache: [MONGO_URL, SHARED_INDEX_CACHE_HF_TOKEN]
   mongoUrl:
     fromSecret: false
     secretName: "mongo-url"

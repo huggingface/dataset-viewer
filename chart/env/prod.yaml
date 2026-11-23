@@ -75,6 +75,9 @@ secrets:
   infisical:
     enabled: true
     env: "prod-us-east-1"
+    csi:
+      workloads:
+        clean-shared-index-cache: [MONGO_URL, SHARED_INDEX_CACHE_HF_TOKEN]
   mongoUrl:
     fromSecret: true
     secretName: ""
