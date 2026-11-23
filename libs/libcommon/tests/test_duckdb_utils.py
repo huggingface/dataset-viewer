@@ -49,3 +49,32 @@ def test_create_index_limits_duckdb_resources(tmp_path_factory: pytest.TempPathF
     # one spill directory per connection: DuckDB names its temporary files the same way in every connection
     assert spill_directories[0] == spill_directories[-1]
     assert len(set(spill_directories)) == len(tokenize) + 1
+
+
+def test_create_index_runs_out_of_memory_tokenize_jobs_again(tmp_path_factory: pytest.TempPathFactory) -> None:
+    database = str(tmp_path_factory.mktemp("index") / "index.duckdb")
+    duckdb.execute("INSTALL 'fts';")
+    with duckdb_connect(database=database) as con:
+        con.sql("CREATE TABLE data AS SELECT range AS __hf_index_id, 'hello world ' || range AS text FROM range(100);")
+        con.sql("CHECKPOINT;")
+    retried: list[str] = []
+
+    def connect(*args: Any, **kwargs: Any) -> duckdb.DuckDBPyConnection:
+        job_databases = kwargs.get("tmp_subprocess_job_databases") or []
+        if len(job_databases) == 1 and job_databases[0].endswith("tmp_0_0.duckdb"):  # not the merge connection
+            if kwargs["config"]["memory_limit"] == DUCKDB_TOKENIZE_CONFIG["memory_limit"]:
+                raise duckdb.OutOfMemoryException("Out of Memory Error: failed to allocate data")
+            retried.append(kwargs["config"]["memory_limit"])
+        return duckdb_connect(*args, **kwargs)
+
+    with patch("libcommon.duckdb_utils.duckdb_connect", connect):
+        create_index(database, "data", ["text"], "porter", "__hf_index_id", "fts_main_data")
+
+    assert retried == [DUCKDB_BUILD_CONFIG["memory_limit"]]
+    with duckdb_connect(database=database, read_only=True) as con:
+        con.sql("LOAD fts;")
+        hits = con.sql(
+            "SELECT count(*) FROM (SELECT fts_main_data.match_bm25(__hf_index_id, 'world') AS s FROM data)"
+            " WHERE s IS NOT NULL"
+        ).fetchone()
+    assert hits == (100,)

@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import Any, Optional, TypeVar
 
 import anyio
+import duckdb
 from datasets import Features
 from duckdb import __version__ as duckdb_version
 from filelock import AsyncFileLock
@@ -70,6 +71,10 @@ SHARED_INDEX_FORMAT_VERSION = 1
 # a queued build that nobody requested for this long is dropped when its turn comes: the next request starts it again.
 # The last request time is the mtime of a file next to the index, so that every uvicorn worker of the pod sees it.
 INDEX_BUILD_STALE_SECONDS = 120
+# a build that failed in DuckDB (out of memory...) fails again the same way: its requests get the same error for this
+# long instead of starting another build. Other errors (Hub downloads...) can be transient and are retried right away.
+FAILED_INDEX_BUILD_RETRY_SECONDS = 600
+_failed_index_builds: dict[str, tuple[float, duckdb.Error]] = {}
 
 
 def _handle_errors(task: asyncio.Task[Any]) -> None:
@@ -289,6 +294,13 @@ async def _build_index_file_once(
         )
 
 
+def _end_index_build(index_file_location: str, build: asyncio.Task[None]) -> None:
+    _index_builds.pop(index_file_location, None)
+    error = None if build.cancelled() else build.exception()
+    if isinstance(error, duckdb.Error):
+        _failed_index_builds[index_file_location] = (time.time(), error)
+
+
 async def get_index_file_location_and_build_if_missing(
     duckdb_index_file_directory: StrPath,
     dataset: str,
@@ -338,6 +350,12 @@ async def get_index_file_location_and_build_if_missing(
             # One build per index: the requests that come while it runs wait for the same task instead of starting
             # another build. The task is shielded, so it goes on after a request gives up waiting.
             build = _index_builds.get(index_file_location)
+            failure = _failed_index_builds.get(index_file_location)
+            if build is None and failure:
+                failed_at, error = failure
+                if time.time() - failed_at < FAILED_INDEX_BUILD_RETRY_SECONDS:
+                    raise error.with_traceback(None)
+                del _failed_index_builds[index_file_location]
             if build is None:
                 cache_folder = Path(duckdb_index_file_directory) / HUB_DOWNLOAD_CACHE_FOLDER
                 cache_folder.mkdir(exist_ok=True, parents=True)
@@ -368,7 +386,7 @@ async def get_index_file_location_and_build_if_missing(
                     )
                 )
                 _index_builds[index_file_location] = build
-                build.add_done_callback(lambda _: _index_builds.pop(index_file_location, None))
+                build.add_done_callback(lambda task: _end_index_build(index_file_location, task))
             with StepProfiler(method="get_index_file_location_and_build_if_missing", step="build duckdb index"):
                 try:
                     await asyncio.wait_for(asyncio.shield(build), timeout=INDEX_BUILD_WAIT_SECONDS)

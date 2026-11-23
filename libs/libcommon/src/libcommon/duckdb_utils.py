@@ -1,3 +1,4 @@
+import logging
 import tempfile
 from pathlib import Path
 from textwrap import dedent
@@ -350,7 +351,7 @@ def create_index(
         ranks = [rank for rank in range(num_jobs) for field_id, column in enumerate(columns)]
         field_ids = [field_id for rank in range(num_jobs) for field_id, column in enumerate(columns)]
 
-        def _parallel_sql(command: str, job_database: str, rank: int, field_id: int) -> None:
+        def _tokenize(command: str, job_database: str, rank: int, field_id: int, config: dict[str, Any]) -> None:
             with duckdb_connect(
                 database=database,
                 extensions_directory=extensions_directory,
@@ -358,11 +359,27 @@ def create_index(
                 tmp_subprocess_job_databases=[job_database],
                 tmp_subprocess_job_database_ranks=[rank],
                 tmp_subprocess_job_database_field_ids=[field_id],
-                config={**DUCKDB_TOKENIZE_CONFIG, "temp_directory": f"{job_database}.spill"},
+                config={**config, "temp_directory": f"{job_database}.spill"},
             ) as rank_con:
                 _sql(rank_con, command)
 
-        thread_map(_parallel_sql, commands, job_databases, ranks, field_ids, max_workers=DUCKDB_TOKENIZE_JOBS)
+        def _parallel_sql(command: str, job_database: str, rank: int, field_id: int) -> bool:
+            try:
+                _tokenize(command, job_database, rank, field_id, DUCKDB_TOKENIZE_CONFIG)
+            except duckdb.OutOfMemoryException:
+                return False
+            return True
+
+        jobs = list(zip(commands, job_databases, ranks, field_ids))
+        succeeded = thread_map(
+            _parallel_sql, commands, job_databases, ranks, field_ids, max_workers=DUCKDB_TOKENIZE_JOBS
+        )
+        # Very long documents can make one batch outgrow its share of memory: run those batches again one at a time,
+        # once the parallel jobs are done, with the memory of the whole build.
+        for job, ok in zip(jobs, succeeded):
+            if not ok:
+                logging.info(f"tokenize batch {job[2]} of {database} ran out of memory, running it again alone")
+                _tokenize(*job, DUCKDB_BUILD_CONFIG)
 
         # # NON-PARALEL VERSION HERE FOR DOCUMENTATION:
         #
