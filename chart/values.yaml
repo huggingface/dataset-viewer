@@ -453,6 +453,20 @@ queueMetricsCollector:
       cpu: 0
   tolerations: []
 
+# Deletes from the bucket of search.sharedIndexCache the indexes no search pod served for expiredTimeIntervalSeconds
+# (the next search pod that needs one builds it again), and the copies interrupted more than an hour ago.
+cleanSharedIndexCache:
+  enabled: true
+  schedule: "17 * * * *"
+  expiredTimeIntervalSeconds: 172_800 # 48 hours
+  nodeSelector: {}
+  resources:
+    requests:
+      cpu: 0
+    limits:
+      cpu: 0
+  tolerations: []
+
 cacheMetricsCollector:
   enabled: true
   action: "collect-cache-metrics"

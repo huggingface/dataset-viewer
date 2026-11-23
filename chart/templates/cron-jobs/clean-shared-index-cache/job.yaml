@@ -1,0 +1,28 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 The HuggingFace Authors.
+
+{{- if and .Values.images.jobs.cacheMaintenance .Values.cleanSharedIndexCache.enabled .Values.search.sharedIndexCache.bucket }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  labels: {{ include "labels.cleanSharedIndexCache" . | nindent 4 }}
+  name: "{{ include "name" . }}-job-clean-shared-index-cache"
+  namespace: {{ .Release.Namespace }}
+spec:
+  schedule: {{ .Values.cleanSharedIndexCache.schedule | quote }}
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      ttlSecondsAfterFinished: 3600
+      template:
+        spec:
+          restartPolicy: OnFailure
+          serviceAccountName: {{ include "datasetsServer.serviceAccountName" . }}
+          {{- include "dnsConfig" . | nindent 10 }}
+          {{- include "image.imagePullSecrets" . | nindent 6 }}
+          nodeSelector: {{ toYaml .Values.cleanSharedIndexCache.nodeSelector | nindent 12 }}
+          tolerations: {{ toYaml .Values.cleanSharedIndexCache.tolerations | nindent 12 }}
+          {{- include "datasetsServer.csi.volumeBlock" (dict "context" $ "workload" "clean-shared-index-cache") | nindent 10 }}
+          containers: {{ include "containerCleanSharedIndexCache" . | nindent 12 }}
+          securityContext: {{ include "securityContext" . | nindent 12 }}
+{{- end}}

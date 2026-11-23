@@ -75,6 +75,9 @@ secrets:
   infisical:
     enabled: true
     env: "prod-us-east-1"
+    csi:
+      workloads:
+        clean-shared-index-cache: [MONGO_URL, SHARED_INDEX_CACHE_HF_TOKEN]
   mongoUrl:
     fromSecret: true
     secretName: ""
@@ -232,6 +235,20 @@ queueMetricsCollector:
   action: "collect-queue-metrics"
   schedule: "*/10 * * * *"
   # every ten minutes
+  nodeSelector:
+    role-datasets-server: "true"
+  tolerations:
+    - key: "huggingface.co/datasets-server"
+      operator: "Exists"
+      effect: "NoSchedule"
+  resources:
+    requests:
+      cpu: 1
+    limits:
+      cpu: 1
+      memory: "512Mi"
+
+cleanSharedIndexCache:
   nodeSelector:
     role-datasets-server: "true"
   tolerations:

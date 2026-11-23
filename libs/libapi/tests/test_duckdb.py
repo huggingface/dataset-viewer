@@ -240,3 +240,78 @@ async def test_failed_index_builds_are_not_retried_right_away(tmp_path: Path, er
             await request()
 
     assert started == builds + 1
+
+
+@pytest.mark.anyio
+async def test_served_shared_indexes_are_marked_as_used(tmp_path: Path) -> None:
+    local, shared = tmp_path / "local", tmp_path / "shared"
+    parquet_metadata_directory = tmp_path / "parquet-metadata"
+    (parquet_metadata_directory / "ds/default/train").mkdir(parents=True)
+    pq.write_table(pa.table({"a": [1]}), parquet_metadata_directory / "ds/default/train/0000.parquet")  # type: ignore
+    split_parquet_files: list[ParquetFileMetadataItem] = [
+        {
+            "dataset": "ds",
+            "config": "default",
+            "split": "train",
+            "url": "https://huggingface.co/datasets/ds/resolve/refs%2Fconvert%2Fparquet/default/train/0000.parquet",
+            "filename": "0000.parquet",
+            "size": 1,
+            "num_rows": 1,
+            "parquet_metadata_subpath": "ds/default/train/0000.parquet",
+        }
+    ]
+
+    def build_index_file(_cache_folder: Path, index_folder: Path, *args: Any) -> bool:
+        _dataset, _revision, _config, _split, repo_file_location, *_ = args
+        Path(f"{index_folder}/{repo_file_location}").write_bytes(b"index")
+        return True
+
+    async def request() -> None:
+        await duckdb.get_index_file_location_and_build_if_missing(
+            duckdb_index_file_directory=local,
+            dataset="ds",
+            revision="revision",
+            config="default",
+            split="train",
+            hf_token=None,
+            max_split_size_bytes=10**9,
+            extensions_directory=None,
+            parquet_metadata_directory=parquet_metadata_directory,
+            split_parquet_files=split_parquet_files,
+            features={"a": {"dtype": "int64", "_type": "Value"}},
+            shared_index_directory=shared,
+        )
+        await asyncio.gather(*duckdb._all_tasks)
+
+    with patch.object(duckdb, "build_index_file", build_index_file):
+        await request()  # built here, then uploaded to the shared cache
+        [shared_index] = shared.rglob("index.duckdb")
+        marker = Path(str(shared_index) + duckdb.SHARED_INDEX_USED_SUFFIX)
+        assert not marker.exists()  # the upload had not finished when the first request was served
+        duckdb._shared_index_marked_at.clear()
+        await request()
+        first_mark = marker.read_text()
+        await request()  # marked less than SHARED_INDEX_USED_INTERVAL_SECONDS ago: not rewritten
+        assert marker.read_text() == first_mark
+
+
+@pytest.mark.anyio
+async def test_markers_do_not_delay_the_copies_from_the_shared_cache(tmp_path: Path) -> None:
+    release = threading.Event()
+    with patch.object(duckdb, "_mark_shared_index_used", lambda _: release.wait()):
+        # more markers than their limiter takes, all blocked
+        markers = [
+            asyncio.create_task(
+                anyio.to_thread.run_sync(
+                    duckdb._mark_shared_index_used, str(i), limiter=duckdb._shared_index_marker_limiter
+                )
+            )
+            for i in range(10)
+        ]
+        await asyncio.sleep(0.2)
+        with anyio.move_on_after(1) as scope:
+            await anyio.to_thread.run_sync(lambda: None, limiter=duckdb._shared_cache_limiter)
+        release.set()
+        await asyncio.gather(*markers)
+
+    assert not scope.cancelled_caught  # a copy got a slot while the markers waited
