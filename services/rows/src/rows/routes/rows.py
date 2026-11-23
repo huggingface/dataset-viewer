@@ -6,9 +6,16 @@ from functools import lru_cache
 from http import HTTPStatus
 from typing import Optional
 
+import anyio
 from fsspec.implementations.http import HTTPFileSystem
 from libapi.authentication import auth_check, get_auth_kind
-from libapi.exceptions import ApiError, TooBigContentError, UnexpectedApiError
+from libapi.exceptions import (
+    ApiError,
+    ResponseNotFoundError,
+    ResponseNotReadyError,
+    TooBigContentError,
+    UnexpectedApiError,
+)
 from libapi.request import (
     get_caller_debug_info,
     get_request_parameter,
@@ -25,7 +32,7 @@ from libapi.utils import (
     try_backfill_dataset_then_raise,
 )
 from libcommon.constants import CONFIG_PARQUET_METADATA_KIND
-from libcommon.parquet_utils import RowsIndex, TooBigRows
+from libcommon.parquet_utils import EmptyParquetMetadataError, RowsIndex, TooBigRows
 from libcommon.prometheus import StepProfiler
 from libcommon.simple_cache import CachedArtifactError, CachedArtifactNotFoundError
 from libcommon.storage import StrPath
@@ -40,6 +47,11 @@ MAX_USER_AGENT_LENGTH = 200
 # the datasets whose owner asked to log the address of every caller, to debug how the calls reach the service (see
 # get_caller_debug_info). An address is a personal data: only list a dataset here while its owner needs it.
 PROBE_DATASETS = {"lhoestq/probe-rows-service"}
+# Each query can hold up to max_arrow_data_in_memory bytes of parquet data, and the event loop starts every request it
+# receives: without a bound, hundreds of queries at once outgrow the memory of the pod. The others wait for a slot.
+MAX_CONCURRENT_QUERIES = 8
+# a request that waits longer gives up before the load balancer does, and tells the client to retry
+QUERY_SLOT_WAIT_SECONDS = 20
 
 
 def create_rows_endpoint(
@@ -61,6 +73,7 @@ def create_rows_endpoint(
     storage_clients: Optional[list[StorageClient]] = None,
 ) -> Endpoint:
     httpfs = HTTPFileSystem(headers={"authorization": f"Bearer {hf_token}"})
+    query_limiter = anyio.Semaphore(MAX_CONCURRENT_QUERIES)
 
     @lru_cache(maxsize=1)
     def get_rows_index(dataset: str, config: str, split: str) -> RowsIndex:
@@ -123,30 +136,45 @@ def create_rows_endpoint(
                     )
                 try:
                     with StepProfiler(method="rows_endpoint", step="get row groups index"):
-                        rows_index = get_rows_index(dataset=dataset, config=config, split=split)
-                        revision = rows_index.revision
-                    with StepProfiler(method="rows_endpoint", step="query the rows"):
                         try:
-                            # Some datasets have very long binary data that we truncate
-                            pa_table, truncated_columns = await rows_index.query(offset=offset, length=length)
-                        except TooBigRows as err:
-                            raise TooBigContentError(str(err)) from None
-                    with StepProfiler(method="rows_endpoint", step="transform to a list"):
-                        response = await create_response(
-                            dataset=dataset,
-                            revision=revision,
-                            config=config,
-                            split=split,
-                            storage_client=cached_assets_storage_client,
-                            hf_endpoint=hf_endpoint,
-                            hf_token=hf_token,
-                            pa_table=pa_table,
-                            offset=offset,
-                            features=rows_index.features,
-                            partial=rows_index.partial,
-                            num_rows_total=rows_index.num_rows_total,
-                            truncated_columns=truncated_columns,
-                        )
+                            rows_index = get_rows_index(dataset=dataset, config=config, split=split)
+                        except EmptyParquetMetadataError:
+                            # the split does not exist (anymore) in the parquet export, like a request for a renamed split
+                            raise ResponseNotFoundError("Not found.") from None
+                        revision = rows_index.revision
+                    # the rows stay in memory until the response is built: hold the slot until then
+                    try:
+                        with anyio.fail_after(QUERY_SLOT_WAIT_SECONDS):
+                            await query_limiter.acquire()
+                    except TimeoutError:
+                        raise ResponseNotReadyError(
+                            "The server is busier than usual and the response is not ready yet. Please retry later."
+                        ) from None
+                    try:
+                        with StepProfiler(method="rows_endpoint", step="query the rows"):
+                            try:
+                                # Some datasets have very long binary data that we truncate
+                                pa_table, truncated_columns = await rows_index.query(offset=offset, length=length)
+                            except TooBigRows as err:
+                                raise TooBigContentError(str(err)) from None
+                        with StepProfiler(method="rows_endpoint", step="transform to a list"):
+                            response = await create_response(
+                                dataset=dataset,
+                                revision=revision,
+                                config=config,
+                                split=split,
+                                storage_client=cached_assets_storage_client,
+                                hf_endpoint=hf_endpoint,
+                                hf_token=hf_token,
+                                pa_table=pa_table,
+                                offset=offset,
+                                features=rows_index.features,
+                                partial=rows_index.partial,
+                                num_rows_total=rows_index.num_rows_total,
+                                truncated_columns=truncated_columns,
+                            )
+                    finally:
+                        query_limiter.release()
                 except CachedArtifactNotFoundError:
                     with StepProfiler(method="rows_endpoint", step="try backfill dataset"):
                         try_backfill_dataset_then_raise(
