@@ -5,7 +5,7 @@ import logging
 import os
 import threading
 from collections import Counter
-from collections.abc import Hashable
+from collections.abc import Callable, Hashable
 from io import BufferedReader, BytesIO
 from tempfile import NamedTemporaryFile
 from typing import TYPE_CHECKING, Any, Optional, TypedDict, Union
@@ -35,7 +35,9 @@ SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE = {
 SUPPORTED_AUDIO_CONVERSION_CODECS = {"aac", "flac", "mp3", "opus", "vorbis"}
 SUPPORTED_AUDIO_EXTENSIONS = SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE.keys()
 DATASET_GIT_REVISION_PLACEHOLDER = "{dataset_git_revision}"
-LOCK = threading.Lock()
+# A 3D file of a few tens of MB takes more than 1GB to load and render, and a page of rows renders its cells in
+# parallel: one render at a time per process keeps a page of large meshes within the memory of the pod.
+MESH_RENDER_LOCK = threading.Lock()
 # the size of the rendered 3D thumbnails, in pixels
 MESH_THUMBNAIL_WIDTH = 800
 MESH_THUMBNAIL_HEIGHT = 600
@@ -970,13 +972,13 @@ def create_mesh_thumbnail(
     row_idx: int,
     column: str,
     filename: str,
-    mesh: "trimesh.Scene",
+    load_mesh: Callable[[], "trimesh.Scene"],
     storage_client: "StorageClient",
 ) -> ImageSource:
     """Render a 3D scene to a PNG image, and store it on the assets storage.
 
     The image is not resized to a thumbnail size: it's rendered at the requested size, so that the
-    edges stay sharp.
+    edges stay sharp. The scene is loaded only if the thumbnail is not stored yet.
     """
     thumbnail_object_path = storage_client.generate_object_path(
         dataset=dataset,
@@ -988,20 +990,19 @@ def create_mesh_thumbnail(
         filename=f"{filename}.png",
     )
     thumbnail_storage_path = replace_dataset_git_revision_placeholder(thumbnail_object_path, revision=revision)
-    thumbnail_buffer = BytesIO()
-    thumbnail_width = MESH_THUMBNAIL_WIDTH
-    thumbnail_height = MESH_THUMBNAIL_HEIGHT
-    _render_trimesh_scene_to_png(mesh, thumbnail_buffer, width=thumbnail_width, height=thumbnail_height)
-    thumbnail_buffer.seek(0)
-
     if storage_client.overwrite or not storage_client.exists(thumbnail_storage_path):
+        thumbnail_buffer = BytesIO()
+        with MESH_RENDER_LOCK:
+            _render_trimesh_scene_to_png(
+                load_mesh(), thumbnail_buffer, width=MESH_THUMBNAIL_WIDTH, height=MESH_THUMBNAIL_HEIGHT
+            )
         with storage_client._fs.open(storage_client.get_full_path(thumbnail_storage_path), "wb") as thumbnail_file:
-            thumbnail_file.write(thumbnail_buffer.read())
+            thumbnail_file.write(thumbnail_buffer.getvalue())
 
     return ImageSource(
         src=storage_client.get_url(thumbnail_object_path, revision=revision),
-        height=thumbnail_height,
-        width=thumbnail_width,
+        height=MESH_THUMBNAIL_HEIGHT,
+        width=MESH_THUMBNAIL_WIDTH,
     )
 
 
@@ -1013,8 +1014,8 @@ def create_mesh_file(
     row_idx: int,
     column: str,
     filename: str,
-    mesh: "trimesh.Scene",
     mesh_bytes: bytes,
+    load_mesh: Callable[[], "trimesh.Scene"],
     storage_client: "StorageClient",
 ) -> MeshSource:
     """Store a mesh cell on the assets storage: the mesh file, and a rendered thumbnail of it.
@@ -1023,17 +1024,6 @@ def create_mesh_file(
     display it, to download it, or to rotate it. A cell whose mesh is already available at its own
     URL does not go through this function: only its thumbnail is created (see create_mesh_thumbnail).
     """
-    thumbnail = create_mesh_thumbnail(
-        dataset=dataset,
-        revision=revision,
-        config=config,
-        split=split,
-        row_idx=row_idx,
-        column=column,
-        filename=filename,
-        mesh=mesh,
-        storage_client=storage_client,
-    )
     mesh_object_path = storage_client.generate_object_path(
         dataset=dataset,
         revision=DATASET_GIT_REVISION_PLACEHOLDER,
@@ -1047,6 +1037,17 @@ def create_mesh_file(
     if storage_client.overwrite or not storage_client.exists(mesh_storage_path):
         with storage_client._fs.open(storage_client.get_full_path(mesh_storage_path), "wb") as mesh_file:
             mesh_file.write(mesh_bytes)
+    thumbnail = create_mesh_thumbnail(
+        dataset=dataset,
+        revision=revision,
+        config=config,
+        split=split,
+        row_idx=row_idx,
+        column=column,
+        filename=filename,
+        load_mesh=load_mesh,
+        storage_client=storage_client,
+    )
 
     return MeshSource(
         src=storage_client.get_url(mesh_object_path, revision=revision),

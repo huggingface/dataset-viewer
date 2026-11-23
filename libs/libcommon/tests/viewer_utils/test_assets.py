@@ -289,7 +289,7 @@ def test_create_mesh_thumbnail_file_types(file_type: str, storage_client_with_ur
         row_idx=MESH_ROW_IDX,
         column=DEFAULT_COLUMN_NAME,
         filename=f"mesh.{file_type}",
-        mesh=trimesh.Scene(mesh),
+        load_mesh=lambda: trimesh.Scene(mesh),
         storage_client=storage_client_with_url_preparator,
     )
     pixels = assert_thumbnail(value, storage_client_with_url_preparator, filename=f"mesh.{file_type}")
@@ -319,7 +319,7 @@ def test_create_mesh_thumbnail_scene(storage_client_with_url_preparator: Storage
         row_idx=MESH_ROW_IDX,
         column=DEFAULT_COLUMN_NAME,
         filename="mesh.glb",
-        mesh=mesh,
+        load_mesh=lambda: mesh,
         storage_client=storage_client_with_url_preparator,
     )
     pixels = assert_thumbnail(value, storage_client_with_url_preparator, filename="mesh.glb")
@@ -343,7 +343,7 @@ def test_create_mesh_thumbnail_skips_unsupported_geometry(
         row_idx=MESH_ROW_IDX,
         column=DEFAULT_COLUMN_NAME,
         filename="mesh.glb",
-        mesh=scene,
+        load_mesh=lambda: scene,
         storage_client=storage_client_with_url_preparator,
     )
     pixels = assert_thumbnail(value, storage_client_with_url_preparator, filename="mesh.glb")
@@ -362,7 +362,7 @@ def test_create_mesh_thumbnail_without_geometry(storage_client_with_url_preparat
             row_idx=MESH_ROW_IDX,
             column=DEFAULT_COLUMN_NAME,
             filename="mesh.ply",
-            mesh=trimesh.Scene(),
+            load_mesh=lambda: trimesh.Scene(),
             storage_client=storage_client_with_url_preparator,
         )
 
@@ -383,8 +383,8 @@ def test_create_mesh_file_stores_mesh_and_thumbnail(
         row_idx=MESH_ROW_IDX,
         column=DEFAULT_COLUMN_NAME,
         filename="mesh.glb",
-        mesh=mesh,
         mesh_bytes=mesh_bytes,
+        load_mesh=lambda: mesh,
         storage_client=storage_client_with_url_preparator,
     )
     assert value["src"] == f"{ASSETS_BASE_URL}/{MESH_ASSET_PATH}/mesh.glb"

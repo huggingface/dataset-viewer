@@ -484,19 +484,6 @@ def mesh(
     # the names of the stored assets: "mesh.glb" and "mesh.glb.png", with a suffix if the cell is nested
     filename = append_hash_suffix("mesh", json_path)
 
-    def create_thumbnail(scene: "trimesh.Scene", file_type: str) -> ImageSource:
-        return create_mesh_thumbnail(
-            dataset=dataset,
-            revision=revision,
-            config=config,
-            split=split,
-            row_idx=row_idx,
-            column=featureName,
-            mesh=scene,
-            storage_client=storage_client,
-            filename=f"{filename}.{file_type}",
-        )
-
     if isinstance(value, bytes):
         # the mesh bytes alone don't tell the file type: it's read from the extension of "path"
         raise ValueError(MESH_FILE_TYPE_ERROR)
@@ -506,7 +493,6 @@ def mesh(
         if file_type is None:
             raise ValueError(MESH_FILE_TYPE_ERROR)
         mesh_bytes: bytes = value["bytes"]
-        scene = _as_mesh_scene(trimesh.load(BytesIO(mesh_bytes), file_type=file_type))
         # this function can raise, we don't catch it
         return create_mesh_file(
             dataset=dataset,
@@ -516,8 +502,8 @@ def mesh(
             row_idx=row_idx,
             column=featureName,
             filename=f"{filename}.{file_type}",
-            mesh=scene,
             mesh_bytes=mesh_bytes,
+            load_mesh=lambda: _as_mesh_scene(trimesh.load(BytesIO(mesh_bytes), file_type=file_type)),
             storage_client=storage_client,
         )
 
@@ -531,15 +517,32 @@ def mesh(
         file_type = _infer_mesh_file_type(path)
         if file_type is None:
             raise ValueError(MESH_FILE_TYPE_ERROR)
-        # this function can raise, we don't catch it
-        with HfFileSystem(endpoint=hf_endpoint, token=hf_token).open(path, "rb") as file:
-            scene = _as_mesh_scene(trimesh.load(file, file_type=file_type))
-            size_bytes = file.size
+        fs = HfFileSystem(endpoint=hf_endpoint, token=hf_token)
+        size_bytes: Optional[int] = None
+
+        def load_mesh() -> "trimesh.Scene":
+            nonlocal size_bytes
+            with fs.open(path, "rb") as file:
+                size_bytes = file.size
+                return _as_mesh_scene(trimesh.load(file, file_type=file_type))
+
         # the mesh file stays on the Hub: it's already available at its own URL, we don't store a copy
+        # this function can raise, we don't catch it
+        thumbnail = create_mesh_thumbnail(
+            dataset=dataset,
+            revision=revision,
+            config=config,
+            split=split,
+            row_idx=row_idx,
+            column=featureName,
+            filename=f"{filename}.{file_type}",
+            load_mesh=load_mesh,
+            storage_client=storage_client,
+        )
         return MeshSource(
             src=hf_to_https_url(path, hf_endpoint),
-            size_bytes=size_bytes,
-            thumbnail=create_thumbnail(scene, file_type),
+            size_bytes=fs.size(path) if size_bytes is None else size_bytes,
+            thumbnail=thumbnail,
         )
 
     # a mesh or a scene object: it has not been encoded for storage, so we export it to glTF binary
@@ -552,8 +555,8 @@ def mesh(
         row_idx=row_idx,
         column=featureName,
         filename=f"{filename}.glb",
-        mesh=scene,
         mesh_bytes=scene.export(file_type="glb"),  # type: ignore
+        load_mesh=lambda: scene,
         storage_client=storage_client,
     )
 
