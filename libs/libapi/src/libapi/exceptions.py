@@ -49,6 +49,7 @@ class ApiError(CustomError):
         super().__init__(
             message=message, status_code=status_code, code=code, cause=cause, disclose_cause=disclose_cause
         )
+        self.headers: dict[str, str] = {}
 
 
 class AuthCheckHubRequestError(ApiError):
@@ -132,10 +133,11 @@ class RenamedDatasetError(ApiError):
 
 
 class ResponseNotReadyError(ApiError):
-    """The response has not been processed yet."""
+    """The response has not been processed yet: the client can retry later."""
 
     def __init__(self, message: str):
-        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "ResponseNotReady")
+        super().__init__(message, HTTPStatus.SERVICE_UNAVAILABLE, "ResponseNotReady")
+        self.headers = {"Retry-After": "10"}
 
 
 class SearchFeatureNotAvailableError(ApiError):

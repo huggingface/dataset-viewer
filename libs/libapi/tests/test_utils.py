@@ -16,7 +16,7 @@ from libcommon.simple_cache import upsert_response
 from pytest import raises
 
 from libapi.exceptions import ResponseNotReadyError
-from libapi.utils import get_cache_entry_from_step
+from libapi.utils import get_cache_entry_from_step, get_json_api_error_response
 
 
 def test_get_cache_entry_from_step(hf_endpoint: str) -> None:
@@ -266,3 +266,11 @@ def test_get_cache_entry_from_step_no_cache_blocked(hf_endpoint: str) -> None:
                 hf_endpoint=hf_endpoint,
                 blocked_datasets=[dataset],
             )
+
+
+def test_not_ready_response_is_a_503_with_retry_after() -> None:
+    response = get_json_api_error_response(ResponseNotReadyError("the dataset index is loading"))
+    assert response.status_code == HTTPStatus.SERVICE_UNAVAILABLE
+    assert response.headers["Retry-After"] == "10"
+    assert response.headers["X-Error-Code"] == "ResponseNotReady"
+    assert response.headers["Cache-Control"] == "no-store"

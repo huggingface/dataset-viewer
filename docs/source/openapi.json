@@ -91,9 +91,6 @@
         "description": "A string that identifies the underlying error for 500. It's marked as required: false because the header can be missing on text-plain response.",
         "schema": {
           "oneOf": [
-            {
-              "$ref": "#/components/schemas/X-Error-Code-ResponseNotReadyError"
-            },
             { "$ref": "#/components/schemas/X-Error-Code-UnexpectedError" }
           ]
         },
@@ -103,9 +100,6 @@
         "description": "A string that identifies the underlying error for 500 on /first-rows. It's marked as required: false because the header can be missing on text-plain response.",
         "schema": {
           "oneOf": [
-            {
-              "$ref": "#/components/schemas/X-Error-Code-ResponseNotReadyError"
-            },
             { "$ref": "#/components/schemas/X-Error-Code-UnexpectedError" },
             { "$ref": "#/components/schemas/X-Error-Code-StreamingRowsError" }
           ]
@@ -125,9 +119,6 @@
         "description": "A string that identifies the underlying error for 500 on /parquet. It's marked as required: false because the header can be missing on text-plain response.",
         "schema": {
           "oneOf": [
-            {
-              "$ref": "#/components/schemas/X-Error-Code-ResponseNotReadyError"
-            },
             { "$ref": "#/components/schemas/X-Error-Code-UnexpectedError" }
           ]
         },
@@ -156,6 +147,23 @@
           ]
         },
         "required": false
+      },
+      "X-Error-Code-503": {
+        "description": "A string that identifies the underlying error for 503.",
+        "schema": {
+          "oneOf": [
+            {
+              "$ref": "#/components/schemas/X-Error-Code-ResponseNotReadyError"
+            }
+          ]
+        },
+        "required": true
+      },
+      "Retry-After": {
+        "description": "Number of seconds after which the client should retry the request.",
+        "schema": { "type": "integer", "minimum": 1 },
+        "example": 10,
+        "required": true
       },
       "X-Error-Code-501": {
         "description": "A string that identifies the underlying error for 501.",
@@ -2035,7 +2043,7 @@
             "$ref": "#/components/responses/Dataset422"
           },
           "500": {
-            "description": "The server crashed, the response still hasn't been generated (the process is asynchronous), or the response couldn't be generated successfully due to an error in the dataset itself. The client can retry after a time, in particular in the case of the response still being processed. If the error does not vanish, it's possibly due to a bug in the API software or in the dataset, and should be reported.",
+            "description": "The server crashed, or the response couldn't be generated successfully due to an error in the dataset itself. If the error does not vanish, it's possibly due to a bug in the API software or in the dataset, and should be reported.",
             "headers": {
               "Cache-Control": {
                 "$ref": "#/components/headers/Cache-Control"
@@ -2072,9 +2080,6 @@
                       ]
                     }
                   },
-                  "response not ready": {
-                    "$ref": "#/components/examples/ResponseNotReadyError"
-                  },
                   "unexpected error": {
                     "$ref": "#/components/examples/UnexpectedJsonError"
                   }
@@ -2087,6 +2092,27 @@
                 "examples": {
                   "internal server error": {
                     "$ref": "#/components/examples/UnexpectedTextError"
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The response has not been generated yet (the process is asynchronous, or the search index is being built). The client should retry after the number of seconds given by the Retry-After header.",
+            "headers": {
+              "Cache-Control": { "$ref": "#/components/headers/Cache-Control" },
+              "Access-Control-Allow-Origin": {
+                "$ref": "#/components/headers/Access-Control-Allow-Origin"
+              },
+              "Retry-After": { "$ref": "#/components/headers/Retry-After" },
+              "X-Error-Code": { "$ref": "#/components/headers/X-Error-Code-503" }
+            },
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CustomError" },
+                "examples": {
+                  "response not ready": {
+                    "$ref": "#/components/examples/ResponseNotReadyError"
                   }
                 }
               }
@@ -2630,7 +2656,7 @@
             "$ref": "#/components/responses/DatasetConfigSplit422"
           },
           "500": {
-            "description": "The server crashed, the response still hasn't been generated (the process is asynchronous), or the response couldn't be generated successfully due to an error in the dataset itself. The client can retry after a time, in particular in the case of the response still being processed. If the error does not vanish, it's possibly due to a bug in the API software or in the dataset, and should be reported.",
+            "description": "The server crashed, or the response couldn't be generated successfully due to an error in the dataset itself. If the error does not vanish, it's possibly due to a bug in the API software or in the dataset, and should be reported.",
             "headers": {
               "Cache-Control": {
                 "$ref": "#/components/headers/Cache-Control"
@@ -2684,9 +2710,6 @@
                       ]
                     }
                   },
-                  "response not ready": {
-                    "$ref": "#/components/examples/ResponseNotReadyError"
-                  },
                   "unexpected error": {
                     "$ref": "#/components/examples/UnexpectedJsonError"
                   }
@@ -2699,6 +2722,27 @@
                 "examples": {
                   "internal server error": {
                     "$ref": "#/components/examples/UnexpectedTextError"
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The response has not been generated yet (the process is asynchronous, or the search index is being built). The client should retry after the number of seconds given by the Retry-After header.",
+            "headers": {
+              "Cache-Control": { "$ref": "#/components/headers/Cache-Control" },
+              "Access-Control-Allow-Origin": {
+                "$ref": "#/components/headers/Access-Control-Allow-Origin"
+              },
+              "Retry-After": { "$ref": "#/components/headers/Retry-After" },
+              "X-Error-Code": { "$ref": "#/components/headers/X-Error-Code-503" }
+            },
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CustomError" },
+                "examples": {
+                  "response not ready": {
+                    "$ref": "#/components/examples/ResponseNotReadyError"
                   }
                 }
               }
@@ -3449,7 +3493,7 @@
             }
           },
           "500": {
-            "description": "The server crashed, the response still hasn't been generated (the process is asynchronous), or the response couldn't be generated successfully due to an error in the dataset itself. The client can retry after a time, in particular in the case of the response still being processed. If the error does not vanish, it's possibly due to a bug in the API software or in the dataset, and should be reported.",
+            "description": "The server crashed, or the response couldn't be generated successfully due to an error in the dataset itself. If the error does not vanish, it's possibly due to a bug in the API software or in the dataset, and should be reported.",
             "headers": {
               "Cache-Control": {
                 "$ref": "#/components/headers/Cache-Control"
@@ -3485,9 +3529,6 @@
                       ]
                     }
                   },
-                  "response not ready": {
-                    "$ref": "#/components/examples/ResponseNotReadyError"
-                  },
                   "unexpected error": {
                     "$ref": "#/components/examples/UnexpectedJsonError"
                   }
@@ -3500,6 +3541,27 @@
                 "examples": {
                   "internal server error": {
                     "$ref": "#/components/examples/UnexpectedTextError"
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The response has not been generated yet (the process is asynchronous, or the search index is being built). The client should retry after the number of seconds given by the Retry-After header.",
+            "headers": {
+              "Cache-Control": { "$ref": "#/components/headers/Cache-Control" },
+              "Access-Control-Allow-Origin": {
+                "$ref": "#/components/headers/Access-Control-Allow-Origin"
+              },
+              "Retry-After": { "$ref": "#/components/headers/Retry-After" },
+              "X-Error-Code": { "$ref": "#/components/headers/X-Error-Code-503" }
+            },
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CustomError" },
+                "examples": {
+                  "response not ready": {
+                    "$ref": "#/components/examples/ResponseNotReadyError"
                   }
                 }
               }
@@ -4077,7 +4139,7 @@
             }
           },
           "500": {
-            "description": "The server crashed, the response still hasn't been generated (the process is asynchronous), or the response couldn't be generated successfully due to an error in the dataset itself. The client can retry after a time, in particular in the case of the response still being processed. If the error does not vanish, it's possibly due to a bug in the API software or in the dataset, and should be reported.",
+            "description": "The server crashed, or the response couldn't be generated successfully due to an error in the dataset itself. If the error does not vanish, it's possibly due to a bug in the API software or in the dataset, and should be reported.",
             "headers": {
               "Cache-Control": {
                 "$ref": "#/components/headers/Cache-Control"
@@ -4113,9 +4175,6 @@
                       ]
                     }
                   },
-                  "response not ready": {
-                    "$ref": "#/components/examples/ResponseNotReadyError"
-                  },
                   "unexpected error": {
                     "$ref": "#/components/examples/UnexpectedJsonError"
                   }
@@ -4128,6 +4187,27 @@
                 "examples": {
                   "internal server error": {
                     "$ref": "#/components/examples/UnexpectedTextError"
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The response has not been generated yet (the process is asynchronous, or the search index is being built). The client should retry after the number of seconds given by the Retry-After header.",
+            "headers": {
+              "Cache-Control": { "$ref": "#/components/headers/Cache-Control" },
+              "Access-Control-Allow-Origin": {
+                "$ref": "#/components/headers/Access-Control-Allow-Origin"
+              },
+              "Retry-After": { "$ref": "#/components/headers/Retry-After" },
+              "X-Error-Code": { "$ref": "#/components/headers/X-Error-Code-503" }
+            },
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CustomError" },
+                "examples": {
+                  "response not ready": {
+                    "$ref": "#/components/examples/ResponseNotReadyError"
                   }
                 }
               }
@@ -4617,7 +4697,7 @@
             "$ref": "#/components/responses/Dataset422"
           },
           "500": {
-            "description": "The server crashed, the response still hasn't been generated (the process is asynchronous), or the response couldn't be generated successfully due to an error in the dataset itself. The client can retry after a time, in particular in the case of the response still being processed. If the error does not vanish, it's possibly due to a bug in the API software or in the dataset, and should be reported.",
+            "description": "The server crashed, or the response couldn't be generated successfully due to an error in the dataset itself. If the error does not vanish, it's possibly due to a bug in the API software or in the dataset, and should be reported.",
             "headers": {
               "Cache-Control": {
                 "$ref": "#/components/headers/Cache-Control"
@@ -4653,9 +4733,6 @@
                       ]
                     }
                   },
-                  "response not ready": {
-                    "$ref": "#/components/examples/ResponseNotReadyError"
-                  },
                   "unexpected error": {
                     "$ref": "#/components/examples/UnexpectedJsonError"
                   }
@@ -4668,6 +4745,27 @@
                 "examples": {
                   "internal server error": {
                     "$ref": "#/components/examples/UnexpectedTextError"
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The response has not been generated yet (the process is asynchronous, or the search index is being built). The client should retry after the number of seconds given by the Retry-After header.",
+            "headers": {
+              "Cache-Control": { "$ref": "#/components/headers/Cache-Control" },
+              "Access-Control-Allow-Origin": {
+                "$ref": "#/components/headers/Access-Control-Allow-Origin"
+              },
+              "Retry-After": { "$ref": "#/components/headers/Retry-After" },
+              "X-Error-Code": { "$ref": "#/components/headers/X-Error-Code-503" }
+            },
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CustomError" },
+                "examples": {
+                  "response not ready": {
+                    "$ref": "#/components/examples/ResponseNotReadyError"
                   }
                 }
               }
@@ -5062,7 +5160,7 @@
             "$ref": "#/components/responses/Dataset422"
           },
           "500": {
-            "description": "The server crashed, the response still hasn't been generated (the process is asynchronous), or the response couldn't be generated successfully due to an error in the dataset itself. The client can retry after a time, in particular in the case of the response still being processed. If the error does not vanish, it's possibly due to a bug in the API software or in the dataset, and should be reported.",
+            "description": "The server crashed, or the response couldn't be generated successfully due to an error in the dataset itself. If the error does not vanish, it's possibly due to a bug in the API software or in the dataset, and should be reported.",
             "headers": {
               "Cache-Control": {
                 "$ref": "#/components/headers/Cache-Control"
@@ -5098,9 +5196,6 @@
                       ]
                     }
                   },
-                  "response not ready": {
-                    "$ref": "#/components/examples/ResponseNotReadyError"
-                  },
                   "unexpected error": {
                     "$ref": "#/components/examples/UnexpectedJsonError"
                   }
@@ -5113,6 +5208,27 @@
                 "examples": {
                   "internal server error": {
                     "$ref": "#/components/examples/UnexpectedTextError"
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The response has not been generated yet (the process is asynchronous, or the search index is being built). The client should retry after the number of seconds given by the Retry-After header.",
+            "headers": {
+              "Cache-Control": { "$ref": "#/components/headers/Cache-Control" },
+              "Access-Control-Allow-Origin": {
+                "$ref": "#/components/headers/Access-Control-Allow-Origin"
+              },
+              "Retry-After": { "$ref": "#/components/headers/Retry-After" },
+              "X-Error-Code": { "$ref": "#/components/headers/X-Error-Code-503" }
+            },
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CustomError" },
+                "examples": {
+                  "response not ready": {
+                    "$ref": "#/components/examples/ResponseNotReadyError"
                   }
                 }
               }
@@ -5320,7 +5436,7 @@
             "$ref": "#/components/responses/Dataset422"
           },
           "500": {
-            "description": "The server crashed, the response still hasn't been generated (the process is asynchronous), or the response couldn't be generated successfully due to an error in the dataset itself. The client can retry after a time, in particular in the case of the response still being processed. If the error does not vanish, it's possibly due to a bug in the API software or in the dataset, and should be reported.",
+            "description": "The server crashed, or the response couldn't be generated successfully due to an error in the dataset itself. If the error does not vanish, it's possibly due to a bug in the API software or in the dataset, and should be reported.",
             "headers": {
               "Cache-Control": {
                 "$ref": "#/components/headers/Cache-Control"
@@ -5356,9 +5472,6 @@
                       ]
                     }
                   },
-                  "response not ready": {
-                    "$ref": "#/components/examples/ResponseNotReadyError"
-                  },
                   "unexpected error": {
                     "$ref": "#/components/examples/UnexpectedJsonError"
                   }
@@ -5371,6 +5484,27 @@
                 "examples": {
                   "internal server error": {
                     "$ref": "#/components/examples/UnexpectedTextError"
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The response has not been generated yet (the process is asynchronous, or the search index is being built). The client should retry after the number of seconds given by the Retry-After header.",
+            "headers": {
+              "Cache-Control": { "$ref": "#/components/headers/Cache-Control" },
+              "Access-Control-Allow-Origin": {
+                "$ref": "#/components/headers/Access-Control-Allow-Origin"
+              },
+              "Retry-After": { "$ref": "#/components/headers/Retry-After" },
+              "X-Error-Code": { "$ref": "#/components/headers/X-Error-Code-503" }
+            },
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CustomError" },
+                "examples": {
+                  "response not ready": {
+                    "$ref": "#/components/examples/ResponseNotReadyError"
                   }
                 }
               }
@@ -5521,7 +5655,7 @@
             "$ref": "#/components/responses/Dataset422"
           },
           "500": {
-            "description": "The server crashed, the response still hasn't been generated (the process is asynchronous), or the response couldn't be generated successfully due to an error in the dataset itself. The client can retry after a time, in particular in the case of the response still being processed. If the error does not vanish, it's possibly due to a bug in the API software or in the dataset, and should be reported.",
+            "description": "The server crashed, or the response couldn't be generated successfully due to an error in the dataset itself. If the error does not vanish, it's possibly due to a bug in the API software or in the dataset, and should be reported.",
             "headers": {
               "Cache-Control": {
                 "$ref": "#/components/headers/Cache-Control"
@@ -5539,9 +5673,6 @@
                   "$ref": "#/components/schemas/CustomError"
                 },
                 "examples": {
-                  "response not ready": {
-                    "$ref": "#/components/examples/ResponseNotReadyError"
-                  },
                   "unexpected error": {
                     "$ref": "#/components/examples/UnexpectedJsonError"
                   }
@@ -5554,6 +5685,27 @@
                 "examples": {
                   "internal server error": {
                     "$ref": "#/components/examples/UnexpectedTextError"
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The response has not been generated yet (the process is asynchronous, or the search index is being built). The client should retry after the number of seconds given by the Retry-After header.",
+            "headers": {
+              "Cache-Control": { "$ref": "#/components/headers/Cache-Control" },
+              "Access-Control-Allow-Origin": {
+                "$ref": "#/components/headers/Access-Control-Allow-Origin"
+              },
+              "Retry-After": { "$ref": "#/components/headers/Retry-After" },
+              "X-Error-Code": { "$ref": "#/components/headers/X-Error-Code-503" }
+            },
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CustomError" },
+                "examples": {
+                  "response not ready": {
+                    "$ref": "#/components/examples/ResponseNotReadyError"
                   }
                 }
               }
@@ -5666,7 +5818,7 @@
             "$ref": "#/components/responses/Dataset422"
           },
           "500": {
-            "description": "The server crashed, the response still hasn't been generated (the process is asynchronous), or the response couldn't be generated successfully due to an error in the dataset itself. The client can retry after a time, in particular in the case of the response still being processed. If the error does not vanish, it's possibly due to a bug in the API software or in the dataset, and should be reported.",
+            "description": "The server crashed, or the response couldn't be generated successfully due to an error in the dataset itself. If the error does not vanish, it's possibly due to a bug in the API software or in the dataset, and should be reported.",
             "headers": {
               "Cache-Control": {
                 "$ref": "#/components/headers/Cache-Control"
@@ -5684,9 +5836,6 @@
                   "$ref": "#/components/schemas/CustomError"
                 },
                 "examples": {
-                  "response not ready": {
-                    "$ref": "#/components/examples/ResponseNotReadyError"
-                  },
                   "unexpected error": {
                     "$ref": "#/components/examples/UnexpectedJsonError"
                   }
@@ -5699,6 +5848,27 @@
                 "examples": {
                   "internal server error": {
                     "$ref": "#/components/examples/UnexpectedTextError"
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The response has not been generated yet (the process is asynchronous, or the search index is being built). The client should retry after the number of seconds given by the Retry-After header.",
+            "headers": {
+              "Cache-Control": { "$ref": "#/components/headers/Cache-Control" },
+              "Access-Control-Allow-Origin": {
+                "$ref": "#/components/headers/Access-Control-Allow-Origin"
+              },
+              "Retry-After": { "$ref": "#/components/headers/Retry-After" },
+              "X-Error-Code": { "$ref": "#/components/headers/X-Error-Code-503" }
+            },
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CustomError" },
+                "examples": {
+                  "response not ready": {
+                    "$ref": "#/components/examples/ResponseNotReadyError"
                   }
                 }
               }
@@ -6956,7 +7126,7 @@
             "$ref": "#/components/responses/DatasetConfigSplit422"
           },
           "500": {
-            "description": "The server crashed, the response still hasn't been generated (the process is asynchronous), or the response couldn't be generated successfully due to an error in the dataset itself. The client can retry after a time, in particular in the case of the response still being processed. If the error does not vanish, it's possibly due to a bug in the API software or in the dataset, and should be reported.",
+            "description": "The server crashed, or the response couldn't be generated successfully due to an error in the dataset itself. If the error does not vanish, it's possibly due to a bug in the API software or in the dataset, and should be reported.",
             "headers": {
               "Cache-Control": {
                 "$ref": "#/components/headers/Cache-Control"
@@ -6992,9 +7162,6 @@
                       ]
                     }
                   },
-                  "response not ready": {
-                    "$ref": "#/components/examples/ResponseNotReadyError"
-                  },
                   "unexpected error": {
                     "$ref": "#/components/examples/UnexpectedJsonError"
                   }
@@ -7007,6 +7174,27 @@
                 "examples": {
                   "internal server error": {
                     "$ref": "#/components/examples/UnexpectedTextError"
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The response has not been generated yet (the process is asynchronous, or the search index is being built). The client should retry after the number of seconds given by the Retry-After header.",
+            "headers": {
+              "Cache-Control": { "$ref": "#/components/headers/Cache-Control" },
+              "Access-Control-Allow-Origin": {
+                "$ref": "#/components/headers/Access-Control-Allow-Origin"
+              },
+              "Retry-After": { "$ref": "#/components/headers/Retry-After" },
+              "X-Error-Code": { "$ref": "#/components/headers/X-Error-Code-503" }
+            },
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CustomError" },
+                "examples": {
+                  "response not ready": {
+                    "$ref": "#/components/examples/ResponseNotReadyError"
                   }
                 }
               }
