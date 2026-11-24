@@ -37,6 +37,10 @@
     value: {{ .Values.rowsIndex.maxArrowDataInMemory | quote }}
   - name: ROWS_INDEX_MAX_CONCURRENT_QUERIES
     value: {{ .Values.rowsIndex.maxConcurrentQueries | quote }}
+  # mimalloc, the default Arrow memory pool, keeps the freed pages of the large tables: each uvicorn worker held 4 to
+  # 6 GiB between requests. The system allocator gives them back.
+  - name: ARROW_DEFAULT_MEMORY_POOL
+    value: "system"
   volumeMounts:
     {{ include "datasetsServer.csi.volumeMount" . | nindent 2 }}
   {{ include "volumeMountParquetMetadataRO" . | nindent 2 }}
