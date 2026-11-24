@@ -27,7 +27,8 @@ WORKER_UVICORN_PORT = os.environ.get("WORKER_UVICORN_PORT", "8086")
 WEBHOOK_UVICORN_PORT = os.environ.get("WEBHOOK_UVICORN_PORT", "8087")
 E2E_ADMIN_USER_TOKEN = os.environ.get("E2E_ADMIN_USER_TOKEN", "")
 INTERVAL = 5
-MAX_DURATION = 3 * 60
+# the first dataset of the run waits for the cold start of the worker: 160 s on main, close to the old 3 min limit
+MAX_DURATION = 5 * 60
 URL = f"http://localhost:{PORT_REVERSE_PROXY}"
 ADMIN_URL = f"http://localhost:{ADMIN_UVICORN_PORT}"
 API_URL = f"http://localhost:{API_UVICORN_PORT}"
