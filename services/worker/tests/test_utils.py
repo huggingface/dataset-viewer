@@ -9,7 +9,9 @@ from unittest.mock import patch
 
 import pytest
 from datasets.packaged_modules.csv.csv import Csv
-from huggingface_hub.hf_api import GitCommitInfo, GitRefInfo, GitRefs, HfApi
+from datasets.packaged_modules.json.json import Json
+from huggingface_hub.hf_api import GitCommitInfo, GitRefInfo, GitRefs, HfApi, RepoFile
+from libcommon.exceptions import TooBigContentError
 
 from worker.utils import (
     DATASET_TYPE,
@@ -276,3 +278,38 @@ def test_create_branch_does_nothing_if_the_branch_already_exists() -> None:
         )
     assert committer_hf_api.created_branches == []
     assert calls == []  # ^ no commit listing at all if the branch already exists
+
+
+@pytest.mark.parametrize(
+    "path,size,too_big",
+    [
+        ("data/big.json", 2_000_000_000, True),
+        ("data/small.json", 1_000, False),
+        # JSON Lines files are read by chunks: their size does not matter
+        ("data/big.jsonl", 2_000_000_000, False),
+    ],
+)
+def test_safe_load_dataset_builder_refuses_too_big_json_files(path: str, size: int, too_big: bool) -> None:
+    data_file = f"hf://datasets/namespace/dataset@revision/{path}"
+
+    class JsonBuilder(Json):  # type: ignore[misc]
+        builder_configs = {"default": SimpleNamespace(data_files={"train": [data_file]})}
+
+        def __init__(self, **kwargs: object) -> None:
+            self.config = SimpleNamespace(data_files={"train": [data_file]})
+            self.token = None
+
+    def get_paths_info(repo_id: str, paths: list[str], **kwargs: Any) -> list[RepoFile]:
+        return [RepoFile(path=p, size=size, oid="0") for p in paths]
+
+    with (
+        patch("datasets.load.dataset_module_factory", return_value=_get_dataset_module()),
+        patch("datasets.load.get_dataset_builder_class", return_value=JsonBuilder),
+        patch.object(HfApi, "get_paths_info", side_effect=get_paths_info) as paths_info,
+    ):
+        if too_big:
+            with pytest.raises(TooBigContentError, match="convert them to JSON Lines"):
+                safe_load_dataset_builder(path="namespace/dataset", name="default")
+        else:
+            assert isinstance(safe_load_dataset_builder(path="namespace/dataset", name="default"), JsonBuilder)
+    assert paths_info.call_count == (0 if path.endswith(".jsonl") else 1)
