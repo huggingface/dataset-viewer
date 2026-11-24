@@ -226,10 +226,10 @@ pub fn scan_size(metadata: &ParquetMetaData, offset: u64, limit: u64) -> u64 {
                     }
                 };
                 // the pages of a column chunk compress alike: its ratio gives their decoded size
-                let compressed = column.compressed_size().max(1) as u128;
-                let uncompressed = column.uncompressed_size().max(0) as u128;
+                let compressed = column.compressed_size().max(1);
+                let uncompressed = column.uncompressed_size().max(compressed);
                 num_bytes +=
-                    (compressed_bytes as u128 * uncompressed.max(compressed) / compressed) as u64;
+                    (compressed_bytes as u128 * uncompressed as u128 / compressed as u128) as u64;
             }
         }
         row_group_start = row_group_end;
