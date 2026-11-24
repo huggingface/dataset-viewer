@@ -32,11 +32,43 @@ jobs:
       working-directory: libs/libcommon
   unit-tests-libcommon:
     uses: ./.github/workflows/_unit-tests-python.yml
-    permissions:
-      contents: read
-      # a reusable workflow cannot widen this, the caller has to grant it
-      id-token: write
     with:
       working-directory: libs/libcommon
-      aws-role: arn:aws:iam::707930574880:role/dataset-viewer-e2e
     secrets: inherit
+  # Outside the reusable workflow: GitHub refuses to start it for every caller if it asks for id-token: write.
+  s3-cloudfront-libcommon:
+    permissions:
+      contents: read
+      id-token: write
+    # a pull request from a fork gets no OIDC token
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: "ubuntu-24.04"
+    defaults:
+      run:
+        shell: bash
+        working-directory: libs/libcommon
+    env:
+      POETRY_VIRTUALENVS_IN_PROJECT: false
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Assume the AWS role that writes the test assets
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd  # v6.3.0
+        with:
+          role-to-assume: arn:aws:iam::707930574880:role/dataset-viewer-e2e
+          aws-region: us-east-1
+      - name: Install poetry
+        run: pipx install poetry==2.1.4
+      - name: Use Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.14.5"
+      - name: Install dependencies
+        run: |
+          poetry env use "3.14.5"
+          poetry install
+      - name: Run the S3 and CloudFront test
+        env:
+          S3_USE_IRSA: "true"
+          CLOUDFRONT_KEY_PAIR_ID: "K1MTLUUQ6YN2UZ"
+          CLOUDFRONT_PRIVATE_KEY: ${{ secrets.CLOUDFRONT_PRIVATE_KEY }}
+        run: poetry run python -m pytest -s tests/test_integration_s3_cloudfront.py

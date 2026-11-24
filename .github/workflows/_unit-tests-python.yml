@@ -12,11 +12,6 @@ on:
         required: false
         type: string
         default: ""
-      aws-role:
-        description: "The AWS role the tests assume through GitHub OIDC. The calling job must grant id-token: write."
-        required: false
-        type: string
-        default: ""
 
 
 env:
@@ -33,8 +28,6 @@ jobs:
   unit-tests:
     permissions:
       contents: read
-      # the callers that pass no aws-role grant no id-token, so the token is never minted for them
-      id-token: write
     defaults:
       run:
         shell: bash
@@ -44,13 +37,6 @@ jobs:
     runs-on: "ubuntu-22.04"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Assume the AWS role of the tests
-        # a pull request from a fork gets no OIDC token: the tests that need AWS skip themselves
-        if: inputs.aws-role != '' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd  # v6.3.0
-        with:
-          role-to-assume: ${{ inputs.aws-role }}
-          aws-region: us-east-1
       - name: Install poetry
         run: pipx install poetry==${{ env.poetry-version }}
       - name: Use Python
@@ -80,7 +66,4 @@ jobs:
           CI_SPAWNING_TOKEN: ${{ secrets.CI_SPAWNING_TOKEN }}
           ASSETS_STORAGE_ROOT: /tmp/assets
           CACHED_ASSETS_STORAGE_ROOT: /tmp/cached-assets
-          S3_USE_IRSA: ${{ inputs.aws-role != '' }}
-          CLOUDFRONT_KEY_PAIR_ID: "K1MTLUUQ6YN2UZ"
-          CLOUDFRONT_PRIVATE_KEY: ${{ secrets.CLOUDFRONT_PRIVATE_KEY }}
         run: poetry run python -m pytest -s -m "not real_dataset and not integration"
