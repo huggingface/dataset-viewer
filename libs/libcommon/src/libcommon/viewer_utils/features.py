@@ -5,7 +5,9 @@ import json
 import logging
 import os
 from io import BytesIO
+from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING, Any, Optional, Union
+from urllib.parse import quote
 from zlib import adler32
 
 import datasets.config
@@ -31,6 +33,7 @@ from datasets import (
 )
 from datasets.utils.file_utils import is_local_path
 from huggingface_hub import HfFileSystem
+from huggingface_hub.hf_file_system import HfFileSystemResolvedRepositoryPath
 
 from libcommon.dtos import FeatureItem
 from libcommon.storage_client import StorageClient
@@ -50,6 +53,7 @@ from libcommon.viewer_utils.asset import (
     create_pdf_file,
     create_video_file,
 )
+from libcommon.viewer_utils.usd import USD_FILE_TYPES, download_usd_layers, load_usd_scene
 
 if TYPE_CHECKING:
     import trimesh
@@ -72,8 +76,9 @@ VIDEO_FILE_MAGIC_NUMBERS: dict[str, Any] = {
     ".mov": [b"\x00\x00\x01\xb3"],
 }
 
-# the mesh file types that trimesh reads without additional dependency, and that the viewer renders
-SUPPORTED_MESH_FILE_TYPES = {"glb", "ply", "stl", "obj"}
+# the mesh file types that trimesh reads without additional dependency, and the USD files, which are converted
+# by libcommon.viewer_utils.usd to render their thumbnail: the viewer renders all of them
+SUPPORTED_MESH_FILE_TYPES = {"glb", "ply", "stl", "obj"} | USD_FILE_TYPES
 SUPPORTED_MESH_EXTENSIONS = ", ".join(f".{file_type}" for file_type in sorted(SUPPORTED_MESH_FILE_TYPES))
 MESH_FILE_TYPE_ERROR = (
     "Decoding mesh bytes requires a 'path' value with one of the supported mesh extensions "
@@ -428,7 +433,7 @@ def _infer_mesh_file_type(path: Optional[str]) -> Optional[str]:
     """Guess the type of a mesh file from its extension, or None if it's not a supported one.
 
     The supported types are the ones trimesh reads without additional dependency, and that the viewer
-    renders: glTF binaries, ply, stl and obj files.
+    renders: glTF binaries, ply, stl and obj files, and the USD files.
     """
     if path is None:
         return None
@@ -476,6 +481,9 @@ def mesh(
     - a `trimesh.Trimesh` or `trimesh.Scene` object: it's exported to glTF binary, then stored as the
       mesh bytes above.
 
+    The thumbnail of a USD file of the Hub is rendered with the USD files it composes in the dataset (e.g
+    the payloads of a SimReady asset): the viewer fetches them as well.
+
     It raises a ValueError if the bytes cannot be decoded, or if the path points elsewhere than in the
     dataset. Like the other media cells, a local path is skipped: the file is on the machine of the
     creator of the dataset, and cannot be fetched by the viewer. A file larger than MESH_MAX_FILE_SIZE
@@ -499,6 +507,16 @@ def mesh(
         mesh_bytes: bytes = value["bytes"]
         if len(mesh_bytes) > MESH_MAX_FILE_SIZE:
             return None
+
+        def load_mesh_bytes() -> "trimesh.Scene":
+            if file_type not in USD_FILE_TYPES:
+                return _as_mesh_scene(trimesh.load(BytesIO(mesh_bytes), file_type=file_type))
+            with TemporaryDirectory() as local_dir:
+                usd_path = os.path.join(local_dir, f"mesh.{file_type}")
+                with open(usd_path, "wb") as usd_file:
+                    usd_file.write(mesh_bytes)
+                return load_usd_scene(usd_path, local_dir=local_dir)
+
         # this function can raise, we don't catch it
         return create_mesh_file(
             dataset=dataset,
@@ -509,7 +527,7 @@ def mesh(
             column=featureName,
             filename=f"{filename}.{file_type}",
             mesh_bytes=mesh_bytes,
-            load_mesh=lambda: _as_mesh_scene(trimesh.load(BytesIO(mesh_bytes), file_type=file_type)),
+            load_mesh=load_mesh_bytes,
             storage_client=storage_client,
         )
 
@@ -529,8 +547,22 @@ def mesh(
             return None
 
         def load_mesh() -> "trimesh.Scene":
-            with fs.open(path, "rb") as file:
-                return _as_mesh_scene(trimesh.load(file, file_type=file_type))
+            if file_type not in USD_FILE_TYPES:
+                with fs.open(path, "rb") as file:
+                    return _as_mesh_scene(trimesh.load(file, file_type=file_type))
+            # a USD file can compose other USD files of the dataset, like the payloads of a SimReady asset
+            resolved_path = fs.resolve_path(path)
+            if not isinstance(resolved_path, HfFileSystemResolvedRepositoryPath):
+                raise ValueError(f"invalid path: {path}")
+            with TemporaryDirectory() as local_dir:
+                usd_path = download_usd_layers(
+                    fs,
+                    repo_prefix=f"hf://datasets/{resolved_path.repo_id}@{quote(resolved_path.revision, safe='')}/",
+                    root_path=resolved_path.path_in_repo,
+                    local_dir=local_dir,
+                    max_total_size=MESH_MAX_FILE_SIZE,
+                )
+                return load_usd_scene(usd_path, local_dir=local_dir)
 
         # the mesh file stays on the Hub: it's already available at its own URL, we don't store a copy
         # this function can raise, we don't catch it

@@ -1564,6 +1564,7 @@ torchcodec = [
 tqdm = "^4.66.3"
 trimesh = "^5.1.1"
 tsfile = "^2.3.0"
+usd-core = "^26.11"
 xxhash = "^3.7.0"
 
 [package.source]
@@ -4868,6 +4869,32 @@ brotli = ["brotli (>=1.2.0) ; platform_python_implementation == \"CPython\"", "b
 h2 = ["h2 (>=4,<5)"]
 socks = ["pysocks (>=1.5.6,!=1.5.7,<2.0)"]
 zstd = ["backports-zstd (>=1.0.0) ; python_version < \"3.14\""]
+
+[[package]]
+name = "usd-core"
+version = "26.11"
+description = "Pixar's Universal Scene Description"
+optional = false
+python-versions = "<3.15,>=3.11"
+groups = ["main"]
+files = [
+    {file = "usd_core-26.11-cp311-none-macosx_10_15_universal2.whl", hash = "sha256:3480fa1b68e421185a18b1651226077549e7b7047c83a7930006e83b2efd7275"},
+    {file = "usd_core-26.11-cp311-none-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:39ed21e43b0d2624b354e3703da957d8689b1e5e186817723f432fd56e3a1781"},
+    {file = "usd_core-26.11-cp311-none-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:934edc9e11f276e93a45f5cca08fc6fb8f66d94c78ca788975cc62e7fd8b562e"},
+    {file = "usd_core-26.11-cp311-none-win_amd64.whl", hash = "sha256:4bbf496be5c71d9e5ac98a91d631b03ea0c401e0c539abe3167cd77ab9742b20"},
+    {file = "usd_core-26.11-cp312-none-macosx_10_15_universal2.whl", hash = "sha256:eddc3c58dfc1d5ec70a74986afeea5280bacb7f52b9bc5d6f3e000ee314d6219"},
+    {file = "usd_core-26.11-cp312-none-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:f546816f4a565731bb9e1e8c168b074cfb3c2f44131e18e8df926baeb52a2d5e"},
+    {file = "usd_core-26.11-cp312-none-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:c412fa1d2a5dd0c7bc65484ffe34add8f3fc7b03510867e7e019bcaf06b76177"},
+    {file = "usd_core-26.11-cp312-none-win_amd64.whl", hash = "sha256:2e7df4865f9e997b460b29d397e3a3e802a6c08837c0b8ac8deb91bd88e7da4b"},
+    {file = "usd_core-26.11-cp313-none-macosx_10_15_universal2.whl", hash = "sha256:e0eb21b39464f3bb4fed1393072fea3f19cf6ff5b2844f49832c6f075e5b1e2f"},
+    {file = "usd_core-26.11-cp313-none-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:e1e420ae1d0d92072fa9793e0f0d499aa3c51991d50db8160f2a15c9934a4afd"},
+    {file = "usd_core-26.11-cp313-none-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:da42ec136033a69975655b44c65c75c6a494ddc8f1e6a52d57cb7cd2dc4603a8"},
+    {file = "usd_core-26.11-cp313-none-win_amd64.whl", hash = "sha256:9d6dab0d6933b23bd567b90532fea3c5aef8f6d435ccf3551f788f93c366e0b4"},
+    {file = "usd_core-26.11-cp314-none-macosx_10_15_universal2.whl", hash = "sha256:24d8bdedc4696cdde55b31f7dcb934dcc2deab33f6f7aaa35db221cc4787cb4b"},
+    {file = "usd_core-26.11-cp314-none-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:543ea11f24416aa98e3d956374c6c443b8d621348708ef4711c02b7fb452e8db"},
+    {file = "usd_core-26.11-cp314-none-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:c3684b90075c56f986e96860142ee586092ba202a12a2b70512c5a05b0ea1af1"},
+    {file = "usd_core-26.11-cp314-none-win_amd64.whl", hash = "sha256:9f31e6a1a6b81242b9856660efe3a5f37d5df02c8c065cfbd8a376a1d51f5911"},
+]
 
 [[package]]
 name = "uvicorn"

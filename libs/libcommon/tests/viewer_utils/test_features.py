@@ -17,6 +17,7 @@ import trimesh
 from aiobotocore.response import StreamingBody
 from datasets import Mesh
 from datasets.table import embed_table_storage
+from huggingface_hub.hf_file_system import HfFileSystemResolvedRepositoryPath
 from moto import mock_aws
 from urllib3._collections import HTTPHeaderDict
 
@@ -36,6 +37,9 @@ from libcommon.viewer_utils.features import (
     get_cell_value,
     infer_audio_file_extension,
     to_features_list,
+)
+from libcommon.viewer_utils.usd import (
+    load_usd_scene,
 )
 
 from ..constants import (
@@ -255,6 +259,7 @@ def get_mesh_cell_value(
         ("dir/mesh.ply", "ply"),
         ("mesh.stl", "stl"),
         ("mesh.obj", "obj"),
+        ("dir/asset.USDC", "usdc"),
         # the path of a file inside an archive, or of a file of the Hub, is chained with "::"
         ("mesh.glb::archive.zip", "glb"),
         # the query string of an URL is not part of the extension
@@ -271,6 +276,7 @@ def get_mesh_cell_value(
         "ply",
         "stl",
         "obj",
+        "usd",
         "file of an archive",
         "url with query",
         "no path",
@@ -407,6 +413,173 @@ def test_get_mesh_cell_value_with_mesh_object(
         mesh = trimesh.load(BytesIO(file.read()), file_type="glb")
         assert isinstance(mesh, trimesh.Scene)
         assert len(mesh.geometry) == 1, "the exported mesh loads back"
+
+
+# Two quads of a red tower, 1 m wide, 0.5 m deep and 2 m high, Z up: the up axis of most USD files
+USD_TOWER = """#usda 1.0
+(
+    defaultPrim = "tower"
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+def Xform "tower"
+{
+    def Mesh "walls" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        int[] faceVertexCounts = [4, 4]
+        int[] faceVertexIndices = [0, 1, 2, 3, 1, 4, 5, 2]
+        point3f[] points = [(0, 0, 0), (1, 0, 0), (1, 0, 2), (0, 0, 2), (1, 0.5, 0), (1, 0.5, 2)]
+        rel material:binding = </tower/Red>
+    }
+
+    def Material "Red"
+    {
+        token outputs:surface.connect = </tower/Red/Surface.outputs:surface>
+
+        def Shader "Surface"
+        {
+            uniform token info:id = "UsdPreviewSurface"
+            color3f inputs:diffuseColor = (1, 0, 0)
+            token outputs:surface
+        }
+    }
+}
+"""
+
+
+def test_load_usd_scene(tmp_path: Path) -> None:
+    """The thumbnail is rendered from the USD file as a trimesh scene: Y up, with the color of its material."""
+    path = tmp_path / "tower.usda"
+    path.write_text(USD_TOWER)
+    scene = load_usd_scene(str(path), local_dir=str(tmp_path))
+    np.testing.assert_allclose(scene.extents, [1.0, 2.0, 0.5])
+    (geometry,) = scene.geometry.values()
+    assert list(geometry.visual.material.baseColorFactor[:3]) == [255, 0, 0]
+
+
+def test_get_mesh_cell_value_with_usd_bytes(storage_client_with_url_preparator: StorageClient) -> None:
+    """A USD file is stored as-is, like the other mesh files: the viewer renders it, and only its thumbnail is converted."""
+    ensure_mesh_rendering()
+    asset_path = mesh_asset_path(5)
+    mesh_bytes = USD_TOWER.encode()
+    value = get_mesh_cell_value({"path": "tower.usda", "bytes": mesh_bytes}, storage_client_with_url_preparator, 5)
+    assert value["src"] == f"{ASSETS_BASE_URL}/{asset_path}/mesh.usda"
+    assert value["thumbnail"]["src"] == f"{ASSETS_BASE_URL}/{asset_path}/mesh.usda.png"
+    assert_output_has_valid_files(value, storage_client_with_url_preparator)
+    with storage_client_with_url_preparator._fs.open(
+        storage_client_with_url_preparator.get_full_path(f"{asset_path}/mesh.usda"), "rb"
+    ) as file:
+        assert file.read() == mesh_bytes
+
+
+def test_get_mesh_cell_value_with_usd_bytes_composing_a_local_file(
+    tmp_path: Path, storage_client_with_url_preparator: StorageClient
+) -> None:
+    """USD resolves the paths of the composed files on the local disk: the files out of the cell are refused."""
+    local_file = tmp_path / "secret.usda"
+    local_file.write_text(USD_TOWER)
+    usd = f"""#usda 1.0
+(
+    subLayers = [@{local_file}@]
+)
+"""
+    with pytest.raises(ValueError, match="out of the dataset"):
+        get_mesh_cell_value({"path": "scene.usda", "bytes": usd.encode()}, storage_client_with_url_preparator)
+
+
+def test_load_usd_scene_shares_the_meshes_of_instances(tmp_path: Path) -> None:
+    """The instances of a prototype are nodes of a single geometry: the thumbnail doesn't render a copy each."""
+    path = tmp_path / "towers.usda"
+    path.write_text(
+        USD_TOWER.replace('defaultPrim = "tower"', 'defaultPrim = "towers"')
+        + """
+def Xform "towers"
+{
+    def "left" (instanceable = true
+        prepend references = </tower>
+    )
+    {
+    }
+
+    def "right" (instanceable = true
+        prepend references = </tower>
+    )
+    {
+        double3 xformOp:translate = (3, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+}
+"""
+    )
+    # the tower prim itself is a mesh of the stage too: it's the third copy, but not an instance
+    scene = load_usd_scene(str(path), local_dir=str(tmp_path))
+    assert len(scene.graph.nodes_geometry) == 3
+    assert len(scene.geometry) == 2
+    np.testing.assert_allclose(scene.extents, [4.0, 2.0, 0.5])
+
+
+class LocalHubFileSystem:
+    """The files of MESH_DATASET on the Hub, as `HfFileSystem` reads them, from a local directory."""
+
+    def __init__(self, root: Path) -> None:
+        self.root = root
+        self.repo_prefix = f"hf://datasets/{MESH_DATASET}@{DEFAULT_REVISION}/"
+
+    def _local_path(self, path: str) -> Path:
+        assert path.startswith(self.repo_prefix), "only the files of the dataset are fetched"
+        return self.root / path.removeprefix(self.repo_prefix)
+
+    def resolve_path(self, path: str) -> HfFileSystemResolvedRepositoryPath:
+        return HfFileSystemResolvedRepositoryPath(
+            "dataset", MESH_DATASET, DEFAULT_REVISION, path.removeprefix(self.repo_prefix)
+        )
+
+    def size(self, path: str) -> int:
+        return self._local_path(path).stat().st_size
+
+    def get_file(self, rpath: str, lpath: str) -> None:
+        Path(lpath).write_bytes(self._local_path(rpath).read_bytes())
+
+
+def test_get_mesh_cell_value_with_usd_hf_path_and_composed_files(
+    tmp_path: Path, storage_client_with_url_preparator: StorageClient
+) -> None:
+    """The thumbnail of a USD file of the Hub is rendered with the USD files it composes, like SimReady payloads.
+
+    The missing files, and the ones out of the dataset, are skipped: the stage is composed without them. The
+    root file has no mesh of its own: the thumbnail can't be rendered without its payload.
+    """
+    ensure_mesh_rendering()
+    asset_path = mesh_asset_path(6)
+    (tmp_path / "assets" / "payloads").mkdir(parents=True)
+    (tmp_path / "assets" / "payloads" / "geometry.usda").write_text(USD_TOWER)
+    (tmp_path / "assets" / "tower.usda").write_text(
+        """#usda 1.0
+(
+    defaultPrim = "asset"
+    metersPerUnit = 1
+    subLayers = [@./missing.usda@, @../../out_of_the_dataset.usda@]
+    upAxis = "Z"
+)
+
+def Xform "asset" (
+    prepend payload = @./payloads/geometry.usda@
+)
+{
+}
+"""
+    )
+    path = f"hf://datasets/{MESH_DATASET}@{DEFAULT_REVISION}/assets/tower.usda"
+    with patch("libcommon.viewer_utils.features.HfFileSystem", return_value=LocalHubFileSystem(tmp_path)):
+        value = get_mesh_cell_value({"path": path, "bytes": None}, storage_client_with_url_preparator, row_idx=6)
+    # the viewer fetches the USD file and its payload from the Hub: only the thumbnail is stored
+    assert value["src"] == f"{CI_HUB_ENDPOINT}/datasets/{MESH_DATASET}/resolve/{DEFAULT_REVISION}/assets/tower.usda"
+    assert value["thumbnail"]["src"] == f"{ASSETS_BASE_URL}/{asset_path}/mesh.usda.png"
+    assert_output_has_valid_files(value, storage_client_with_url_preparator)
+    assert not storage_client_with_url_preparator.exists(f"{asset_path}/mesh.usda")
 
 
 def point_cloud_ply(with_splat_colors: bool) -> bytes:

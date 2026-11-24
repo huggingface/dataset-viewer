@@ -58,6 +58,8 @@ torchcodec = [
 tqdm = "^4.66.3"
 trimesh = "^5.1.1"
 tsfile = "^2.3.0"
+# reads the USD files, which are converted to glTF binary for the viewer
+usd-core = "^26.11"
 xxhash = "^3.7.0"
 
 [tool.poetry.group.dev.dependencies]
@@ -116,6 +118,8 @@ module = [
     # pyrender and PyOpenGL (used to render the 3D thumbnails) don't ship type information
     "OpenGL.*",
     "pyrender.*",
+    # usd-core (used to read the USD files) doesn't ship type information
+    "pxr.*",
     "libviewer.*"
 ]
 ignore_missing_imports = true
