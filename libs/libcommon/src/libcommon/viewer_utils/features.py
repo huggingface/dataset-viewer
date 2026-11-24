@@ -81,6 +81,10 @@ SUPPORTED_MESH_EXTENSIONS = ", ".join(f".{file_type}" for file_type in sorted(SU
 # a SOG file stores one splat per pixel of each of its images: 8192x8192 pixels is 67M splats, more than any
 # scene we know of, and it bounds the memory of a file whose images are much larger than the scene they hold
 SOG_MAX_PIXELS = 8192 * 8192
+# the images of a SOG file are about the size of its scene: one pixel per splat, plus the padding of the image
+# sides (to a multiple of 4 for PlayCanvas, or to a power of 2 for other writers, up to 4 pixels per splat)
+SOG_MAX_PIXELS_PER_SPLAT = 4
+SOG_MAX_PADDING = 64 * 64
 # the largest decompressed size of a file of a SOG archive: its WebP images are already compressed
 SOG_MAX_MEMBER_BYTES = 512 * 1024 * 1024
 MESH_FILE_TYPE_ERROR = (
@@ -479,7 +483,18 @@ def _load_sog(file: Any) -> "trimesh.PointCloud":
             with Image.open(BytesIO(read_member(name))) as image:
                 if image.width * image.height > SOG_MAX_PIXELS:
                     raise ValueError(f"The image {name} of the SOG archive is too large.")
-                return np.asarray(image.convert("RGBA")).reshape(-1, 4)[:count][subset]
+                # the writers size the images to the scene: decoding an image much larger than it costs memory
+                # for nothing (about 1 GiB for 8192x8192 pixels), and we check its size before decoding it
+                if not count <= image.width * image.height <= SOG_MAX_PIXELS_PER_SPLAT * count + SOG_MAX_PADDING:
+                    raise ValueError(
+                        f"The image {name} of the SOG archive has {image.width}x{image.height} pixels, which does not"
+                        f" match the {count} splats of the scene."
+                    )
+                # the splats are the first pixels: only convert the rows that hold them, so that the arrays we
+                # keep are the size of the scene, not of the image
+                rows = -(-count // image.width)
+                pixels = np.asarray(image.crop((0, 0, image.width, rows)).convert("RGBA"))
+                return pixels.reshape(-1, 4)[:count][subset]
 
         means_lower, means_upper = (read_pixels(name) for name in meta["means"]["files"])
         scales, quats, sh0 = (read_pixels(meta[name]["files"][0]) for name in ("scales", "quats", "sh0"))
@@ -499,6 +514,8 @@ def _load_sog(file: Any) -> "trimesh.PointCloud":
         opacities = (sh0[:, 3] / 204) ** 2
     else:
         # "smallest three": the alpha byte tells which (w, x, y, z) component is left out, the largest one
+        if (quats[:, 3] < 252).any():
+            raise ValueError("Invalid SOG quaternion: the alpha byte of the quats image must be between 252 and 255.")
         kept = (quats[:, :3] / 255 - 0.5) * np.sqrt(2)
         largest = np.sqrt(np.maximum(0.0, 1 - (kept**2).sum(axis=1)))
         rotations = np.insert(kept, 0, largest, axis=1)
@@ -569,7 +586,6 @@ def mesh(
     creator of the dataset, and cannot be fetched by the viewer. A file larger than MESH_MAX_FILE_SIZE
     is skipped too: its thumbnail takes too much memory to render.
     """
-
     if value is None:
         return None
     # the names of the stored assets: "mesh.glb" and "mesh.glb.png", with a suffix if the cell is nested

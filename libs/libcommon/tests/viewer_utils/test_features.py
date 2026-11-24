@@ -1,8 +1,10 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+import json
 import os
 import re
+import zipfile
 from collections.abc import Mapping
 from io import BytesIO
 from pathlib import Path
@@ -18,6 +20,7 @@ from aiobotocore.response import StreamingBody
 from datasets import Mesh
 from datasets.table import embed_table_storage
 from moto import mock_aws
+from PIL import Image
 from urllib3._collections import HTTPHeaderDict
 
 from libcommon.config import S3Config
@@ -549,9 +552,7 @@ def test_get_mesh_cell_value_with_sog(version: int, storage_client_with_url_prep
     a ply file of red splats on an icosphere, all with the rotation below: versions 2 and 3 encode it differently.
     """
     ensure_mesh_rendering()
-    sog_bytes = (
-        Path(__file__).resolve().parent.parent / "fixtures" / "data" / f"test_splats_v{version}.sog"
-    ).read_bytes()
+    sog_bytes = sog_fixture_bytes(version)
     asset_path = mesh_asset_path(4)
     value = get_mesh_cell_value({"path": "splats.sog", "bytes": sog_bytes}, storage_client_with_url_preparator, 4)
     assert value["src"] == f"{ASSETS_BASE_URL}/{asset_path}/mesh.sog"
@@ -575,6 +576,50 @@ def test_get_mesh_cell_value_with_sog(version: int, storage_client_with_url_prep
     assert np.allclose(opacities, 1 / (1 + np.exp(-5.0)), atol=0.005), "the opacity of the splats is 5 as a logit"
     scales = np.column_stack([np.exp(vertex[f"scale_{i}"]) for i in range(3)])
     assert np.allclose(scales, [0.1, 0.03, 0.03], rtol=0.02), "the splats are long along their x axis"
+
+
+def sog_fixture_bytes(version: int) -> bytes:
+    return (Path(__file__).resolve().parent.parent / "fixtures" / "data" / f"test_splats_v{version}.sog").read_bytes()
+
+
+def replace_sog_image(sog_bytes: bytes, kind: str, image: Image.Image) -> bytes:
+    """Return a copy of a SOG file where the image of one kind of property ("quats", "sh0"...) is replaced."""
+    output = BytesIO()
+    with zipfile.ZipFile(BytesIO(sog_bytes)) as source, zipfile.ZipFile(output, "w") as target:
+        name = json.loads(source.read("meta.json"))[kind]["files"][0]
+        for member in source.namelist():
+            if member != name:
+                target.writestr(member, source.read(member))
+        with BytesIO() as image_buffer:
+            image.save(image_buffer, "WEBP", lossless=True)
+            target.writestr(name, image_buffer.getvalue())
+    return output.getvalue()
+
+
+def test_load_sog_keeps_a_random_subset_of_a_large_scene(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr("libcommon.viewer_utils.features.MESH_THUMBNAIL_MAX_POINTS", 50)
+    splats = _load_sog(BytesIO(sog_fixture_bytes(3)))
+    assert len(np.unique(splats.vertices, axis=0)) == 50
+    assert all(len(values) == 50 for values in splats.metadata["_ply_raw"]["vertex"]["data"].values())
+    distances = np.linalg.norm(splats.vertices[:, None] - trimesh.creation.icosphere(subdivisions=2).vertices, axis=2)
+    assert distances.min(axis=1).max() < 1e-3, "the subset holds splats of the scene"
+
+
+def test_load_sog_rejects_an_invalid_quaternion() -> None:
+    with zipfile.ZipFile(BytesIO(sog_fixture_bytes(2))) as archive:
+        quats_name = json.loads(archive.read("meta.json"))["quats"]["files"][0]
+        quats = Image.open(BytesIO(archive.read(quats_name))).convert("RGBA")
+    # the alpha byte tells which component of the quaternion is left out: 252 to 255
+    quats.putalpha(200)
+    with pytest.raises(ValueError, match="quaternion"):
+        _load_sog(BytesIO(replace_sog_image(sog_fixture_bytes(2), "quats", quats)))
+
+
+@pytest.mark.parametrize("side", [4, 512], ids=["fewer pixels than splats", "much larger than the scene"])
+def test_load_sog_rejects_an_image_that_does_not_match_the_scene(side: int) -> None:
+    sog_bytes = replace_sog_image(sog_fixture_bytes(3), "sh0", Image.new("RGBA", (side, side)))
+    with pytest.raises(ValueError, match="does not match the 162 splats"):
+        _load_sog(BytesIO(sog_bytes))
 
 
 # a camera at the origin looking along +z, with a 200x200 photo: the thumbnail shows it at 600x600
