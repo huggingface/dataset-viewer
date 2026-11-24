@@ -336,6 +336,7 @@ def datetime_statistics_expected(datasets: Mapping[str, Dataset]) -> dict[str, A
         ("descriptive_statistics", None),
         ("descriptive_statistics_string_text", None),
         ("descriptive_statistics_not_supported", "NoSupportedFeaturesError"),
+        ("descriptive_statistics_too_many_columns", "TooManyColumnsError"),
         ("audio_statistics", None),
         ("image_statistics", None),
         ("datetime_statistics", None),
@@ -367,6 +368,7 @@ def test_compute(
         "descriptive_statistics": hub_responses_descriptive_statistics,
         "descriptive_statistics_string_text": hub_responses_descriptive_statistics_string_text,
         "descriptive_statistics_not_supported": hub_responses_descriptive_statistics_not_supported,
+        "descriptive_statistics_too_many_columns": hub_responses_descriptive_statistics,
         "gated": hub_responses_gated_descriptive_statistics,
         "audio_statistics": hub_responses_audio_statistics,
         "image_statistics": hub_responses_image_statistics,
@@ -450,6 +452,10 @@ def test_compute(
         http_status=HTTPStatus.OK,
         content=config_parquet_metadata,
     )
+    if hub_dataset_name.endswith("_too_many_columns"):
+        app_config = replace(
+            app_config, descriptive_statistics=replace(app_config.descriptive_statistics, columns_max_number=1)
+        )
     job_runner = get_job_runner(dataset, config, split, app_config)
     job_runner.pre_compute()
     if expected_error_code:

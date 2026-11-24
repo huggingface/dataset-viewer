@@ -330,6 +330,9 @@ class SplitNamesConfig:
 
 DESCRIPTIVE_STATISTICS_CACHE_DIRECTORY = None
 DESCRIPTIVE_STATISTICS_MAX_SPLIT_SIZE_BYTES = 100_000_000
+# the statistics are computed one column at a time, reading the parquet files (and their footer) again for each:
+# a split of 16,225 columns took more than 400 s for its first 200 columns
+DESCRIPTIVE_STATISTICS_COLUMNS_MAX_NUMBER = 1_000
 
 
 @dataclass(frozen=True)
@@ -337,6 +340,7 @@ class DescriptiveStatisticsConfig:
     cache_directory: Optional[str] = DESCRIPTIVE_STATISTICS_CACHE_DIRECTORY
     parquet_revision: str = PARQUET_AND_INFO_TARGET_REVISION
     max_split_size_bytes: int = DESCRIPTIVE_STATISTICS_MAX_SPLIT_SIZE_BYTES
+    columns_max_number: int = DESCRIPTIVE_STATISTICS_COLUMNS_MAX_NUMBER
 
     @classmethod
     def from_env(cls) -> "DescriptiveStatisticsConfig":
@@ -355,6 +359,10 @@ class DescriptiveStatisticsConfig:
                 max_split_size_bytes=env.int(
                     name="MAX_SPLIT_SIZE_BYTES",
                     default=DESCRIPTIVE_STATISTICS_MAX_SPLIT_SIZE_BYTES,
+                ),
+                columns_max_number=env.int(
+                    name="COLUMNS_MAX_NUMBER",
+                    default=DESCRIPTIVE_STATISTICS_COLUMNS_MAX_NUMBER,
                 ),
             )
 

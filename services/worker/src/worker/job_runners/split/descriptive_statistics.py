@@ -18,6 +18,7 @@ from libcommon.exceptions import (
     ParquetResponseEmptyError,
     PolarsParquetReadError,
     PreviousStepFormatError,
+    TooManyColumnsError,
 )
 from libcommon.parquet_utils import (
     extract_split_directory_from_parquet_url,
@@ -97,6 +98,7 @@ def compute_descriptive_statistics_response(
     hf_token: Optional[str],
     parquet_revision: str,
     max_split_size_bytes: int,
+    columns_max_number: int,
     parquet_metadata_directory: StrPath,
     revision: str,
 ) -> SplitDescriptiveStatisticsResponse:
@@ -122,6 +124,8 @@ def compute_descriptive_statistics_response(
             If raw uncompressed split data is larger than this value, the statistics are computed
             only on the first parquet files, approximately up to this size, and the `partial` field will be set
             to `True` in the response.
+        columns_max_number (`int`):
+            The maximum number of columns to compute the statistics for.
         parquet_metadata_directory (`StrPath`):
             Path to directory on local shared storage containing parquet metadata files. Parquet metadata is needed
             to get uncompressed size of split files to determine the number of files to use if split is larger
@@ -139,6 +143,8 @@ def compute_descriptive_statistics_response(
             Currently, floats, integers and ClassLabels are supported.
         [~`libcommon.exceptions.StatisticsComputationError`]:
             If there was some unexpected behaviour during statistics computation.
+        [~`libcommon.exceptions.TooManyColumnsError`]:
+            If the split has more columns than `columns_max_number`.
 
     Returns:
         `SplitDescriptiveStatisticsResponse`: An object with the statistics response for a requested split, per each
@@ -173,6 +179,11 @@ def compute_descriptive_statistics_response(
 
     if not features:
         raise FeaturesResponseEmptyError("No features found.")
+    if len(features) > columns_max_number:
+        raise TooManyColumnsError(
+            f"The number of columns ({len(features)}) exceeds the maximum supported number of columns to compute"
+            f" the statistics ({columns_max_number})."
+        )
 
     num_parquet_files_to_process, num_bytes, num_rows = get_num_parquet_files_to_process(
         parquet_files=split_parquet_files,
@@ -350,6 +361,7 @@ class SplitDescriptiveStatisticsJobRunner(SplitJobRunnerWithCache):
                 hf_token=self.app_config.common.hf_token,
                 parquet_revision=self.descriptive_statistics_config.parquet_revision,
                 max_split_size_bytes=self.descriptive_statistics_config.max_split_size_bytes,
+                columns_max_number=self.descriptive_statistics_config.columns_max_number,
                 parquet_metadata_directory=self.parquet_metadata_directory,
                 revision=self.job_info["params"]["revision"],
             )
