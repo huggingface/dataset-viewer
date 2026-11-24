@@ -188,9 +188,10 @@ pub async fn write_metadata(
     Ok(())
 }
 
-/// Returns the number of bytes a scan of `limit` rows from `offset` reads from a file: the column
+/// Returns the number of bytes a scan of `limit` rows from `offset` decodes from a file: the column
 /// chunks of the row groups holding these rows, or only their pages holding them when the file has
-/// a page index, as the reader selects them
+/// a page index, as the reader selects them. The bytes are uncompressed: a page that compresses
+/// well downloads little but takes its uncompressed size in memory once decoded.
 pub fn scan_size(metadata: &ParquetMetaData, offset: u64, limit: u64) -> u64 {
     let end = offset.saturating_add(limit);
     let mut row_group_start = 0u64;
@@ -211,7 +212,7 @@ pub fn scan_size(metadata: &ParquetMetaData, offset: u64, limit: u64) -> u64 {
                 let pages = offset_index
                     .map(|columns| columns[column_idx].page_locations().as_slice())
                     .unwrap_or_default();
-                num_bytes += match pages.first() {
+                let compressed_bytes = match pages.first() {
                     None => chunk_size,
                     Some(first) => {
                         // the dictionary page is before the first data page, and is read with any page
@@ -224,6 +225,11 @@ pub fn scan_size(metadata: &ParquetMetaData, offset: u64, limit: u64) -> u64 {
                         dictionary_bytes + page_bytes
                     }
                 };
+                // the pages of a column chunk compress alike: its ratio gives their decoded size
+                let compressed = column.compressed_size().max(1) as u128;
+                let uncompressed = column.uncompressed_size().max(0) as u128;
+                num_bytes +=
+                    (compressed_bytes as u128 * uncompressed.max(compressed) / compressed) as u64;
             }
         }
         row_group_start = row_group_end;
@@ -714,5 +720,33 @@ mod tests {
         let page = |i: usize| pages[i].compressed_page_size as u64;
         assert_eq!(scan_size(&metadata, 0, 10), page(0));
         assert_eq!(scan_size(&metadata, 15, 10), page(1) + page(2));
+    }
+
+    #[test]
+    fn scan_size_counts_the_decoded_bytes_of_compressed_pages() {
+        // one row group of 100 rows of 10 kB that compress to almost nothing
+        let batch = RecordBatch::try_from_iter([(
+            "text",
+            Arc::new(StringArray::from_iter_values(
+                (0..100).map(|_| "a".repeat(10_000)),
+            )) as ArrayRef,
+        )])
+        .unwrap();
+        let properties = parquet::file::properties::WriterProperties::builder()
+            .set_dictionary_enabled(false)
+            .set_compression(parquet::basic::Compression::SNAPPY)
+            .build();
+        let mut buffer = Vec::new();
+        let mut writer =
+            ArrowWriter::try_new(&mut buffer, batch.schema(), Some(properties)).unwrap();
+        writer.write(&batch).unwrap();
+        writer.close().unwrap();
+        let metadata = metadata_of(&Bytes::from(buffer), PageIndexPolicy::Skip);
+        let column = metadata.row_group(0).column(0);
+        assert!(column.uncompressed_size() > 10 * column.compressed_size());
+        assert!(
+            scan_size(&metadata, 0, 100) >= 1_000_000,
+            "the decoded rows take 1 MB"
+        );
     }
 }
