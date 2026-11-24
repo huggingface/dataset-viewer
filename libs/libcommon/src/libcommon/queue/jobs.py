@@ -395,7 +395,7 @@ class Queue:
                     ),
                     namespace=job_info["params"]["dataset"].split("/")[0],
                     priority=job_info["priority"],
-                    created_at=created_at,
+                    created_at=job_info.get("created_at") or created_at,
                     # only jobs planned without a parent start the clock: a child keeps its parent's None (unknown)
                     first_job_created_at=job_info.get("first_job_created_at", created_at),
                     status=Status.WAITING,
@@ -721,7 +721,8 @@ class Queue:
                 ttl=lock.TTL.LOCK_TTL_SECONDS_TO_START_JOB,
             ):
                 # get all the pending jobs for the same unicity_id
-                waiting_jobs = JobDocument.objects(unicity_id=job.unicity_id).order_by("-created_at")
+                # most recently queued first: created_at can be inherited (PREVIEW_PATH)
+                waiting_jobs = JobDocument.objects(unicity_id=job.unicity_id).order_by("-id")
                 datetime = get_datetime()
                 # raise if any job has already been started for unicity_id
                 num_started_jobs = waiting_jobs(status=Status.STARTED).count()
