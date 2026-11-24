@@ -1,10 +1,11 @@
+import logging
 from collections.abc import Iterator
 from dataclasses import replace
 
 from huggingface_hub import HfFileSystem
 from libcommon.dtos import JobInfo
 from libcommon.resources import CacheMongoResource, QueueMongoResource
-from pytest import MonkeyPatch
+from pytest import LogCaptureFixture, MonkeyPatch
 
 from worker import loop as loop_module
 from worker.config import AppConfig
@@ -143,3 +144,37 @@ def test_frees_memory_after_a_job_only_above_the_soft_limit(
     loop.queue.add_job(job_type=JOB_TYPE, dataset="dataset", revision="revision2", difficulty=50)
     assert loop.process_next_job()
     assert len(frees) == 1
+
+
+def test_the_memory_watchdog_logs_the_running_job_close_to_the_limit(
+    app_config: AppConfig,
+    libraries_resource: LibrariesResource,
+    cache_mongo_resource: CacheMongoResource,
+    queue_mongo_resource: QueueMongoResource,
+    worker_state_file_path: str,
+    caplog: LogCaptureFixture,
+) -> None:
+    loop = make_loop(app_config, worker_state_file_path, max_seconds_blocked_by_pod_memory=60)
+    logged: list[str] = []
+
+    class LoggingJobRunner(DummyJobRunner):
+        def compute(self) -> Iterator[CompleteJobResult]:
+            # the watchdog thread reads the job that the loop is running
+            loop.log_memory_close_to_limit(0.95)
+            logged.append(caplog.text)
+            yield from super().compute()
+
+    loop.job_runner_factory._create_job_runner = lambda job_info: LoggingJobRunner(  # type: ignore[method-assign]
+        job_info=job_info, app_config=loop.app_config
+    )
+    loop.queue.add_job(job_type=JOB_TYPE, dataset="dataset", revision="revision", config="config", difficulty=50)
+
+    with caplog.at_level(logging.WARNING):
+        assert loop.process_next_job()
+        loop.log_memory_close_to_limit(0.92)
+
+    assert (
+        f"worker memory at 95% of the pod limit, running job {JOB_TYPE} for dataset='dataset' config='config'"
+        in logged[0]
+    )
+    assert "worker memory at 92% of the pod limit, running no job" in caplog.text
