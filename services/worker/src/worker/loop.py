@@ -7,6 +7,7 @@ import gc
 import logging
 import os
 import random
+import threading
 import time
 from dataclasses import dataclass
 from datetime import datetime
@@ -34,6 +35,12 @@ from worker.job_runner_factory import BaseJobRunnerFactory
 
 # glibc keeps freed memory in its arenas until asked to return it to the OS; malloc_trim is glibc-only.
 _MALLOC_TRIM = getattr(ctypes.CDLL(ctypes.util.find_library("c")), "malloc_trim", None)
+# The kernel kills the pod without a trace when its cgroup reaches its limit: the watchdog logs the running job when the
+# memory gets close, which is the only trace left of the job that caused the OOM.
+MEMORY_WATCHDOG_THRESHOLD = 0.9
+MEMORY_WATCHDOG_INTERVAL_SECONDS = 1.0
+# the memory can stay above the threshold for a while: don't log more than once in this interval
+MEMORY_WATCHDOG_LOG_INTERVAL_SECONDS = 10.0
 
 
 def free_memory() -> None:
@@ -88,6 +95,41 @@ class Loop:
         self.queue = Queue()
         self.blocked_by_pod_memory_since: Optional[float] = None
         self.blocked_by_pod_memory_deadline = 0.0
+        self.current_job_info: Optional[JobInfo] = None
+        self.current_job_started_at = 0.0
+
+    def start_memory_watchdog(self) -> None:
+        """Log the running job when the pod memory gets close to its limit."""
+        if not self._get_pod_memory_limit_bytes():
+            logging.info("no pod memory limit to watch, the worker memory watchdog is not started")
+            return
+        threading.Thread(target=self._watch_memory, name="worker-memory-watchdog", daemon=True).start()
+
+    def _watch_memory(self) -> None:
+        last_log = float("-inf")
+        while True:
+            time.sleep(MEMORY_WATCHDOG_INTERVAL_SECONDS)
+            ratio = self.pod_memory_ratio()
+            now = time.monotonic()
+            if (
+                ratio is not None
+                and ratio >= MEMORY_WATCHDOG_THRESHOLD
+                and now - last_log >= MEMORY_WATCHDOG_LOG_INTERVAL_SECONDS
+            ):
+                self.log_memory_close_to_limit(ratio)
+                last_log = now
+
+    def log_memory_close_to_limit(self, ratio: float) -> None:
+        job_info = self.current_job_info
+        if job_info is None:
+            job = "no job"
+        else:
+            params = job_info["params"]
+            job = (
+                f"job {job_info['type']} for dataset={params['dataset']!r} config={params['config']!r}"
+                f" split={params['split']!r} for {time.monotonic() - self.current_job_started_at:.0f}s"
+            )
+        logging.warning(f"worker memory at {ratio:.0%} of the pod limit, running {job}")
 
     def has_memory(self) -> bool:
         """Deprecated: use has_pod_memory() + has_system_memory() instead.
@@ -208,6 +250,7 @@ class Loop:
 
     def run(self) -> None:
         logging.info("Worker loop started")
+        self.start_memory_watchdog()
         try:
             while True:
                 self.check_sigterm_notification()
@@ -290,6 +333,8 @@ class Loop:
         return True
 
     def set_worker_state(self, current_job_info: Optional[JobInfo]) -> None:
+        self.current_job_info = current_job_info
+        self.current_job_started_at = time.monotonic()
         worker_state: WorkerState = {"current_job_info": current_job_info, "last_updated": get_datetime()}
         with FileLock(f"{self.state_file_path}.lock"):
             with open(self.state_file_path, "wb") as worker_state_f:
