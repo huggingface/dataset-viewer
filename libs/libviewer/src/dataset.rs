@@ -13,7 +13,9 @@ use thiserror::Error;
 use tokio::task;
 use url::Url;
 
-use crate::parquet::{read_batch_stream, read_metadata, write_metadata};
+use crate::parquet::{
+    read_batch_stream, read_metadata, scan_size, scan_size_exceeded, write_metadata,
+};
 use crate::IndexedFile;
 
 #[derive(Error, Debug)]
@@ -256,6 +258,15 @@ impl Dataset {
         // 4. collect the record batches into a single vector
 
         let plan = self.plan(limit, offset).await?;
+        // each file is read in parallel with its own reader: the limit is checked on the whole scan
+        // before reading anything, or many files just under the limit add up to many times the limit
+        let num_bytes: u64 = plan
+            .iter()
+            .map(|scan| scan_size(&scan.metadata, scan.offset, scan.limit))
+            .sum();
+        if num_bytes > scan_size_limit {
+            return Err(scan_size_exceeded(num_bytes, scan_size_limit).into());
+        }
         let files_to_index = plan
             .iter()
             .filter_map(|scan| {
