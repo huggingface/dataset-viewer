@@ -56,6 +56,13 @@
     httpGet:
       path: /admin/healthcheck
       port: {{ .Values.admin.uvicornPort }}
+  # the uvicorn workers can take more than the 150 s of the liveness probe to start when the pods start together
+  startupProbe:
+    failureThreshold: 60
+    periodSeconds: 5
+    httpGet:
+      path: /admin/healthcheck
+      port: {{ .Values.admin.uvicornPort }}
   ports:
   - containerPort: {{ .Values.admin.uvicornPort }}
     name: http

@@ -643,10 +643,11 @@ webhook:
       alb.ingress.kubernetes.io/scheme: "internal"
       alb.ingress.kubernetes.io/load-balancer-name: "datasets-server-prod-int"
       alb.ingress.kubernetes.io/group.name: "datasets-server-internal"
+  # 9 uvicorn workers of about 500 MiB each: at 4Gi the pods were OOM killed 50 to 130 times a day
   resources:
     requests:
       cpu: 4
-      memory: "4Gi"
+      memory: "8Gi"
     limits:
       cpu: 4
-      memory: "4Gi"
+      memory: "8Gi"
