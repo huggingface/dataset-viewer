@@ -2,6 +2,7 @@
 # Copyright 2024 The HuggingFace Authors.
 
 
+import os
 from datetime import datetime
 
 import httpx2 as httpx
@@ -21,8 +22,8 @@ CLOUDFRONT_KEY_PAIR_ID = "K1MTLUUQ6YN2UZ"
 def test_real_cloudfront(monkeypatch: pytest.MonkeyPatch) -> None:
     # this test is not mocked, and will fail if the credentials are not valid
     # it requires the following environment variables to be set:
-    # - S3_ACCESS_KEY_ID
-    # - S3_SECRET_ACCESS_KEY
+    # - S3_ACCESS_KEY_ID and S3_SECRET_ACCESS_KEY, or S3_USE_IRSA=true with AWS credentials boto3 resolves on its
+    #   own (the CI assumes a role through GitHub OIDC)
     # - CLOUDFRONT_PRIVATE_KEY
     # To run it locally, set the environment variables in .env and run:
     #     set -a && source .env && set +a && make test
@@ -39,7 +40,10 @@ def test_real_cloudfront(monkeypatch: pytest.MonkeyPatch) -> None:
     url_preparator = URLPreparator(
         url_signer=url_signer, hf_endpoint=CI_HUB_ENDPOINT, assets_base_url=assets_config.base_url
     )
-    if not s3_config.access_key_id or not s3_config.secret_access_key or not url_signer:
+    has_s3_credentials = (s3_config.access_key_id and s3_config.secret_access_key) or (
+        os.environ.get("S3_USE_IRSA") == "true" and os.environ.get("AWS_ACCESS_KEY_ID")
+    )
+    if not has_s3_credentials or not url_signer:
         pytest.skip("the S3 and/or CloudFront credentials are not set in environment variables, so we skip the test")
 
     storage_client = StorageClient(

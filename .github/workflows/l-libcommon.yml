@@ -32,6 +32,11 @@ jobs:
       working-directory: libs/libcommon
   unit-tests-libcommon:
     uses: ./.github/workflows/_unit-tests-python.yml
+    permissions:
+      contents: read
+      # a reusable workflow cannot widen this, the caller has to grant it
+      id-token: write
     with:
       working-directory: libs/libcommon
+      aws-role: arn:aws:iam::707930574880:role/dataset-viewer-e2e
     secrets: inherit
