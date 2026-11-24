@@ -84,6 +84,11 @@ services:
   admin:
     build:
       target: admin
+      # the layers the CD pushes for this image: an e2e run only rebuilds what its commit changed
+      args:
+        - APT_SNAPSHOT=${APT_SNAPSHOT:-base}
+      cache_from:
+        - type=registry,ref=huggingface/datasets-server-services-admin:buildcache
     volumes:
       - storage:${STORAGE_DIRECTORY}:rw
       - parquet-metadata:${PARQUET_METADATA_STORAGE_DIRECTORY}:ro
@@ -110,6 +115,11 @@ services:
   api:
     build:
       target: api
+      # the layers the CD pushes for this image: an e2e run only rebuilds what its commit changed
+      args:
+        - APT_SNAPSHOT=${APT_SNAPSHOT:-base}
+      cache_from:
+        - type=registry,ref=huggingface/datasets-server-services-api:buildcache
     volumes:
       - storage:${STORAGE_DIRECTORY}:rw
     environment:
@@ -126,6 +136,11 @@ services:
   rows:
     build:
       target: rows
+      # the layers the CD pushes for this image: an e2e run only rebuilds what its commit changed
+      args:
+        - APT_SNAPSHOT=${APT_SNAPSHOT:-base}
+      cache_from:
+        - type=registry,ref=huggingface/datasets-server-services-rows:buildcache
     volumes:
       - storage:${STORAGE_DIRECTORY}
       - parquet-metadata:${PARQUET_METADATA_STORAGE_DIRECTORY}
@@ -148,7 +163,11 @@ services:
     build:
       target: search
       args:
+        - APT_SNAPSHOT=${APT_SNAPSHOT:-base}
         - DUCKDB_INDEX_EXTENSIONS_DIRECTORY=$DUCKDB_INDEX_EXTENSIONS_DIRECTORY
+      # the layers the CD pushes for this image: an e2e run only rebuilds what its commit changed
+      cache_from:
+        - type=registry,ref=huggingface/datasets-server-services-search:buildcache
     volumes:
       - storage:${STORAGE_DIRECTORY}
       - parquet-metadata:${PARQUET_METADATA_STORAGE_DIRECTORY}:rw
@@ -172,6 +191,11 @@ services:
   sse-api:
     build:
       target: sse-api
+      # the layers the CD pushes for this image: an e2e run only rebuilds what its commit changed
+      args:
+        - APT_SNAPSHOT=${APT_SNAPSHOT:-base}
+      cache_from:
+        - type=registry,ref=huggingface/datasets-server-services-sse-api:buildcache
     environment:
       <<: *service-env
       # uvicorn
@@ -188,6 +212,11 @@ services:
   worker:
     build:
       target: worker
+      # the layers the CD pushes for this image: an e2e run only rebuilds what its commit changed
+      args:
+        - APT_SNAPSHOT=${APT_SNAPSHOT:-base}
+      cache_from:
+        - type=registry,ref=huggingface/datasets-server-services-worker:buildcache
     volumes:
       - storage:${STORAGE_DIRECTORY}:rw
       - parquet-metadata:${PARQUET_METADATA_STORAGE_DIRECTORY}:rw
@@ -241,6 +270,11 @@ services:
   webhook:
     build:
       target: webhook
+      # the layers the CD pushes for this image: an e2e run only rebuilds what its commit changed
+      args:
+        - APT_SNAPSHOT=${APT_SNAPSHOT:-base}
+      cache_from:
+        - type=registry,ref=huggingface/datasets-server-services-webhook:buildcache
     volumes:
       - storage:${STORAGE_DIRECTORY}:rw
     environment:

@@ -27,7 +27,8 @@ WORKER_UVICORN_PORT = os.environ.get("WORKER_UVICORN_PORT", "8086")
 WEBHOOK_UVICORN_PORT = os.environ.get("WEBHOOK_UVICORN_PORT", "8087")
 E2E_ADMIN_USER_TOKEN = os.environ.get("E2E_ADMIN_USER_TOKEN", "")
 INTERVAL = 5
-MAX_DURATION = 3 * 60
+# the first dataset of the run waits for the cold start of the worker: 160 s on main, close to the old 3 min limit
+MAX_DURATION = 5 * 60
 URL = f"http://localhost:{PORT_REVERSE_PROXY}"
 ADMIN_URL = f"http://localhost:{ADMIN_UVICORN_PORT}"
 API_URL = f"http://localhost:{API_UVICORN_PORT}"
@@ -60,8 +61,10 @@ def poll(
     should_retry = True
     response = None
     while retries > 0 and should_retry:
+        if response is not None:
+            # the first request goes right away: most responses are ready, waiting first added 5 s to every poll
+            time.sleep(interval)
         retries -= 1
-        time.sleep(interval)
         response = get(relative_url=relative_url, headers=headers, url=url)
         if error_field is not None:
             # currently, when the dataset is being processed, the error message contains "Retry later"
@@ -169,8 +172,10 @@ def poll_until_ready_and_assert(
         "PreviousStepStillProcessingError",
     ]
     while retries > 0 and should_retry:
+        if response is not None:
+            # the first request goes right away: most responses are ready, waiting first added 5 s to every poll
+            time.sleep(interval)
         retries -= 1
-        time.sleep(interval)
         response = get(relative_url=relative_url, headers=headers, url=url)
         print(response.headers.get("X-Error-Code"))
         should_retry = response.headers.get("X-Error-Code") in should_retry_x_error_codes

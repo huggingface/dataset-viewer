@@ -34,8 +34,24 @@ jobs:
         with:
           role-to-assume: arn:aws:iam::707930574880:role/dataset-viewer-e2e
           aws-region: us-east-1
-      - name: Build and launch the services (no cache)
+      - name: Get the apt snapshot of the week
+        id: week
+        run: echo "apt_snapshot=$(date -u +%G-W%V)" >> "$GITHUB_OUTPUT"
+      - name: Use the containerd image store
+        # the default docker builder reads the registry build cache that the CD pushes only with this store, and it
+        # loads the images in place: with a docker-container builder, exporting the 7 images took about 4 minutes
+        uses: docker/setup-docker-action@3f1ab1ab0e29231562e4db4ca600c1a49653bac6  # v5.7.0
+        with:
+          daemon-config: |
+            {
+              "features": {
+                "containerd-snapshotter": true
+              }
+            }
+      - name: Build and launch the services
         env:
+          # same value as the CD (see APT_SNAPSHOT in the Dockerfile), or the apt layer misses the cache
+          APT_SNAPSHOT: ${{ steps.week.outputs.apt_snapshot }}
           ADMIN_UVICORN_NUM_WORKERS: "1"
           ADMIN_UVICORN_PORT: "8081"
           API_HF_JWT_ALGORITHM: "EdDSA"
