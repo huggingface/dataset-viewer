@@ -182,7 +182,7 @@ def compute_descriptive_statistics_response(
     if len(features) > columns_max_number:
         raise TooManyColumnsError(
             f"The number of columns ({len(features)}) exceeds the maximum supported number of columns to compute"
-            f" the statistics ({columns_max_number})."
+            f" statistics for ({columns_max_number})."
         )
 
     num_parquet_files_to_process, num_bytes, num_rows = get_num_parquet_files_to_process(

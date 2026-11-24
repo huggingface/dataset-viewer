@@ -330,8 +330,7 @@ class SplitNamesConfig:
 
 DESCRIPTIVE_STATISTICS_CACHE_DIRECTORY = None
 DESCRIPTIVE_STATISTICS_MAX_SPLIT_SIZE_BYTES = 100_000_000
-# the statistics are computed one column at a time, reading the parquet files (and their footer) again for each:
-# a split of 16,225 columns took more than 400 s for its first 200 columns
+# the statistics are computed one column at a time, reading the parquet files again for each
 DESCRIPTIVE_STATISTICS_COLUMNS_MAX_NUMBER = 1_000
 
 
