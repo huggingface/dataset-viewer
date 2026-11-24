@@ -143,11 +143,3 @@ jobs:
           E2E_ADMIN_USER_TOKEN: ${{ secrets.E2E_ADMIN_USER_TOKEN }}
         run: |
           poetry run python -m pytest -vv -s tests
-      - name: Show the logs of the services
-        # without them, a test that times out waiting for a job (like test_auth_public) cannot be diagnosed. The
-        # worker polls the queue at DEBUG level: keep the jobs it was assigned and its warnings, over the whole run
-        if: failure()
-        run: |
-          docker compose logs --no-color --timestamps worker | grep -vE "botocore|urllib3|filelock|fsspec|httpcore|presidio-analyzer|try to process a job|no job|EmptyQueue|NoWaitingJob" | cut -c1-300 | head -n 400
-          docker compose logs --no-color --tail=200 api admin
-        working-directory: .
