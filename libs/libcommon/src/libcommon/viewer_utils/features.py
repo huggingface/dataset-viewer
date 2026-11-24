@@ -79,6 +79,9 @@ MESH_FILE_TYPE_ERROR = (
     "Decoding mesh bytes requires a 'path' value with one of the supported mesh extensions "
     f"({SUPPORTED_MESH_EXTENSIONS}) to infer the mesh file type."
 )
+# rendering the thumbnail of a mesh file takes about 9 times its size in memory (a 618 MB glb file takes 5.5 GiB),
+# and a rows pod has 12 GiB for all its requests: the larger files are not rendered, and their cell is empty
+MESH_MAX_FILE_SIZE = 300_000_000
 
 
 logging.getLogger("pdfminer").setLevel(logging.ERROR)
@@ -475,7 +478,8 @@ def mesh(
 
     It raises a ValueError if the bytes cannot be decoded, or if the path points elsewhere than in the
     dataset. Like the other media cells, a local path is skipped: the file is on the machine of the
-    creator of the dataset, and cannot be fetched by the viewer.
+    creator of the dataset, and cannot be fetched by the viewer. A file larger than MESH_MAX_FILE_SIZE
+    is skipped too: its thumbnail takes too much memory to render.
     """
     import trimesh
 
@@ -493,6 +497,8 @@ def mesh(
         if file_type is None:
             raise ValueError(MESH_FILE_TYPE_ERROR)
         mesh_bytes: bytes = value["bytes"]
+        if len(mesh_bytes) > MESH_MAX_FILE_SIZE:
+            return None
         # this function can raise, we don't catch it
         return create_mesh_file(
             dataset=dataset,
@@ -518,12 +524,12 @@ def mesh(
         if file_type is None:
             raise ValueError(MESH_FILE_TYPE_ERROR)
         fs = HfFileSystem(endpoint=hf_endpoint, token=hf_token)
-        size_bytes: Optional[int] = None
+        size_bytes = fs.size(path)
+        if size_bytes > MESH_MAX_FILE_SIZE:
+            return None
 
         def load_mesh() -> "trimesh.Scene":
-            nonlocal size_bytes
             with fs.open(path, "rb") as file:
-                size_bytes = file.size
                 return _as_mesh_scene(trimesh.load(file, file_type=file_type))
 
         # the mesh file stays on the Hub: it's already available at its own URL, we don't store a copy
@@ -541,7 +547,7 @@ def mesh(
         )
         return MeshSource(
             src=hf_to_https_url(path, hf_endpoint),
-            size_bytes=fs.size(path) if size_bytes is None else size_bytes,
+            size_bytes=size_bytes,
             thumbnail=thumbnail,
         )
 
