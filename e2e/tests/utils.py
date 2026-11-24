@@ -60,8 +60,10 @@ def poll(
     should_retry = True
     response = None
     while retries > 0 and should_retry:
+        if response is not None:
+            # the first request goes right away: most responses are ready, waiting first added 5 s to every poll
+            time.sleep(interval)
         retries -= 1
-        time.sleep(interval)
         response = get(relative_url=relative_url, headers=headers, url=url)
         if error_field is not None:
             # currently, when the dataset is being processed, the error message contains "Retry later"
@@ -169,8 +171,10 @@ def poll_until_ready_and_assert(
         "PreviousStepStillProcessingError",
     ]
     while retries > 0 and should_retry:
+        if response is not None:
+            # the first request goes right away: most responses are ready, waiting first added 5 s to every poll
+            time.sleep(interval)
         retries -= 1
-        time.sleep(interval)
         response = get(relative_url=relative_url, headers=headers, url=url)
         print(response.headers.get("X-Error-Code"))
         should_retry = response.headers.get("X-Error-Code") in should_retry_x_error_codes
