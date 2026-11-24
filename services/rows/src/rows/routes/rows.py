@@ -42,6 +42,8 @@ from libcommon.storage_client import StorageClient
 from starlette.requests import Request
 from starlette.responses import Response
 
+from rows.memory import record_arrow_bytes, track_request
+
 logger = logging.getLogger(__name__)
 
 # the user-agent is free-form (and spoofable): we cap it to keep the log lines bounded
@@ -155,28 +157,30 @@ def create_rows_endpoint(
                         rows_index = get_rows_index(dataset=dataset, config=config, split=split)
                         revision = rows_index.revision
                     async with query_slot():
-                        with StepProfiler(method="rows_endpoint", step="query the rows"):
-                            try:
-                                # Some datasets have very long binary data that we truncate
-                                pa_table, truncated_columns = await rows_index.query(offset=offset, length=length)
-                            except TooBigRows as err:
-                                raise TooBigContentError(str(err)) from None
-                        with StepProfiler(method="rows_endpoint", step="transform to a list"):
-                            response = await create_response(
-                                dataset=dataset,
-                                revision=revision,
-                                config=config,
-                                split=split,
-                                storage_client=cached_assets_storage_client,
-                                hf_endpoint=hf_endpoint,
-                                hf_token=hf_token,
-                                pa_table=pa_table,
-                                offset=offset,
-                                features=rows_index.features,
-                                partial=rows_index.partial,
-                                num_rows_total=rows_index.num_rows_total,
-                                truncated_columns=truncated_columns,
-                            )
+                        with track_request(f"{dataset=} {config=} {split=} {offset=} {length=}") as tracked:
+                            with StepProfiler(method="rows_endpoint", step="query the rows"):
+                                try:
+                                    # Some datasets have very long binary data that we truncate
+                                    pa_table, truncated_columns = await rows_index.query(offset=offset, length=length)
+                                except TooBigRows as err:
+                                    raise TooBigContentError(str(err)) from None
+                            record_arrow_bytes(tracked, pa_table.nbytes)
+                            with StepProfiler(method="rows_endpoint", step="transform to a list"):
+                                response = await create_response(
+                                    dataset=dataset,
+                                    revision=revision,
+                                    config=config,
+                                    split=split,
+                                    storage_client=cached_assets_storage_client,
+                                    hf_endpoint=hf_endpoint,
+                                    hf_token=hf_token,
+                                    pa_table=pa_table,
+                                    offset=offset,
+                                    features=rows_index.features,
+                                    partial=rows_index.partial,
+                                    num_rows_total=rows_index.num_rows_total,
+                                    truncated_columns=truncated_columns,
+                                )
                 except EmptyParquetMetadataError:
                     raise ResponseNotFoundError("Not found.") from None
                 except CachedArtifactNotFoundError:
