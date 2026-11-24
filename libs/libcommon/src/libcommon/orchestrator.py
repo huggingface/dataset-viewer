@@ -47,9 +47,14 @@ from libcommon.simple_cache import (
 from libcommon.state import ArtifactState, DatasetState, FirstStepsDatasetState
 from libcommon.storage_client import StorageClient
 
-# Steps before a first preview: the first job of each keeps its parent's queue place (created_at)
-# instead of joining the back, so a preview waits in line once.
-PREVIEW_JOB_TYPES = {DATASET_CONFIG_NAMES_KIND, CONFIG_SPLIT_NAMES_KIND, SPLIT_HAS_PREVIEW_KIND}
+# (parent, child) steps on the path to a first preview: the first child keeps its parent's queue place
+# (created_at) instead of joining the back, so a preview waits in line once. Re-runs from other parents
+# (e.g. config-info, config-parquet-metadata) join the back as before.
+PREVIEW_PATH = {
+    ("dataset-init", DATASET_CONFIG_NAMES_KIND),
+    (DATASET_CONFIG_NAMES_KIND, CONFIG_SPLIT_NAMES_KIND),
+    (CONFIG_SPLIT_NAMES_KIND, SPLIT_HAS_PREVIEW_KIND),
+}
 
 # TODO: clean dangling cache entries
 
@@ -533,15 +538,15 @@ class AfterJobPlan(Plan):
             if cached_job_input_type == next_processing_step.input_type:
                 # same level, one job is expected
                 # D -> D, C -> C, S -> S
-                self.update(next_processing_step, cached_job["config"], cached_job["split"])
+                self.update(next_processing_step, cached_job["config"], cached_job["split"], cached_job["kind"])
             elif cached_job_input_type in ["config", "split"] and next_processing_step.input_type == "dataset":
                 # going to upper level (fan-in), one job is expected
                 # S -> D, C -> D
-                self.update(next_processing_step, None, None)
+                self.update(next_processing_step, None, None, cached_job["kind"])
             elif cached_job_input_type == "split" and next_processing_step.input_type == "config":
                 # going to upper level (fan-in), one job is expected
                 # S -> C
-                self.update(next_processing_step, cached_job["config"], None)
+                self.update(next_processing_step, cached_job["config"], None, cached_job["kind"])
             elif cached_job_input_type == "dataset" and next_processing_step.input_type == "config":
                 # going to lower level (fan-out), one job is expected per config, we need the list of configs
                 # D -> C
@@ -554,7 +559,7 @@ class AfterJobPlan(Plan):
                         name_field="config",
                     )  # Note that we use the cached content even the revision is different (ie. maybe obsolete)
                 for config_name in config_names:
-                    self.update(next_processing_step, config_name, None)
+                    self.update(next_processing_step, config_name, None, cached_job["kind"])
             elif cached_job_input_type == "config" and next_processing_step.input_type == "split":
                 # going to lower level (fan-out), one job is expected per split, we need the list of splits
                 # C -> S
@@ -567,7 +572,7 @@ class AfterJobPlan(Plan):
                         name_field="split",
                     )  # Note that we use the cached content even the revision is different (ie. maybe obsolete)
                 for split_name in split_names:
-                    self.update(next_processing_step, cached_job["config"], split_name)
+                    self.update(next_processing_step, cached_job["config"], split_name, cached_job["kind"])
             else:
                 raise NotImplementedError(
                     f"Unsupported input types: {cached_job_input_type} -> {next_processing_step.input_type}"
@@ -586,6 +591,7 @@ class AfterJobPlan(Plan):
         next_processing_step: ProcessingStep,
         config: Optional[str],
         split: Optional[str],
+        parent_kind: str,
     ) -> None:
         # ignore if job was done using a shortcut
         job_key = get_shortcut_job_key(
@@ -638,7 +644,7 @@ class AfterJobPlan(Plan):
                 "first_job_created_at": self.job_info.get("first_job_created_at"),
             }
             job_type = next_processing_step.job_type
-            if job_type in PREVIEW_JOB_TYPES and job_type not in self.queue_place_kept_for:
+            if (parent_kind, job_type) in PREVIEW_PATH and job_type not in self.queue_place_kept_for:
                 self.queue_place_kept_for.add(job_type)
                 self.job_infos_to_create[job_key]["created_at"] = self.job_info.get("created_at")
 
@@ -1314,7 +1320,7 @@ def save_job_result(job_result: JobResult, failed_runs: int) -> None:
         progress=output["progress"],
         failed_runs=failed_runs,
         duration=job_result["duration"],
-        # created_at can be inherited (PREVIEW_JOB_TYPES): the job id has the real queue time
+        # created_at can be inherited (PREVIEW_PATH): the job id has the real queue time
         job_created_at=ObjectId(job_info["job_id"][:24]).generation_time  # type: ignore[attr-defined]
         if ObjectId.is_valid(job_info["job_id"][:24])
         else job_info.get("created_at"),

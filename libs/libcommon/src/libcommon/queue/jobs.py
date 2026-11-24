@@ -721,7 +721,7 @@ class Queue:
                 ttl=lock.TTL.LOCK_TTL_SECONDS_TO_START_JOB,
             ):
                 # get all the pending jobs for the same unicity_id
-                # most recently queued first: created_at can be inherited (PREVIEW_JOB_TYPES)
+                # most recently queued first: created_at can be inherited (PREVIEW_PATH)
                 waiting_jobs = JobDocument.objects(unicity_id=job.unicity_id).order_by("-id")
                 datetime = get_datetime()
                 # raise if any job has already been started for unicity_id

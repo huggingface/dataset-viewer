@@ -39,6 +39,7 @@ from .utils import (
     ARTIFACT_DH,
     ARTIFACT_SA_1_1,
     ARTIFACT_SA_1_2,
+    CONFIG_NAME_1,
     CONFIG_NAMES_CONTENT,
     DATASET_NAME,
     DIFFICULTY,
@@ -277,6 +278,33 @@ def test_finish_job_preview_steps_keep_the_queue_place() -> None:
     # only the first config keeps the place, which is enough for a preview
     assert [job.created_at == queued_at for job in split_names_jobs] == [True] + [False] * (len(split_names_jobs) - 1)
     assert parquet_jobs and all(job.created_at > queued_at for job in parquet_jobs)
+
+
+def test_finish_job_rerun_after_parquet_joins_the_back() -> None:
+    # on the real graph, config-info (after the Parquet conversion) also triggers split names
+    queued_at = datetime(2026, 1, 1)
+    Queue().add_job(
+        dataset=DATASET_NAME,
+        revision=REVISION_NAME,
+        config=CONFIG_NAME_1,
+        split=None,
+        job_type="config-info",
+        priority=Priority.NORMAL,
+        difficulty=DIFFICULTY,
+    )
+    JobDocument.objects(dataset=DATASET_NAME).update(created_at=queued_at)
+    job_info = Queue().start_job()
+    output = JobOutput(content={}, http_status=HTTPStatus.OK, error_code=None, details=None, progress=1.0)
+    save_job_result(
+        JobResult(
+            job_info=job_info, job_runner_version=JOB_RUNNER_VERSION, is_success=True, output=output, duration=1
+        ),
+        failed_runs=0,
+    )
+    finish_job(job_info=job_info, shortcut_jobs_by_key={})
+
+    split_names_jobs = JobDocument.objects(dataset=DATASET_NAME, type="config-split-names", status=Status.WAITING)
+    assert [job.created_at > queued_at for job in split_names_jobs] == [True]
 
 
 @pytest.mark.parametrize(
