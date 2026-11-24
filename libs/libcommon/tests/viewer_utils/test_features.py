@@ -336,6 +336,7 @@ def test_get_mesh_cell_value_with_hf_path(storage_client_with_url_preparator: St
     path = f"hf://datasets/{MESH_DATASET}@{DEFAULT_REVISION}/data/mesh.glb"
     with patch("libcommon.viewer_utils.features.HfFileSystem") as HfFileSystem:
         HfFileSystem.return_value.open.return_value = FakeHfFile(mesh_bytes)
+        HfFileSystem.return_value.size.return_value = len(mesh_bytes)
         value = get_mesh_cell_value(
             {"path": path, "bytes": None}, storage_client_with_url_preparator, row_idx=2, hf_token="api_token"
         )
@@ -352,6 +353,27 @@ def test_get_mesh_cell_value_with_hf_path(storage_client_with_url_preparator: St
     assert_output_has_valid_files(value, storage_client_with_url_preparator)
     # the 3D file is not stored, since the viewer fetches it from the Hub
     assert not storage_client_with_url_preparator.exists(f"{asset_path}/mesh.glb")
+
+
+@pytest.mark.parametrize("on_the_hub", [True, False])
+def test_get_mesh_cell_value_with_a_too_large_file(on_the_hub: bool, tmp_path: Path) -> None:
+    """The thumbnail of a large mesh file takes several GiB to render: the cell is empty, and nothing is fetched."""
+    storage_client = StorageClient(protocol="file", storage_root=str(tmp_path), base_url=ASSETS_BASE_URL)
+    with (
+        patch("libcommon.viewer_utils.features.MESH_MAX_FILE_SIZE", 1000),
+        patch("libcommon.viewer_utils.features.HfFileSystem") as HfFileSystem,
+        patch("libcommon.viewer_utils.asset._render_trimesh_scene_to_png") as render,
+    ):
+        HfFileSystem.return_value.size.return_value = 1001
+        cell = (
+            {"path": f"hf://datasets/{MESH_DATASET}@{DEFAULT_REVISION}/data/mesh.glb", "bytes": None}
+            if on_the_hub
+            else {"path": "mesh.glb", "bytes": b"0" * 1001}
+        )
+        assert get_mesh_cell_value(cell, storage_client) is None
+        HfFileSystem.return_value.open.assert_not_called()
+        render.assert_not_called()
+    assert not list(tmp_path.iterdir()), "nothing is stored"
 
 
 def test_get_mesh_cell_value_with_path_of_other_dataset(storage_client_with_url_preparator: StorageClient) -> None:
