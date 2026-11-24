@@ -23,6 +23,7 @@ from starlette.routing import Route
 from starlette_prometheus import PrometheusMiddleware
 
 from rows.config import AppConfig
+from rows.memory import start_memory_watchdog
 from rows.routes.rows import create_rows_endpoint
 
 
@@ -120,6 +121,8 @@ def create_app_with_config(app_config: AppConfig) -> Starlette:
     @asynccontextmanager
     async def lifespan(_app: Starlette):  # type: ignore[no-untyped-def]
         # Starlette 1.0 removed on_shutdown in favor of the ASGI lifespan protocol.
+        # started here, in each uvicorn worker, and not in create_app: the workers don't share their threads
+        start_memory_watchdog()
         try:
             yield
         finally:
