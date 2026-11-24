@@ -37,9 +37,17 @@ jobs:
       - name: Get the apt snapshot of the week
         id: week
         run: echo "apt_snapshot=$(date -u +%G-W%V)" >> "$GITHUB_OUTPUT"
-      - name: Set up Docker Buildx
-        # the default docker builder cannot read the registry build cache that the CD pushes
-        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069  # v4.4.1
+      - name: Use the containerd image store
+        # the default docker builder reads the registry build cache that the CD pushes only with this store, and it
+        # loads the images in place: with a docker-container builder, exporting the 7 images took about 4 minutes
+        uses: docker/setup-docker-action@3f1ab1ab0e29231562e4db4ca600c1a49653bac6  # v5.7.0
+        with:
+          daemon-config: |
+            {
+              "features": {
+                "containerd-snapshotter": true
+              }
+            }
       - name: Build and launch the services
         env:
           # same value as the CD (see APT_SNAPSHOT in the Dockerfile), or the apt layer misses the cache
