@@ -12,14 +12,17 @@ ROWS_PER_FILE = 8
 
 
 def make_dataset(tmp_path: Path) -> tuple[lv.Dataset, int]:
-    """A split of small files with large rows: each file is under the limit, a page of rows is not."""
+    """A split of small files with large rows: each file is under the limit, a page of rows is not.
+
+    Returns the dataset and the decoded size of one file, which the limit counts.
+    """
     data_dir = tmp_path / "data"
     data_dir.mkdir()
     files = []
     for i in range(NUM_FILES):
         path = data_dir / f"{i:04d}.parquet"
         table = pa.table({"blob": [bytes([i]) * 100_000] * ROWS_PER_FILE})
-        pq.write_table(table, path, compression="none")
+        pq.write_table(table, path, compression="none", use_dictionary=False)
         files.append(
             {
                 "path": path.name,
@@ -28,7 +31,8 @@ def make_dataset(tmp_path: Path) -> tuple[lv.Dataset, int]:
                 "metadata_path": path.name,
             }
         )
-    largest_file = max(f["size"] for f in files)
+    # the decoded table, plus some room for the offsets and the validity buffers of the arrays
+    largest_file = int(table.nbytes * 1.1)
     dataset = lv.Dataset(
         name="many-files",
         files=files,

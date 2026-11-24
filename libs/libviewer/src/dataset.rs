@@ -1,3 +1,4 @@
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 
 use arrow::array::RecordBatch;
@@ -60,8 +61,9 @@ impl ParquetScan {
         &self,
         data_store: Arc<dyn ObjectStore>,
         scan_size_limit: u64,
+        arrow_bytes: Arc<AtomicU64>,
     ) -> Result<Vec<RecordBatch>> {
-        let stream = read_batch_stream(
+        let mut stream = std::pin::pin!(read_batch_stream(
             data_store,
             self.file.path.clone(),
             self.metadata.clone(),
@@ -69,8 +71,19 @@ impl ParquetScan {
             self.limit,
             scan_size_limit,
             self.file.size,
-        )?;
-        Ok(stream.try_collect::<Vec<_>>().await?)
+        )?);
+        let mut batches = Vec::new();
+        while let Some(batch) = stream.try_next().await? {
+            // nested lists of structs and dictionary strings can decode to tens of times their parquet
+            // size, which no metadata tells: the decoded batches are counted as they arrive
+            let batch_bytes = batch.get_array_memory_size() as u64;
+            let total = arrow_bytes.fetch_add(batch_bytes, Ordering::Relaxed) + batch_bytes;
+            if total > scan_size_limit {
+                return Err(scan_size_exceeded(total, scan_size_limit).into());
+            }
+            batches.push(batch);
+        }
+        Ok(batches)
     }
 }
 
@@ -278,9 +291,12 @@ impl Dataset {
             })
             .collect();
 
+        // shared by the files of the scan, which are read in parallel
+        let arrow_bytes = Arc::new(AtomicU64::new(0));
         let tasks = plan.into_iter().map(|scan| {
             let data_store = self.data_store.clone();
-            task::spawn(async move { scan.execute(data_store, scan_size_limit).await })
+            let arrow_bytes = arrow_bytes.clone();
+            task::spawn(async move { scan.execute(data_store, scan_size_limit, arrow_bytes).await })
         });
         let results = future::try_join_all(tasks).await?;
         let batches = results
