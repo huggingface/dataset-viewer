@@ -14,7 +14,7 @@ from itertools import count, islice
 from types import TracebackType
 from typing import Any, Literal, Optional, TypeVar, Union, overload
 from unittest.mock import patch
-from urllib.parse import quote, unquote
+from urllib.parse import quote
 
 import PIL
 import requests
@@ -32,7 +32,7 @@ from datasets import (
 from datasets.features.features import decode_nested_example
 from datasets.packaged_modules.json.json import Json as JsonBuilder
 from datasets.utils.file_utils import SINGLE_FILE_COMPRESSION_EXTENSION_TO_PROTOCOL, is_relative_path
-from huggingface_hub import HfFileSystem, HfFileSystemFile
+from huggingface_hub import HfFileSystem, HfFileSystemFile, parse_hf_uri
 from huggingface_hub.constants import DEFAULT_REVISION
 from huggingface_hub.errors import RepositoryNotFoundError
 from huggingface_hub.hf_api import HfApi, RepoFile
@@ -495,21 +495,15 @@ MAX_JSON_FILE_SIZE_BYTES = 1_000_000_000
 
 
 def raise_if_too_big_json_files(builder: DatasetBuilder) -> None:
-    """Refuse the JSON data files that datasets could read whole, before reading any of them.
-
-    A JSON Lines file (`.jsonl`) is read by chunks: only the files with the `.json` extension are checked. The sizes
-    come from the Hub, 200 files per call.
-    """
+    """Refuse the JSON data files that datasets could read whole, before reading any of them."""
     if not isinstance(builder, JsonBuilder) or not builder.config.data_files:
         return
-    paths_in_repo: dict[tuple[str, str], list[str]] = {}
+    paths_in_repo: dict[tuple[str, Optional[str]], list[str]] = {}
     for files in builder.config.data_files.values():
         for path in files:
-            # the data files of a Hub dataset are hf://datasets/{repo_id}@{revision}/{path_in_repo}
             if path.lower().endswith(".json") and path.startswith("hf://datasets/") and "@" in path:
-                repo_id, rest = path.removeprefix("hf://datasets/").split("@", 1)
-                revision, path_in_repo = rest.split("/", 1)
-                paths_in_repo.setdefault((repo_id, unquote(revision)), []).append(unquote(path_in_repo))
+                uri = parse_hf_uri(path)
+                paths_in_repo.setdefault((uri.id, uri.revision), []).append(uri.path_in_repo)
     hf_api = HfApi(token=builder.token)
     for (repo_id, revision), paths in paths_in_repo.items():
         for batch in itertools.batched(paths, 200):

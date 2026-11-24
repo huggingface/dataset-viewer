@@ -296,7 +296,7 @@ def test_safe_load_dataset_builder_refuses_too_big_json_files(path: str, size: i
         builder_configs = {"default": SimpleNamespace(data_files={"train": [data_file]})}
 
         def __init__(self, **kwargs: object) -> None:
-            self.config = SimpleNamespace(data_files={"train": [data_file]})
+            self.config = self.builder_configs["default"]
             self.token = None
 
     def get_paths_info(repo_id: str, paths: list[str], **kwargs: Any) -> list[RepoFile]:
