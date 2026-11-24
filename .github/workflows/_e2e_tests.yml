@@ -143,3 +143,8 @@ jobs:
           E2E_ADMIN_USER_TOKEN: ${{ secrets.E2E_ADMIN_USER_TOKEN }}
         run: |
           poetry run python -m pytest -vv -s tests
+      - name: Show the logs of the services
+        # without them, a test that times out waiting for a job (like test_auth_public) cannot be diagnosed
+        if: failure()
+        run: docker compose logs --no-color --tail=500 worker api admin
+        working-directory: .
