@@ -828,6 +828,33 @@ def _render_splats(point_cloud: "trimesh.PointCloud", width: int, height: int) -
     return _fit_to_frame(image, width, height)
 
 
+# The largest side of a texture in a thumbnail: the 3D files can have 8192x8192 textures, which cost about 1 GiB
+# to render, and look the same as 1024x1024 ones in a 800x600 image
+MESH_THUMBNAIL_MAX_TEXTURE_SIZE = 1024
+# The textures of the trimesh materials that pyrender renders (see pyrender.Mesh.from_trimesh)
+MESH_TEXTURE_FIELDS = (
+    "baseColorTexture",
+    "metallicRoughnessTexture",
+    "normalTexture",
+    "emissiveTexture",
+    "occlusionTexture",
+    "image",
+)
+
+
+def _shrink_textures(mesh: "trimesh.Trimesh") -> None:
+    """Shrink, in place, the textures larger than MESH_THUMBNAIL_MAX_TEXTURE_SIZE, keeping their aspect ratio."""
+    from PIL import Image as PILImage
+
+    material = getattr(mesh.visual, "material", None)
+    for field in MESH_TEXTURE_FIELDS:
+        texture = getattr(material, field, None)
+        if isinstance(texture, PILImage.Image):
+            # it does nothing to a texture already small enough, like one shared by several geometries. Without
+            # reducing_gap=None, Pillow's faster reduction step fails on the 16-bit images.
+            texture.thumbnail((MESH_THUMBNAIL_MAX_TEXTURE_SIZE, MESH_THUMBNAIL_MAX_TEXTURE_SIZE), reducing_gap=None)
+
+
 def _render_trimesh_scene_to_png(
     trimesh_scene: "trimesh.Scene",
     output_buffer: BytesIO,
@@ -880,11 +907,11 @@ def _render_trimesh_scene_to_png(
     geometries: dict[Hashable, Any] = {}
     for name, geom in trimesh_scene.geometry.items():
         try:
-            geometries[name] = (
-                _point_cloud_to_pyrender(geom, max(1, int(len(geom.vertices) * points_ratio)))
-                if isinstance(geom, trimesh.PointCloud)
-                else pyrender.Mesh.from_trimesh(geom)
-            )
+            if isinstance(geom, trimesh.PointCloud):
+                geometries[name] = _point_cloud_to_pyrender(geom, max(1, int(len(geom.vertices) * points_ratio)))
+            else:
+                _shrink_textures(geom)
+                geometries[name] = pyrender.Mesh.from_trimesh(geom)
         except Exception:
             # a geometry we cannot render must not prevent us from rendering the rest of the scene
             logger.warning(f"Skipping the geometry {name} while rendering a 3D thumbnail.", exc_info=True)
