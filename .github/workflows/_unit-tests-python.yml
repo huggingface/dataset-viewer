@@ -46,11 +46,14 @@ jobs:
       - name: Install packages
         run: sudo apt update; sudo apt install -y ffmpeg libavcodec-extra libsndfile1 libjpeg-dev zlib1g-dev libegl1 libegl-mesa0
       - name: Cache the libviewer Rust build
-        # every package installs libviewer through libcommon, and building it takes about 5 minutes
+        # every package installs libviewer through libcommon, and building it takes about 5 minutes. A cache key is
+        # saved once: only the libcommon unit tests write it, after a full build, and every other job reads it.
         uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
         with:
           workspaces: libs/libviewer
           shared-key: libviewer
+          add-job-id-key: false
+          save-if: ${{ (github.ref == 'refs/heads/main' || github.head_ref == 'ci/cache-libviewer-build') && inputs.working-directory == 'libs/libcommon' }}
       - name: Install dependencies
         # "poetry env use" is required: https://github.com/actions/setup-python/issues/374#issuecomment-1088938718
         run: |
