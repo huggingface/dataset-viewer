@@ -36,7 +36,7 @@ def test_lance_data_is_refused(tmp_path: Path, as_dataset_dir: bool) -> None:
 
 
 def write_parquet(table: pa.Table, path: Path, compression: Union[str, dict[str, str]], refused: bool) -> None:
-    pq.write_table(table, path, compression=compression)  # type: ignore
+    pq.write_table(table, path, compression=compression)
     if refused:
         # Zero the pages but keep the footer, so that any page read fails with another error
         data = bytearray(path.read_bytes())

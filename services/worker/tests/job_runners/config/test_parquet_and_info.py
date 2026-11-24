@@ -656,7 +656,7 @@ def test_stream_convert_to_parquet_arrowbasedbuilder(
         one_sample_max_size = 100
         expected_max_dataset_size_bytes = max_dataset_size_bytes + one_sample_max_size
         assert (
-            sum(pq.ParquetFile(parquet_file.local_file).read().nbytes for parquet_file in parquet_files)  # type: ignore
+            sum(pq.ParquetFile(parquet_file.local_file).read().nbytes for parquet_file in parquet_files)
             < expected_max_dataset_size_bytes
         )
 
@@ -699,7 +699,7 @@ def test_stream_convert_to_parquet_generatorbasedbuilder(
         one_sample_max_size = 100
         expected_max_dataset_size_bytes = max_dataset_size_bytes + one_sample_max_size
         assert (
-            sum(pq.ParquetFile(parquet_file.local_file).read().nbytes for parquet_file in parquet_files)  # type: ignore
+            sum(pq.ParquetFile(parquet_file.local_file).read().nbytes for parquet_file in parquet_files)
             < expected_max_dataset_size_bytes
         )
 
@@ -987,5 +987,5 @@ def test_disallow_embed_local_files(text_file: str, tmp_path: Path) -> None:
     )
     with disallow_embed_local_files():
         builder.download_and_prepare(file_format="parquet")
-        table = pq.read_table(list(Path(cache_dir).rglob("*.parquet"))[0])  # type: ignore
+        table = pq.read_table(list(Path(cache_dir).rglob("*.parquet"))[0])
         assert table.to_pydict() == {"image": [{"bytes": None, "path": text_file}]}

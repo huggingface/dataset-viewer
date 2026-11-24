@@ -636,7 +636,7 @@ class MediaColumn(Column):
     def compute_transformed_data(self, parquet_paths: list[Path], transform_func: Callable[[Any], Any]) -> list[Any]:
         transformed_values = []
         for filename in parquet_paths:
-            shard_items = pq.read_table(filename, columns=[self.name]).to_pydict()[self.name]  # type: ignore
+            shard_items = pq.read_table(filename, columns=[self.name]).to_pydict()[self.name]
             shard_transformed_values = thread_map(transform_func, shard_items)
             transformed_values.extend(shard_transformed_values)
         return transformed_values

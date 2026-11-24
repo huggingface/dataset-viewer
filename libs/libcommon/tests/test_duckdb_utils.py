@@ -89,8 +89,8 @@ def test_create_table_reads_parquet_files_with_different_schemas(tmp_path_factor
     # a column missing from a file, a column all null in a file and a string in another one
     pq.write_table(
         pa.table({"text": ["a"], "source": ["x"], "target": pa.array([None], pa.null())}), directory / "0.parquet"
-    )  # type: ignore
-    pq.write_table(pa.table({"text": ["b"], "target": ["t"]}), directory / "1.parquet")  # type: ignore
+    )
+    pq.write_table(pa.table({"text": ["b"], "target": ["t"]}), directory / "1.parquet")
     files = [directory / "0.parquet", directory / "1.parquet"]
     source = "[" + ",".join(varchar_sql(str(path)) for path in files) + "]"
     with duckdb_connect(database=str(directory / "index.duckdb"), allowed_paths=files) as con:
@@ -103,8 +103,8 @@ def test_create_table_reads_parquet_files_with_different_schemas(tmp_path_factor
 
 def test_compute_length_column_when_a_file_misses_the_column(tmp_path_factory: pytest.TempPathFactory) -> None:
     directory = tmp_path_factory.mktemp("data")
-    pq.write_table(pa.table({"text": ["ab"], "source": ["xyz"]}), directory / "0.parquet")  # type: ignore
-    pq.write_table(pa.table({"text": ["c"]}), directory / "1.parquet")  # type: ignore
+    pq.write_table(pa.table({"text": ["ab"], "source": ["xyz"]}), directory / "0.parquet")
+    pq.write_table(pa.table({"text": ["c"]}), directory / "1.parquet")
 
     length_column = compute_length_column(
         [directory / "0.parquet", directory / "1.parquet"], "source", target_df=None, dtype="string"

@@ -119,7 +119,7 @@ def ds_parquet_metadata_dir(
         parquet_file_metadata_path.parent.mkdir(parents=True, exist_ok=True)
         with ds_fs.open(parquet_shard_path) as parquet_shard_f:
             with open(parquet_file_metadata_path, "wb") as parquet_file_metadata_f:
-                pq.read_metadata(parquet_shard_f).write_metadata_file(parquet_file_metadata_f)  # type: ignore
+                pq.read_metadata(parquet_shard_f).write_metadata_file(parquet_file_metadata_f)
     yield parquet_metadata_directory
     shutil.rmtree(Path(parquet_metadata_directory) / "ds")
 
@@ -163,7 +163,7 @@ def dataset_with_config_parquet_metadata(
                 "url": "https://fake.huggingface.co/datasets/ds/resolve/refs%2Fconvert%2Fparquet/default/train/0000.parquet",  # noqa: E501
                 "filename": "0000.parquet",
                 "size": ds_fs.info("default/train/0000.parquet")["size"],
-                "num_rows": pq.read_metadata(ds_fs.open("default/train/0000.parquet")).num_rows,  # type: ignore
+                "num_rows": pq.read_metadata(ds_fs.open("default/train/0000.parquet")).num_rows,
                 "parquet_metadata_subpath": "ds/--/default/train/0000.parquet",
             }
         ]
@@ -190,7 +190,7 @@ def ds_empty_parquet_metadata_dir(
         parquet_file_metadata_path.parent.mkdir(parents=True, exist_ok=True)
         with ds_empty_fs.open(parquet_shard_path) as parquet_shard_f:
             with open(parquet_file_metadata_path, "wb") as parquet_file_metadata_f:
-                pq.read_metadata(parquet_shard_f).write_metadata_file(parquet_file_metadata_f)  # type: ignore
+                pq.read_metadata(parquet_shard_f).write_metadata_file(parquet_file_metadata_f)
     yield parquet_metadata_directory
     shutil.rmtree(Path(parquet_metadata_directory) / "ds_empty")
 
@@ -234,7 +234,7 @@ def dataset_empty_with_config_parquet_metadata(
                 "url": "https://fake.huggingface.co/datasets/ds/resolve/refs%2Fconvert%2Fparquet/default/train/0000.parquet",  # noqa: E501
                 "filename": "0000.parquet",
                 "size": ds_empty_fs.info("default/train/0000.parquet")["size"],
-                "num_rows": pq.read_metadata(ds_empty_fs.open("default/train/0000.parquet")).num_rows,  # type: ignore
+                "num_rows": pq.read_metadata(ds_empty_fs.open("default/train/0000.parquet")).num_rows,
                 "parquet_metadata_subpath": "ds_empty/--/default/train/0000.parquet",
             }
         ]
@@ -261,7 +261,7 @@ def ds_sharded_parquet_metadata_dir(
         parquet_file_metadata_path.parent.mkdir(parents=True, exist_ok=True)
         with ds_sharded_fs.open(parquet_shard_path) as parquet_shard_f:
             with open(parquet_file_metadata_path, "wb") as parquet_file_metadata_f:
-                pq.read_metadata(parquet_shard_f).write_metadata_file(parquet_file_metadata_f)  # type: ignore
+                pq.read_metadata(parquet_shard_f).write_metadata_file(parquet_file_metadata_f)
     yield parquet_metadata_directory
     shutil.rmtree(Path(parquet_metadata_directory) / "ds_sharded")
 
@@ -307,7 +307,7 @@ def dataset_sharded_with_config_parquet_metadata(
                 "url": f"https://fake.huggingface.co/datasets/ds/resolve/refs%2Fconvert%2Fparquet/{parquet_file_path}",  # noqa: E501
                 "filename": os.path.basename(parquet_file_path),
                 "size": ds_sharded_fs.info(parquet_file_path)["size"],
-                "num_rows": pq.read_metadata(ds_sharded_fs.open(parquet_file_path)).num_rows,  # type: ignore
+                "num_rows": pq.read_metadata(ds_sharded_fs.open(parquet_file_path)).num_rows,
                 "parquet_metadata_subpath": f"ds_sharded/--/{parquet_file_path}",
             }
             for parquet_file_path in ds_sharded_fs.glob("default/**/*.parquet")
@@ -578,14 +578,14 @@ def test_get_num_parquet_files_to_process_refuses_brotli(
     tmp_path: Path, compression: Union[str, dict[str, str]], refused: bool
 ) -> None:
     parquet_file_path = tmp_path / "0000.parquet"
-    pq.write_table(  # type: ignore
+    pq.write_table(
         pa.table({"text": ["Hello there", "General Kenobi"], "label": [0, 1]}),
         parquet_file_path,
         compression=compression,
     )
     parquet_metadata_directory = tmp_path / "parquet-metadata"
     parquet_metadata_directory.mkdir()
-    pq.read_metadata(parquet_file_path).write_metadata_file(parquet_metadata_directory / "0000.parquet")  # type: ignore
+    pq.read_metadata(parquet_file_path).write_metadata_file(parquet_metadata_directory / "0000.parquet")
     parquet_files: list[ParquetFileMetadataItem] = [
         {
             "dataset": "ds_brotli",
