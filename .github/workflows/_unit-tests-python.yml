@@ -53,7 +53,7 @@ jobs:
           workspaces: libs/libviewer
           shared-key: libviewer
           add-job-id-key: false
-          save-if: ${{ (github.ref == 'refs/heads/main' || github.head_ref == 'ci/cache-libviewer-build') && inputs.working-directory == 'libs/libcommon' }}
+          save-if: ${{ github.ref == 'refs/heads/main' && inputs.working-directory == 'libs/libcommon' }}
       - name: Install dependencies
         # "poetry env use" is required: https://github.com/actions/setup-python/issues/374#issuecomment-1088938718
         run: |

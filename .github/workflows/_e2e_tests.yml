@@ -34,8 +34,16 @@ jobs:
         with:
           role-to-assume: arn:aws:iam::707930574880:role/dataset-viewer-e2e
           aws-region: us-east-1
-      - name: Build and launch the services (no cache)
+      - name: Get the apt snapshot of the week
+        id: week
+        run: echo "apt_snapshot=$(date -u +%G-W%V)" >> "$GITHUB_OUTPUT"
+      - name: Set up Docker Buildx
+        # the default docker builder cannot read the registry build cache that the CD pushes
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069  # v4.4.1
+      - name: Build and launch the services
         env:
+          # same value as the CD (see APT_SNAPSHOT in the Dockerfile), or the apt layer misses the cache
+          APT_SNAPSHOT: ${{ steps.week.outputs.apt_snapshot }}
           ADMIN_UVICORN_NUM_WORKERS: "1"
           ADMIN_UVICORN_PORT: "8081"
           API_HF_JWT_ALGORITHM: "EdDSA"
