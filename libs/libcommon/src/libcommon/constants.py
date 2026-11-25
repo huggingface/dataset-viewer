@@ -45,6 +45,7 @@ TAG_NFAA_SYNONYMS = [TAG_NFAA_CONTENT, "nsfw", "porn", "hentai", "inappropriate"
 
 
 DEFAULT_MAX_FAILED_RUNS = 3
+EXCEEDED_MAXIMUM_MEMORY_ERROR_CODE = "JobManagerExceededMaximumMemoryError"
 LARGE_MAX_FAILED_RUNS = 30  # for errors that should not be permanent
 MAX_FAILED_RUNS_PER_ERROR_CODE = {
     # default
@@ -52,6 +53,7 @@ MAX_FAILED_RUNS_PER_ERROR_CODE = {
     "ConnectionError": DEFAULT_MAX_FAILED_RUNS,
     "ExternalServerError": DEFAULT_MAX_FAILED_RUNS,
     "JobManagerCrashedError": DEFAULT_MAX_FAILED_RUNS,
+    EXCEEDED_MAXIMUM_MEMORY_ERROR_CODE: DEFAULT_MAX_FAILED_RUNS,
     "StreamingRowsError": DEFAULT_MAX_FAILED_RUNS,
     # "always" retry
     "CreateCommitError": LARGE_MAX_FAILED_RUNS,

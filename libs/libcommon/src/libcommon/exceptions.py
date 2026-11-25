@@ -101,6 +101,7 @@ CacheableErrorCode = Literal[
     "InfoError",
     "JobManagerCrashedError",
     "JobManagerExceededMaximumDurationError",
+    "JobManagerExceededMaximumMemoryError",
     "LockedDatasetTimeoutError",
     "MissingSpawningTokenError",
     "NoSupportedFeaturesError",
@@ -337,6 +338,19 @@ class JobManagerExceededMaximumDurationError(CacheableError):
             message=message,
             status_code=HTTPStatus.NOT_IMPLEMENTED,
             code="JobManagerExceededMaximumDurationError",
+            cause=cause,
+            disclose_cause=False,
+        )
+
+
+class JobManagerExceededMaximumMemoryError(CacheableError):
+    """The job runner was killed because the job used too much memory."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(
+            message=message,
+            status_code=HTTPStatus.NOT_IMPLEMENTED,
+            code="JobManagerExceededMaximumMemoryError",
             cause=cause,
             disclose_cause=False,
         )

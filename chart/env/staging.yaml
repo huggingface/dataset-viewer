@@ -273,6 +273,7 @@ workers:
     uvicornPort: 8080
     workerDifficultyMax: 100
     workerDifficultyMin: 0
+    killJobMemoryPct: 90
     replicas: 1
     autoscaling:
       enabled: true

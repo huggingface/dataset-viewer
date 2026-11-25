@@ -1,10 +1,15 @@
 import logging
+import os
+import time
 from collections.abc import Iterator
 from dataclasses import replace
+from typing import Optional
 
+import pytest
 from huggingface_hub import HfFileSystem
 from libcommon.dtos import JobInfo
 from libcommon.resources import CacheMongoResource, QueueMongoResource
+from libcommon.simple_cache import get_response
 from pytest import LogCaptureFixture, MonkeyPatch
 
 from worker import loop as loop_module
@@ -66,11 +71,13 @@ def make_loop(
     worker_state_file_path: str,
     max_seconds_blocked_by_pod_memory: float,
     sleep_seconds: float = 0,
+    kill_job_memory_pct: int = 0,
 ) -> Loop:
     worker = replace(
         app_config.worker,
         max_seconds_blocked_by_pod_memory=max_seconds_blocked_by_pod_memory,
         sleep_seconds=sleep_seconds,
+        kill_job_memory_pct=kill_job_memory_pct,
     )
     config = replace(app_config, worker=worker)
     return Loop(
@@ -155,26 +162,66 @@ def test_the_memory_watchdog_logs_the_running_job_close_to_the_limit(
     caplog: LogCaptureFixture,
 ) -> None:
     loop = make_loop(app_config, worker_state_file_path, max_seconds_blocked_by_pod_memory=60)
-    logged: list[str] = []
-
-    class LoggingJobRunner(DummyJobRunner):
-        def compute(self) -> Iterator[CompleteJobResult]:
-            # the watchdog thread reads the job that the loop is running
-            loop.log_memory_close_to_limit(0.95)
-            logged.append(caplog.text)
-            yield from super().compute()
-
-    loop.job_runner_factory._create_job_runner = lambda job_info: LoggingJobRunner(  # type: ignore[method-assign]
-        job_info=job_info, app_config=loop.app_config
-    )
-    loop.queue.add_job(job_type=JOB_TYPE, dataset="dataset", revision="revision", config="config", difficulty=50)
+    job = loop.queue.add_job(job_type=JOB_TYPE, dataset="dataset", revision="revision", config="config", difficulty=50)
 
     with caplog.at_level(logging.WARNING):
-        assert loop.process_next_job()
+        loop.set_worker_state(current_job_info=job.info())
+        loop.log_memory_close_to_limit(0.95)
+        loop.set_worker_state(current_job_info=None)
         loop.log_memory_close_to_limit(0.92)
 
     assert (
         f"worker memory at 95% of the pod limit, running job {JOB_TYPE} for dataset='dataset' config='config'"
-        in logged[0]
+        in caplog.text
     )
     assert "worker memory at 92% of the pod limit, running no job" in caplog.text
+
+
+class PidJobRunner(DummyJobRunner):
+    def compute(self) -> Iterator[CompleteJobResult]:
+        yield CompleteJobResult({"pid": os.getpid()})
+
+
+class SlowJobRunner(DummyJobRunner):
+    def compute(self) -> Iterator[CompleteJobResult]:
+        time.sleep(10)  # the loop kills it before
+        yield from super().compute()
+
+
+class CrashingJobRunner(DummyJobRunner):
+    def compute(self) -> Iterator[CompleteJobResult]:
+        os._exit(3)
+        yield from super().compute()
+
+
+@pytest.mark.parametrize(
+    "job_runner_class,memory_ratio,expected_error_code",
+    [
+        (PidJobRunner, None, None),
+        (SlowJobRunner, 0.95, "JobManagerExceededMaximumMemoryError"),
+        (CrashingJobRunner, None, "JobManagerCrashedError"),
+    ],
+)
+def test_a_job_runs_in_a_child_process(
+    app_config: AppConfig,
+    libraries_resource: LibrariesResource,
+    cache_mongo_resource: CacheMongoResource,
+    queue_mongo_resource: QueueMongoResource,
+    worker_state_file_path: str,
+    job_runner_class: type[DummyJobRunner],
+    memory_ratio: Optional[float],
+    expected_error_code: Optional[str],
+) -> None:
+    loop = make_loop(app_config, worker_state_file_path, max_seconds_blocked_by_pod_memory=60, kill_job_memory_pct=90)
+    loop.job_runner_factory._create_job_runner = lambda job_info: job_runner_class(  # type: ignore[method-assign]
+        job_info=job_info, app_config=loop.app_config
+    )
+    loop.pod_unreclaimable_memory_ratio = lambda: memory_ratio  # type: ignore[method-assign]
+    loop.queue.add_job(job_type=JOB_TYPE, dataset="dataset", revision="revision", difficulty=60)
+    assert loop.process_next_job()
+
+    response = get_response(kind=JOB_TYPE, dataset="dataset")
+    assert response["error_code"] == expected_error_code
+    if expected_error_code is None:
+        assert response["content"]["pid"] != os.getpid()
+    assert not loop.queue.is_job_in_process(job_type=JOB_TYPE, dataset="dataset", revision="revision")
