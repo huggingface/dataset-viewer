@@ -4,7 +4,7 @@
 from collections.abc import Mapping
 from datetime import datetime
 from http import HTTPStatus
-from typing import Any
+from typing import Any, Optional
 
 import pytest
 from bson import ObjectId
@@ -26,6 +26,7 @@ from libcommon.simple_cache import (
     CachedResponseDocument,
     get_response_metadata,
     has_some_cache,
+    upsert_response,
     upsert_response_params,
 )
 
@@ -46,14 +47,17 @@ from .utils import (
     DATASET_NAME,
     DIFFICULTY,
     JOB_RUNNER_VERSION,
+    OTHER_REVISION_NAME,
     PROCESSING_GRAPH_FAN_IN_OUT,
     PROCESSING_GRAPH_GENEALOGY,
     PROCESSING_GRAPH_ONE_STEP,
     PROCESSING_GRAPH_PARALLEL,
+    PROCESSING_GRAPH_TWO_STEPS,
     REVISION_NAME,
     SPLIT_NAMES_CONTENT,
     STEP_CB,
     STEP_DA,
+    STEP_DB,
     STEP_DC,
     STEP_DD,
     artifact_id_to_job_info,
@@ -549,7 +553,9 @@ def assert_failed_runs(failed_runs: int) -> None:
     assert CachedResponseDocument.objects().count() == 1
 
 
-def run_job(revision: str, http_status: HTTPStatus) -> None:
+def run_job(
+    revision: str, http_status: HTTPStatus, error_code: Optional[str] = None, difficulty: int = DIFFICULTY
+) -> None:
     Queue().add_job(
         dataset=DATASET_NAME,
         revision=revision,
@@ -557,7 +563,7 @@ def run_job(revision: str, http_status: HTTPStatus) -> None:
         split=None,
         job_type=STEP_DA,
         priority=Priority.NORMAL,
-        difficulty=DIFFICULTY,
+        difficulty=difficulty,
     )
     job_info = Queue().start_job()
     job_result = JobResult(
@@ -567,7 +573,7 @@ def run_job(revision: str, http_status: HTTPStatus) -> None:
         output=JobOutput(
             content=CONFIG_NAMES_CONTENT,
             http_status=http_status,
-            error_code=None,
+            error_code=error_code,
             details=None,
             progress=1.0,
         ),
@@ -607,3 +613,42 @@ def test_upsert_response_failed_runs() -> None:
     # overwrite cache record with success result and new revision
     run_job(second_revision, HTTPStatus.OK)
     assert_failed_runs(1)
+
+
+def test_a_memory_kill_sets_a_min_difficulty_kept_across_revisions_and_successes() -> None:
+    run_job(REVISION_NAME, HTTPStatus.NOT_IMPLEMENTED, "JobManagerExceededMaximumMemoryError", difficulty=60)
+    assert get_response_metadata(kind=STEP_DA, dataset=DATASET_NAME)["min_difficulty"] == 80
+    run_job(OTHER_REVISION_NAME, HTTPStatus.OK)
+    assert get_response_metadata(kind=STEP_DA, dataset=DATASET_NAME)["min_difficulty"] == 80
+    run_job(REVISION_NAME, HTTPStatus.INTERNAL_SERVER_ERROR, "StreamingRowsError")
+    assert get_response_metadata(kind=STEP_DA, dataset=DATASET_NAME)["min_difficulty"] == 80
+
+
+def test_other_errors_set_no_min_difficulty() -> None:
+    run_job(REVISION_NAME, HTTPStatus.NOT_IMPLEMENTED, "JobManagerCrashedError")
+    assert get_response_metadata(kind=STEP_DA, dataset=DATASET_NAME)["min_difficulty"] is None
+
+
+def test_finish_job_plans_the_children_with_their_min_difficulty() -> None:
+    # the child DB of DA was killed for memory, then succeeded on a bigger worker, on older revisions
+    upsert_response(
+        kind=STEP_DB,
+        dataset=DATASET_NAME,
+        dataset_git_revision=OTHER_REVISION_NAME,
+        content={},
+        http_status=HTTPStatus.OK,
+        min_difficulty=90,
+    )
+    Queue().add_job(
+        dataset=DATASET_NAME,
+        revision=REVISION_NAME,
+        config=None,
+        split=None,
+        job_type=STEP_DA,
+        priority=Priority.NORMAL,
+        difficulty=DIFFICULTY,
+    )
+    job_info = Queue().start_job()
+    finish_job(job_info=job_info, shortcut_jobs_by_key={}, processing_graph=PROCESSING_GRAPH_TWO_STEPS)
+
+    assert JobDocument.objects(dataset=DATASET_NAME, type=STEP_DB).get().difficulty == 90

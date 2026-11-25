@@ -31,6 +31,9 @@ from pymongoarrow.api import Schema, find_pandas_all
 from libcommon.constants import (
     CACHE_COLLECTION_RESPONSES,
     CACHE_METRICS_COLLECTION,
+    CACHE_MIN_DIFFICULTY_INDEX_FIELDS,
+    CACHE_MIN_DIFFICULTY_INDEX_FILTER,
+    CACHE_MIN_DIFFICULTY_INDEX_NAME,
     CACHE_MONGOENGINE_ALIAS,
     ERROR_CODES_TO_RETRY,
 )
@@ -114,6 +117,7 @@ PA_SCHEMA = Schema(
         "progress": pa.float64(),
         "updated_at": pa.timestamp("ms"),
         "failed_runs": pa.int32(),
+        "min_difficulty": pa.int32(),
     }
 )
 
@@ -144,6 +148,8 @@ class CachedResponseDocument(Document):
         failed_runs (`int`): The number of failed_runs to get cached result.
         dataset_git_revision (`str`): The commit (of the git dataset repo) used to generate the response.
         progress (`float`): Progress percentage (between 0. and 1.) if the result is not complete yet.
+        min_difficulty (`int`, *optional*): The lowest difficulty for the next jobs of this artifact, whatever the
+          revision: set when a job was killed for memory, so that the next ones run on a bigger worker.
     """
 
     id = ObjectIdField(db_field="_id", primary_key=True, default=ObjectId)
@@ -167,6 +173,7 @@ class CachedResponseDocument(Document):
     job_started_at = DateTimeField()
     first_job_created_at = DateTimeField()
     first_success_at = DateTimeField()
+    min_difficulty = IntField()
 
     meta = {
         "collection": CACHE_COLLECTION_RESPONSES,
@@ -182,6 +189,11 @@ class CachedResponseDocument(Document):
             ("http_status", "error_code", "kind", "updated_at"),  # < recommended by Atlas
             ("kind", "http_status", "updated_at"),  # optimize updated_at range queries
             {"fields": ["kind", "updated_at", "dataset"], "name": "kind_updated"},
+            {
+                "fields": CACHE_MIN_DIFFICULTY_INDEX_FIELDS,
+                "name": CACHE_MIN_DIFFICULTY_INDEX_NAME,
+                "partialFilterExpression": CACHE_MIN_DIFFICULTY_INDEX_FILTER,
+            },
         ],
     }
     objects = QuerySetManager["CachedResponseDocument"]()
@@ -300,8 +312,11 @@ def upsert_response(
     job_started_at: Optional[datetime] = None,
     first_job_created_at: Optional[datetime] = None,
     failed_runs: int = 0,
+    min_difficulty: Optional[int] = None,
 ) -> Optional[datetime]:
-    """Returns the first_job_created_at stored on the entry, which is kept from earlier computes of the revision."""
+    """Returns the first_job_created_at stored on the entry, which is kept from earlier computes of the revision.
+
+    The min_difficulty only grows, and is kept whatever the revision and the status of the next computes."""
     updated_at = updated_at or get_datetime()
     first_success_at = updated_at if http_status == HTTPStatus.OK else None
     previous = (
@@ -332,6 +347,8 @@ def upsert_response(
         job_started_at=job_started_at,
         first_job_created_at=first_job_created_at,
         first_success_at=first_success_at,
+        # an explicit None would enter the partial index of min_difficulty
+        **({} if min_difficulty is None else {"max__min_difficulty": min_difficulty}),
     )
     increase_metric(kind=kind, http_status=http_status, error_code=error_code)
     return first_job_created_at
@@ -352,6 +369,7 @@ def upsert_response_params(
     job_started_at: Optional[datetime] = None,
     first_job_created_at: Optional[datetime] = None,
     failed_runs: int = 0,
+    min_difficulty: Optional[int] = None,
 ) -> Optional[datetime]:
     dataset, config, split, revision = (
         job_params["dataset"],
@@ -377,6 +395,7 @@ def upsert_response_params(
         job_started_at=job_started_at,
         first_job_created_at=first_job_created_at,
         failed_runs=failed_runs,
+        min_difficulty=min_difficulty,
     )
 
 
@@ -483,6 +502,7 @@ def get_response_without_content(
 class CacheEntryMetadata(CacheEntryWithoutContent):
     updated_at: datetime
     failed_runs: int
+    min_difficulty: Optional[int]
 
 
 # Note: we let the exceptions throw: it's the responsibility of the caller to manage them
@@ -500,6 +520,7 @@ def get_response_metadata(
                 "progress",
                 "updated_at",
                 "failed_runs",
+                "min_difficulty",
             )
             .get()
         )
@@ -513,6 +534,7 @@ def get_response_metadata(
         "progress": response.progress,
         "updated_at": response.updated_at,
         "failed_runs": response.failed_runs,
+        "min_difficulty": response.min_difficulty,
     }
 
 
@@ -951,6 +973,17 @@ def get_cache_entries_df(dataset: str, cache_kinds: Optional[list[str]] = None) 
     if cache_kinds:
         filters["kind"] = {"$in": cache_kinds}  # type: ignore
     return CachedResponseDocument.fetch_as_df(query=filters)
+
+
+def get_min_difficulties(dataset: str, kinds: list[str]) -> dict[tuple[str, Optional[str], Optional[str]], int]:
+    """The min_difficulty of the cache entries of the dataset that have one, by (kind, config, split)."""
+    return {
+        (response.kind, response.config, response.split): response.min_difficulty
+        for response in CachedResponseDocument.objects(
+            dataset=dataset, kind__in=kinds, min_difficulty__exists=True
+        ).only("kind", "config", "split", "min_difficulty")
+        if response.min_difficulty is not None
+    }
 
 
 def get_cache_count_for_dataset(dataset: str) -> int:

@@ -99,6 +99,9 @@ from mongodb_migration.migrations._20240731143600_queue_add_dataset_status_to_qu
 from mongodb_migration.migrations._20261013120000_queue_add_worker_size_to_jobs import (
     MigrationQueueAddWorkerSizeToJobs,
 )
+from mongodb_migration.migrations._20261125160000_cache_add_min_difficulty_index import (
+    MigrationCacheAddMinDifficultyIndex,
+)
 from mongodb_migration.renaming_migrations import (
     CacheRenamingMigration,
     QueueRenamingMigration,
@@ -423,5 +426,8 @@ class MigrationsCollector:
             ),
             MigrationQueueAddWorkerSizeToJobs(
                 version="20261013120000", description="add 'worker_size' field and index to the jobs"
+            ),
+            MigrationCacheAddMinDifficultyIndex(
+                version="20261125160000", description="add the 'min_difficulty' partial index to the cache"
             ),
         ]
