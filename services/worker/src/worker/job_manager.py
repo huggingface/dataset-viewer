@@ -248,8 +248,13 @@ class JobManager:
     def set_stuck(self, message: str, reason: str, cause: Optional[BaseException] = None) -> None:
         self.save_error(JobManagerCrashedError(message=message, cause=cause), reason=f"'{reason}'")
 
-    def set_exceeded_maximum_memory(self, message: str) -> None:
-        self.save_error(JobManagerExceededMaximumMemoryError(message=message), reason="exceeded maximum memory")
+    def set_exceeded_maximum_memory(self) -> None:
+        self.save_error(
+            JobManagerExceededMaximumMemoryError(
+                message="Job manager was killed while running this job (job exceeded maximum memory)."
+            ),
+            reason="exceeded maximum memory",
+        )
 
     def set_exceeded_maximum_duration(self, message: str, cause: Optional[BaseException] = None) -> None:
         self.save_error(

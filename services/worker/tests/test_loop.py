@@ -177,12 +177,6 @@ def test_the_memory_watchdog_logs_the_running_job_close_to_the_limit(
     assert "worker memory at 92% of the pod limit, running no job" in caplog.text
 
 
-def use_job_runner(loop: Loop, job_runner_class: type[DummyJobRunner]) -> None:
-    loop.job_runner_factory._create_job_runner = lambda job_info: job_runner_class(  # type: ignore[method-assign]
-        job_info=job_info, app_config=loop.app_config
-    )
-
-
 class PidJobRunner(DummyJobRunner):
     def compute(self) -> Iterator[CompleteJobResult]:
         yield CompleteJobResult({"pid": os.getpid()})

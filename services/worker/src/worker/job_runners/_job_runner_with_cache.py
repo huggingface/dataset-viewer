@@ -52,11 +52,10 @@ class JobRunnerWithCache(JobRunner):
         return "".join([c if re.match(r"[\w-]", c) else "-" for c in subdirectory])
 
     def pre_compute(self) -> None:
-        new_directory = self.planned_cache_subdirectory
         try:
-            self.cache_subdirectory = Path(init_dir(new_directory))
+            self.cache_subdirectory = Path(init_dir(self.planned_cache_subdirectory))
         except PermissionError as e:
-            raise DiskError(f"Incorrect permissions on {new_directory}", e) from e
+            raise DiskError(f"Incorrect permissions on {self.planned_cache_subdirectory}", e) from e
 
     def post_compute(self) -> None:
         # empty the cache after the job to save storage space

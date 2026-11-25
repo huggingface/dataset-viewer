@@ -364,7 +364,10 @@ class Loop:
                 job_manager.finish()
             self.set_worker_state(current_job_info=None)
 
-        if self.is_pod_memory_above(self.app_config.worker.free_memory_after_job_pct):
+        # a job run in a child process gives its memory back when the child exits
+        if self.app_config.worker.kill_job_memory_pct <= 0 and self.is_pod_memory_above(
+            self.app_config.worker.free_memory_after_job_pct
+        ):
             with StepProfiler("loop", "free_memory"):
                 free_memory()
         return True
@@ -404,9 +407,7 @@ class Loop:
         if exit_code is None or exit_code == -signal.SIGKILL:
             # killed by the loop, or by the kernel between two checks. The retryable errors backfill retries the job,
             # on a bigger worker
-            job_manager.set_exceeded_maximum_memory(
-                message="Job manager was killed while running this job (job exceeded maximum memory)."
-            )
+            job_manager.set_exceeded_maximum_memory()
         else:
             job_manager.set_stuck(
                 message=f"Job runner crashed while running this job (exit code {exit_code}).", reason="crashed"
