@@ -3,6 +3,7 @@
 
 
 CACHE_COLLECTION_RESPONSES = "cachedResponsesBlue"
+CACHE_MIN_DIFFICULTY_INDEX_NAME = "dataset_kind_min_difficulty"
 CACHE_MONGOENGINE_ALIAS = "cache"
 HF_DATASETS_CACHE_APPNAME = "hf_datasets_cache"
 PARQUET_METADATA_CACHE_APPNAME = "datasets_server_parquet_metadata"
@@ -52,6 +53,7 @@ MAX_FAILED_RUNS_PER_ERROR_CODE = {
     "ConnectionError": DEFAULT_MAX_FAILED_RUNS,
     "ExternalServerError": DEFAULT_MAX_FAILED_RUNS,
     "JobManagerCrashedError": DEFAULT_MAX_FAILED_RUNS,
+    "JobManagerExceededMaximumMemoryError": DEFAULT_MAX_FAILED_RUNS,
     "StreamingRowsError": DEFAULT_MAX_FAILED_RUNS,
     # "always" retry
     "CreateCommitError": LARGE_MAX_FAILED_RUNS,
@@ -60,6 +62,7 @@ MAX_FAILED_RUNS_PER_ERROR_CODE = {
     "PreviousStepStillProcessingError": LARGE_MAX_FAILED_RUNS,
 }
 ERROR_CODES_TO_RETRY = list(MAX_FAILED_RUNS_PER_ERROR_CODE.keys())
+EXCEEDED_MAXIMUM_MEMORY_ERROR_CODE = "JobManagerExceededMaximumMemoryError"
 
 # Arrays are not immutable, we have to take care of not modifying them
 # Anyway: in all this file, we allow constant reassignment (no use of Final)

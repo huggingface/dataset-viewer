@@ -268,6 +268,9 @@ worker:
   # Max system (node) memory (%) relative to total node RAM - if reached, refuses new jobs
   # to prevent system-wide pressure that triggers K8s SIGTERM eviction of ALL pods.
   maxSystemMemoryPct: 0
+  # Run each job in a child process, killed when the pod memory reaches this share (%) of the pod limit, before the
+  # kernel kills the whole pod. Set to 0 to run the jobs in the worker loop process.
+  killJobMemoryPct: 0
   # the number of heartbeats a job must have missed to be considered a zombie job.
   maxMissingHeartbeats: 5
   # Number of seconds a worker will sleep before trying to process a new job

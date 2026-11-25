@@ -61,6 +61,9 @@ WORKER_FREE_MEMORY_AFTER_JOB_PCT = 30
 # If the pod memory stays above max_memory_pct this long after freeing what we can, the loop exits so that the
 # container restarts with fresh memory (a blocked worker otherwise never takes another job).
 WORKER_MAX_SECONDS_BLOCKED_BY_POD_MEMORY = 5 * 60
+# Run each job in a child process, and kill it when the pod memory reaches this share of its limit, before the kernel
+# kills the whole pod. Set to 0 to run the jobs in the loop process (each child opens its own Mongo connections).
+WORKER_KILL_JOB_MEMORY_PCT = 0
 
 
 @dataclass(frozen=True)
@@ -80,6 +83,7 @@ class WorkerConfig:
     state_file_path: Optional[str] = WORKER_STATE_FILE_PATH
     free_memory_after_job_pct: int = WORKER_FREE_MEMORY_AFTER_JOB_PCT
     max_seconds_blocked_by_pod_memory: float = WORKER_MAX_SECONDS_BLOCKED_BY_POD_MEMORY
+    kill_job_memory_pct: int = WORKER_KILL_JOB_MEMORY_PCT
 
     @classmethod
     def from_env(cls) -> "WorkerConfig":
@@ -122,6 +126,7 @@ class WorkerConfig:
                 max_seconds_blocked_by_pod_memory=env.float(
                     name="MAX_SECONDS_BLOCKED_BY_POD_MEMORY", default=WORKER_MAX_SECONDS_BLOCKED_BY_POD_MEMORY
                 ),
+                kill_job_memory_pct=env.int(name="KILL_JOB_MEMORY_PCT", default=WORKER_KILL_JOB_MEMORY_PCT),
             )
 
 

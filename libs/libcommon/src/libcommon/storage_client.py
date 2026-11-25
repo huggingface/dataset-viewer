@@ -68,6 +68,10 @@ class StorageClient:
             raise StorageClientInitializeError("unsupported protocol")
         self._validate()
 
+    def reset_after_fork(self) -> None:
+        """Open a new filesystem in a forked process: s3fs refuses to use the event loop of the parent process."""
+        self._fs = type(self._fs)(*self._fs.storage_args, **self._fs.storage_options)
+
     def _validate(self) -> None:
         try:
             self._fs.ls(self.storage_root)

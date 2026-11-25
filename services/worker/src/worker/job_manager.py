@@ -14,6 +14,7 @@ from libcommon.exceptions import (
     DatasetNotFoundError,
     JobManagerCrashedError,
     JobManagerExceededMaximumDurationError,
+    JobManagerExceededMaximumMemoryError,
     PreviousStepStillProcessingError,
     TooBigContentError,
     UnexpectedError,
@@ -245,36 +246,22 @@ class JobManager:
             }
 
     def set_stuck(self, message: str, reason: str, cause: Optional[BaseException] = None) -> None:
-        self.info(
-            "response for"
-            f" dataset={self.job_params['dataset']} revision={self.job_params['revision']} job_info={self.job_info}"
-            f" had an error ('{reason}')"
-        )
-        error = JobManagerCrashedError(message=message, cause=cause)
-        self.save_job_result(
-            job_result={
-                "job_info": self.job_info,
-                "job_runner_version": self.job_runner_version,
-                "is_success": False,
-                "output": {
-                    "content": dict(error.as_response()),
-                    "http_status": error.status_code,
-                    "error_code": error.code,
-                    "details": dict(error.as_response_with_cause()),
-                    "progress": None,
-                },
-                "duration": get_duration_or_none(self.job_info["started_at"]),
-            }
-        )
-        self.finish()
+        self.save_error(JobManagerCrashedError(message=message, cause=cause), reason=f"'{reason}'")
+
+    def set_exceeded_maximum_memory(self, message: str) -> None:
+        self.save_error(JobManagerExceededMaximumMemoryError(message=message), reason="exceeded maximum memory")
 
     def set_exceeded_maximum_duration(self, message: str, cause: Optional[BaseException] = None) -> None:
+        self.save_error(
+            JobManagerExceededMaximumDurationError(message=message, cause=cause), reason="exceeded maximum duration"
+        )
+
+    def save_error(self, error: CustomError, reason: str) -> None:
         self.info(
             "response for"
             f" dataset={self.job_params['dataset']} revision={self.job_params['revision']} job_info={self.job_info}"
-            " had an error (exceeded maximum duration)"
+            f" had an error ({reason})"
         )
-        error = JobManagerExceededMaximumDurationError(message=message, cause=cause)
         self.save_job_result(
             job_result={
                 "job_info": self.job_info,
