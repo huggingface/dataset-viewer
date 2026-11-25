@@ -33,8 +33,6 @@ class JobRunnerWithCache(JobRunner):
             app_config=app_config,
         )
         self.base_cache_directory = cache_directory
-        # chosen here, not in pre_compute: the worker loop removes it if the process that runs the job is killed
-        self.planned_cache_subdirectory = self.base_cache_directory / self.get_cache_subdirectory()
 
     def get_cache_subdirectory(self, digits: int = 14) -> str:
         random_str = f"{random.randrange(10 ** (digits - 1), 10**digits)}"  # nosec B311
@@ -52,7 +50,7 @@ class JobRunnerWithCache(JobRunner):
         return "".join([c if re.match(r"[\w-]", c) else "-" for c in subdirectory])
 
     def pre_compute(self) -> None:
-        new_directory = self.planned_cache_subdirectory
+        new_directory = self.base_cache_directory / self.get_cache_subdirectory()
         try:
             self.cache_subdirectory = Path(init_dir(new_directory))
         except PermissionError as e:
@@ -60,5 +58,7 @@ class JobRunnerWithCache(JobRunner):
 
     def post_compute(self) -> None:
         # empty the cache after the job to save storage space
-        remove_dir(self.planned_cache_subdirectory)
+        previous_cache = self.cache_subdirectory
+        if previous_cache is not None:
+            remove_dir(previous_cache)
         self.cache_subdirectory = None

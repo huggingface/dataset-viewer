@@ -57,7 +57,6 @@ MAX_FAILED_RUNS_PER_ERROR_CODE = {
     "ConnectionError": DEFAULT_MAX_FAILED_RUNS,
     "ExternalServerError": DEFAULT_MAX_FAILED_RUNS,
     "JobManagerCrashedError": DEFAULT_MAX_FAILED_RUNS,
-    EXCEEDED_MAXIMUM_MEMORY_ERROR_CODE: DEFAULT_MAX_FAILED_RUNS,
     "StreamingRowsError": DEFAULT_MAX_FAILED_RUNS,
     # "always" retry
     "CreateCommitError": LARGE_MAX_FAILED_RUNS,

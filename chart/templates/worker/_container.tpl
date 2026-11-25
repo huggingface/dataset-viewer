@@ -43,8 +43,6 @@
     value: {{ .workerValues.maxMemoryPct | default .Values.worker.maxMemoryPct | quote }}
   - name: WORKER_MAX_SYSTEM_MEMORY_PCT
     value: {{ .workerValues.maxSystemMemoryPct | default .Values.worker.maxSystemMemoryPct | quote }}
-  - name: WORKER_KILL_JOB_MEMORY_PCT
-    value: {{ .workerValues.killJobMemoryPct | default .Values.worker.killJobMemoryPct | quote }}
   # the job loop runs for days, and mimalloc and the glibc arenas keep the freed pages of each job: a medium pod held
   # up to 11.6 GiB between jobs, and the next job went over the limit. Same allocator settings as rows.
   - name: ARROW_DEFAULT_MEMORY_POOL

@@ -504,7 +504,6 @@ workers:
     workerDifficultyMax: 100
     workerDifficultyMin: 70
     maxMemoryPct: 60
-    killJobMemoryPct: 90
     maxSystemMemoryPct: 80
     nodeSelector:
       role-datasets-server-worker: "true"
@@ -537,7 +536,6 @@ workers:
     workerDifficultyMax: 70
     workerDifficultyMin: 40
     maxMemoryPct: 70
-    killJobMemoryPct: 90
     maxSystemMemoryPct: 80
     nodeSelector:
       role-datasets-server-worker: "true"
