@@ -133,11 +133,7 @@ def feature_to_croissant_field(
             "source": get_source(distribution_name, column, add_transform, json_path),
         }
     elif isinstance(feature, Image):
-        source = get_source(distribution_name, column, add_transform, json_path)
-        if transform := source.get("transform"):
-            source["transform"] = [transform, {"jsonPath": "bytes"}]
-        else:
-            source["transform"] = {"jsonPath": "bytes"}
+        source = get_source(distribution_name, column, add_transform=True, json_path=(json_path or []) + ["bytes"])
         return {
             "@type": "cr:Field",
             "@id": field_name,
