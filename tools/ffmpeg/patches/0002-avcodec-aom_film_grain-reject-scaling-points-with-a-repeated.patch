@@ -1,0 +1,47 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Michael Niedermayer <michael@niedermayer.cc>
+Date: Sat, 24 Oct 2026 06:08:23 +0200
+Subject: [PATCH] avcodec/aom_film_grain: reject scaling points with a repeated
+ x value
+
+The AV1 specification requires the points to be strictly increasing,
+and the AFGS1 scaling function is undefined for equal x values.
+
+Fixes: xaXnd8wemUUh/testcase/afgs1_dup.hevc
+Fixes: xaXnd8wemUUh
+Fixes: AISLE-2026-0150-00067
+Fixes: division by zero
+Division by zero Replicated through UnModified FFmpeg with UBSAN
+
+Found-by: Joshua Rogers (AISLE)
+
+Signed-off-by: Michael Niedermayer <michael@niedermayer.cc>
+---
+ libavcodec/aom_film_grain.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/libavcodec/aom_film_grain.c b/libavcodec/aom_film_grain.c
+index bb60c55774..205e93604f 100644
+--- a/libavcodec/aom_film_grain.c
++++ b/libavcodec/aom_film_grain.c
+@@ -247,7 +247,7 @@ int ff_aom_parse_film_grain_sets(AVFilmGrainAFGS1Params *s,
+                 bits_scaling = get_bits(gb, 2) + 5;
+                 for (i = 0; i < aom->num_y_points; i++) {
+                     y_value += get_bits(gb, bits_inc);
+-                    if (y_value > UINT8_MAX)
++                    if (y_value > UINT8_MAX || i && y_value == aom->y_points[i - 1][0])
+                         goto error;
+                     aom->y_points[i][0] = y_value;
+                     aom->y_points[i][1] = get_bits(gb, bits_scaling);
+@@ -298,7 +298,7 @@ int ff_aom_parse_film_grain_sets(AVFilmGrainAFGS1Params *s,
+                         uv_offset = get_bits(gb, 8);
+                         for (i = 0; i < aom->num_uv_points[uv]; i++) {
+                             uv_value += get_bits(gb, bits_inc);
+-                            if (uv_value > UINT8_MAX)
++                            if (uv_value > UINT8_MAX || i && uv_value == aom->uv_points[uv][i - 1][0])
+                                 goto error;
+                             aom->uv_points[uv][i][0] = uv_value;
+                             aom->uv_points[uv][i][1] = get_bits(gb, bits_scaling) + uv_offset;
+-- 
+2.56.0
+

@@ -23,6 +23,46 @@ COPY libs/libviewer /src/libs/libviewer
 WORKDIR /src/libs/libviewer
 RUN maturin build --release --strip --out /tmp/dist
 
+# FFmpeg libraries for torchcodec, built with only the decoders, demuxers and filters the viewer needs.
+# User-uploaded media reach the FFmpeg decoders (avformat_find_stream_info decodes frames before any codec check),
+# so every compiled decoder is attack surface: Debian's build ships hundreds of exotic ones (TAK, VMnc, Cook...)
+# whose security fixes Debian postpones until they land in the upstream 7.1 branch.
+# Stay on FFmpeg 7 (libavutil 59): torchcodec 0.15 supports FFmpeg 4 to 8 only.
+FROM python:${PYTHON_VERSION}-slim AS ffmpeg
+# head of the upstream release/7.1 branch on 2026-11-17
+ARG FFMPEG_COMMIT=2f5e4b9521db2ae309e5c2dd6e409fab27e1ad99
+ARG FFMPEG_SHA256=82ce458e07914714c28028caed59326d1ac1b97fdf800201934162cc9434ff69
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl ca-certificates build-essential nasm pkg-config patch \
+      libdav1d-dev \
+    && rm -rf /var/lib/apt/lists/*
+WORKDIR /src/ffmpeg
+RUN curl -fsSL -o /tmp/ffmpeg.tar.gz "https://github.com/FFmpeg/FFmpeg/archive/${FFMPEG_COMMIT}.tar.gz" \
+    && echo "${FFMPEG_SHA256}  /tmp/ffmpeg.tar.gz" | sha256sum -c - \
+    && tar xzf /tmp/ffmpeg.tar.gz --strip-components=1 \
+    && rm /tmp/ffmpeg.tar.gz
+# upstream master fixes for code that this build keeps, not yet in release/7.1
+COPY tools/ffmpeg/patches /src/ffmpeg-patches
+RUN for p in /src/ffmpeg-patches/*.patch; do patch -p1 < "$p"; done
+RUN ./configure \
+      --prefix=/opt/ffmpeg \
+      --enable-shared --disable-static \
+      --disable-programs --disable-doc --disable-network --disable-autodetect \
+      --disable-everything \
+      --enable-libdav1d \
+      --enable-protocol=file,pipe \
+      --enable-demuxer=aac,ac3,aiff,amr,asf,au,avi,caf,eac3,flac,matroska,mov,mp3,mpegps,mpegts,ogg,w64,wav \
+      --enable-parser=aac,aac_latm,ac3,av1,flac,h264,hevc,mjpeg,mpeg4video,mpegaudio,mpegvideo,opus,vorbis,vp8,vp9 \
+      --enable-decoder=aac,aac_latm,ac3,adpcm_ima_wav,adpcm_ms,alac,amrnb,amrwb,eac3,flac,mp2,mp2float,mp3,mp3float \
+      --enable-decoder=opus,vorbis,wmav1,wmav2,'pcm_*' \
+      --enable-decoder=h264,hevc,libdav1d,mjpeg,mpeg1video,mpeg2video,mpeg4,vp8,vp9 \
+      --enable-encoder=pcm_s16le,pcm_s32le,pcm_f32le \
+      --enable-muxer=wav \
+      --enable-filter=abuffer,abuffersink,aformat,anull,aresample,buffer,buffersink,crop,format,hflip,null,rotate \
+      --enable-filter=scale,transpose,vflip \
+    && make -j"$(nproc)" \
+    && make install
+
 # Base stage with shared setup
 FROM python:${PYTHON_VERSION}-slim AS libcommon
 
@@ -33,9 +73,11 @@ ARG APT_SNAPSHOT=base
 RUN echo "apt snapshot: ${APT_SNAPSHOT}" \
     && apt-get update \
     && apt-get upgrade -y \
-    && apt-get install -y unzip wget procps htop ffmpeg libavcodec-extra libsndfile1 libjpeg-dev zlib1g-dev \
-      libegl1 libegl-mesa0 \
+    && apt-get install -y unzip wget procps htop libdav1d7 libsndfile1 libjpeg-dev zlib1g-dev \
+      libegl1 libegl-mesa0 libgl1 libgl1-mesa-dri libxrender1 \
     && rm -rf /var/lib/apt/lists/*
+COPY --from=ffmpeg /opt/ffmpeg/lib/*.so* /usr/local/lib/
+RUN ldconfig
 
 # Common environment variables
 ARG POETRY_VERSION=2.1.4

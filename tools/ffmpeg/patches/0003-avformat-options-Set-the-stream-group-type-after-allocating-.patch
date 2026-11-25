@@ -1,0 +1,40 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Michael Niedermayer <michael@niedermayer.cc>
+Date: Tue, 6 Oct 2026 07:33:31 +0200
+Subject: [PATCH] avformat/options: Set the stream group type after allocating
+ its parameters
+
+The fix is one of the two recommended in the report.
+
+Fixes: NULL pointer dereference
+Fixes: Ks5s2XRvqzXe
+Fixes: AISLE-2026-0111-00423
+NULL pointer dereference Replicated through UnModified FFprobe with an allocation failure injected by gdb
+Found-by: Joshua Rogers <joshua.rogers@aisle.com>
+---
+ libavformat/options.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/libavformat/options.c b/libavformat/options.c
+index abdabca15f..df7b6434d8 100644
+--- a/libavformat/options.c
++++ b/libavformat/options.c
+@@ -490,7 +490,6 @@ AVStreamGroup *avformat_stream_group_create(AVFormatContext *s,
+ 
+     stg->av_class = &stream_group_class;
+     av_opt_set_defaults(stg);
+-    stg->type = type;
+     switch (type) {
+     case AV_STREAM_GROUP_PARAMS_IAMF_AUDIO_ELEMENT:
+         stg->params.iamf_audio_element = av_iamf_audio_element_alloc();
+@@ -528,6 +527,7 @@ AVStreamGroup *avformat_stream_group_create(AVFormatContext *s,
+     default:
+         goto fail;
+     }
++    stg->type = type;
+ 
+     if (options) {
+         if (av_opt_set_dict2(stg, options, AV_OPT_SEARCH_CHILDREN))
+-- 
+2.56.0
+

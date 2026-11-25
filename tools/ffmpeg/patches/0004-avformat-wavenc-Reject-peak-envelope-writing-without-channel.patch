@@ -1,0 +1,34 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Michael Niedermayer <michael@niedermayer.cc>
+Date: Tue, 6 Oct 2026 07:19:23 +0200
+Subject: [PATCH] avformat/wavenc: Reject peak envelope writing without
+ channels
+
+The fix is the one recommended in the report.
+
+Fixes: out of array write
+Fixes: LHiad3FmdAmI
+Fixes: AISLE-2026-0111-00337
+Out of array write Replicated through UnModified FFmpeg with ASAN
+Found-by: Joshua Rogers <joshua.rogers@aisle.com>
+---
+ libavformat/wavenc.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/libavformat/wavenc.c b/libavformat/wavenc.c
+index c9ced4a1bd..9de3f7b789 100644
+--- a/libavformat/wavenc.c
++++ b/libavformat/wavenc.c
+@@ -194,7 +194,8 @@ static av_cold int peak_init_writer(AVFormatContext *s)
+                "Writing 16 bit peak for 8 bit audio does not make sense\n");
+         return AVERROR(EINVAL);
+     }
+-    if (par->ch_layout.nb_channels > INT_MAX / (wav->peak_bps * wav->peak_ppv))
++    if (par->ch_layout.nb_channels <= 0 ||
++        par->ch_layout.nb_channels > INT_MAX / (wav->peak_bps * wav->peak_ppv))
+         return AVERROR(ERANGE);
+     wav->size_increment = par->ch_layout.nb_channels * wav->peak_bps * wav->peak_ppv;
+ 
+-- 
+2.56.0
+
