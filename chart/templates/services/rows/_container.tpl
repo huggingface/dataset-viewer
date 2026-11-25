@@ -41,6 +41,10 @@
   # 6 GiB between requests. The system allocator gives them back.
   - name: ARROW_DEFAULT_MEMORY_POOL
     value: "system"
+  # glibc gives each thread of a worker its own arena (15 Python threads, 7 tokio threads), and keeps their freed pages:
+  # a worker still held 6.5 GiB between requests. 2 arenas keep a third of it, for the same CPU time.
+  - name: MALLOC_ARENA_MAX
+    value: "2"
   volumeMounts:
     {{ include "datasetsServer.csi.volumeMount" . | nindent 2 }}
   {{ include "volumeMountParquetMetadataRO" . | nindent 2 }}

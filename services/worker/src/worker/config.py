@@ -57,7 +57,7 @@ WORKER_SLEEP_SECONDS = 15
 WORKER_STATE_FILE_PATH = None
 # After a job, free caches and memory if the pod memory is above this share of its limit (kept below max_memory_pct
 # so that a job leaving a large cache behind is cleaned up before the next job, not once the worker is blocked).
-WORKER_FREE_MEMORY_AFTER_JOB_PCT = 50
+WORKER_FREE_MEMORY_AFTER_JOB_PCT = 30
 # If the pod memory stays above max_memory_pct this long after freeing what we can, the loop exits so that the
 # container restarts with fresh memory (a blocked worker otherwise never takes another job).
 WORKER_MAX_SECONDS_BLOCKED_BY_POD_MEMORY = 5 * 60

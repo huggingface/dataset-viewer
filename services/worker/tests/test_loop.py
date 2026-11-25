@@ -134,7 +134,7 @@ def test_frees_memory_after_a_job_only_above_the_soft_limit(
     loop = make_loop(app_config, worker_state_file_path, max_seconds_blocked_by_pod_memory=60)
     loop._get_pod_memory_limit_bytes = lambda: 10 * 1024**3  # type: ignore[method-assign]
 
-    loop._get_pod_memory_usage_bytes = lambda: 4 * 1024**3  # type: ignore[method-assign]  # 40%
+    loop._get_pod_memory_usage_bytes = lambda: 2 * 1024**3  # type: ignore[method-assign]  # 20%
     loop.queue.add_job(job_type=JOB_TYPE, dataset="dataset", revision="revision", difficulty=50)
     assert loop.process_next_job()
     assert not frees

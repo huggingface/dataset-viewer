@@ -43,6 +43,12 @@
     value: {{ .workerValues.maxMemoryPct | default .Values.worker.maxMemoryPct | quote }}
   - name: WORKER_MAX_SYSTEM_MEMORY_PCT
     value: {{ .workerValues.maxSystemMemoryPct | default .Values.worker.maxSystemMemoryPct | quote }}
+  # the job loop runs for days, and mimalloc and the glibc arenas keep the freed pages of each job: a medium pod held
+  # up to 11.6 GiB between jobs, and the next job went over the limit. Same allocator settings as rows.
+  - name: ARROW_DEFAULT_MEMORY_POOL
+    value: "system"
+  - name: MALLOC_ARENA_MAX
+    value: "2"
   volumeMounts:
     {{ include "datasetsServer.csi.volumeMount" . | nindent 2 }}
   {{ include "volumeMountParquetMetadataRW" . | nindent 2 }}
