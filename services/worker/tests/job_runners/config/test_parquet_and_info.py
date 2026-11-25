@@ -25,6 +25,7 @@ from datasets.packaged_modules.generator.generator import (
 from datasets.utils.py_utils import asdict
 from huggingface_hub._commit_api import CommitOperation, CommitOperationAdd
 from huggingface_hub.hf_api import HfApi
+from huggingface_hub.hf_file_system import HfFileSystem
 from libcommon.dtos import JobInfo, JobParams, Priority
 from libcommon.exceptions import ParquetBrotliCompressionNotSupportedError
 from libcommon.queue.jobs import Queue
@@ -974,6 +975,18 @@ def test_track_reads_zip_file(text_file: str, zip_file: str) -> None:
             assert len(f.read()) == expected_output_size
             assert "file://" + zip_file in tracker.files
             assert tracker.files["file://" + zip_file]["read"] != expected_output_size
+
+
+def test_track_reads_streaming_file(hub_public_csv: str, csv_path: str) -> None:
+    # `datasets` opens some files (e.g. TAR archives) with block_size=0, which streams them without knowing their size
+    fs = HfFileSystem(endpoint=CI_HUB_ENDPOINT, token=CI_USER_TOKEN)
+    path = f"datasets/{hub_public_csv}/{os.path.basename(csv_path)}"
+    with track_reads() as tracker:
+        with fs.open(path, block_size=0) as f, open(csv_path, "rb") as expected_f:
+            assert f.size is None
+            expected_read_size = len(expected_f.read())
+            assert len(f.read()) == expected_read_size
+            assert tracker.files["hf://" + path]["read"] == expected_read_size
 
 
 def test_disallow_embed_local_files(text_file: str, tmp_path: Path) -> None:
