@@ -403,7 +403,7 @@ class Loop:
         job_manager.job_runner.post_compute()
         if exit_code is None or exit_code == -signal.SIGKILL:
             # killed by the loop, or by the kernel between two checks. The retryable errors backfill retries the job,
-            # and its next jobs go to a bigger worker
+            # on a bigger worker
             job_manager.set_exceeded_maximum_memory(
                 message="Job manager was killed while running this job (job exceeded maximum memory)."
             )

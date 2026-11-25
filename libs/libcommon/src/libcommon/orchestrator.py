@@ -21,7 +21,6 @@ from libcommon.constants import (
     DATASET_CONFIG_NAMES_KIND,
     DEFAULT_DIFFICULTY_MAX,
     DIFFICULTY_BONUS_BY_FAILED_RUNS,
-    EXCEEDED_MAXIMUM_MEMORY_ERROR_CODE,
     SPLIT_HAS_PREVIEW_KIND,
     YAML_FIELDS_TO_CHECK,
 )
@@ -40,7 +39,6 @@ from libcommon.simple_cache import (
     delete_dataset_responses,
     fetch_names,
     get_cache_entries_df,
-    get_min_difficulties,
     get_response,
     get_response_metadata,
     update_revision_of_dataset_responses,
@@ -480,7 +478,6 @@ class AfterJobPlan(Plan):
     revision: str = field(init=False)
     priority: Priority = field(init=False)
     queue_place_kept_for: set[str] = field(init=False, default_factory=set)
-    min_difficulties: dict[tuple[str, Optional[str], Optional[str]], int] = field(init=False, default_factory=dict)
 
     def __post_init__(self) -> None:
         super().__post_init__()
@@ -529,10 +526,6 @@ class AfterJobPlan(Plan):
         self.pending_jobs_df = Queue().get_pending_jobs_df(
             dataset=self.dataset,
             job_types=[next_processing_step[1].job_type for next_processing_step in next_processing_steps],
-        )
-        self.min_difficulties = get_min_difficulties(
-            dataset=self.dataset,
-            kinds=[next_processing_step[1].cache_kind for next_processing_step in next_processing_steps],
         )
 
         self.job_infos_to_create: dict[str, JobInfo] = {}
@@ -646,9 +639,7 @@ class AfterJobPlan(Plan):
             difficulty = next_processing_step.difficulty
             if self.num_bytes is not None and self.num_bytes >= self.processing_graph.min_bytes_for_bonus_difficulty:
                 difficulty += next_processing_step.bonus_difficulty_if_dataset_is_big
-            difficulty = max(
-                difficulty, self.min_difficulties.get((next_processing_step.cache_kind, config, split), 0)
-            )
+            # increase difficulty according to number of failed runs
             difficulty = min(DEFAULT_DIFFICULTY_MAX, difficulty)
             self.job_infos_to_create[job_key] = {
                 "job_id": "not used",  # TODO: remove this field
@@ -927,10 +918,6 @@ class DatasetBackfillPlan(Plan):
                     DEFAULT_DIFFICULTY_MAX,
                     difficulty + failed_runs * DIFFICULTY_BONUS_BY_FAILED_RUNS,
                 )
-                if artifact_state.cache_state.cache_entry_metadata is not None:
-                    difficulty = max(
-                        difficulty, artifact_state.cache_state.cache_entry_metadata["min_difficulty"] or 0
-                    )
                 job_infos_to_create.append(
                     {
                         "job_id": "not used",
@@ -1329,12 +1316,6 @@ def save_job_result(job_result: JobResult, failed_runs: int) -> None:
 
     if output["http_status"] != HTTPStatus.OK:
         failed_runs += 1
-    # a job killed for memory is killed again on the next revisions: their jobs go to a bigger worker
-    min_difficulty = (
-        min(DEFAULT_DIFFICULTY_MAX, job_info["difficulty"] + DIFFICULTY_BONUS_BY_FAILED_RUNS)
-        if output["error_code"] == EXCEEDED_MAXIMUM_MEMORY_ERROR_CODE
-        else None
-    )
 
     # finish_job plans the children from job_info: give them the start kept on the entry, not a retry's
     job_info["first_job_created_at"] = upsert_response_params(
@@ -1349,7 +1330,6 @@ def save_job_result(job_result: JobResult, failed_runs: int) -> None:
         details=output["details"],
         progress=output["progress"],
         failed_runs=failed_runs,
-        min_difficulty=min_difficulty,
         duration=job_result["duration"],
         # created_at can be inherited (PREVIEW_PATH): the job id has the real queue time
         job_created_at=ObjectId(job_info["job_id"][:24]).generation_time  # type: ignore[attr-defined]

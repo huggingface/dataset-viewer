@@ -91,7 +91,6 @@ class CacheState:
                 updated_at=entry["updated_at"],
                 progress=entry["progress"],
                 failed_runs=entry["failed_runs"],
-                min_difficulty=None if pd.isna(entry["min_difficulty"]) else int(entry["min_difficulty"]),
             )
 
         """Whether the cache entry exists."""
