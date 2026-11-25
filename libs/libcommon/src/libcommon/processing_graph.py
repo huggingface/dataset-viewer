@@ -705,6 +705,12 @@ specification: ProcessingGraphSpecification = {
         "job_runner_version": 1,
         "difficulty": 50,
     },
+    "dataset-harbor-tasks": {
+        "input_type": "dataset",
+        "triggered_by": "dataset-init",
+        "job_runner_version": 2,
+        "difficulty": 50,
+    },
 }
 
 
