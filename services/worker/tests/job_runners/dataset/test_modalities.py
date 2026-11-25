@@ -6,7 +6,7 @@ from http import HTTPStatus
 from typing import Any
 
 import pytest
-from datasets import Features, Image, List, Value
+from datasets import Features, Image, List, Mesh, Value
 from libcommon.dtos import Priority
 from libcommon.exceptions import PreviousStepFormatError
 from libcommon.resources import CacheMongoResource, QueueMongoResource
@@ -36,6 +36,7 @@ TIME_SERIES_DATASET = "time-series-dataset"
 IMAGE_URLS_DATASET = "image-urls-dataset"
 PDF_DATASET = "pdf-dataset"
 USD_DATASET = "usd-dataset"
+MESH_DATASET = "mesh-dataset"
 ERROR_DATASET = "error-dataset"
 
 text_features = Features({"conversations": [{"from": Value("string"), "value": Value("string")}]})
@@ -44,6 +45,7 @@ tabular_features = Features({"col1": Value("int8"), "col2": Value("float32")})
 not_tabular_features_1 = Features({"col1": Value("int8"), "col2": Value("float32"), "image": Image()})
 not_tabular_features_2 = Features({"col1": Value("int8"), "col2": Value("string")})
 time_series_features = Features({"window": List(Value("float32")), "target": Value("float32")})
+mesh_features = Features({"mesh": Mesh(), "caption": Value("string")})
 
 UPSTREAM_RESPONSE_INFO_TEXT: UpstreamResponse = UpstreamResponse(
     kind="dataset-info",
@@ -107,6 +109,17 @@ UPSTREAM_RESPONSE_INFO_TIME_SERIES: UpstreamResponse = UpstreamResponse(
     http_status=HTTPStatus.OK,
     content={
         "dataset_info": {"default": {"config_name": "default", "features": time_series_features.to_dict()}},
+        "partial": False,
+    },
+    progress=1.0,
+)
+UPSTREAM_RESPONSE_INFO_MESH: UpstreamResponse = UpstreamResponse(
+    kind="dataset-info",
+    dataset=MESH_DATASET,
+    dataset_git_revision=REVISION_NAME,
+    http_status=HTTPStatus.OK,
+    content={
+        "dataset_info": {"default": {"config_name": "default", "features": mesh_features.to_dict()}},
         "partial": False,
     },
     progress=1.0,
@@ -279,6 +292,10 @@ EXPECTED_3D_IMAGE: tuple[DatasetModalitiesResponse, float] = (
     {"modalities": ["3d", "image"]},
     1.0,
 )
+EXPECTED_3D_TEXT: tuple[DatasetModalitiesResponse, float] = (
+    {"modalities": ["3d", "text"]},
+    1.0,
+)
 
 
 @pytest.fixture
@@ -409,6 +426,11 @@ def get_job_runner(
             USD_DATASET,
             [UPSTREAM_RESPONSE_USD_DATASET],
             EXPECTED_3D_IMAGE,
+        ),
+        (
+            MESH_DATASET,
+            [UPSTREAM_RESPONSE_INFO_MESH],
+            EXPECTED_3D_TEXT,
         ),
     ],
 )
