@@ -86,7 +86,7 @@ Set environment variables to configure the `descriptive-statistics` worker (`DES
 
 - `DESCRIPTIVE_STATISTICS_CACHE_DIRECTORY`: directory to which a dataset in parquet format is downloaded. Defaults to empty.
 - `DESCRIPTIVE_STATISTICS_MAX_SPLIT_SIZE_BYTES`: if size in bytes of raw uncompressed split data is larger than this value, only first `n` parquet files are used so that their sum of uncompressed content in bytes is not greater than approximately `DESCRIPTIVE_STATISTICS_MAX_SPLIT_SIZE_BYTES`. Defaults to `100_000_000`.
-- `DESCRIPTIVE_STATISTICS_COLUMNS_MAX_NUMBER`: the max number of columns to compute the statistics for. If the split has more columns, an error is returned. Defaults to `1_000`.
+- `DESCRIPTIVE_STATISTICS_COLUMNS_MAX_NUMBER`: the max number of columns to compute the statistics for. If the split has more columns, the statistics are computed for the first `n` columns, and `partial` is set to `True`. Defaults to `1_000`.
 
 #### How descriptive statistics are computed 
 

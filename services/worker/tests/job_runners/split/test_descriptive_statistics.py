@@ -336,7 +336,7 @@ def datetime_statistics_expected(datasets: Mapping[str, Dataset]) -> dict[str, A
         ("descriptive_statistics", None),
         ("descriptive_statistics_string_text", None),
         ("descriptive_statistics_not_supported", "NoSupportedFeaturesError"),
-        ("descriptive_statistics_too_many_columns", "TooManyColumnsError"),
+        ("descriptive_statistics_first_columns", None),
         ("audio_statistics", None),
         ("image_statistics", None),
         ("datetime_statistics", None),
@@ -368,7 +368,7 @@ def test_compute(
         "descriptive_statistics": hub_responses_descriptive_statistics,
         "descriptive_statistics_string_text": hub_responses_descriptive_statistics_string_text,
         "descriptive_statistics_not_supported": hub_responses_descriptive_statistics_not_supported,
-        "descriptive_statistics_too_many_columns": hub_responses_descriptive_statistics,
+        "descriptive_statistics_first_columns": hub_responses_descriptive_statistics,
         "gated": hub_responses_gated_descriptive_statistics,
         "audio_statistics": hub_responses_audio_statistics,
         "image_statistics": hub_responses_image_statistics,
@@ -377,6 +377,7 @@ def test_compute(
     expected = {
         "descriptive_statistics": descriptive_statistics_expected,
         "descriptive_statistics_partial": descriptive_statistics_expected,
+        "descriptive_statistics_first_columns": descriptive_statistics_expected,
         "gated": descriptive_statistics_expected,
         "descriptive_statistics_string_text": descriptive_statistics_string_text_expected,
         "audio_statistics": audio_statistics_expected,
@@ -452,9 +453,10 @@ def test_compute(
         http_status=HTTPStatus.OK,
         content=config_parquet_metadata,
     )
-    if hub_dataset_name.endswith("_too_many_columns"):
+    first_columns = hub_dataset_name.endswith("_first_columns")
+    if first_columns:
         app_config = replace(
-            app_config, descriptive_statistics=replace(app_config.descriptive_statistics, columns_max_number=1)
+            app_config, descriptive_statistics=replace(app_config.descriptive_statistics, columns_max_number=2)
         )
     job_runner = get_job_runner(dataset, config, split, app_config)
     job_runner.pre_compute()
@@ -466,9 +468,14 @@ def test_compute(
         response = list(job_runner.compute())[0]
         assert sorted(response.content.keys()) == ["num_examples", "partial", "statistics"]
         assert response.content["num_examples"] == expected_response["num_examples"]  # type: ignore
+        assert response.content["partial"] is first_columns
 
         response = response.content["statistics"]
         expected = expected_response["statistics"]  # type: ignore
+        if first_columns:
+            # the statistics of the first 2 columns only
+            assert len(response) == 2
+            expected = {res["column_name"]: expected[res["column_name"]] for res in response}
         assert len(response) == len(expected), set(expected) - set([res["column_name"] for res in response])
         assert set([column_response["column_name"] for column_response in response]) == set(
             expected
