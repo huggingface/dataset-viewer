@@ -3,12 +3,10 @@
 
 
 CACHE_COLLECTION_RESPONSES = "cachedResponsesBlue"
-CACHE_MIN_DIFFICULTY_INDEX = {
-    "fields": ["dataset", "kind"],
-    "name": "dataset_kind_min_difficulty",
-    # only the few entries that have a min_difficulty: the index stays small
-    "partialFilterExpression": {"min_difficulty": {"$exists": True}},
-}
+CACHE_MIN_DIFFICULTY_INDEX_NAME = "dataset_kind_min_difficulty"
+CACHE_MIN_DIFFICULTY_INDEX_FIELDS = ["dataset", "kind"]
+# only the few entries that have a min_difficulty: the index stays small
+CACHE_MIN_DIFFICULTY_INDEX_FILTER = {"min_difficulty": {"$exists": True}}
 CACHE_MONGOENGINE_ALIAS = "cache"
 HF_DATASETS_CACHE_APPNAME = "hf_datasets_cache"
 PARQUET_METADATA_CACHE_APPNAME = "datasets_server_parquet_metadata"

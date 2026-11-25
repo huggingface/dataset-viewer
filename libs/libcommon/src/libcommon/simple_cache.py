@@ -31,7 +31,9 @@ from pymongoarrow.api import Schema, find_pandas_all
 from libcommon.constants import (
     CACHE_COLLECTION_RESPONSES,
     CACHE_METRICS_COLLECTION,
-    CACHE_MIN_DIFFICULTY_INDEX,
+    CACHE_MIN_DIFFICULTY_INDEX_FIELDS,
+    CACHE_MIN_DIFFICULTY_INDEX_FILTER,
+    CACHE_MIN_DIFFICULTY_INDEX_NAME,
     CACHE_MONGOENGINE_ALIAS,
     ERROR_CODES_TO_RETRY,
 )
@@ -187,7 +189,11 @@ class CachedResponseDocument(Document):
             ("http_status", "error_code", "kind", "updated_at"),  # < recommended by Atlas
             ("kind", "http_status", "updated_at"),  # optimize updated_at range queries
             {"fields": ["kind", "updated_at", "dataset"], "name": "kind_updated"},
-            CACHE_MIN_DIFFICULTY_INDEX,
+            {
+                "fields": CACHE_MIN_DIFFICULTY_INDEX_FIELDS,
+                "name": CACHE_MIN_DIFFICULTY_INDEX_NAME,
+                "partialFilterExpression": CACHE_MIN_DIFFICULTY_INDEX_FILTER,
+            },
         ],
     }
     objects = QuerySetManager["CachedResponseDocument"]()

@@ -3,12 +3,16 @@
 
 import logging
 
-from libcommon.constants import CACHE_COLLECTION_RESPONSES, CACHE_MIN_DIFFICULTY_INDEX, CACHE_MONGOENGINE_ALIAS
+from libcommon.constants import (
+    CACHE_COLLECTION_RESPONSES,
+    CACHE_MIN_DIFFICULTY_INDEX_FIELDS,
+    CACHE_MIN_DIFFICULTY_INDEX_FILTER,
+    CACHE_MIN_DIFFICULTY_INDEX_NAME,
+    CACHE_MONGOENGINE_ALIAS,
+)
 from mongoengine.connection import get_db
 
 from mongodb_migration.migration import Migration
-
-CACHE_MIN_DIFFICULTY_INDEX_NAME = CACHE_MIN_DIFFICULTY_INDEX["name"]
 
 
 # connection already occurred in the main.py (caveat: we use globals)
@@ -17,9 +21,9 @@ class MigrationCacheAddMinDifficultyIndex(Migration):
         # Build it here, before the workers: ensure_indexes() in the workers sees the same name and keys and does nothing.
         logging.info(f"Create the {CACHE_MIN_DIFFICULTY_INDEX_NAME} index on the cache")
         get_db(CACHE_MONGOENGINE_ALIAS)[CACHE_COLLECTION_RESPONSES].create_index(
-            [(field, 1) for field in CACHE_MIN_DIFFICULTY_INDEX["fields"]],
+            [(field, 1) for field in CACHE_MIN_DIFFICULTY_INDEX_FIELDS],
             name=CACHE_MIN_DIFFICULTY_INDEX_NAME,
-            partialFilterExpression=CACHE_MIN_DIFFICULTY_INDEX["partialFilterExpression"],
+            partialFilterExpression=CACHE_MIN_DIFFICULTY_INDEX_FILTER,
         )
 
     def down(self) -> None:
@@ -34,7 +38,7 @@ class MigrationCacheAddMinDifficultyIndex(Migration):
         index = indexes.get(CACHE_MIN_DIFFICULTY_INDEX_NAME)
         if (
             index is None
-            or [field for field, _ in index["key"]] != CACHE_MIN_DIFFICULTY_INDEX["fields"]
-            or index.get("partialFilterExpression") != CACHE_MIN_DIFFICULTY_INDEX["partialFilterExpression"]
+            or [field for field, _ in index["key"]] != CACHE_MIN_DIFFICULTY_INDEX_FIELDS
+            or index.get("partialFilterExpression") != CACHE_MIN_DIFFICULTY_INDEX_FILTER
         ):
             raise ValueError(f"the {CACHE_MIN_DIFFICULTY_INDEX_NAME} index is missing or differs: {index}")
