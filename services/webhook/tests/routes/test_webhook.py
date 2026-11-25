@@ -147,6 +147,15 @@ def test_parse_payload(
         ),
         (
             {
+                "event": "update",
+                "scope": "repo.config",
+                "repo": {"type": "dataset", "name": "webhook-test", "headSha": None, "private": False},
+                "updatedConfig": {"private": False},
+            },
+            True,
+        ),
+        (
+            {
                 "event": "add",
                 "scope": "discussion.comment",
                 "repo": {
