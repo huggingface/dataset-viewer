@@ -10,14 +10,14 @@ Croissant is a metadata format built on top of [schema.org](https://schema.org/)
 
 This guide shows you how to use [Hugging Face `/croissant` endpoint](https://huggingface.co/docs/hub/api#get-apidatasetsrepoidcroissant) to retrieve the Croissant metadata associated to a dataset.
 
-The `/croissant` endpoint takes the dataset name in the URL, for example for the `ibm/duorc` dataset:
+The `/croissant` endpoint takes the dataset name in the URL, for example for the `ibm-research/duorc` dataset:
 
 <inferencesnippet>
 <python>
 ```python
 import requests
 headers = {"Authorization": f"Bearer {API_TOKEN}"}
-API_URL = "https://huggingface.co/api/datasets/ibm/duorc/croissant"
+API_URL = "https://huggingface.co/api/datasets/ibm-research/duorc/croissant"
 def query():
     response = requests.get(API_URL, headers=headers)
     return response.json()
@@ -29,7 +29,7 @@ data = query()
 import fetch from "node-fetch";
 async function query(data) {
     const response = await fetch(
-        "https://huggingface.co/api/datasets/ibm/duorc/croissant",
+        "https://huggingface.co/api/datasets/ibm-research/duorc/croissant",
         {
             headers: { Authorization: `Bearer ${API_TOKEN}` },
             method: "GET"
@@ -45,7 +45,7 @@ query().then((response) => {
 </js>
 <curl>
 ```curl
-curl https://huggingface.co/api/datasets/ibm/duorc/croissant \
+curl https://huggingface.co/api/datasets/ibm-research/duorc/croissant \
         -X GET \
         -H "Authorization: Bearer ${API_TOKEN}"
 ```
@@ -54,7 +54,7 @@ curl https://huggingface.co/api/datasets/ibm/duorc/croissant \
 
 Under the hood it uses the `https://datasets-server.huggingface.co/croissant-crumbs` endpoint and enriches it with the Hub metadata.
 
-The endpoint response is a [JSON-LD](https://json-ld.org/) containing the metadata in the Croissant format. For example, the [`ibm/duorc`](https://huggingface.co/datasets/ibm/duorc) dataset has two subsets, `ParaphraseRC` and `SelfRC` (see the [List splits and subsets](./splits) guide for more details about splits and subsets). The metadata links to their Parquet files and describes the type of each of the six columns: `plot_id`, `plot`, `title`, `question_id`, `question`, and `no_answer`:
+The endpoint response is a [JSON-LD](https://json-ld.org/) containing the metadata in the Croissant format. For example, the [`ibm-research/duorc`](https://huggingface.co/datasets/ibm-research/duorc) dataset has two subsets, `ParaphraseRC` and `SelfRC` (see the [List splits and subsets](./splits) guide for more details about splits and subsets). The metadata links to their Parquet files and describes the type of each of the six columns: `plot_id`, `plot`, `title`, `question_id`, `question`, and `no_answer`:
 
 ```json
 {
@@ -108,7 +108,7 @@ The endpoint response is a [JSON-LD](https://json-ld.org/) containing the metada
       "@id": "repo",
       "name": "repo",
       "description": "The Hugging Face git repository.",
-      "contentUrl": "https://huggingface.co/datasets/ibm/duorc/tree/refs%2Fconvert%2Fparquet",
+      "contentUrl": "https://huggingface.co/datasets/ibm-research/duorc/tree/refs%2Fconvert%2Fparquet",
       "encodingFormat": "git+https",
       "sha256": "https://github.com/mlcommons/croissant/issues/80"
     },
@@ -140,7 +140,7 @@ The endpoint response is a [JSON-LD](https://json-ld.org/) containing the metada
       "@type": "cr:RecordSet",
       "@id": "ParaphraseRC",
       "name": "ParaphraseRC",
-      "description": "ibm/duorc - 'ParaphraseRC' subset\n\nAdditional information:\n- 3 splits: train, validation, test\n- 1 skipped column: answers",
+      "description": "ibm-research/duorc - 'ParaphraseRC' subset\n\nAdditional information:\n- 3 splits: train, validation, test\n- 1 skipped column: answers",
       "field": [
         {
           "@type": "cr:Field",
@@ -238,7 +238,7 @@ The endpoint response is a [JSON-LD](https://json-ld.org/) containing the metada
       "@type": "cr:RecordSet",
       "@id": "SelfRC",
       "name": "SelfRC",
-      "description": "ibm/duorc - 'SelfRC' subset\n\nAdditional information:\n- 3 splits: train, validation, test\n- 1 skipped column: answers",
+      "description": "ibm-research/duorc - 'SelfRC' subset\n\nAdditional information:\n- 3 splits: train, validation, test\n- 1 skipped column: answers",
       "field": [
         {
           "@type": "cr:Field",
@@ -334,9 +334,9 @@ The endpoint response is a [JSON-LD](https://json-ld.org/) containing the metada
     }
   ],
   "name": "duorc",
-  "description": "\n\t\n\t\t\n\t\n\t\n\t\tDataset Card for duorc\n\t\n\n\n\t\n\t\t\n\t\n\t\n\t\tDataset Summary\n\t\n\nThe DuoRC dataset is an English language dataset of questions and answers gathered from crowdsourced AMT workers on Wikipedia and IMDb movie plots. The workers were given freedom to pick answer from the plots or synthesize their own answers. It contains two sub-datasets - SelfRC and ParaphraseRC. SelfRC dataset is built on Wikipedia movie plots solely. ParaphraseRC has questions written from Wikipedia movie plots and the… See the full description on the dataset page: https://huggingface.co/datasets/ibm/duorc.",
+  "description": "\n\t\n\t\t\n\t\n\t\n\t\tDataset Card for duorc\n\t\n\n\n\t\n\t\t\n\t\n\t\n\t\tDataset Summary\n\t\n\nThe DuoRC dataset is an English language dataset of questions and answers gathered from crowdsourced AMT workers on Wikipedia and IMDb movie plots. The workers were given freedom to pick answer from the plots or synthesize their own answers. It contains two sub-datasets - SelfRC and ParaphraseRC. SelfRC dataset is built on Wikipedia movie plots solely. ParaphraseRC has questions written from Wikipedia movie plots and the… See the full description on the dataset page: https://huggingface.co/datasets/ibm-research/duorc.",
   "alternateName": [
-    "ibm/duorc",
+    "ibm-research/duorc",
     "DuoRC"
   ],
   "creator": {
@@ -363,7 +363,7 @@ The endpoint response is a [JSON-LD](https://json-ld.org/) containing the metada
   ],
   "license": "https://choosealicense.com/licenses/mit/",
   "sameAs": "https://duorc.github.io/",
-  "url": "https://huggingface.co/datasets/ibm/duorc"
+  "url": "https://huggingface.co/datasets/ibm-research/duorc"
 }
 ```
 

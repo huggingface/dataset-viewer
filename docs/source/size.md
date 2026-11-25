@@ -9,7 +9,7 @@ The `/size` endpoint accepts the dataset name as its query parameter:
 ```python
 import requests
 headers = {"Authorization": f"Bearer {API_TOKEN}"}
-API_URL = "https://datasets-server.huggingface.co/size?dataset=ibm/duorc"
+API_URL = "https://datasets-server.huggingface.co/size?dataset=ibm-research/duorc"
 def query():
     response = requests.get(API_URL, headers=headers)
     return response.json()
@@ -21,7 +21,7 @@ data = query()
 import fetch from "node-fetch";
 async function query(data) {
     const response = await fetch(
-        "https://datasets-server.huggingface.co/size?dataset=ibm/duorc",
+        "https://datasets-server.huggingface.co/size?dataset=ibm-research/duorc",
         {
             headers: { Authorization: `Bearer ${API_TOKEN}` },
             method: "GET"
@@ -37,20 +37,20 @@ query().then((response) => {
 </js>
 <curl>
 ```curl
-curl https://datasets-server.huggingface.co/size?dataset=ibm/duorc \
+curl https://datasets-server.huggingface.co/size?dataset=ibm-research/duorc \
         -X GET \
         -H "Authorization: Bearer ${API_TOKEN}"
 ```
 </curl>
 </inferencesnippet>
 
-The endpoint response is a JSON containing the size of the dataset, as well as each of its subsets and splits. It provides the number of rows, the number of colums (where applicable) and the size in bytes for the different forms of the data: original files, size in memory (RAM) and auto-converted parquet files. For example, the [ibm/duorc](https://huggingface.co/datasets/ibm/duorc) dataset has 187.213 rows along all its subsets and splits, for a total of 97MB.
+The endpoint response is a JSON containing the size of the dataset, as well as each of its subsets and splits. It provides the number of rows, the number of colums (where applicable) and the size in bytes for the different forms of the data: original files, size in memory (RAM) and auto-converted parquet files. For example, the [ibm-research/duorc](https://huggingface.co/datasets/ibm-research/duorc) dataset has 187.213 rows along all its subsets and splits, for a total of 97MB.
 
 ```json
 {
    "size":{
       "dataset":{
-         "dataset":"ibm/duorc",
+         "dataset":"ibm-research/duorc",
          "num_bytes_original_files":58710973,
          "num_bytes_parquet_files":58710973,
          "num_bytes_memory":1060742354,
@@ -58,7 +58,7 @@ The endpoint response is a JSON containing the size of the dataset, as well as e
       },
       "configs":[
          {
-            "dataset":"ibm/duorc",
+            "dataset":"ibm-research/duorc",
             "config":"ParaphraseRC",
             "num_bytes_original_files":37709127,
             "num_bytes_parquet_files":37709127,
@@ -67,7 +67,7 @@ The endpoint response is a JSON containing the size of the dataset, as well as e
             "num_columns":7
          },
          {
-            "dataset":"ibm/duorc",
+            "dataset":"ibm-research/duorc",
             "config":"SelfRC",
             "num_bytes_original_files":21001846,
             "num_bytes_parquet_files":21001846,
@@ -78,7 +78,7 @@ The endpoint response is a JSON containing the size of the dataset, as well as e
       ],
       "splits":[
          {
-            "dataset":"ibm/duorc",
+            "dataset":"ibm-research/duorc",
             "config":"ParaphraseRC",
             "split":"train",
             "num_bytes_parquet_files":26005668,
@@ -87,7 +87,7 @@ The endpoint response is a JSON containing the size of the dataset, as well as e
             "num_columns":7
          },
          {
-            "dataset":"ibm/duorc",
+            "dataset":"ibm-research/duorc",
             "config":"ParaphraseRC",
             "split":"validation",
             "num_bytes_parquet_files":5566868,
@@ -96,7 +96,7 @@ The endpoint response is a JSON containing the size of the dataset, as well as e
             "num_columns":7
          },
          {
-            "dataset":"ibm/duorc",
+            "dataset":"ibm-research/duorc",
             "config":"ParaphraseRC",
             "split":"test",
             "num_bytes_parquet_files":6136591,
@@ -105,7 +105,7 @@ The endpoint response is a JSON containing the size of the dataset, as well as e
             "num_columns":7
          },
          {
-            "dataset":"ibm/duorc",
+            "dataset":"ibm-research/duorc",
             "config":"SelfRC",
             "split":"train",
             "num_bytes_parquet_files":14851720,
@@ -114,7 +114,7 @@ The endpoint response is a JSON containing the size of the dataset, as well as e
             "num_columns":7
          },
          {
-            "dataset":"ibm/duorc",
+            "dataset":"ibm-research/duorc",
             "config":"SelfRC",
             "split":"validation",
             "num_bytes_parquet_files":3114390,
@@ -123,7 +123,7 @@ The endpoint response is a JSON containing the size of the dataset, as well as e
             "num_columns":7
          },
          {
-            "dataset":"ibm/duorc",
+            "dataset":"ibm-research/duorc",
             "config":"SelfRC",
             "split":"test",
             "num_bytes_parquet_files":3035736,
