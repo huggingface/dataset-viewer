@@ -24,7 +24,7 @@ from libcommon.constants import (
     SPLIT_HAS_PREVIEW_KIND,
     YAML_FIELDS_TO_CHECK,
 )
-from libcommon.dtos import CachedJob, JobInfo, JobResult, Priority
+from libcommon.dtos import CachedJob, JobInfo, JobResult, Priority, Status
 from libcommon.processing_graph import (
     InputType,
     ProcessingGraph,
@@ -50,10 +50,12 @@ from libcommon.storage_client import StorageClient
 # (parent, child) steps on the path to a first preview: the first child keeps its parent's queue place
 # (created_at) instead of joining the back, so a preview waits in line once. Re-runs from other parents
 # (e.g. config-info, config-parquet-metadata) join the back as before.
+# The Hub shows a preview once both split-first-rows and dataset-split-names (its /splits?dataset= call) exist.
 PREVIEW_PATH = {
     ("dataset-init", DATASET_CONFIG_NAMES_KIND),
     (DATASET_CONFIG_NAMES_KIND, CONFIG_SPLIT_NAMES_KIND),
     (CONFIG_SPLIT_NAMES_KIND, SPLIT_HAS_PREVIEW_KIND),
+    (CONFIG_SPLIT_NAMES_KIND, "dataset-split-names"),
 }
 
 # TODO: clean dangling cache entries
@@ -619,7 +621,17 @@ class AfterJobPlan(Plan):
             & (split_mask)
         )
         ok_jobs_mask = jobs_mask & (self.pending_jobs_df["revision"] == self.revision)
-        if ok_jobs_mask.any():
+        job_type = next_processing_step.job_type
+        keep_queue_place = (parent_kind, job_type) in PREVIEW_PATH and job_type not in self.queue_place_kept_for
+        # dataset-config-names also triggers dataset-split-names, so it is usually already waiting at the back of the
+        # line when split names finishes. Such a waiting job stays in pending_jobs_df, to be deleted, and is replaced
+        # by one that keeps the queue place. A started job is left alone.
+        replace_waiting_job = (
+            keep_queue_place
+            and ok_jobs_mask.any()
+            and self.pending_jobs_df.at[ok_jobs_mask.idxmax(), "status"] == Status.WAITING.value
+        )
+        if ok_jobs_mask.any() and not replace_waiting_job:
             # remove the first ok job for the list, and keep the others to delete them later
             self.pending_jobs_df.drop(ok_jobs_mask.idxmax(), inplace=True)
         else:
@@ -643,8 +655,7 @@ class AfterJobPlan(Plan):
                 "started_at": None,
                 "first_job_created_at": self.job_info.get("first_job_created_at"),
             }
-            job_type = next_processing_step.job_type
-            if (parent_kind, job_type) in PREVIEW_PATH and job_type not in self.queue_place_kept_for:
+            if keep_queue_place:
                 self.queue_place_kept_for.add(job_type)
                 self.job_infos_to_create[job_key]["created_at"] = self.job_info.get("created_at")
 
