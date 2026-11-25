@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any, Optional, TypedDict, Union
 
 import polars as pl
+import pyarrow as pa
 import pyarrow.parquet as pq
 from datasets import Features, LargeList, List
 from datasets.features.features import FeatureType, _ArrayXD
@@ -97,6 +98,7 @@ def compute_descriptive_statistics_response(
     hf_token: Optional[str],
     parquet_revision: str,
     max_split_size_bytes: int,
+    columns_max_number: int,
     parquet_metadata_directory: StrPath,
     revision: str,
 ) -> SplitDescriptiveStatisticsResponse:
@@ -122,6 +124,9 @@ def compute_descriptive_statistics_response(
             If raw uncompressed split data is larger than this value, the statistics are computed
             only on the first parquet files, approximately up to this size, and the `partial` field will be set
             to `True` in the response.
+        columns_max_number (`int`):
+            The maximum number of columns to compute the statistics for. If the split has more supported columns, the
+            statistics are computed for the first ones only, and the `partial` field is set to `True`.
         parquet_metadata_directory (`StrPath`):
             Path to directory on local shared storage containing parquet metadata files. Parquet metadata is needed
             to get uncompressed size of split files to determine the number of files to use if split is larger
@@ -273,6 +278,10 @@ def compute_descriptive_statistics_response(
             "No columns for statistics computation found. Currently supported feature types are: "
             f"{NUMERICAL_DTYPES}, {STRING_DTYPES}, ClassLabel, Image, Audio, List, datetime and bool. "
         )
+    if len(columns) > columns_max_number:
+        logging.info(f"Computing statistics for the first {columns_max_number} of {len(columns)} columns.")
+        columns = columns[:columns_max_number]
+        partial = True
 
     column_names_str = ", ".join([column.name for column in columns])
     column_counts = Counter([column.__class__.__name__ for column in columns])
@@ -281,16 +290,18 @@ def compute_descriptive_statistics_response(
     )
 
     local_parquet_paths = list(local_parquet_split_directory.glob("*.parquet"))
+    # each file is opened once: reading a column with pq.read_table parses the footer again, which took 126 ms per
+    # column (more than 30 minutes) on a split of 16,225 columns
+    local_parquet_files = [pq.ParquetFile(path) for path in local_parquet_paths]
     for column in columns:
         if isinstance(column, (AudioColumn, VideoColumn, ImageColumn)):
             column_stats = column.compute_and_prepare_response(local_parquet_paths)
         else:
             try:
+                schema = Features.from_dict({column.name: features[column.name]}).arrow_schema
                 data = pl.DataFrame._from_arrow(
-                    pq.read_table(
-                        local_parquet_paths,
-                        columns=[column.name],
-                        schema=Features.from_dict({column.name: features[column.name]}).arrow_schema,
+                    pa.concat_tables(
+                        parquet_file.read(columns=[column.name]).cast(schema) for parquet_file in local_parquet_files
                     )
                 )
             except Exception as error:
@@ -350,6 +361,7 @@ class SplitDescriptiveStatisticsJobRunner(SplitJobRunnerWithCache):
                 hf_token=self.app_config.common.hf_token,
                 parquet_revision=self.descriptive_statistics_config.parquet_revision,
                 max_split_size_bytes=self.descriptive_statistics_config.max_split_size_bytes,
+                columns_max_number=self.descriptive_statistics_config.columns_max_number,
                 parquet_metadata_directory=self.parquet_metadata_directory,
                 revision=self.job_info["params"]["revision"],
             )
