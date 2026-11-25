@@ -30,11 +30,12 @@ from datasets import (
     load_dataset,
 )
 from datasets.features.features import decode_nested_example
+from datasets.packaged_modules.json.json import Json as JsonBuilder
 from datasets.utils.file_utils import SINGLE_FILE_COMPRESSION_EXTENSION_TO_PROTOCOL, is_relative_path
-from huggingface_hub import HfFileSystem, HfFileSystemFile
+from huggingface_hub import HfFileSystem, HfFileSystemFile, parse_hf_uri
 from huggingface_hub.constants import DEFAULT_REVISION
 from huggingface_hub.errors import RepositoryNotFoundError
-from huggingface_hub.hf_api import HfApi
+from huggingface_hub.hf_api import HfApi, RepoFile
 from huggingface_hub.utils._http import hf_raise_for_status, http_backoff
 from libcommon.constants import CONFIG_SPLIT_NAMES_KIND, MAX_COLUMN_NAME_LENGTH
 from libcommon.dtos import RowsContent
@@ -45,6 +46,7 @@ from libcommon.exceptions import (
     PreviousStepFormatError,
     SplitNotFoundError,
     StreamingRowsError,
+    TooBigContentError,
     TooLongColumnNameError,
 )
 from libcommon.simple_cache import get_previous_step_or_raise
@@ -482,8 +484,36 @@ def safe_load_dataset_builder(
         token=token,
         **builder_kwargs,
     )
+    raise_if_too_big_json_files(builder_instance)
 
     return builder_instance
+
+
+# datasets reads a JSON file whole when it holds one array (or with a `field`), to convert it to JSON Lines: it takes
+# about 4 times the file size in memory, and a 3.9 GB file got a 14 GiB worker OOM killed
+MAX_JSON_FILE_SIZE_BYTES = 1_000_000_000
+
+
+def raise_if_too_big_json_files(builder: DatasetBuilder) -> None:
+    """Refuse the JSON data files that datasets could read whole, before reading any of them."""
+    if not isinstance(builder, JsonBuilder) or not builder.config.data_files:
+        return
+    paths_in_repo: dict[tuple[str, Optional[str]], list[str]] = {}
+    for files in builder.config.data_files.values():
+        for path in files:
+            if path.lower().endswith(".json") and path.startswith("hf://datasets/") and "@" in path:
+                uri = parse_hf_uri(path)
+                paths_in_repo.setdefault((uri.id, uri.revision), []).append(uri.path_in_repo)
+    hf_api = HfApi(token=builder.token)
+    for (repo_id, revision), paths in paths_in_repo.items():
+        for batch in itertools.batched(paths, 200):
+            for path_info in hf_api.get_paths_info(repo_id, list(batch), revision=revision, repo_type="dataset"):
+                if isinstance(path_info, RepoFile) and path_info.size > MAX_JSON_FILE_SIZE_BYTES:
+                    raise TooBigContentError(
+                        f"The JSON file {path_info.path} is {path_info.size} bytes. JSON files larger than"
+                        f" {MAX_JSON_FILE_SIZE_BYTES} bytes are not supported: convert them to JSON Lines (.jsonl)"
+                        " or Parquet."
+                    )
 
 
 # `datasets.inspect` binds `load_dataset_builder` at import time, so `datasets.load` is not the
