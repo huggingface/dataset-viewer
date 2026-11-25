@@ -1,11 +1,12 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 The HuggingFace Authors.
 
-from libcommon.constants import CACHE_COLLECTION_RESPONSES, CACHE_MIN_DIFFICULTY_INDEX_NAME, CACHE_MONGOENGINE_ALIAS
+from libcommon.constants import CACHE_COLLECTION_RESPONSES, CACHE_MONGOENGINE_ALIAS
 from libcommon.resources import MongoResource
 from mongoengine.connection import get_db
 
 from mongodb_migration.migrations._20261125160000_cache_add_min_difficulty_index import (
+    CACHE_MIN_DIFFICULTY_INDEX_NAME,
     MigrationCacheAddMinDifficultyIndex,
 )
 

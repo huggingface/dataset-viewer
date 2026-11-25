@@ -31,7 +31,7 @@ from pymongoarrow.api import Schema, find_pandas_all
 from libcommon.constants import (
     CACHE_COLLECTION_RESPONSES,
     CACHE_METRICS_COLLECTION,
-    CACHE_MIN_DIFFICULTY_INDEX_NAME,
+    CACHE_MIN_DIFFICULTY_INDEX,
     CACHE_MONGOENGINE_ALIAS,
     ERROR_CODES_TO_RETRY,
 )
@@ -187,11 +187,7 @@ class CachedResponseDocument(Document):
             ("http_status", "error_code", "kind", "updated_at"),  # < recommended by Atlas
             ("kind", "http_status", "updated_at"),  # optimize updated_at range queries
             {"fields": ["kind", "updated_at", "dataset"], "name": "kind_updated"},
-            {
-                "fields": ["dataset", "kind"],
-                "name": CACHE_MIN_DIFFICULTY_INDEX_NAME,
-                "partialFilterExpression": {"min_difficulty": {"$exists": True}},
-            },
+            CACHE_MIN_DIFFICULTY_INDEX,
         ],
     }
     objects = QuerySetManager["CachedResponseDocument"]()
@@ -314,23 +310,14 @@ def upsert_response(
 ) -> Optional[datetime]:
     """Returns the first_job_created_at stored on the entry, which is kept from earlier computes of the revision.
 
-    The min_difficulty only grows: it's kept from the previous entry, whatever its revision and status."""
+    The min_difficulty only grows, and is kept whatever the revision and the status of the next computes."""
     updated_at = updated_at or get_datetime()
     first_success_at = updated_at if http_status == HTTPStatus.OK else None
     previous = (
         CachedResponseDocument.objects(kind=kind, dataset=dataset, config=config, split=split)
-        .only(
-            "http_status",
-            "error_code",
-            "dataset_git_revision",
-            "first_job_created_at",
-            "first_success_at",
-            "min_difficulty",
-        )
+        .only("http_status", "error_code", "dataset_git_revision", "first_job_created_at", "first_success_at")
         .first()
     )
-    if previous is not None and previous.min_difficulty is not None:
-        min_difficulty = max(previous.min_difficulty, min_difficulty or 0)
     if previous is not None:
         decrease_metric(kind=kind, http_status=previous.http_status, error_code=previous.error_code)
         if previous.dataset_git_revision == dataset_git_revision:
@@ -354,8 +341,8 @@ def upsert_response(
         job_started_at=job_started_at,
         first_job_created_at=first_job_created_at,
         first_success_at=first_success_at,
-        # an explicit None would match the partial index of min_difficulty
-        **({} if min_difficulty is None else {"min_difficulty": min_difficulty}),
+        # an explicit None would enter the partial index of min_difficulty
+        **({} if min_difficulty is None else {"max__min_difficulty": min_difficulty}),
     )
     increase_metric(kind=kind, http_status=http_status, error_code=error_code)
     return first_job_created_at
@@ -986,8 +973,9 @@ def get_min_difficulties(dataset: str, kinds: list[str]) -> dict[tuple[str, Opti
     """The min_difficulty of the cache entries of the dataset that have one, by (kind, config, split)."""
     return {
         (response.kind, response.config, response.split): response.min_difficulty
-        for response in CachedResponseDocument.objects(dataset=dataset, kind__in=kinds, min_difficulty__exists=True)
-        .only("kind", "config", "split", "min_difficulty")
+        for response in CachedResponseDocument.objects(
+            dataset=dataset, kind__in=kinds, min_difficulty__exists=True
+        ).only("kind", "config", "split", "min_difficulty")
         if response.min_difficulty is not None
     }
 

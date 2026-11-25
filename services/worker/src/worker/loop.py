@@ -22,7 +22,7 @@ import orjson
 import pyarrow as pa
 from filelock import FileLock
 from huggingface_hub import HfFileSystem
-from libcommon.dtos import JobInfo
+from libcommon.dtos import JobInfo, JobResult
 from libcommon.prometheus import LongStepProfiler, StepProfiler
 from libcommon.queue.jobs import (
     AlreadyStartedJobError,
@@ -49,6 +49,8 @@ MEMORY_WATCHDOG_INTERVAL_SECONDS = 1.0
 MEMORY_WATCHDOG_LOG_INTERVAL_SECONDS = 10.0
 # how often the loop checks the pod memory while a job runs in its child process
 JOB_MEMORY_CHECK_INTERVAL_SECONDS = 0.25
+# the size of a Linux pipe buffer
+PIPE_READ_SIZE = 1 << 16
 
 
 def free_memory() -> None:
@@ -351,13 +353,15 @@ class Loop:
             job_runner = self.job_runner_factory.create_job_runner(job_info)
             job_manager = JobManager(job_info=job_info, app_config=self.app_config, job_runner=job_runner)
             if self.app_config.worker.kill_job_memory_pct > 0:
-                self.run_job_in_child_process(job_manager)
+                job_results = self.run_job_in_child_process(job_manager)
             else:
-                for job_result in job_manager.run_job():
-                    job_manager.save_job_result(job_result)
-                job_manager.finish()
+                job_results = list(job_manager.run_job())
+            for job_result in job_results or []:
+                job_manager.save_job_result(job_result)
 
         with StepProfiler("loop", "finish_job"):
+            if job_results is not None:
+                job_manager.finish()
             self.set_worker_state(current_job_info=None)
 
         if self.is_pod_memory_above(self.app_config.worker.free_memory_after_job_pct):
@@ -365,29 +369,26 @@ class Loop:
                 free_memory()
         return True
 
-    def run_job_in_child_process(self, job_manager: JobManager) -> None:
-        """Compute the job in a forked child process, then save its results and finish the job.
+    def run_job_in_child_process(self, job_manager: JobManager) -> Optional[list[JobResult]]:
+        """Compute the job in a forked child process, and return its results.
 
         The child gives all its memory back when it exits, so that a job doesn't leave memory behind for the next one.
-        When the pod memory gets close to its limit, the loop kills the child before the kernel kills the whole pod,
-        saves the job as an error, and goes on with the next job.
+        When the pod memory gets close to its limit, the loop kills the child before the kernel kills the whole pod.
+
+        Returns:
+            `list[JobResult]`, *optional*: the results of the job, or None if the child didn't compute them: the job has
+              then been saved as an error and finished.
         """
         # the child sends its results through the pipe, then exits: the end of the pipe wakes the loop up at once
         results_read_fd, results_write_fd = os.pipe()
-        try:
-            # The loop process must not run polars itself: a child forked after polars started its thread pool
-            # deadlocks. The objects of the loop stay shared with the child: else the child's gc writes and copies them.
-            gc.freeze()
-            pid = os.fork()
-        except OSError:
-            os.close(results_read_fd)
-            os.close(results_write_fd)
-            raise
-        finally:
-            gc.unfreeze()
+        # The loop process must not run polars itself: a child forked after polars started its thread pool deadlocks.
+        # The objects of the loop stay shared with the child: else the child's gc writes to them, and copies them.
+        gc.freeze()
+        pid = os.fork()
         if pid == 0:
             os.close(results_read_fd)
             os._exit(self._compute_in_child_process(job_manager, results_write_fd))
+        gc.unfreeze()
         os.close(results_write_fd)
         try:
             exit_code, results = self._wait_for_child_process(pid, results_read_fd)
@@ -397,15 +398,12 @@ class Loop:
         if exit_code == 0:
             job_results, job_manager.shortcut_jobs_by_key = pickle.loads(results)  # nosec B301
             # ^ sent by the child of this process
-            for job_result in job_results:
-                job_manager.save_job_result(job_result)
-            job_manager.finish()
-            return
+            return job_results  # type: ignore[no-any-return]
         # the child didn't run the post_compute hook, which removes the cache directory of the job
         job_manager.job_runner.post_compute()
         if exit_code is None or exit_code == -signal.SIGKILL:
             # killed by the loop, or by the kernel between two checks. The retryable errors backfill retries the job,
-            # on a bigger worker
+            # and its next jobs go to a bigger worker
             job_manager.set_exceeded_maximum_memory(
                 message="Job manager was killed while running this job (job exceeded maximum memory)."
             )
@@ -413,6 +411,7 @@ class Loop:
             job_manager.set_stuck(
                 message=f"Job runner crashed while running this job (exit code {exit_code}).", reason="crashed"
             )
+        return None
 
     def _compute_in_child_process(self, job_manager: JobManager, results_fd: int) -> int:
         # pymongo resets its connections in the child, the warning is noise
@@ -429,32 +428,38 @@ class Loop:
             logging.exception("the child process of the job crashed")
             return 1
 
-    def _wait_for_child_process(self, pid: int, results_fd: int) -> tuple[Optional[int], bytes]:
+    def _wait_for_child_process(self, pid: int, results_fd: int) -> tuple[Optional[int], bytearray]:
         """Wait for the child to exit, and return its exit code and its results. Kill it, and return None as the exit
-        code, if the pod memory gets close to its limit before it sent its results."""
+        code, if the pod memory gets close to its limit before the child sent its results."""
         kill_ratio = self.app_config.worker.kill_job_memory_pct / 100
         results = bytearray()
         child_output = select.poll()
         child_output.register(results_fd, select.POLLIN)
         while True:
-            # the loop reads the results while the child writes them, so that the child never blocks on a full pipe
+            # read the results while the child writes them, so that the child never blocks on a full pipe
             if child_output.poll(JOB_MEMORY_CHECK_INTERVAL_SECONDS * 1000):
-                chunk = os.read(results_fd, 1 << 20)
-                if chunk:
+                chunk = os.read(results_fd, PIPE_READ_SIZE)
+                if not chunk:
+                    break
+                results += chunk
+                continue
+            # the child may have exited while a process it started keeps the pipe open
+            exited_pid, status = os.waitpid(pid, os.WNOHANG)
+            if exited_pid:
+                while child_output.poll(0) and (chunk := os.read(results_fd, PIPE_READ_SIZE)):
                     results += chunk
-                    continue
-                break
-            if os.waitpid(pid, os.WNOHANG)[0]:
-                # the child exited, but another process keeps the pipe open
-                return None if not results else 0, bytes(results)
+                return os.waitstatus_to_exitcode(status), results
             ratio = self.pod_unreclaimable_memory_ratio()
             if not results and ratio is not None and ratio >= kill_ratio:
                 os.kill(pid, signal.SIGKILL)
                 os.waitpid(pid, 0)
-                logging.warning(f"killed the running job: the pod memory reached {ratio:.0%} of its limit")
-                return None, b""
+                logging.warning(
+                    f"killed the running job: the anonymous and shared memory of the pod reached {ratio:.0%} of its"
+                    " limit"
+                )
+                return None, results
         _, status = os.waitpid(pid, 0)
-        return os.waitstatus_to_exitcode(status), bytes(results)
+        return os.waitstatus_to_exitcode(status), results
 
     def set_worker_state(self, current_job_info: Optional[JobInfo]) -> None:
         self.current_job_info = current_job_info
