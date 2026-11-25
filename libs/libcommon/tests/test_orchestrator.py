@@ -1,13 +1,15 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2023 The HuggingFace Authors.
 
+from collections.abc import Mapping
 from datetime import datetime
 from http import HTTPStatus
+from typing import Any
 
 import pytest
 from bson import ObjectId
 
-from libcommon.dtos import JobOutput, JobResult, Priority, Status
+from libcommon.dtos import JobInfo, JobOutput, JobResult, Priority, Status
 from libcommon.orchestrator import (
     AfterJobPlan,
     finish_job,
@@ -49,6 +51,7 @@ from .utils import (
     PROCESSING_GRAPH_ONE_STEP,
     PROCESSING_GRAPH_PARALLEL,
     REVISION_NAME,
+    SPLIT_NAMES_CONTENT,
     STEP_CB,
     STEP_DA,
     STEP_DC,
@@ -278,6 +281,43 @@ def test_finish_job_preview_steps_keep_the_queue_place() -> None:
     # only the first config keeps the place, which is enough for a preview
     assert [job.created_at == queued_at for job in split_names_jobs] == [True] + [False] * (len(split_names_jobs) - 1)
     assert parquet_jobs and all(job.created_at > queued_at for job in parquet_jobs)
+
+
+def finish_with_content(job_info: JobInfo, content: Mapping[str, Any]) -> None:
+    output = JobOutput(content=content, http_status=HTTPStatus.OK, error_code=None, details=None, progress=1.0)
+    save_job_result(
+        JobResult(
+            job_info=job_info, job_runner_version=JOB_RUNNER_VERSION, is_success=True, output=output, duration=1
+        ),
+        failed_runs=0,
+    )
+    finish_job(job_info=job_info, shortcut_jobs_by_key={})
+
+
+def test_finish_job_dataset_split_names_keeps_the_queue_place() -> None:
+    # on the real graph, config names queues dataset-split-names at the back of the line; when split names finishes,
+    # that waiting job is replaced by one that keeps the place, since the Hub needs it to show the preview
+    queued_at = datetime(2026, 1, 1)
+    Queue().add_job(
+        dataset=DATASET_NAME,
+        revision=REVISION_NAME,
+        config=None,
+        split=None,
+        job_type="dataset-config-names",
+        priority=Priority.NORMAL,
+        difficulty=DIFFICULTY,
+    )
+    JobDocument.objects(dataset=DATASET_NAME).update(created_at=queued_at)
+    finish_with_content(Queue().start_job(), CONFIG_NAMES_CONTENT)
+    [dataset_split_names_job] = JobDocument.objects(dataset=DATASET_NAME, type="dataset-split-names")
+    assert dataset_split_names_job.created_at > queued_at
+
+    split_names_job_info = Queue().start_job()
+    assert split_names_job_info["type"] == "config-split-names"
+    finish_with_content(split_names_job_info, SPLIT_NAMES_CONTENT)
+
+    jobs = JobDocument.objects(dataset=DATASET_NAME, type="dataset-split-names", status=Status.WAITING)
+    assert [job.created_at for job in jobs] == [queued_at]
 
 
 def test_finish_job_rerun_after_parquet_joins_the_back() -> None:
