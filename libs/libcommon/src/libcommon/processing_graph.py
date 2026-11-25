@@ -581,7 +581,7 @@ specification: ProcessingGraphSpecification = {
             "config-split-names",
         ],
         "job_runner_version": 3,
-        "difficulty": 20,
+        "difficulty": 50,
     },
     "split-descriptive-statistics": {
         "input_type": "split",
