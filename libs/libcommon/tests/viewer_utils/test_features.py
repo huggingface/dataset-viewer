@@ -1,8 +1,10 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+import json
 import os
 import re
+import zipfile
 from collections.abc import Mapping
 from io import BytesIO
 from pathlib import Path
@@ -18,6 +20,7 @@ from aiobotocore.response import StreamingBody
 from datasets import Mesh
 from datasets.table import embed_table_storage
 from moto import mock_aws
+from PIL import Image
 from urllib3._collections import HTTPHeaderDict
 
 from libcommon.config import S3Config
@@ -33,6 +36,7 @@ from libcommon.viewer_utils.asset import (
 from libcommon.viewer_utils.features import (
     MESH_FILE_TYPE_ERROR,
     _infer_mesh_file_type,
+    _load_sog,
     get_cell_value,
     infer_audio_file_extension,
     to_features_list,
@@ -255,6 +259,7 @@ def get_mesh_cell_value(
         ("dir/mesh.ply", "ply"),
         ("mesh.stl", "stl"),
         ("mesh.obj", "obj"),
+        ("splats.sog", "sog"),
         # the path of a file inside an archive, or of a file of the Hub, is chained with "::"
         ("mesh.glb::archive.zip", "glb"),
         # the query string of an URL is not part of the extension
@@ -271,6 +276,7 @@ def get_mesh_cell_value(
         "ply",
         "stl",
         "obj",
+        "sog",
         "file of an archive",
         "url with query",
         "no path",
@@ -536,6 +542,84 @@ def test_get_mesh_cell_value_with_gaussian_splats_and_capture_camera(
     assert (center[:, :, 3] > 127).mean() > 0.9, "the splats in front of the camera fill the photo"
     drawn = center[center[:, :, 3] > 127]
     assert (drawn[:, 0] > 4 * drawn[:, 1:3].max(axis=-1)).all(), "the blue splats behind the camera are not drawn"
+
+
+@pytest.mark.parametrize("version", [2, 3])
+def test_get_mesh_cell_value_with_sog(version: int, storage_client_with_url_preparator: StorageClient) -> None:
+    """A SOG file is stored as-is, and its splats are drawn like the ones of a ply file.
+
+    The fixtures were written by PlayCanvas' splat-transform (v2.7.1 for version 2, v3.12.0 for version 3) from
+    a ply file of red splats on an icosphere, all with the rotation below: versions 2 and 3 encode it differently.
+    """
+    ensure_mesh_rendering()
+    sog_bytes = sog_fixture_bytes(version)
+    asset_path = mesh_asset_path(4)
+    value = get_mesh_cell_value({"path": "splats.sog", "bytes": sog_bytes}, storage_client_with_url_preparator, 4)
+    assert value["src"] == f"{ASSETS_BASE_URL}/{asset_path}/mesh.sog"
+    with storage_client_with_url_preparator._fs.open(
+        storage_client_with_url_preparator.get_full_path(f"{asset_path}/mesh.sog"), "rb"
+    ) as file:
+        assert file.read() == sog_bytes
+    pixels = thumbnail_pixels(value, storage_client_with_url_preparator)
+    drawn = pixels[pixels[:, :, 3] > 127]
+    assert len(drawn) > 0.05 * MESH_THUMBNAIL_WIDTH * MESH_THUMBNAIL_HEIGHT, "the splats are drawn"
+    assert (drawn[:, 0] > 4 * drawn[:, 1:3].max(axis=1)).all(), "the splats are red"
+
+    splats = _load_sog(BytesIO(sog_bytes))
+    vertex = splats.metadata["_ply_raw"]["vertex"]["data"]
+    distances = np.linalg.norm(splats.vertices[:, None] - trimesh.creation.icosphere(subdivisions=2).vertices, axis=2)
+    assert distances.min(axis=1).max() < 1e-3, "the splats are on the icosphere"
+    rotation = np.array([0.3, 0.8, -0.4, 0.33]) / np.linalg.norm([0.3, 0.8, -0.4, 0.33])
+    rotations = np.column_stack([vertex[f"rot_{i}"] for i in range(4)])
+    assert (np.abs(rotations @ rotation) > 0.999).all(), "q and -q are the same rotation"
+    opacities = 1 / (1 + np.exp(-vertex["opacity"]))
+    assert np.allclose(opacities, 1 / (1 + np.exp(-5.0)), atol=0.005), "the opacity of the splats is 5 as a logit"
+    scales = np.column_stack([np.exp(vertex[f"scale_{i}"]) for i in range(3)])
+    assert np.allclose(scales, [0.1, 0.03, 0.03], rtol=0.02), "the splats are long along their x axis"
+
+
+def sog_fixture_bytes(version: int) -> bytes:
+    return (Path(__file__).resolve().parent.parent / "fixtures" / "data" / f"test_splats_v{version}.sog").read_bytes()
+
+
+def replace_sog_image(sog_bytes: bytes, kind: str, image: Image.Image) -> bytes:
+    """Return a copy of a SOG file where the image of one kind of property ("quats", "sh0"...) is replaced."""
+    output = BytesIO()
+    with zipfile.ZipFile(BytesIO(sog_bytes)) as source, zipfile.ZipFile(output, "w") as target:
+        name = json.loads(source.read("meta.json"))[kind]["files"][0]
+        for member in source.namelist():
+            if member != name:
+                target.writestr(member, source.read(member))
+        with BytesIO() as image_buffer:
+            image.save(image_buffer, "WEBP", lossless=True)
+            target.writestr(name, image_buffer.getvalue())
+    return output.getvalue()
+
+
+def test_load_sog_keeps_a_random_subset_of_a_large_scene(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr("libcommon.viewer_utils.features.MESH_THUMBNAIL_MAX_POINTS", 50)
+    splats = _load_sog(BytesIO(sog_fixture_bytes(3)))
+    assert len(np.unique(splats.vertices, axis=0)) == 50
+    assert all(len(values) == 50 for values in splats.metadata["_ply_raw"]["vertex"]["data"].values())
+    distances = np.linalg.norm(splats.vertices[:, None] - trimesh.creation.icosphere(subdivisions=2).vertices, axis=2)
+    assert distances.min(axis=1).max() < 1e-3, "the subset holds splats of the scene"
+
+
+def test_load_sog_rejects_an_invalid_quaternion() -> None:
+    with zipfile.ZipFile(BytesIO(sog_fixture_bytes(2))) as archive:
+        quats_name = json.loads(archive.read("meta.json"))["quats"]["files"][0]
+        quats = Image.open(BytesIO(archive.read(quats_name))).convert("RGBA")
+    # the alpha byte tells which component of the quaternion is left out: 252 to 255
+    quats.putalpha(200)
+    with pytest.raises(ValueError, match="quaternion"):
+        _load_sog(BytesIO(replace_sog_image(sog_fixture_bytes(2), "quats", quats)))
+
+
+@pytest.mark.parametrize("side", [4, 512], ids=["fewer pixels than splats", "much larger than the scene"])
+def test_load_sog_rejects_an_image_that_does_not_match_the_scene(side: int) -> None:
+    sog_bytes = replace_sog_image(sog_fixture_bytes(3), "sh0", Image.new("RGBA", (side, side)))
+    with pytest.raises(ValueError, match="does not match the 162 splats"):
+        _load_sog(BytesIO(sog_bytes))
 
 
 # a camera at the origin looking along +z, with a 200x200 photo: the thumbnail shows it at 600x600
