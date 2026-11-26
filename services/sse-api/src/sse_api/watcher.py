@@ -11,12 +11,14 @@ from typing import Any, Optional
 from uuid import uuid4
 
 from motor.motor_asyncio import AsyncIOMotorClient
-from pymongo.errors import PyMongoError
+from pymongo.errors import OperationFailure, PyMongoError
 from pymongo.read_preferences import ReadPreference
 
 from sse_api.constants import HUB_CACHE_KIND
 
 DatasetHubCacheResponse = Mapping[str, Any]
+# returned when a change stream resumes after an invalidate event (the collection was dropped or renamed)
+INVALID_RESUME_TOKEN_ERROR_CODE = 260
 
 
 class ChangeStreamInitError(Exception):
@@ -176,6 +178,7 @@ class HubCacheWatcher:
             },
         ]
         resume_token = None
+        stream_opened = False
         while True:
             try:
                 async with self._collection.watch(
@@ -187,6 +190,7 @@ class HubCacheWatcher:
                     full_document_before_change="whenAvailable",
                     max_await_time_ms=30_000,
                 ) as stream:
+                    stream_opened = True
                     async for change in stream:
                         resume_token = stream.resume_token
                         operation = change["operationType"]
@@ -221,6 +225,10 @@ class HubCacheWatcher:
                     exc,
                     exc_info=True,
                 )
-                if resume_token is None:
+                if not stream_opened:
                     raise ChangeStreamInitError() from exc
+                if isinstance(exc, OperationFailure) and exc.code == INVALID_RESUME_TOKEN_ERROR_CODE:
+                    # pymongo resumes the stream itself with resumeAfter, even before the first change: no token can
+                    # resume after an invalidate event, so the next stream starts from now
+                    resume_token = None
                 await asyncio.sleep(2.0)

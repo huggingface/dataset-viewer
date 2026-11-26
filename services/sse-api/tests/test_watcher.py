@@ -48,3 +48,28 @@ async def test_the_watcher_follows_the_collection_after_it_is_dropped(
         await watcher.stop_watching()
         await database.drop_collection(COLLECTION)
         client.close()
+
+
+@pytest.mark.asyncio
+async def test_the_watcher_follows_the_collection_dropped_before_its_first_change(
+    cache_mongo_resource: CacheMongoResource, cache_mongo_host: str
+) -> None:
+    client: AsyncIOMotorClient = AsyncIOMotorClient(host=cache_mongo_host)
+    database = client[cache_mongo_resource.database]
+    await database.create_collection(COLLECTION, changeStreamPreAndPostImages={"enabled": True})
+    watcher = HubCacheWatcher(client=client, db_name=cache_mongo_resource.database, collection_name=COLLECTION)
+    watcher.start_watching()
+    try:
+        await asyncio.sleep(0.5)
+        # the stream gets the invalidate event before any change: it has no token of its own to resume from
+        await database.drop_collection(COLLECTION)
+        await database.create_collection(COLLECTION, changeStreamPreAndPostImages={"enabled": True})
+        await asyncio.sleep(0.5)
+        document = {"kind": HUB_CACHE_KIND, "content": {}, "http_status": 200, "dataset": "after"}
+        await database[COLLECTION].insert_one(document)
+        await wait_for_dataset(watcher, "after")
+        assert not watcher._watch_task.done()
+    finally:
+        await watcher.stop_watching()
+        await database.drop_collection(COLLECTION)
+        client.close()
