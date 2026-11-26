@@ -21,6 +21,7 @@ from libcommon.exceptions import (
 )
 from libcommon.orchestrator import finish_job, get_failed_runs, get_shortcut_job_key, save_job_result
 from libcommon.processing_graph import ProcessingStepDoesNotExist, processing_graph
+from libcommon.prometheus import StepProfiler
 from libcommon.simple_cache import (
     CachedArtifactError,
     CachedArtifactNotFoundError,
@@ -83,7 +84,8 @@ class JobManager:
     @property
     def failed_runs(self) -> int:
         if self._failed_runs is None:
-            self._failed_runs = get_failed_runs(self.job_info)
+            with StepProfiler("job_manager", "get_failed_runs"):
+                self._failed_runs = get_failed_runs(self.job_info)
         return self._failed_runs
 
     def __str__(self) -> str:

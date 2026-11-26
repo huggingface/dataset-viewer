@@ -689,7 +689,7 @@ class Queue:
             `JobDocument`: the next waiting job
         """
         for priority in [Priority.HIGH, Priority.NORMAL, Priority.LOW]:
-            with contextlib.suppress(EmptyQueueError), StepProfiler("queue.start_job", f"priority_{priority.value}"):
+            with contextlib.suppress(EmptyQueueError):
                 return self._get_next_waiting_job_for_priority(
                     priority=priority,
                     difficulty_min=difficulty_min,
