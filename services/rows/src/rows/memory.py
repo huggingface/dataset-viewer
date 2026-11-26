@@ -18,6 +18,10 @@ from prometheus_client import Histogram
 # are doing when the memory gets close to it, which is the only trace left of the request that caused the OOM
 CGROUP_MEMORY_CURRENT = Path("/sys/fs/cgroup/memory.current")
 CGROUP_MEMORY_MAX = Path("/sys/fs/cgroup/memory.max")
+PROC_SELF_STATUS = Path("/proc/self/status")
+# glibc keeps the memory a request freed, so a worker can grow request after request: log the requests after which it
+# holds this much more anonymous memory. The other requests served at the same time by the worker count too.
+MEMORY_GROWTH_LOG_BYTES = 256 * 2**20
 WATCHDOG_INTERVAL_SECONDS = 1.0
 WATCHDOG_THRESHOLD = 0.85
 # don't log the in-flight requests more than once in this interval, the memory can stay above the threshold
@@ -42,10 +46,21 @@ _in_flight_lock = threading.Lock()
 _ids = itertools.count()
 
 
+def _read_anonymous_memory() -> Optional[int]:
+    try:
+        for line in PROC_SELF_STATUS.read_text().splitlines():
+            if line.startswith("RssAnon:"):
+                return int(line.split()[1]) * 1024
+    except (OSError, ValueError):
+        pass
+    return None
+
+
 @contextmanager
 def track_request(description: str) -> Iterator[InFlightRequest]:
     request = InFlightRequest(description=description)
     request_id = next(_ids)
+    memory_before = _read_anonymous_memory()
     with _in_flight_lock:
         _in_flight[request_id] = request
     try:
@@ -53,6 +68,18 @@ def track_request(description: str) -> Iterator[InFlightRequest]:
     finally:
         with _in_flight_lock:
             del _in_flight[request_id]
+            other_requests = len(_in_flight)
+        memory_after = _read_anonymous_memory()
+        if memory_before is not None and memory_after is not None:
+            growth = memory_after - memory_before
+            if growth >= MEMORY_GROWTH_LOG_BYTES:
+                logging.warning(
+                    f"rows worker {os.getpid()} holds {growth // 2**20} MiB more anonymous memory"
+                    f" ({memory_after // 2**20} MiB) after {request.description} for"
+                    f" {time.monotonic() - request.started_at:.1f}s, arrow table of"
+                    f" {'unknown' if request.arrow_bytes is None else request.arrow_bytes} bytes,"
+                    f" with {other_requests} other requests in flight"
+                )
 
 
 def record_arrow_bytes(request: InFlightRequest, arrow_bytes: int) -> None:

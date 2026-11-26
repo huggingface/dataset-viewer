@@ -81,3 +81,20 @@ def test_the_watchdog_does_not_start_without_a_memory_limit(cgroup: Path) -> Non
     with patch("rows.memory.threading.Thread") as thread:
         memory.start_memory_watchdog()
     thread.assert_not_called()
+
+
+def test_a_request_that_grows_the_worker_memory_is_logged(caplog: pytest.LogCaptureFixture) -> None:
+    readings = iter([100 * 2**20, 100 * 2**20 + memory.MEMORY_GROWTH_LOG_BYTES, 0, 1])
+    with (
+        patch.object(memory, "_read_anonymous_memory", lambda: next(readings)),
+        caplog.at_level(logging.WARNING),
+    ):
+        with memory.track_request("dataset='big'") as request:
+            memory.record_arrow_bytes(request, 1000)
+        with memory.track_request("dataset='small'"):
+            pass
+
+    warnings = [record.message for record in caplog.records if record.levelno == logging.WARNING]
+    assert len(warnings) == 1
+    assert "256 MiB more anonymous memory (356 MiB) after dataset='big'" in warnings[0]
+    assert "arrow table of 1000 bytes, with 0 other requests in flight" in warnings[0]
