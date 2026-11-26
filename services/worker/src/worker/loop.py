@@ -22,7 +22,7 @@ import pyarrow as pa
 from filelock import FileLock
 from huggingface_hub import HfFileSystem
 from libcommon.dtos import JobInfo, JobResult
-from libcommon.prometheus import LongStepProfiler, StepProfiler
+from libcommon.prometheus import START_JOB_NO_JOB_TOTAL, LongStepProfiler, StepProfiler
 from libcommon.queue.jobs import (
     AlreadyStartedJobError,
     EmptyQueueError,
@@ -374,17 +374,20 @@ class Loop:
                 self.set_worker_state(current_job_info=job_info)
                 logging.debug(f"job assigned: {job_info}")
             except (EmptyQueueError, AlreadyStartedJobError, LockTimeoutError, NoWaitingJobError) as e:
+                START_JOB_NO_JOB_TOTAL.labels(reason=type(e).__name__).inc()
                 self.set_worker_state(current_job_info=None)
                 logging.debug(e)
                 return False
 
         with LongStepProfiler("loop", "run_job"):
-            job_runner = self.job_runner_factory.create_job_runner(job_info)
-            job_manager = JobManager(job_info=job_info, app_config=self.app_config, job_runner=job_runner)
-            if self.app_config.worker.kill_job_memory_pct > 0:
-                job_results = self.run_job_in_child_process(job_manager)
-            else:
-                job_results = list(job_manager.run_job())
+            with StepProfiler("loop", "create_job_runner"):
+                job_runner = self.job_runner_factory.create_job_runner(job_info)
+                job_manager = JobManager(job_info=job_info, app_config=self.app_config, job_runner=job_runner)
+            with LongStepProfiler("loop", "compute"):
+                if self.app_config.worker.kill_job_memory_pct > 0:
+                    job_results = self.run_job_in_child_process(job_manager)
+                else:
+                    job_results = list(job_manager.run_job())
             for job_result in job_results or []:
                 job_manager.save_job_result(job_result)
 

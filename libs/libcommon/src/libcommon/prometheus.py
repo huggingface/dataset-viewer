@@ -9,6 +9,7 @@ from typing import Any, Optional, TypeVar
 from prometheus_client import (
     REGISTRY,
     CollectorRegistry,
+    Counter,
     Gauge,
     Histogram,
     generate_latest,
@@ -69,6 +70,11 @@ METHOD_STEPS_PROCESSING_TIME = Histogram(
     "method_steps_processing_time_seconds",
     "Histogram of the processing time of specific steps in methods for a given context (in seconds)",
     ["method", "step"],
+)
+START_JOB_NO_JOB_TOTAL = Counter(
+    "start_job_no_job_total",
+    "Number of times a worker loop asked for a job and got none, by reason",
+    ["reason"],
 )
 METHOD_LONG_STEPS_PROCESSING_TIME = Histogram(
     "method_long_steps_processing_time_seconds",

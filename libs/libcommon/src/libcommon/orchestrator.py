@@ -521,20 +521,23 @@ class AfterJobPlan(Plan):
 
         # get the dataset infos to estimate difficulty
         if config is not None:
-            self.num_bytes = get_num_bytes_from_config_infos(dataset=self.dataset, config=config, split=split)
+            with StepProfiler("AfterJobPlan", "get_num_bytes"):
+                self.num_bytes = get_num_bytes_from_config_infos(dataset=self.dataset, config=config, split=split)
         else:
             self.num_bytes = None
 
         # get the list of pending jobs for the children
         # note that it can contain a lot of unrelated jobs, we will clean after
-        self.pending_jobs_df = Queue().get_pending_jobs_df(
-            dataset=self.dataset,
-            job_types=[next_processing_step[1].job_type for next_processing_step in next_processing_steps],
-        )
-        self.min_difficulties = get_min_difficulties(
-            dataset=self.dataset,
-            kinds=[next_processing_step[1].cache_kind for next_processing_step in next_processing_steps],
-        )
+        with StepProfiler("AfterJobPlan", "get_pending_jobs_df"):
+            self.pending_jobs_df = Queue().get_pending_jobs_df(
+                dataset=self.dataset,
+                job_types=[next_processing_step[1].job_type for next_processing_step in next_processing_steps],
+            )
+        with StepProfiler("AfterJobPlan", "get_min_difficulties"):
+            self.min_difficulties = get_min_difficulties(
+                dataset=self.dataset,
+                kinds=[next_processing_step[1].cache_kind for next_processing_step in next_processing_steps],
+            )
 
         self.job_infos_to_create: dict[str, JobInfo] = {}
         config_names: Optional[list[str]] = None
@@ -561,26 +564,28 @@ class AfterJobPlan(Plan):
                 # going to lower level (fan-out), one job is expected per config, we need the list of configs
                 # D -> C
                 if config_names is None:
-                    config_names = fetch_names(
-                        dataset=self.dataset,
-                        config=None,
-                        cache_kind=DATASET_CONFIG_NAMES_KIND,
-                        names_field="config_names",
-                        name_field="config",
-                    )  # Note that we use the cached content even the revision is different (ie. maybe obsolete)
+                    with StepProfiler("AfterJobPlan", "fetch_config_names"):
+                        config_names = fetch_names(
+                            dataset=self.dataset,
+                            config=None,
+                            cache_kind=DATASET_CONFIG_NAMES_KIND,
+                            names_field="config_names",
+                            name_field="config",
+                        )  # Note that we use the cached content even the revision is different (ie. maybe obsolete)
                 for config_name in config_names:
                     self.update(next_processing_step, config_name, None, cached_job["kind"])
             elif cached_job_input_type == "config" and next_processing_step.input_type == "split":
                 # going to lower level (fan-out), one job is expected per split, we need the list of splits
                 # C -> S
                 if split_names is None:
-                    split_names = fetch_names(
-                        dataset=self.dataset,
-                        config=config,
-                        cache_kind=CONFIG_SPLIT_NAMES_KIND,
-                        names_field="splits",
-                        name_field="split",
-                    )  # Note that we use the cached content even the revision is different (ie. maybe obsolete)
+                    with StepProfiler("AfterJobPlan", "fetch_split_names"):
+                        split_names = fetch_names(
+                            dataset=self.dataset,
+                            config=config,
+                            cache_kind=CONFIG_SPLIT_NAMES_KIND,
+                            names_field="splits",
+                            name_field="split",
+                        )  # Note that we use the cached content even the revision is different (ie. maybe obsolete)
                 for split_name in split_names:
                     self.update(next_processing_step, cached_job["config"], split_name, cached_job["kind"])
             else:
@@ -1338,27 +1343,28 @@ def save_job_result(job_result: JobResult, failed_runs: int) -> None:
     )
 
     # finish_job plans the children from job_info: give them the start kept on the entry, not a retry's
-    job_info["first_job_created_at"] = upsert_response_params(
-        # inputs
-        kind=processing_step.cache_kind,
-        job_params=params,
-        job_runner_version=job_result["job_runner_version"],
-        # output
-        content=output["content"],
-        http_status=output["http_status"],
-        error_code=output["error_code"],
-        details=output["details"],
-        progress=output["progress"],
-        failed_runs=failed_runs,
-        min_difficulty=min_difficulty,
-        duration=job_result["duration"],
-        # created_at can be inherited (PREVIEW_PATH): the job id has the real queue time
-        job_created_at=ObjectId(job_info["job_id"][:24]).generation_time  # type: ignore[attr-defined]
-        if ObjectId.is_valid(job_info["job_id"][:24])
-        else job_info.get("created_at"),
-        job_started_at=job_info["started_at"],
-        first_job_created_at=job_info.get("first_job_created_at"),
-    )
+    with StepProfiler("orchestrator.save_job_result", "upsert_response"):
+        job_info["first_job_created_at"] = upsert_response_params(
+            # inputs
+            kind=processing_step.cache_kind,
+            job_params=params,
+            job_runner_version=job_result["job_runner_version"],
+            # output
+            content=output["content"],
+            http_status=output["http_status"],
+            error_code=output["error_code"],
+            details=output["details"],
+            progress=output["progress"],
+            failed_runs=failed_runs,
+            min_difficulty=min_difficulty,
+            duration=job_result["duration"],
+            # created_at can be inherited (PREVIEW_PATH): the job id has the real queue time
+            job_created_at=ObjectId(job_info["job_id"][:24]).generation_time  # type: ignore[attr-defined]
+            if ObjectId.is_valid(job_info["job_id"][:24])
+            else job_info.get("created_at"),
+            job_started_at=job_info["started_at"],
+            first_job_created_at=job_info.get("first_job_created_at"),
+        )
     logging.debug("the job output has been written to the cache.")
 
 
@@ -1385,11 +1391,14 @@ def finish_job(
         `TasksStatistics`: The statistics of the finish_job.
     """
     # check if the job is still in started status
-    if not Queue().is_job_started(job_id=job_info["job_id"]):
+    with StepProfiler("orchestrator.finish_job", "is_job_started"):
+        is_job_started = Queue().is_job_started(job_id=job_info["job_id"])
+    if not is_job_started:
         logging.debug("the job was deleted, don't update the cache")
         return TasksStatistics()
     # finish the job
-    job_priority = Queue().finish_job(job_id=job_info["job_id"])
+    with StepProfiler("orchestrator.finish_job", "finish_job"):
+        job_priority = Queue().finish_job(job_id=job_info["job_id"])
     if job_priority:
         job_info["priority"] = job_priority
         # ^ change the priority of children jobs if the priority was updated during the job
@@ -1400,7 +1409,8 @@ def finish_job(
         shortcut_jobs_by_key=shortcut_jobs_by_key.copy(),
         processing_graph=processing_graph,
     )
-    statistics = plan.run()
+    with StepProfiler("orchestrator.finish_job", "after_job_plan_run"):
+        statistics = plan.run()
     logging.debug("jobs have been created for the next steps.")
     return statistics
 
