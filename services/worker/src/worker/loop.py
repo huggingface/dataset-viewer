@@ -22,7 +22,7 @@ import pyarrow as pa
 from filelock import FileLock
 from huggingface_hub import HfFileSystem
 from libcommon.dtos import JobInfo, JobResult
-from libcommon.prometheus import LongStepProfiler, StepProfiler
+from libcommon.prometheus import START_JOB_NO_JOB_TOTAL, LongStepProfiler, StepProfiler
 from libcommon.queue.jobs import (
     AlreadyStartedJobError,
     EmptyQueueError,
@@ -374,6 +374,7 @@ class Loop:
                 self.set_worker_state(current_job_info=job_info)
                 logging.debug(f"job assigned: {job_info}")
             except (EmptyQueueError, AlreadyStartedJobError, LockTimeoutError, NoWaitingJobError) as e:
+                START_JOB_NO_JOB_TOTAL.labels(reason=type(e).__name__).inc()
                 self.set_worker_state(current_job_info=None)
                 logging.debug(e)
                 return False

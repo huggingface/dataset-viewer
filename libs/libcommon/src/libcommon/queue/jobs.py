@@ -31,6 +31,7 @@ from libcommon.constants import (
     QUEUE_MONGOENGINE_ALIAS,
 )
 from libcommon.dtos import FlatJobInfo, JobInfo, Priority, Status, WorkerSize
+from libcommon.prometheus import StepProfiler
 from libcommon.queue.dataset_blockages import DATASET_STATUS_BLOCKED, DATASET_STATUS_NORMAL, get_blocked_datasets
 from libcommon.queue.lock import lock, release_lock
 from libcommon.queue.metrics import (
@@ -540,7 +541,8 @@ class Queue:
             `JobDocument`: the next waiting job for priority
         """
         logging.debug(f"Getting next waiting job for priority {priority}")
-        blocked_datasets = get_blocked_datasets()
+        with StepProfiler("queue.start_job", "blocked_datasets"):
+            blocked_datasets = get_blocked_datasets()
         logging.debug(f"Blocked datasets: {blocked_datasets}")
 
         filters: JobQueryFilters = {}
@@ -559,8 +561,8 @@ class Queue:
         if blocked_datasets:
             filters["dataset__nin"] = blocked_datasets
         started_jobs = JobDocument.objects(status=Status.STARTED, **filters)
-        logging.debug(f"Number of started jobs: {started_jobs.count()}")
-        started_job_namespaces = [job.namespace for job in started_jobs.only("namespace")]
+        with StepProfiler("queue.start_job", "started_jobs"):
+            started_job_namespaces = [job.namespace for job in started_jobs.only("namespace")]
         logging.debug(f"Started job namespaces: {started_job_namespaces}")
 
         next_waiting_job: Optional[JobDocument] = None
@@ -572,36 +574,38 @@ class Queue:
             # the index bounds then skip the excluded namespaces entirely.
             # The distinct command is used directly: the pymongo type stubs do not expose its hint option.
             jobs_collection = JobDocument._get_collection()
-            waiting_namespaces: list[str] = jobs_collection.database.command(
-                {
-                    "distinct": jobs_collection.name,
-                    "key": "namespace",
-                    "query": {
-                        "priority": priority.value,
-                        "status": Status.WAITING.value,
-                        "worker_size": worker_size.value,
-                    },
-                    "hint": NEXT_WAITING_JOB_BY_NAMESPACE_INDEX,
-                }
-            )["values"]
+            with StepProfiler("queue.start_job", "waiting_namespaces"):
+                waiting_namespaces: list[str] = jobs_collection.database.command(
+                    {
+                        "distinct": jobs_collection.name,
+                        "key": "namespace",
+                        "query": {
+                            "priority": priority.value,
+                            "status": Status.WAITING.value,
+                            "worker_size": worker_size.value,
+                        },
+                        "hint": NEXT_WAITING_JOB_BY_NAMESPACE_INDEX,
+                    }
+                )["values"]
             excluded_namespaces = set(started_job_namespaces)
             candidate_namespaces = [
                 namespace for namespace in waiting_namespaces if namespace not in excluded_namespaces
             ]
             if candidate_namespaces:
-                next_waiting_job = (
-                    JobDocument.objects(
-                        status=Status.WAITING,
-                        namespace__in=candidate_namespaces,
-                        priority=priority,
-                        **filters,
+                with StepProfiler("queue.start_job", "next_waiting_job"):
+                    next_waiting_job = (
+                        JobDocument.objects(
+                            status=Status.WAITING,
+                            namespace__in=candidate_namespaces,
+                            priority=priority,
+                            **filters,
+                        )
+                        .order_by("+created_at")
+                        .only("type", "dataset", "revision", "config", "split", "priority", "unicity_id")
+                        .hint(NEXT_WAITING_JOB_BY_NAMESPACE_INDEX)
+                        .no_cache()
+                        .first()
                     )
-                    .order_by("+created_at")
-                    .only("type", "dataset", "revision", "config", "split", "priority", "unicity_id")
-                    .hint(NEXT_WAITING_JOB_BY_NAMESPACE_INDEX)
-                    .no_cache()
-                    .first()
-                )
         else:
             next_waiting_job = (
                 JobDocument.objects(
@@ -685,7 +689,7 @@ class Queue:
             `JobDocument`: the next waiting job
         """
         for priority in [Priority.HIGH, Priority.NORMAL, Priority.LOW]:
-            with contextlib.suppress(EmptyQueueError):
+            with contextlib.suppress(EmptyQueueError), StepProfiler("queue.start_job", f"priority_{priority.value}"):
                 return self._get_next_waiting_job_for_priority(
                     priority=priority,
                     difficulty_min=difficulty_min,
@@ -715,14 +719,17 @@ class Queue:
         lock_owner = str(uuid4())
         try:
             # retry for 2 seconds
-            with lock(
-                key=job.unicity_id,
-                owner=lock_owner,
-                sleeps=[0.1] * RETRIES,
-                ttl=lock.TTL.LOCK_TTL_SECONDS_TO_START_JOB,
-                # starting a job takes milliseconds: a worker killed while starting it leaves the lock behind, and every
-                # worker of the same size would wait for the TTL, because they all pick the same next job
-                take_over_after_seconds=LOCK_TAKE_OVER_SECONDS_TO_START_JOB,
+            with (
+                StepProfiler("queue.start_job", "start_newest_job"),
+                lock(
+                    key=job.unicity_id,
+                    owner=lock_owner,
+                    sleeps=[0.1] * RETRIES,
+                    ttl=lock.TTL.LOCK_TTL_SECONDS_TO_START_JOB,
+                    # starting a job takes milliseconds: a worker killed while starting it leaves the lock behind, and every
+                    # worker of the same size would wait for the TTL, because they all pick the same next job
+                    take_over_after_seconds=LOCK_TAKE_OVER_SECONDS_TO_START_JOB,
+                ),
             ):
                 # get all the pending jobs for the same unicity_id
                 # most recently queued first: created_at can be inherited (PREVIEW_PATH)
