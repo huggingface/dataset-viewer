@@ -15,13 +15,13 @@ import warnings
 from dataclasses import dataclass
 from datetime import datetime
 from multiprocessing.connection import Connection, Pipe
-from typing import Any, Optional, TypedDict
+from typing import Optional, TypedDict
 
 import orjson
 import pyarrow as pa
 from filelock import FileLock
 from huggingface_hub import HfFileSystem
-from libcommon.dtos import CachedJob, JobInfo, JobResult
+from libcommon.dtos import JobInfo, JobResult
 from libcommon.prometheus import LongStepProfiler, StepProfiler
 from libcommon.queue.jobs import (
     AlreadyStartedJobError,
@@ -30,7 +30,6 @@ from libcommon.queue.jobs import (
     NoWaitingJobError,
     Queue,
 )
-from libcommon.storage import remove_dir
 from libcommon.storage_client import StorageClient
 from libcommon.utils import get_datetime
 from psutil import cpu_count, getloadavg, swap_memory, virtual_memory
@@ -38,6 +37,7 @@ from psutil import cpu_count, getloadavg, swap_memory, virtual_memory
 from worker.config import AppConfig
 from worker.job_manager import JobManager
 from worker.job_runner_factory import BaseJobRunnerFactory
+from worker.job_runners._job_runner_with_cache import JobRunnerWithCache
 
 # glibc keeps freed memory in its arenas until asked to return it to the OS; malloc_trim is glibc-only.
 _MALLOC_TRIM = getattr(ctypes.CDLL(ctypes.util.find_library("c")), "malloc_trim", None)
@@ -391,7 +391,7 @@ class Loop:
                 job_manager.finish()
             self.set_worker_state(current_job_info=None)
 
-        # a job run in a child process gives its memory back when the child exits
+        # the memory of a job run in a child process goes back to the OS when the loop replaces the child
         if self.app_config.worker.kill_job_memory_pct <= 0 and self.is_pod_memory_above(
             self.app_config.worker.free_memory_after_job_pct
         ):
@@ -411,25 +411,25 @@ class Loop:
         self.reap_job_children()
         child = self.job_child or self.start_job_child()
         self.job_child = None
+        # the child runs the job in the cache directory of the loop's job runner: the loop removes it if the child dies
+        job_runner = job_manager.job_runner
+        job = (
+            job_manager.job_info,
+            job_runner.planned_cache_subdirectory if isinstance(job_runner, JobRunnerWithCache) else None,
+        )
         try:
-            child.connection.send(job_manager.job_info)
+            child.connection.send(job)
         except OSError:
             # the idle child died since its last job
             self.retire_job_child(child)
             child = self.start_job_child()
-            child.connection.send(job_manager.job_info)
+            child.connection.send(job)
         child.jobs += 1
-        cache_directory: Optional[str] = None
         kill_ratio = self.app_config.worker.kill_job_memory_pct / 100
         try:
             while True:
                 if child.connection.poll(JOB_MEMORY_CHECK_INTERVAL_SECONDS):
-                    message: tuple[Any, ...] = child.connection.recv()
-                    if message[0] == "started":
-                        cache_directory = message[1]
-                        continue
-                    _, job_results, shortcut_jobs_by_key = message
-                    job_manager.shortcut_jobs_by_key = shortcut_jobs_by_key
+                    job_results, job_manager.shortcut_jobs_by_key = child.connection.recv()
                     if self.can_run_more_jobs(child):
                         self.job_child = child
                     else:
@@ -449,15 +449,10 @@ class Loop:
         child.connection.close()
         _, status = os.waitpid(child.pid, 0)
         _remove_prometheus_files(child.pid)
-        exit_code = (
-            None
-            if os.WIFSIGNALED(status) and os.WTERMSIG(status) == signal.SIGKILL
-            else os.waitstatus_to_exitcode(status)
-        )
+        exit_code = os.waitstatus_to_exitcode(status)
         # the child didn't run the post_compute hook, which removes the cache directory of the job
-        if cache_directory:
-            remove_dir(cache_directory)
-        if exit_code is None:
+        job_manager.job_runner.post_compute()
+        if exit_code == -signal.SIGKILL:
             # killed by the loop, or by the kernel between two checks. The retryable errors backfill retries the job,
             # and its next jobs go to a bigger worker
             job_manager.set_exceeded_maximum_memory()
@@ -490,16 +485,14 @@ class Loop:
                 storage_client.reset_after_fork()
             while True:
                 try:
-                    job_info: JobInfo = connection.recv()
+                    job_info, cache_subdirectory = connection.recv()
                 except EOFError:
                     return 0
                 job_runner = self.job_runner_factory.create_job_runner(job_info)
-                cache_directory = getattr(job_runner, "planned_cache_subdirectory", None)
-                connection.send(("started", str(cache_directory) if cache_directory else None))
+                if isinstance(job_runner, JobRunnerWithCache) and cache_subdirectory is not None:
+                    job_runner.planned_cache_subdirectory = cache_subdirectory
                 job_manager = JobManager(job_info=job_info, app_config=self.app_config, job_runner=job_runner)
-                job_results = list(job_manager.run_job())
-                shortcut_jobs_by_key: dict[str, CachedJob] = job_manager.shortcut_jobs_by_key
-                connection.send(("done", job_results, shortcut_jobs_by_key))
+                connection.send((list(job_manager.run_job()), job_manager.shortcut_jobs_by_key))
         except BaseException:
             logging.exception("the child process of the jobs crashed")
             return 1
