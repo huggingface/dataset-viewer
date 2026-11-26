@@ -71,3 +71,4 @@ Set environment variables to configure the connection to S3.
 ## Rows Index
 
 - `ROWS_INDEX_MAX_ARROW_DATA_IN_MEMORY`: The maximum number of row groups to be loaded in memory.
+- `ROWS_INDEX_MEDIA_CHILD_PROCESS`: if true, each uvicorn worker of the rows service builds the media of the `/rows` responses (images, audio, video, PDF, 3D meshes) in a child process. The worker kills the child when it holds more than a third of the pod memory limit, and replaces it when it holds more than 1 GiB after a request. Defaults to false.

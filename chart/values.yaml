@@ -364,6 +364,9 @@ rowsIndex:
   # Queries that each uvicorn worker of rows runs at once, the others wait. A pod can hold up to
   # maxArrowDataInMemory x maxConcurrentQueries x rows.uvicornNumWorkers of parquet data: keep it under its memory.
   maxConcurrentQueries: 8
+  # Each uvicorn worker of rows builds the media of the responses (images, audio, PDF, 3D meshes...) in a child process,
+  # killed when it holds more than a third of the pod memory limit, before the kernel kills the whole pod.
+  mediaChildProcess: false
 
 descriptiveStatistics:
   # Directory used temporarily to download dataset locally in .parquet to compute statistics

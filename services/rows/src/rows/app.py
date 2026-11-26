@@ -9,12 +9,10 @@ from libapi.routes.healthcheck import healthcheck_endpoint
 from libapi.routes.metrics import create_metrics_endpoint
 from libapi.utils import EXPOSED_HEADERS
 from libapi.uvicorn import run as serve
-from libcommon.cloudfront import get_cloudfront_signer
 from libcommon.log import init_logging
 from libcommon.resources import CacheMongoResource, QueueMongoResource, Resource
 from libcommon.storage import exists, init_parquet_metadata_dir
 from libcommon.storage_client import StorageClient
-from libcommon.url_preparator import URLPreparator
 from starlette.applications import Starlette
 from starlette.middleware import Middleware
 from starlette.middleware.cors import CORSMiddleware
@@ -23,6 +21,7 @@ from starlette.routing import Route
 from starlette_prometheus import PrometheusMiddleware
 
 from rows.config import AppConfig
+from rows.media_child import MediaChildProcess, create_cached_assets_storage_client
 from rows.memory import start_memory_watchdog
 from rows.routes.rows import create_rows_endpoint
 
@@ -62,19 +61,7 @@ def create_app_with_config(app_config: AppConfig) -> Starlette:
     cache_resource = CacheMongoResource(database=app_config.cache.mongo_database, host=app_config.cache.mongo_url)
     queue_resource = QueueMongoResource(database=app_config.queue.mongo_database, host=app_config.queue.mongo_url)
 
-    url_signer = get_cloudfront_signer(cloudfront_config=app_config.cloudfront)
-    url_preparator = URLPreparator(
-        url_signer=url_signer,
-        hf_endpoint=app_config.common.hf_endpoint,
-        assets_base_url=app_config.cached_assets.base_url,
-    )
-    cached_assets_storage_client = StorageClient(
-        protocol=app_config.cached_assets.storage_protocol,
-        storage_root=app_config.cached_assets.storage_root,
-        base_url=app_config.cached_assets.base_url,
-        s3_config=app_config.s3,
-        url_preparator=url_preparator,
-    )
+    cached_assets_storage_client = create_cached_assets_storage_client(app_config)
     assets_storage_client = StorageClient(
         protocol=app_config.assets.storage_protocol,
         storage_root=app_config.assets.storage_root,
@@ -83,6 +70,9 @@ def create_app_with_config(app_config: AppConfig) -> Starlette:
         # no need to specify a url_signer
     )
     storage_clients = [cached_assets_storage_client, assets_storage_client]
+
+    # one child per uvicorn worker: create_app_with_config runs in each worker
+    media_child = MediaChildProcess(app_config=app_config) if app_config.rows_index.media_child_process else None
 
     resources: list[Resource] = [cache_resource, queue_resource]
     if not cache_resource.is_available():
@@ -114,6 +104,7 @@ def create_app_with_config(app_config: AppConfig) -> Starlette:
                 max_age_long=app_config.api.max_age_long,
                 max_age_short=app_config.api.max_age_short,
                 storage_clients=storage_clients,
+                media_child=media_child,
             ),
         ),
     ]
@@ -126,6 +117,8 @@ def create_app_with_config(app_config: AppConfig) -> Starlette:
         try:
             yield
         finally:
+            if media_child is not None:
+                media_child.stop()
             for resource in resources:
                 resource.release()
 

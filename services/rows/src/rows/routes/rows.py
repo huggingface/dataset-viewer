@@ -3,12 +3,13 @@
 
 import logging
 from collections.abc import AsyncIterator
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, nullcontext
 from functools import lru_cache
 from http import HTTPStatus
 from typing import Optional
 
 import anyio
+from datasets.features.features import require_storage_embed
 from fsspec.implementations.http import HTTPFileSystem
 from libapi.authentication import auth_check, get_auth_kind
 from libapi.exceptions import (
@@ -42,6 +43,7 @@ from libcommon.storage_client import StorageClient
 from starlette.requests import Request
 from starlette.responses import Response
 
+from rows.media_child import MediaChildProcess
 from rows.memory import record_arrow_bytes, track_request
 
 logger = logging.getLogger(__name__)
@@ -51,7 +53,8 @@ MAX_USER_AGENT_LENGTH = 200
 # the datasets whose owner asked to log the address of every caller, to debug how the calls reach the service (see
 # get_caller_debug_info). An address is a personal data: only list a dataset here while its owner needs it.
 PROBE_DATASETS = {"lhoestq/probe-rows-service"}
-# a request that waits longer for a query slot gives up before the load balancer does, and tells the client to retry
+# a request that waits longer for a query slot, or for the media child, gives up before the load balancer does, and tells
+# the client to retry
 QUERY_SLOT_WAIT_SECONDS = 20
 
 
@@ -73,6 +76,7 @@ def create_rows_endpoint(
     max_age_long: int = 0,
     max_age_short: int = 0,
     storage_clients: Optional[list[StorageClient]] = None,
+    media_child: Optional[MediaChildProcess] = None,
 ) -> Endpoint:
     httpfs = HTTPFileSystem(headers={"authorization": f"Bearer {hf_token}"})
     # Each query can hold up to max_arrow_data_in_memory bytes of parquet data until its response is built, and the
@@ -80,10 +84,10 @@ def create_rows_endpoint(
     query_slots = anyio.Semaphore(max_concurrent_queries)
 
     @asynccontextmanager
-    async def query_slot() -> AsyncIterator[None]:
+    async def take_slot(slots: anyio.Semaphore) -> AsyncIterator[None]:
         try:
             with anyio.fail_after(QUERY_SLOT_WAIT_SECONDS):
-                await query_slots.acquire()
+                await slots.acquire()
         except TimeoutError:
             raise ResponseNotReadyError(
                 "The server is busier than usual and the response is not ready yet. Please retry later."
@@ -91,7 +95,7 @@ def create_rows_endpoint(
         try:
             yield
         finally:
-            query_slots.release()
+            slots.release()
 
     @lru_cache(maxsize=1)
     def get_rows_index(dataset: str, config: str, split: str) -> RowsIndex:
@@ -156,7 +160,12 @@ def create_rows_endpoint(
                     with StepProfiler(method="rows_endpoint", step="get row groups index"):
                         rows_index = get_rows_index(dataset=dataset, config=config, split=split)
                         revision = rows_index.revision
-                    async with query_slot():
+                    # The requests with media wait for the child before they take a query slot: else, while the
+                    # child builds another response, they would hold the query slots of the worker, and their tables.
+                    child = (
+                        media_child if media_child is not None and require_storage_embed(rows_index.features) else None
+                    )
+                    async with take_slot(child.turn) if child else nullcontext(), take_slot(query_slots):
                         with track_request(f"{dataset=} {config=} {split=} {offset=} {length=}") as tracked:
                             with StepProfiler(method="rows_endpoint", step="query the rows"):
                                 try:
@@ -166,21 +175,36 @@ def create_rows_endpoint(
                                     raise TooBigContentError(str(err)) from None
                             record_arrow_bytes(tracked, pa_table.nbytes)
                             with StepProfiler(method="rows_endpoint", step="transform to a list"):
-                                response = await create_response(
-                                    dataset=dataset,
-                                    revision=revision,
-                                    config=config,
-                                    split=split,
-                                    storage_client=cached_assets_storage_client,
-                                    hf_endpoint=hf_endpoint,
-                                    hf_token=hf_token,
-                                    pa_table=pa_table,
-                                    offset=offset,
-                                    features=rows_index.features,
-                                    partial=rows_index.partial,
-                                    num_rows_total=rows_index.num_rows_total,
-                                    truncated_columns=truncated_columns,
-                                )
+                                if child:
+                                    response = await child.create_response(
+                                        description=tracked.description,
+                                        dataset=dataset,
+                                        revision=revision,
+                                        config=config,
+                                        split=split,
+                                        pa_table=pa_table,
+                                        offset=offset,
+                                        features=rows_index.features,
+                                        partial=rows_index.partial,
+                                        num_rows_total=rows_index.num_rows_total,
+                                        truncated_columns=truncated_columns,
+                                    )
+                                else:
+                                    response = await create_response(
+                                        dataset=dataset,
+                                        revision=revision,
+                                        config=config,
+                                        split=split,
+                                        storage_client=cached_assets_storage_client,
+                                        hf_endpoint=hf_endpoint,
+                                        hf_token=hf_token,
+                                        pa_table=pa_table,
+                                        offset=offset,
+                                        features=rows_index.features,
+                                        partial=rows_index.partial,
+                                        num_rows_total=rows_index.num_rows_total,
+                                        truncated_columns=truncated_columns,
+                                    )
                 except EmptyParquetMetadataError:
                     raise ResponseNotFoundError("Not found.") from None
                 except CachedArtifactNotFoundError:

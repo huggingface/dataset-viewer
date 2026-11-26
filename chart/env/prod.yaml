@@ -161,6 +161,7 @@ duckDBIndex:
 
 rowsIndex:
   maxArrowDataInMemory: "300_000_000"
+  mediaChildProcess: true
 
 descriptiveStatistics:
   maxSplitSizeBytes: "5_000_000_000"
