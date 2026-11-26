@@ -180,7 +180,9 @@ class HubCacheWatcher:
             try:
                 async with self._collection.watch(
                     pipeline,
-                    resume_after=resume_token,
+                    # unlike resume_after, start_after also resumes after an invalidate event (the collection was
+                    # dropped or renamed), which ends the stream
+                    start_after=resume_token,
                     full_document="updateLookup",
                     full_document_before_change="whenAvailable",
                     max_await_time_ms=30_000,
