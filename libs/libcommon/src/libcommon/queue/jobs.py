@@ -26,6 +26,7 @@ from pymongoarrow.api import Schema, find_pandas_all
 from libcommon.constants import (
     DEFAULT_DIFFICULTY_MAX,
     DEFAULT_DIFFICULTY_MIN,
+    LOCK_TAKE_OVER_SECONDS_TO_START_JOB,
     QUEUE_COLLECTION_JOBS,
     QUEUE_MONGOENGINE_ALIAS,
 )
@@ -719,6 +720,9 @@ class Queue:
                 owner=lock_owner,
                 sleeps=[0.1] * RETRIES,
                 ttl=lock.TTL.LOCK_TTL_SECONDS_TO_START_JOB,
+                # starting a job takes milliseconds: a worker killed while starting it leaves the lock behind, and every
+                # worker of the same size would wait for the TTL, because they all pick the same next job
+                take_over_after_seconds=LOCK_TAKE_OVER_SECONDS_TO_START_JOB,
             ):
                 # get all the pending jobs for the same unicity_id
                 # most recently queued first: created_at can be inherited (PREVIEW_PATH)

@@ -5,6 +5,7 @@ import json
 import os
 import random
 import time
+from datetime import timedelta
 from multiprocessing import Pool
 from pathlib import Path
 
@@ -12,6 +13,7 @@ import pytest
 
 from libcommon.queue.lock import Lock, lock
 from libcommon.resources import QueueMongoResource
+from libcommon.utils import get_datetime
 
 
 @pytest.fixture(autouse=True)
@@ -79,3 +81,15 @@ def test_lock_git_branch(tmp_path_factory: pytest.TempPathFactory, queue_mongo_r
     assert Lock.objects().get().key == json.dumps({"dataset": "dataset", "branch": "refs/convert/parquet"})
     assert Lock.objects().get().owner is None
     Lock.objects().delete()
+
+
+def test_lock_takes_over_a_lock_held_for_too_long() -> None:
+    Lock(key="held", owner="dead", updated_at=get_datetime() - timedelta(minutes=1)).save()
+    with pytest.raises(TimeoutError):
+        lock(key="held", owner="other", sleeps=[0.01]).acquire()
+    with pytest.raises(TimeoutError):
+        lock(key="held", owner="other", sleeps=[0.01], take_over_after_seconds=120).acquire()
+
+    lock(key="held", owner="other", sleeps=[0.01], take_over_after_seconds=30).acquire()
+    assert Lock.objects(key="held").get().owner == "other"
+    Lock.objects(key="held").delete()

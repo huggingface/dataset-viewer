@@ -12,6 +12,7 @@ from libcommon.constants import QUEUE_TTL_SECONDS
 from libcommon.dtos import JobInfo, Priority, Status, WorkerSize
 from libcommon.queue.dataset_blockages import DATASET_STATUS_NORMAL, block_dataset
 from libcommon.queue.jobs import EmptyQueueError, JobDocument, JobDoesNotExistError, Queue
+from libcommon.queue.lock import Lock
 from libcommon.queue.metrics import JobTotalMetricDocument, WorkerSizeJobsCountDocument
 from libcommon.queue.past_jobs import JOB_DURATION_MIN_SECONDS, PastJobDocument
 from libcommon.resources import QueueMongoResource
@@ -976,3 +977,13 @@ def test_rate_limited_dataset(
     else:
         with pytest.raises(EmptyQueueError):
             queue.start_job()
+
+
+def test_start_job_takes_over_the_lock_of_a_dead_worker() -> None:
+    queue = Queue()
+    queue.add_job(job_type="test_type", dataset="dataset", revision="revision", difficulty=50)
+    job = JobDocument.objects(dataset="dataset").get()
+    # a worker killed while it started this job
+    Lock(key=job.unicity_id, owner="dead-worker", updated_at=get_datetime() - timedelta(minutes=1)).save()
+
+    assert queue.start_job()["params"]["dataset"] == "dataset"

@@ -7,6 +7,7 @@ import logging
 import time
 import types
 from collections.abc import Sequence
+from datetime import timedelta
 from enum import IntEnum
 from types import TracebackType
 from typing import Generic, Literal, Optional, TypeVar
@@ -15,6 +16,7 @@ from mongoengine import Document
 from mongoengine.errors import NotUniqueError
 from mongoengine.fields import DateTimeField, IntField, StringField
 from mongoengine.queryset.queryset import QuerySet
+from mongoengine.queryset.visitor import Q
 
 from libcommon.constants import (
     LOCK_TTL_SECONDS_NO_OWNER,
@@ -119,19 +121,33 @@ class lock(contextlib.AbstractContextManager["lock"]):
     _default_sleeps = (0.05, 0.05, 0.05, 1, 1, 1, 5)
 
     def __init__(
-        self, key: str, owner: str, sleeps: Sequence[float] = _default_sleeps, ttl: Optional[_TTL] = None
+        self,
+        key: str,
+        owner: str,
+        sleeps: Sequence[float] = _default_sleeps,
+        ttl: Optional[_TTL] = None,
+        take_over_after_seconds: Optional[float] = None,
     ) -> None:
+        """
+        Args:
+            take_over_after_seconds (`float`, *optional*): if set, take the lock from another owner that holds it since
+              longer than this: its owner is dead. Only for a lock held for a short time.
+        """
         self.key = key
         self.owner = owner
         self.sleeps = sleeps
         self.ttl = ttl
+        self.take_over_after_seconds = take_over_after_seconds
         if ttl is not None and ttl not in list(self.TTL):
             raise ValueError(f"The TTL value is not supported by the TTL index. It should be one of {list(self.TTL)}")
 
     def acquire(self) -> None:
         for sleep in self.sleeps:
+            free = Q(owner__in=[None, self.owner])
+            if self.take_over_after_seconds is not None:
+                free |= Q(updated_at__lt=get_datetime() - timedelta(seconds=self.take_over_after_seconds))
             try:
-                Lock.objects(key=self.key, owner__in=[None, self.owner]).update(
+                Lock.objects(Q(key=self.key) & free).update(
                     upsert=True,
                     write_concern={"w": "majority", "fsync": True},
                     read_concern={"level": "majority"},
