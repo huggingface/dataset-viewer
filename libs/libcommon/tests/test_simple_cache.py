@@ -9,6 +9,7 @@ from time import process_time
 from typing import Any, Optional, TypedDict
 
 import pytest
+from bson.errors import InvalidDocument
 from pymongo.errors import DocumentTooLarge
 
 from libcommon.resources import CacheMongoResource
@@ -130,6 +131,25 @@ def assert_metric_entries_per_kind(http_status: HTTPStatus, error_code: Optional
     metric = CacheTotalMetricDocument.objects(http_status=http_status, error_code=error_code, kind=kind).first()
     assert metric is not None
     assert metric.total == total
+
+
+def test_upsert_response_not_storable_keeps_the_metrics() -> None:
+    upsert_response(
+        kind=CACHE_KIND,
+        dataset=DATASET_NAME,
+        dataset_git_revision=REVISION_NAME,
+        content={},
+        http_status=HTTPStatus.OK,
+    )
+    with pytest.raises(InvalidDocument):
+        upsert_response(
+            kind=CACHE_KIND,
+            dataset=DATASET_NAME,
+            dataset_git_revision=REVISION_NAME,
+            content={"a\x00b": 1},
+            http_status=HTTPStatus.OK,
+        )
+    assert_metric_entries_per_kind(http_status=HTTPStatus.OK, error_code=None, kind=CACHE_KIND, total=1)
 
 
 @pytest.mark.parametrize(

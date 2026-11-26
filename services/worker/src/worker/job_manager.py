@@ -7,6 +7,7 @@ from http import HTTPStatus
 from typing import Optional
 from uuid import uuid4
 
+from bson.errors import InvalidDocument
 from libcommon.config import CommonConfig
 from libcommon.dtos import CachedJob, JobInfo, JobParams, JobResult, Priority
 from libcommon.exceptions import (
@@ -16,6 +17,7 @@ from libcommon.exceptions import (
     JobManagerExceededMaximumDurationError,
     JobManagerExceededMaximumMemoryError,
     PreviousStepStillProcessingError,
+    ResponseNotStorableError,
     TooBigContentError,
     UnexpectedError,
 )
@@ -127,7 +129,28 @@ class JobManager:
                 self.debug(f"job output with ERROR - {self}")
 
     def save_job_result(self, job_result: JobResult) -> None:
-        save_job_result(job_result=job_result, failed_runs=self.failed_runs)
+        try:
+            save_job_result(job_result=job_result, failed_runs=self.failed_runs)
+        except InvalidDocument as err:
+            # the message of the exception can contain the content
+            self.warning(f"the response of {job_result['job_info']} could not be stored ({type(err).__name__})")
+            error = ResponseNotStorableError("The response could not be stored in the cache.")
+            save_job_result(
+                job_result={
+                    "job_info": job_result["job_info"],
+                    "job_runner_version": job_result["job_runner_version"],
+                    "is_success": False,
+                    "output": {
+                        "content": dict(error.as_response()),
+                        "http_status": error.status_code,
+                        "error_code": error.code,
+                        "details": dict(error.as_response_with_cause()),
+                        "progress": None,
+                    },
+                    "duration": job_result["duration"],
+                },
+                failed_runs=self.failed_runs,
+            )
 
     def finish(self) -> None:
         finish_job(job_info=self.job_info, shortcut_jobs_by_key=self.shortcut_jobs_by_key)

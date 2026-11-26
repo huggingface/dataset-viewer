@@ -252,6 +252,15 @@ def value_counts(data: pl.DataFrame, column_name: str) -> dict[Any, Any]:
     return dict(data[column_name].value_counts().rows())
 
 
+def frequencies_with_storable_keys(labels2counts: dict[str, int]) -> dict[str, int]:
+    """Replace the NULL byte, refused in the keys of a Mongo document, and sum the counts of the labels that merge."""
+    frequencies: dict[str, int] = {}
+    for label, count in labels2counts.items():
+        key = label.replace("\x00", "\ufffd")
+        frequencies[key] = frequencies.get(key, 0) + count
+    return frequencies
+
+
 def nan_count_proportion(data: pl.DataFrame, column_name: str, n_samples: int) -> tuple[int, float]:
     nan_count = data[column_name].null_count()
     nan_proportion = np.round(nan_count / n_samples, DECIMALS).item() if nan_count != 0 else 0.0
@@ -360,7 +369,7 @@ class ClassLabelColumn(Column):
             no_label_count=no_label_count,
             no_label_proportion=no_label_proportion,
             n_unique=num_classes,
-            frequencies=labels2counts,
+            frequencies=frequencies_with_storable_keys(labels2counts),
         )
 
     def compute_and_prepare_response(self, data: pl.DataFrame) -> StatisticsPerColumnItem:
@@ -515,7 +524,7 @@ class StringColumn(Column):
                 no_label_count=0,
                 no_label_proportion=0.0,
                 n_unique=len(labels2counts),
-                frequencies=labels2counts,
+                frequencies=frequencies_with_storable_keys(labels2counts),
             )
 
         lengths_df = self.compute_transformed_data(data)

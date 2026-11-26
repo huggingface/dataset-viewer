@@ -292,6 +292,21 @@ def test_string_statistics(
         assert expected == computed
 
 
+def test_string_statistics_with_null_byte_labels() -> None:
+    data = pl.DataFrame({"col": ["a\x00b"] * 3 + ["a\ufffdb"] * 2 + ["c"] * 5 + [None] * 2})
+    computed = StringColumn(feature_name="col").compute_statistics(data=data)
+    assert computed["frequencies"] == {"a\ufffdb": 5, "c": 5}  # type: ignore[typeddict-item]
+    assert computed["nan_count"] == 2
+
+
+def test_class_label_statistics_with_null_byte_names() -> None:
+    data = pl.DataFrame({"col": [0, 0, 1, NO_LABEL_VALUE]})
+    computed = ClassLabelColumn(
+        feature_name="col", feature_dict={"_type": "ClassLabel", "names": ["a\x00b", "c"]}
+    ).compute_statistics(data=data)
+    assert computed["frequencies"] == {"a\ufffdb": 2, "c": 1}
+
+
 @pytest.mark.parametrize(
     "column_name",
     [
