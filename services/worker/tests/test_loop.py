@@ -218,10 +218,77 @@ def test_a_job_runs_in_a_child_process(
     )
     loop.pod_unreclaimable_memory_ratio = lambda: memory_ratio  # type: ignore[method-assign]
     loop.queue.add_job(job_type=JOB_TYPE, dataset="dataset", revision="revision", difficulty=60)
-    assert loop.process_next_job()
+    try:
+        assert loop.process_next_job()
+    finally:
+        loop.stop_job_children()
 
     response = get_response(kind=JOB_TYPE, dataset="dataset")
     assert response["error_code"] == expected_error_code
     if expected_error_code is None:
         assert response["content"]["pid"] != os.getpid()
     assert not loop.queue.is_job_in_process(job_type=JOB_TYPE, dataset="dataset", revision="revision")
+
+
+def test_the_jobs_reuse_the_child_process(
+    app_config: AppConfig,
+    libraries_resource: LibrariesResource,
+    cache_mongo_resource: CacheMongoResource,
+    queue_mongo_resource: QueueMongoResource,
+    worker_state_file_path: str,
+) -> None:
+    loop = make_loop(app_config, worker_state_file_path, max_seconds_blocked_by_pod_memory=60, kill_job_memory_pct=90)
+    loop.job_runner_factory._create_job_runner = lambda job_info: PidJobRunner(  # type: ignore[method-assign]
+        job_info=job_info, app_config=loop.app_config
+    )
+    loop._get_pod_memory_limit_bytes = lambda: 10 * 1024**3  # type: ignore[method-assign]
+    pids = []
+    try:
+        for dataset in ["dataset1", "dataset2"]:
+            loop.queue.add_job(job_type=JOB_TYPE, dataset=dataset, revision="revision", difficulty=60)
+            assert loop.process_next_job()
+            pids.append(get_response(kind=JOB_TYPE, dataset=dataset)["content"]["pid"])
+            loop.queue.delete_dataset_waiting_jobs(dataset)  # the follow-up jobs the job created
+        assert pids[0] == pids[1] != os.getpid()
+
+        # a child that holds too much memory is replaced after its job
+        loop._get_pod_memory_limit_bytes = lambda: 1  # type: ignore[method-assign]
+        loop.queue.add_job(job_type=JOB_TYPE, dataset="dataset3", revision="revision", difficulty=60)
+        assert loop.process_next_job()
+        assert loop.job_child is None
+        assert pids[0] in loop.exiting_job_children
+    finally:
+        loop.stop_job_children()
+    assert not loop.exiting_job_children
+
+
+def test_a_job_after_a_killed_one_runs_in_a_new_child_process(
+    app_config: AppConfig,
+    libraries_resource: LibrariesResource,
+    cache_mongo_resource: CacheMongoResource,
+    queue_mongo_resource: QueueMongoResource,
+    worker_state_file_path: str,
+) -> None:
+    loop = make_loop(app_config, worker_state_file_path, max_seconds_blocked_by_pod_memory=60, kill_job_memory_pct=90)
+    loop.job_runner_factory._create_job_runner = lambda job_info: (  # type: ignore[method-assign]
+        SlowJobRunner if job_info["params"]["dataset"] == "greedy" else PidJobRunner
+    )(job_info=job_info, app_config=loop.app_config)
+    loop._get_pod_memory_limit_bytes = lambda: 10 * 1024**3  # type: ignore[method-assign]
+    try:
+        loop.queue.add_job(job_type=JOB_TYPE, dataset="small", revision="revision", difficulty=60)
+        assert loop.process_next_job()
+        first_pid = get_response(kind=JOB_TYPE, dataset="small")["content"]["pid"]
+        loop.queue.delete_dataset_waiting_jobs("small")
+
+        loop.pod_unreclaimable_memory_ratio = lambda: 0.95  # type: ignore[method-assign]
+        loop.queue.add_job(job_type=JOB_TYPE, dataset="greedy", revision="revision", difficulty=60)
+        assert loop.process_next_job()
+        assert get_response(kind=JOB_TYPE, dataset="greedy")["error_code"] == "JobManagerExceededMaximumMemoryError"
+        loop.queue.delete_dataset_waiting_jobs("greedy")
+
+        loop.pod_unreclaimable_memory_ratio = lambda: None  # type: ignore[method-assign]
+        loop.queue.add_job(job_type=JOB_TYPE, dataset="small2", revision="revision", difficulty=60)
+        assert loop.process_next_job()
+        assert get_response(kind=JOB_TYPE, dataset="small2")["content"]["pid"] not in (first_pid, os.getpid())
+    finally:
+        loop.stop_job_children()

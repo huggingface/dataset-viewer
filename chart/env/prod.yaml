@@ -570,6 +570,7 @@ workers:
     workerDifficultyMax: 40
     workerDifficultyMin: 0
     maxMemoryPct: 0
+    killJobMemoryPct: 90
     maxSystemMemoryPct: 0
     # The small CPU request packs a dozen light workers per node, so recreating them all at
     # once starves their cold start. Roll gradually instead, and keep maxSurge at 0 so the

@@ -10,6 +10,7 @@ from mongoengine.fields import DateTimeField, EnumField, IntField, ObjectIdField
 from mongoengine.queryset.queryset import QuerySet
 
 from libcommon.constants import (
+    DEFAULT_DIFFICULTY_MAX,
     QUEUE_MONGOENGINE_ALIAS,
     TYPE_STATUS_AND_DATASET_STATUS_JOB_COUNTS_COLLECTION,
     WORKER_TYPE_JOB_COUNTS_COLLECTION,
@@ -100,6 +101,13 @@ class WorkerSizeJobsCountDocument(Document):
         if difficulty <= 70:
             return WorkerSize.medium
         return WorkerSize.heavy
+
+    @staticmethod
+    def get_next_worker_size_difficulty(difficulty: int) -> int:
+        """The lowest difficulty of the next bigger worker size, or the max difficulty for the biggest one."""
+        return {WorkerSize.light: 41, WorkerSize.medium: 71}.get(
+            WorkerSizeJobsCountDocument.get_worker_size(difficulty), DEFAULT_DIFFICULTY_MAX
+        )
 
     meta = {
         "collection": WORKER_TYPE_JOB_COUNTS_COLLECTION,
