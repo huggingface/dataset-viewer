@@ -49,11 +49,11 @@ MEMORY_WATCHDOG_INTERVAL_SECONDS = 1.0
 MEMORY_WATCHDOG_LOG_INTERVAL_SECONDS = 10.0
 # how often the loop checks the pod memory while a job runs in its child process
 JOB_MEMORY_CHECK_INTERVAL_SECONDS = 0.25
-# The child process runs the next jobs too, with its connections already open, until its private memory grows by more
-# than this share of the pod limit after its first job, or it ran this many jobs: then the loop replaces it, and its
-# memory goes back to the OS. The first job writes to pages it shares with the loop (the imports of its job runner), and
-# copies them: on the light workers, that's already 11% of the pod limit.
-JOB_CHILD_MAX_PRIVATE_MEMORY_PCT = 10
+# The child process runs the next jobs too, with its connections already open, until it holds more private memory than
+# this share of the pod limit, or ran this many jobs: then the loop replaces it, and its memory goes back to the OS. Its
+# jobs write to pages it shares with the loop (the imports of their job runners), and copy them: on the light workers,
+# that's already 11% of the pod limit after a few jobs.
+JOB_CHILD_MAX_PRIVATE_MEMORY_PCT = 25
 JOB_CHILD_MAX_JOBS = 200
 
 
@@ -99,7 +99,6 @@ class JobChild:
     pid: int
     connection: Connection
     jobs: int = 0
-    first_job_private_memory: Optional[int] = None
 
 
 class WorkerState(TypedDict):
@@ -507,9 +506,7 @@ class Loop:
         pod_limit = self._get_pod_memory_limit_bytes()
         if private_memory is None or not pod_limit:
             return False
-        if child.first_job_private_memory is None:
-            child.first_job_private_memory = private_memory
-        return private_memory - child.first_job_private_memory < pod_limit * JOB_CHILD_MAX_PRIVATE_MEMORY_PCT / 100
+        return private_memory < pod_limit * JOB_CHILD_MAX_PRIVATE_MEMORY_PCT / 100
 
     def retire_job_child(self, child: JobChild) -> None:
         """Let the child exit on its own: closing the connection ends its loop. reap_job_children() waits for it."""
