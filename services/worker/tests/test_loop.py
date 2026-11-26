@@ -231,6 +231,7 @@ def test_a_job_runs_in_a_child_process(
 
 
 def test_the_jobs_reuse_the_child_process(
+    monkeypatch: pytest.MonkeyPatch,
     app_config: AppConfig,
     libraries_resource: LibrariesResource,
     cache_mongo_resource: CacheMongoResource,
@@ -251,8 +252,8 @@ def test_the_jobs_reuse_the_child_process(
             loop.queue.delete_dataset_waiting_jobs(dataset)  # the follow-up jobs the job created
         assert pids[0] == pids[1] != os.getpid()
 
-        # a child that holds too much memory is replaced after its job
-        loop._get_pod_memory_limit_bytes = lambda: 1  # type: ignore[method-assign]
+        # a child whose memory grew too much since its first job is replaced after its job
+        monkeypatch.setattr(loop_module, "_get_private_memory_bytes", lambda pid: 10 * 1024**3)
         loop.queue.add_job(job_type=JOB_TYPE, dataset="dataset3", revision="revision", difficulty=60)
         assert loop.process_next_job()
         assert loop.job_child is None
