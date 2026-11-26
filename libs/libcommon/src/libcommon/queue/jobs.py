@@ -3,13 +3,15 @@
 
 import contextlib
 import logging
+import random
+import time
 import types
 from collections import Counter
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from datetime import datetime, timedelta
 from itertools import groupby
 from operator import itemgetter
-from typing import Any, Generic, Optional, TypedDict, TypeVar
+from typing import Any, Generic, Optional, TypedDict, TypeVar, cast
 from uuid import uuid4
 
 import bson
@@ -48,8 +50,14 @@ from libcommon.utils import get_datetime, inputs_to_string
 # START monkey patching ### hack ###
 # see https://github.com/sbdchd/mongo-types#install
 U = TypeVar("U", bound=Document)
+T = TypeVar("T")
 
 NEXT_WAITING_JOB_BY_NAMESPACE_INDEX = "priority_1_status_1_worker_size_1_namespace_1_created_at_1_dataset_1"
+# For this long, a namespace that got a started job is still a candidate, and a new namespace is not one yet: the start
+# itself is protected by the lock and the AlreadyStartedJobError check.
+FAIRNESS_CACHE_TTL_SECONDS = 5.0
+# the namespaces tried one by one before querying the oldest waiting job among all of them
+NAMESPACE_RANDOM_PICKS = 3
 
 
 def no_op(self, _):  # type: ignore
@@ -319,7 +327,28 @@ class Queue:
     - a job has a difficulty (from 0: easy to 100: hard, as a convention)
     - the queue is ordered by priority then by the creation date of the jobs
     - datasets and users that already have started jobs are de-prioritized (using namespace)
+    - for a worker size, the next job is the oldest waiting job of a namespace picked at random, so that the workers
+      don't all pick the same job
+
+    Args:
+        fairness_cache_ttl_seconds (`float`, *optional*): if positive, the blocked datasets, and the namespaces and
+          unicity ids used to select the next job, are read from the database at most once in this interval by this
+          object. Defaults to 0 (no cache).
     """
+
+    def __init__(self, fairness_cache_ttl_seconds: float = 0.0) -> None:
+        self.fairness_cache_ttl_seconds = fairness_cache_ttl_seconds
+        self._fairness_cache: dict[tuple[Any, ...], tuple[float, Any]] = {}
+
+    def _cached(self, key: tuple[Any, ...], compute: Callable[[], T]) -> T:
+        if self.fairness_cache_ttl_seconds <= 0:
+            return compute()
+        entry = self._fairness_cache.get(key)
+        if entry is not None and time.monotonic() - entry[0] < self.fairness_cache_ttl_seconds:
+            return cast(T, entry[1])
+        value = compute()
+        self._fairness_cache[key] = (time.monotonic(), value)
+        return value
 
     def add_job(
         self,
@@ -515,6 +544,39 @@ class Queue:
         job.delete()
         return job
 
+    def _get_oldest_waiting_job_of_random_namespace(
+        self,
+        namespaces: list[str],
+        priority: Priority,
+        filters: JobQueryFilters,
+        excluded_unicity_ids: Optional[set[str]] = None,
+    ) -> Optional[JobDocument]:
+        """Get the oldest waiting job of a namespace picked at random, for a worker size.
+
+        The namespaces come from a list that can be a few seconds old: a picked namespace can have no waiting job
+        anymore. A few namespaces are tried, then the oldest waiting job among all the other ones is returned.
+        """
+        picked_namespaces = random.sample(namespaces, k=min(NAMESPACE_RANDOM_PICKS, len(namespaces)))  # nosec
+        other_namespaces = list(set(namespaces).difference(picked_namespaces))
+        namespace_filters: list[dict[str, Any]] = [{"namespace": namespace} for namespace in picked_namespaces]
+        if other_namespaces:
+            namespace_filters.append({"namespace__in": other_namespaces})
+        for namespace_filter in namespace_filters:
+            if excluded_unicity_ids:
+                namespace_filter["unicity_id__nin"] = excluded_unicity_ids
+            with StepProfiler("queue.start_job", "next_waiting_job"):
+                next_waiting_job = (
+                    JobDocument.objects(status=Status.WAITING, priority=priority, **namespace_filter, **filters)
+                    .order_by("+created_at")
+                    .only("type", "dataset", "revision", "config", "split", "priority", "unicity_id")
+                    .hint(NEXT_WAITING_JOB_BY_NAMESPACE_INDEX)
+                    .no_cache()
+                    .first()
+                )
+            if next_waiting_job is not None:
+                return next_waiting_job
+        return None
+
     def _get_next_waiting_job_for_priority(
         self,
         priority: Priority,
@@ -529,6 +591,9 @@ class Queue:
         - if none, among the datasets that have the least started jobs:
           - ensuring that the unicity_id field is unique among the started jobs.
 
+        For a worker size, the job is the oldest one of a namespace picked at random among these namespaces, not the
+        oldest one of all of them: else all the workers of the size pick the same job, and all but one fail to start it.
+
         Args:
             priority (`Priority`): The priority of the job.
             difficulty_min (`int`, *optional*): if not None, only jobs with a difficulty greater or equal to this value are considered.
@@ -542,7 +607,7 @@ class Queue:
         """
         logging.debug(f"Getting next waiting job for priority {priority}")
         with StepProfiler("queue.start_job", "blocked_datasets"):
-            blocked_datasets = get_blocked_datasets()
+            blocked_datasets = self._cached(("blocked_datasets",), get_blocked_datasets)
         logging.debug(f"Blocked datasets: {blocked_datasets}")
 
         filters: JobQueryFilters = {}
@@ -562,10 +627,14 @@ class Queue:
             filters["dataset__nin"] = blocked_datasets
         started_jobs = JobDocument.objects(status=Status.STARTED, **filters)
         with StepProfiler("queue.start_job", "started_jobs"):
-            started_job_namespaces = [job.namespace for job in started_jobs.only("namespace")]
+            started_job_namespaces = self._cached(
+                ("started_job_namespaces", difficulty_min, difficulty_max),
+                lambda: [job.namespace for job in started_jobs.only("namespace")],
+            )
         logging.debug(f"Started job namespaces: {started_job_namespaces}")
 
         next_waiting_job: Optional[JobDocument] = None
+        waiting_namespaces: list[str] = []
         if worker_size is not None:
             # With namespace__nin, the index is walked in created_at order and every key of an excluded namespace
             # is examined and discarded. A namespace with a huge backlog and one started job (e.g. 680k waiting
@@ -575,37 +644,32 @@ class Queue:
             # The distinct command is used directly: the pymongo type stubs do not expose its hint option.
             jobs_collection = JobDocument._get_collection()
             with StepProfiler("queue.start_job", "waiting_namespaces"):
-                waiting_namespaces: list[str] = jobs_collection.database.command(
-                    {
-                        "distinct": jobs_collection.name,
-                        "key": "namespace",
-                        "query": {
-                            "priority": priority.value,
-                            "status": Status.WAITING.value,
-                            "worker_size": worker_size.value,
-                        },
-                        "hint": NEXT_WAITING_JOB_BY_NAMESPACE_INDEX,
-                    }
-                )["values"]
+                waiting_namespaces = self._cached(
+                    ("waiting_namespaces", priority, worker_size),
+                    lambda: cast(
+                        list[str],
+                        jobs_collection.database.command(
+                            {
+                                "distinct": jobs_collection.name,
+                                "key": "namespace",
+                                "query": {
+                                    "priority": priority.value,
+                                    "status": Status.WAITING.value,
+                                    "worker_size": worker_size.value,
+                                },
+                                "hint": NEXT_WAITING_JOB_BY_NAMESPACE_INDEX,
+                            }
+                        )["values"],
+                    ),
+                )
+            if not waiting_namespaces:
+                raise EmptyQueueError("no job available with the priority")
             excluded_namespaces = set(started_job_namespaces)
-            candidate_namespaces = [
-                namespace for namespace in waiting_namespaces if namespace not in excluded_namespaces
-            ]
-            if candidate_namespaces:
-                with StepProfiler("queue.start_job", "next_waiting_job"):
-                    next_waiting_job = (
-                        JobDocument.objects(
-                            status=Status.WAITING,
-                            namespace__in=candidate_namespaces,
-                            priority=priority,
-                            **filters,
-                        )
-                        .order_by("+created_at")
-                        .only("type", "dataset", "revision", "config", "split", "priority", "unicity_id")
-                        .hint(NEXT_WAITING_JOB_BY_NAMESPACE_INDEX)
-                        .no_cache()
-                        .first()
-                    )
+            next_waiting_job = self._get_oldest_waiting_job_of_random_namespace(
+                namespaces=[namespace for namespace in waiting_namespaces if namespace not in excluded_namespaces],
+                priority=priority,
+                filters=filters,
+            )
         else:
             next_waiting_job = (
                 JobDocument.objects(
@@ -635,7 +699,10 @@ class Queue:
         # - exclude the waiting jobs which unicity_id is already in a started job
         # and, among the remaining waiting jobs, let's:
         # - select the oldest waiting job for the namespace with the least number of started jobs
-        started_unicity_ids = {job.unicity_id for job in started_jobs.only("unicity_id")}
+        started_unicity_ids = self._cached(
+            ("started_unicity_ids", difficulty_min, difficulty_max),
+            lambda: {job.unicity_id for job in started_jobs.only("unicity_id")},
+        )
         descending_frequency_namespace_counts = [
             [namespace, count] for namespace, count in Counter(started_job_namespaces).most_common()
         ]
@@ -643,23 +710,34 @@ class Queue:
         descending_frequency_namespace_groups = [
             [item[0] for item in data] for (_, data) in groupby(descending_frequency_namespace_counts, itemgetter(1))
         ]
+        waiting_namespaces_set = set(waiting_namespaces)
         # maybe we could get rid of this loop
         while descending_frequency_namespace_groups:
             least_common_namespaces_group = descending_frequency_namespace_groups.pop()
             logging.debug(f"Least common namespaces group: {least_common_namespaces_group}")
-            next_waiting_job = (
-                JobDocument.objects(
-                    status=Status.WAITING,
-                    namespace__in=least_common_namespaces_group,
-                    unicity_id__nin=started_unicity_ids,
+            if worker_size is not None:
+                next_waiting_job = self._get_oldest_waiting_job_of_random_namespace(
+                    namespaces=[
+                        namespace for namespace in least_common_namespaces_group if namespace in waiting_namespaces_set
+                    ],
                     priority=priority,
-                    **filters,
+                    filters=filters,
+                    excluded_unicity_ids=started_unicity_ids,
                 )
-                .order_by("+created_at")
-                .only("type", "dataset", "revision", "config", "split", "priority", "unicity_id")
-                .no_cache()
-                .first()
-            )
+            else:
+                next_waiting_job = (
+                    JobDocument.objects(
+                        status=Status.WAITING,
+                        namespace__in=least_common_namespaces_group,
+                        unicity_id__nin=started_unicity_ids,
+                        priority=priority,
+                        **filters,
+                    )
+                    .order_by("+created_at")
+                    .only("type", "dataset", "revision", "config", "split", "priority", "unicity_id")
+                    .no_cache()
+                    .first()
+                )
             if next_waiting_job is not None:
                 return next_waiting_job
         raise EmptyQueueError("no job available with the priority")
@@ -677,6 +755,7 @@ class Queue:
         - among the datasets that still have no started job.
         - if none, among the datasets that have the least started jobs:
           - ensuring that the unicity_id field is unique among the started jobs.
+        For a worker size, it's the oldest one of a namespace picked at random (see _get_next_waiting_job_for_priority).
 
         Args:
             difficulty_min (`int`, *optional*): if not None, only jobs with a difficulty greater or equal to this value are considered.
