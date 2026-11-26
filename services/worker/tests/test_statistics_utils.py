@@ -295,7 +295,7 @@ def test_string_statistics(
 def test_string_statistics_with_null_byte_labels() -> None:
     data = pl.DataFrame({"col": ["a\x00b"] * 3 + ["a\ufffdb"] * 2 + ["c"] * 5 + [None] * 2})
     computed = StringColumn(feature_name="col").compute_statistics(data=data)
-    assert computed["frequencies"] == {"a\ufffdb": 5, "c": 5}  # type: ignore[typeddict-item]
+    assert computed["frequencies"] == {"a\ufffdb": 5, "c": 5}
     assert computed["nan_count"] == 2
 
 
