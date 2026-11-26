@@ -283,7 +283,7 @@ make quality
 
 ## Tests
 
-The CI checks the tests a [GitHub action](./.github/workflows/unit-tests.yml). To manually test a job, library, service or worker:
+The CI checks the tests a [GitHub action](./.github/workflows/_unit-tests-python.yml). To manually test a job, library, service or worker:
 
 ```bash
 make test
