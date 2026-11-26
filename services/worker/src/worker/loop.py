@@ -7,22 +7,21 @@ import gc
 import glob
 import logging
 import os
-import pickle  # nosec B403
 import random
-import select
 import signal
 import threading
 import time
 import warnings
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Optional, TypedDict
+from multiprocessing.connection import Connection, Pipe
+from typing import Any, Optional, TypedDict
 
 import orjson
 import pyarrow as pa
 from filelock import FileLock
 from huggingface_hub import HfFileSystem
-from libcommon.dtos import JobInfo, JobResult
+from libcommon.dtos import CachedJob, JobInfo, JobResult
 from libcommon.prometheus import LongStepProfiler, StepProfiler
 from libcommon.queue.jobs import (
     AlreadyStartedJobError,
@@ -31,6 +30,7 @@ from libcommon.queue.jobs import (
     NoWaitingJobError,
     Queue,
 )
+from libcommon.storage import remove_dir
 from libcommon.storage_client import StorageClient
 from libcommon.utils import get_datetime
 from psutil import cpu_count, getloadavg, swap_memory, virtual_memory
@@ -49,8 +49,10 @@ MEMORY_WATCHDOG_INTERVAL_SECONDS = 1.0
 MEMORY_WATCHDOG_LOG_INTERVAL_SECONDS = 10.0
 # how often the loop checks the pod memory while a job runs in its child process
 JOB_MEMORY_CHECK_INTERVAL_SECONDS = 0.25
-# the size of a Linux pipe buffer
-PIPE_READ_SIZE = 1 << 16
+# The child process runs the next jobs too, with its connections already open, until it holds more private memory than
+# this share of the pod limit, or ran this many jobs: then the loop replaces it, and its memory goes back to the OS.
+JOB_CHILD_MAX_PRIVATE_MEMORY_PCT = 10
+JOB_CHILD_MAX_JOBS = 200
 
 
 def free_memory() -> None:
@@ -75,6 +77,26 @@ def _remove_prometheus_files(pid: int) -> None:
     if directory:
         for path in glob.glob(os.path.join(directory, f"*_{pid}.db")):
             os.remove(path)
+
+
+def _get_private_memory_bytes(pid: int) -> Optional[int]:
+    """The memory a process wrote to since it was forked: the pages it shares with its parent don't count."""
+    try:
+        with open(f"/proc/{pid}/smaps_rollup", "r") as f:
+            return 1024 * sum(
+                int(line.split()[1]) for line in f if line.startswith(("Private_Dirty:", "Private_Clean:"))
+            )
+    except (FileNotFoundError, ProcessLookupError, ValueError, PermissionError):
+        return None
+
+
+@dataclass
+class JobChild:
+    """A child process of the loop, that runs the jobs the loop sends through its connection."""
+
+    pid: int
+    connection: Connection
+    jobs: int = 0
 
 
 class WorkerState(TypedDict):
@@ -118,6 +140,9 @@ class Loop:
         self.blocked_by_pod_memory_deadline = 0.0
         self.current_job_info: Optional[JobInfo] = None
         self.current_job_started_at = 0.0
+        self.job_child: Optional[JobChild] = None
+        # the children that are replaced exit on their own: the loop reaps them later, instead of waiting for them
+        self.exiting_job_children: set[int] = set()
 
     def start_memory_watchdog(self) -> None:
         """Log the running job when the pod memory gets close to its limit."""
@@ -305,6 +330,8 @@ class Loop:
         except BaseException as err:
             logging.exception(f"quit due to an uncaught error: {err}")
             raise
+        finally:
+            self.stop_job_children()
 
     def should_exit_for_pod_memory(self) -> bool:
         """Free memory the first time the pod memory is too high, and give up if it stays too high.
@@ -373,40 +400,66 @@ class Loop:
         return True
 
     def run_job_in_child_process(self, job_manager: JobManager) -> Optional[list[JobResult]]:
-        """Compute the job in a forked child process, and return its results.
+        """Compute the job in the child process of the loop, and return its results.
 
-        The child gives all its memory back when it exits, so that a job doesn't leave memory behind for the next one.
         When the pod memory gets close to its limit, the loop kills the child before the kernel kills the whole pod.
 
         Returns:
             `list[JobResult]`, *optional*: the results of the job, or None if the child didn't compute them: the job has
               then been saved as an error and finished.
         """
-        # the child sends its results through the pipe, then exits: the end of the pipe wakes the loop up at once
-        results_read_fd, results_write_fd = os.pipe()
-        # The loop process must not run polars itself: a child forked after polars started its thread pool deadlocks.
-        # The objects of the loop stay shared with the child: else the child's gc writes to them, and copies them.
-        gc.freeze()
-        pid = os.fork()
-        if pid == 0:
-            os.close(results_read_fd)
-            os._exit(self._compute_in_child_process(job_manager, results_write_fd))
-        gc.unfreeze()
-        os.close(results_write_fd)
+        self.reap_job_children()
+        child = self.job_child or self.start_job_child()
+        self.job_child = None
         try:
-            exit_code, results = self._wait_for_child_process(pid, results_read_fd)
-        finally:
-            os.close(results_read_fd)
-            _remove_prometheus_files(pid)
-        if exit_code == 0:
-            job_results, job_manager.shortcut_jobs_by_key = pickle.loads(results)  # nosec B301
-            # ^ sent by the child of this process
-            return job_results  # type: ignore[no-any-return]
+            child.connection.send(job_manager.job_info)
+        except OSError:
+            # the idle child died since its last job
+            self.retire_job_child(child)
+            child = self.start_job_child()
+            child.connection.send(job_manager.job_info)
+        child.jobs += 1
+        cache_directory: Optional[str] = None
+        kill_ratio = self.app_config.worker.kill_job_memory_pct / 100
+        try:
+            while True:
+                if child.connection.poll(JOB_MEMORY_CHECK_INTERVAL_SECONDS):
+                    message: tuple[Any, ...] = child.connection.recv()
+                    if message[0] == "started":
+                        cache_directory = message[1]
+                        continue
+                    _, job_results, shortcut_jobs_by_key = message
+                    job_manager.shortcut_jobs_by_key = shortcut_jobs_by_key
+                    if self.can_run_more_jobs(child):
+                        self.job_child = child
+                    else:
+                        self.retire_job_child(child)
+                    return job_results  # type: ignore[no-any-return]
+                ratio = self.pod_unreclaimable_memory_ratio()
+                if ratio is not None and ratio >= kill_ratio:
+                    os.kill(child.pid, signal.SIGKILL)
+                    logging.warning(
+                        f"killed the running job: the anonymous and shared memory of the pod reached {ratio:.0%} of"
+                        " its limit"
+                    )
+                    break
+        except (EOFError, OSError):
+            # the child died: the kernel killed it, or it crashed
+            pass
+        child.connection.close()
+        _, status = os.waitpid(child.pid, 0)
+        _remove_prometheus_files(child.pid)
+        exit_code = (
+            None
+            if os.WIFSIGNALED(status) and os.WTERMSIG(status) == signal.SIGKILL
+            else os.waitstatus_to_exitcode(status)
+        )
         # the child didn't run the post_compute hook, which removes the cache directory of the job
-        job_manager.job_runner.post_compute()
-        if exit_code is None or exit_code == -signal.SIGKILL:
+        if cache_directory:
+            remove_dir(cache_directory)
+        if exit_code is None:
             # killed by the loop, or by the kernel between two checks. The retryable errors backfill retries the job,
-            # on a bigger worker
+            # and its next jobs go to a bigger worker
             job_manager.set_exceeded_maximum_memory()
         else:
             job_manager.set_stuck(
@@ -414,53 +467,72 @@ class Loop:
             )
         return None
 
-    def _compute_in_child_process(self, job_manager: JobManager, results_fd: int) -> int:
+    def start_job_child(self) -> JobChild:
+        loop_connection, child_connection = Pipe()
+        # The loop process must not run polars itself: a child forked after polars started its thread pool deadlocks.
+        # The objects of the loop stay shared with the child: else the child's gc writes to them, and copies them.
+        gc.freeze()
+        pid = os.fork()
+        if pid == 0:
+            loop_connection.close()
+            os._exit(self.run_job_child(child_connection))
+        gc.unfreeze()
+        child_connection.close()
+        return JobChild(pid=pid, connection=loop_connection)
+
+    def run_job_child(self, connection: Connection) -> int:
+        """Run the jobs that the loop sends, until the loop closes the connection."""
         # pymongo resets its connections in the child, the warning is noise
         warnings.filterwarnings("ignore", message="MongoClient opened before fork")
         try:
             storage_client = getattr(self.job_runner_factory, "storage_client", None)
             if isinstance(storage_client, StorageClient):
                 storage_client.reset_after_fork()
-            job_results = list(job_manager.run_job())
-            with os.fdopen(results_fd, "wb") as results_file:
-                pickle.dump((job_results, job_manager.shortcut_jobs_by_key), results_file)
-            return 0
+            while True:
+                try:
+                    job_info: JobInfo = connection.recv()
+                except EOFError:
+                    return 0
+                job_runner = self.job_runner_factory.create_job_runner(job_info)
+                cache_directory = getattr(job_runner, "planned_cache_subdirectory", None)
+                connection.send(("started", str(cache_directory) if cache_directory else None))
+                job_manager = JobManager(job_info=job_info, app_config=self.app_config, job_runner=job_runner)
+                job_results = list(job_manager.run_job())
+                shortcut_jobs_by_key: dict[str, CachedJob] = job_manager.shortcut_jobs_by_key
+                connection.send(("done", job_results, shortcut_jobs_by_key))
         except BaseException:
-            logging.exception("the child process of the job crashed")
+            logging.exception("the child process of the jobs crashed")
             return 1
 
-    def _wait_for_child_process(self, pid: int, results_fd: int) -> tuple[Optional[int], bytearray]:
-        """Wait for the child to exit, and return its exit code and its results. Kill it, and return None as the exit
-        code, if the pod memory gets close to its limit before the child sent its results."""
-        kill_ratio = self.app_config.worker.kill_job_memory_pct / 100
-        results = bytearray()
-        child_output = select.poll()
-        child_output.register(results_fd, select.POLLIN)
-        while True:
-            # read the results while the child writes them, so that the child never blocks on a full pipe
-            if child_output.poll(JOB_MEMORY_CHECK_INTERVAL_SECONDS * 1000):
-                chunk = os.read(results_fd, PIPE_READ_SIZE)
-                if not chunk:
-                    break
-                results += chunk
-                continue
-            # the child may have exited while a process it started keeps the pipe open
-            exited_pid, status = os.waitpid(pid, os.WNOHANG)
+    def can_run_more_jobs(self, child: JobChild) -> bool:
+        if child.jobs >= JOB_CHILD_MAX_JOBS:
+            return False
+        private_memory = _get_private_memory_bytes(child.pid)
+        pod_limit = self._get_pod_memory_limit_bytes()
+        if private_memory is None or not pod_limit:
+            return False
+        return private_memory < pod_limit * JOB_CHILD_MAX_PRIVATE_MEMORY_PCT / 100
+
+    def retire_job_child(self, child: JobChild) -> None:
+        """Let the child exit on its own: closing the connection ends its loop. reap_job_children() waits for it."""
+        child.connection.close()
+        self.exiting_job_children.add(child.pid)
+
+    def reap_job_children(self) -> None:
+        for pid in list(self.exiting_job_children):
+            exited_pid, _ = os.waitpid(pid, os.WNOHANG)
             if exited_pid:
-                while child_output.poll(0) and (chunk := os.read(results_fd, PIPE_READ_SIZE)):
-                    results += chunk
-                return os.waitstatus_to_exitcode(status), results
-            ratio = self.pod_unreclaimable_memory_ratio()
-            if not results and ratio is not None and ratio >= kill_ratio:
-                os.kill(pid, signal.SIGKILL)
-                os.waitpid(pid, 0)
-                logging.warning(
-                    f"killed the running job: the anonymous and shared memory of the pod reached {ratio:.0%} of its"
-                    " limit"
-                )
-                return None, results
-        _, status = os.waitpid(pid, 0)
-        return os.waitstatus_to_exitcode(status), results
+                self.exiting_job_children.discard(pid)
+                _remove_prometheus_files(pid)
+
+    def stop_job_children(self) -> None:
+        if self.job_child is not None:
+            self.retire_job_child(self.job_child)
+            self.job_child = None
+        for pid in self.exiting_job_children:
+            os.waitpid(pid, 0)
+            _remove_prometheus_files(pid)
+        self.exiting_job_children.clear()
 
     def set_worker_state(self, current_job_info: Optional[JobInfo]) -> None:
         self.current_job_info = current_job_info

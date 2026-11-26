@@ -35,6 +35,7 @@ from libcommon.processing_graph import (
 )
 from libcommon.prometheus import StepProfiler
 from libcommon.queue.jobs import Queue
+from libcommon.queue.metrics import WorkerSizeJobsCountDocument
 from libcommon.simple_cache import (
     CachedArtifactNotFoundError,
     delete_dataset_responses,
@@ -1329,9 +1330,9 @@ def save_job_result(job_result: JobResult, failed_runs: int) -> None:
 
     if output["http_status"] != HTTPStatus.OK:
         failed_runs += 1
-    # a job killed for memory is killed again on the next revisions: their jobs go to a bigger worker
+    # a job killed for memory is killed again on the next revisions: their jobs go to the next bigger worker
     min_difficulty = (
-        min(DEFAULT_DIFFICULTY_MAX, job_info["difficulty"] + DIFFICULTY_BONUS_BY_FAILED_RUNS)
+        WorkerSizeJobsCountDocument.get_next_worker_size_difficulty(job_info["difficulty"])
         if output["error_code"] == EXCEEDED_MAXIMUM_MEMORY_ERROR_CODE
         else None
     )

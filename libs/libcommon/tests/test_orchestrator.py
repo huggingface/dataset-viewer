@@ -617,11 +617,17 @@ def test_upsert_response_failed_runs() -> None:
 
 def test_a_memory_kill_sets_a_min_difficulty_kept_across_revisions_and_successes() -> None:
     run_job(REVISION_NAME, HTTPStatus.NOT_IMPLEMENTED, "JobManagerExceededMaximumMemoryError", difficulty=60)
-    assert get_response_metadata(kind=STEP_DA, dataset=DATASET_NAME)["min_difficulty"] == 80
+    assert get_response_metadata(kind=STEP_DA, dataset=DATASET_NAME)["min_difficulty"] == 71
     run_job(OTHER_REVISION_NAME, HTTPStatus.OK)
-    assert get_response_metadata(kind=STEP_DA, dataset=DATASET_NAME)["min_difficulty"] == 80
+    assert get_response_metadata(kind=STEP_DA, dataset=DATASET_NAME)["min_difficulty"] == 71
     run_job(REVISION_NAME, HTTPStatus.INTERNAL_SERVER_ERROR, "StreamingRowsError")
-    assert get_response_metadata(kind=STEP_DA, dataset=DATASET_NAME)["min_difficulty"] == 80
+    assert get_response_metadata(kind=STEP_DA, dataset=DATASET_NAME)["min_difficulty"] == 71
+
+
+@pytest.mark.parametrize("difficulty,expected", [(20, 41), (40, 41), (41, 71), (70, 71), (71, 100), (100, 100)])
+def test_a_memory_kill_sends_the_next_jobs_to_the_next_worker_size(difficulty: int, expected: int) -> None:
+    run_job(REVISION_NAME, HTTPStatus.NOT_IMPLEMENTED, "JobManagerExceededMaximumMemoryError", difficulty=difficulty)
+    assert get_response_metadata(kind=STEP_DA, dataset=DATASET_NAME)["min_difficulty"] == expected
 
 
 def test_other_errors_set_no_min_difficulty() -> None:
