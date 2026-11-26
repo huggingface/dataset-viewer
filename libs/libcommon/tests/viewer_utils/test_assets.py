@@ -1,3 +1,4 @@
+import gc
 import os.path
 import threading
 from collections.abc import Mapping
@@ -335,9 +336,20 @@ def test_create_mesh_thumbnail_frees_the_render_memory(
 ) -> None:
     """The memory of a render goes back to the OS: else a /rows request of 100 meshes keeps 6.7 GiB in the worker."""
     ensure_mesh_rendering()
+    mesh = trimesh.load(PATH_TO_MESH_GLB)
+    assert isinstance(mesh, trimesh.Scene)
     calls: list[str] = []
-    monkeypatch.setattr(asset_module.gc, "collect", lambda: calls.append("gc.collect") or 0)
-    monkeypatch.setattr(asset_module, "_MALLOC_TRIM", lambda pad: calls.append("malloc_trim") or 1)
+
+    def collect() -> int:
+        calls.append("gc.collect")
+        return 0
+
+    def malloc_trim(pad: int) -> int:
+        calls.append("malloc_trim")
+        return 1
+
+    monkeypatch.setattr(gc, "collect", collect)
+    monkeypatch.setattr(asset_module, "_MALLOC_TRIM", malloc_trim)
     create_mesh_thumbnail(
         dataset=MESH_DATASET,
         revision=DEFAULT_REVISION,
@@ -346,7 +358,7 @@ def test_create_mesh_thumbnail_frees_the_render_memory(
         row_idx=MESH_ROW_IDX,
         column=DEFAULT_COLUMN_NAME,
         filename="mesh.glb",
-        load_mesh=lambda: trimesh.load(PATH_TO_MESH_GLB),
+        load_mesh=lambda: mesh,
         storage_client=storage_client_with_url_preparator,
     )
     assert calls[-2:] == ["gc.collect", "malloc_trim"]
