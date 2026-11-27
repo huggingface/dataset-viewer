@@ -131,7 +131,8 @@ class JobManager:
     def save_job_result(self, job_result: JobResult) -> None:
         try:
             save_job_result(job_result=job_result, failed_runs=self.failed_runs)
-        except InvalidDocument as err:
+        # OverflowError: BSON only stores integers of up to 8 bytes
+        except (InvalidDocument, OverflowError) as err:
             # the message of the exception can contain the content
             self.warning(f"the response of {job_result['job_info']} could not be stored ({type(err).__name__})")
             error = ResponseNotStorableError("The response could not be stored in the cache.")

@@ -1,5 +1,6 @@
 from collections.abc import Iterator
 from http import HTTPStatus
+from typing import Any
 
 import pytest
 from libcommon.dtos import JobInfo, Priority, Status
@@ -304,7 +305,16 @@ def test_job_runner_set_stuck(app_config: AppConfig) -> None:
     # TODO: check if it stores the correct dataset git sha and job version when it's implemented
 
 
-def test_save_job_result_not_storable(app_config: AppConfig) -> None:
+@pytest.mark.parametrize(
+    "content",
+    [
+        # BSON refuses the NULL byte in a key
+        {"frequencies": {"a\x00b": 1}},
+        # BSON only stores integers of up to 8 bytes
+        {"rows": [{"row": {"id": 2**64}}]},
+    ],
+)
+def test_save_job_result_not_storable(app_config: AppConfig, content: dict[str, Any]) -> None:
     queue = Queue()
     queue.add_job(
         job_type=JOB_TYPE,
@@ -326,7 +336,7 @@ def test_save_job_result_not_storable(app_config: AppConfig) -> None:
             "job_runner_version": job_manager.job_runner_version,
             "is_success": True,
             "output": {
-                "content": {"frequencies": {"a\x00b": 1}},
+                "content": content,
                 "http_status": HTTPStatus.OK,
                 "error_code": None,
                 "details": None,

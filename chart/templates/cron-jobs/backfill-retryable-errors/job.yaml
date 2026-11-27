@@ -10,6 +10,8 @@ metadata:
   namespace: {{ .Release.Namespace }}
 spec:
   schedule: {{ .Values.backfillRetryableErrors.schedule | quote }}
+  # a run can last longer than the interval: overlapping runs analyze the same datasets and load the database
+  concurrencyPolicy: Forbid
   jobTemplate:
     spec:
       ttlSecondsAfterFinished: 1200
