@@ -102,6 +102,9 @@ from mongodb_migration.migrations._20261013120000_queue_add_worker_size_to_jobs 
 from mongodb_migration.migrations._20261125160000_cache_add_min_difficulty_index import (
     MigrationCacheAddMinDifficultyIndex,
 )
+from mongodb_migration.migrations._20261126120000_queue_add_started_job_unicity_index import (
+    MigrationQueueAddStartedJobUnicityIndex,
+)
 from mongodb_migration.renaming_migrations import (
     CacheRenamingMigration,
     QueueRenamingMigration,
@@ -429,5 +432,8 @@ class MigrationsCollector:
             ),
             MigrationCacheAddMinDifficultyIndex(
                 version="20261125160000", description="add the 'min_difficulty' partial index to the cache"
+            ),
+            MigrationQueueAddStartedJobUnicityIndex(
+                version="20261126120000", description="add the unique index on the started jobs of the queue"
             ),
         ]

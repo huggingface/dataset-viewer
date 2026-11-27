@@ -27,7 +27,6 @@ from libcommon.queue.jobs import (
     FAIRNESS_CACHE_TTL_SECONDS,
     AlreadyStartedJobError,
     EmptyQueueError,
-    LockTimeoutError,
     NoWaitingJobError,
     Queue,
 )
@@ -385,7 +384,7 @@ class Loop:
                 self.start_job_retries_without_sleep = 0
                 self.set_worker_state(current_job_info=job_info)
                 logging.debug(f"job assigned: {job_info}")
-            except (EmptyQueueError, AlreadyStartedJobError, LockTimeoutError, NoWaitingJobError) as e:
+            except (EmptyQueueError, AlreadyStartedJobError, NoWaitingJobError) as e:
                 START_JOB_NO_JOB_TOTAL.labels(reason=type(e).__name__).inc()
                 self.set_worker_state(current_job_info=None)
                 logging.debug(e)

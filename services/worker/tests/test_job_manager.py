@@ -302,3 +302,44 @@ def test_job_runner_set_stuck(app_config: AppConfig) -> None:
     assert response.details == expected_error
     assert response.failed_runs == failed_runs + 1
     # TODO: check if it stores the correct dataset git sha and job version when it's implemented
+
+
+def test_save_job_result_not_storable(app_config: AppConfig) -> None:
+    queue = Queue()
+    queue.add_job(
+        job_type=JOB_TYPE,
+        dataset="dataset",
+        revision="revision",
+        config=None,
+        split=None,
+        priority=Priority.NORMAL,
+        difficulty=50,
+    )
+    job_info = queue.start_job()
+    job_manager = JobManager(
+        job_info=job_info, app_config=app_config, job_runner=DummyJobRunner(job_info=job_info, app_config=app_config)
+    )
+
+    job_manager.save_job_result(
+        {
+            "job_info": job_info,
+            "job_runner_version": job_manager.job_runner_version,
+            "is_success": True,
+            "output": {
+                "content": {"frequencies": {"a\x00b": 1}},
+                "http_status": HTTPStatus.OK,
+                "error_code": None,
+                "details": None,
+                "progress": 1.0,
+            },
+            "duration": 1.0,
+        }
+    )
+    job_manager.finish()
+
+    assert JobDocument.objects(pk=job_info["job_id"]).count() == 0
+    response = CachedResponseDocument.objects(kind=JOB_TYPE, dataset="dataset").get()
+    assert response.http_status == HTTPStatus.NOT_IMPLEMENTED
+    assert response.error_code == "ResponseNotStorableError"
+    assert response.content == {"error": "The response could not be stored in the cache."}
+    assert response.failed_runs == 1

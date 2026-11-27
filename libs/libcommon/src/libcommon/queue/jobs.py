@@ -12,7 +12,6 @@ from datetime import datetime, timedelta
 from itertools import groupby
 from operator import itemgetter
 from typing import Any, Generic, Optional, TypedDict, TypeVar, cast
-from uuid import uuid4
 
 import bson
 import pandas as pd
@@ -22,20 +21,24 @@ from mongoengine import Document
 from mongoengine.errors import DoesNotExist
 from mongoengine.fields import DateTimeField, EnumField, IntField, StringField
 from mongoengine.queryset.queryset import QuerySet
+from pymongo import DESCENDING, ReturnDocument
+from pymongo.errors import DuplicateKeyError
 from pymongo.read_preferences import ReadPreference
+from pymongo.write_concern import WriteConcern
 from pymongoarrow.api import Schema, find_pandas_all
 
 from libcommon.constants import (
     DEFAULT_DIFFICULTY_MAX,
     DEFAULT_DIFFICULTY_MIN,
-    LOCK_TAKE_OVER_SECONDS_TO_START_JOB,
     QUEUE_COLLECTION_JOBS,
     QUEUE_MONGOENGINE_ALIAS,
+    QUEUE_STARTED_JOB_UNICITY_INDEX_FIELDS,
+    QUEUE_STARTED_JOB_UNICITY_INDEX_FILTER,
+    QUEUE_STARTED_JOB_UNICITY_INDEX_NAME,
 )
 from libcommon.dtos import FlatJobInfo, JobInfo, Priority, Status, WorkerSize
 from libcommon.prometheus import StepProfiler
 from libcommon.queue.dataset_blockages import DATASET_STATUS_BLOCKED, DATASET_STATUS_NORMAL, get_blocked_datasets
-from libcommon.queue.lock import lock, release_lock
 from libcommon.queue.metrics import (
     WorkerSizeJobsCountDocument,
     decrease_metric,
@@ -54,7 +57,7 @@ T = TypeVar("T")
 
 NEXT_WAITING_JOB_BY_NAMESPACE_INDEX = "priority_1_status_1_worker_size_1_namespace_1_created_at_1_dataset_1"
 # For this long, a namespace that got a started job is still a candidate, and a new namespace is not one yet: the start
-# itself is protected by the lock and the AlreadyStartedJobError check.
+# itself is atomic, and the started job unicity index rejects a second one.
 FAIRNESS_CACHE_TTL_SECONDS = 5.0
 # the namespaces tried one by one before querying the oldest waiting job among all of them
 NAMESPACE_RANDOM_PICKS = 3
@@ -111,10 +114,6 @@ class JobDoesNotExistError(DoesNotExist):
 
 
 class AlreadyStartedJobError(Exception):
-    pass
-
-
-class LockTimeoutError(Exception):
     pass
 
 
@@ -198,6 +197,13 @@ class JobDocument(Document):
             ("priority", "status", "type", "namespace", "unicity_id", "created_at", "-difficulty"),
             ("status", "type"),
             ("unicity_id", "status", "-created_at"),
+            # At most one started job per unicity_id: start_job relies on it instead of a lock.
+            {
+                "fields": QUEUE_STARTED_JOB_UNICITY_INDEX_FIELDS,
+                "name": QUEUE_STARTED_JOB_UNICITY_INDEX_NAME,
+                "unique": True,
+                "partialFilterExpression": QUEUE_STARTED_JOB_UNICITY_INDEX_FILTER,
+            },
         ],
     }
     type = StringField(required=True)
@@ -520,8 +526,7 @@ class Queue:
     def delete_job(self, job_id: str) -> JobDocument:
         """Delete a job of the queue, whatever its status.
 
-        The metrics are updated, and the lock associated with the job is released, so that another job with the
-        same unicity_id can be started.
+        The metrics are updated. Once a started job is deleted, another job with the same unicity_id can be started.
 
         Beware that a started job is only deleted from the queue: the worker that processes it is not interrupted,
         it can even save its result in the cache. But its call to finish_job() will be a no-op, as the job does not
@@ -540,7 +545,6 @@ class Queue:
         # ^ raises JobDoesNotExistError
         logging.info(f"Deleting job {job_id} ({job.unicity_id}), status: {job.status.value}")
         decrease_metric(job_type=job.type, status=job.status, difficulty=job.difficulty)
-        release_lock(key=job.unicity_id)
         job.delete()
         return job
 
@@ -779,73 +783,54 @@ class Queue:
     def _start_newest_job_and_delete_others(self, job: JobDocument) -> JobDocument:
         """Start a job (the newest one for unicity_id) and delete the other ones.
 
-        A lock is used to ensure that the job is not started by another worker.
+        The job is started with one conditional update: only a waiting job can be started, and the unique index on
+        the started jobs rejects a second started job for the same unicity_id.
 
         Args:
             job (`JobDocument`): the job to start
 
         Raises:
             [`AlreadyStartedJobError`]: if a started job already exist for the same unicity_id.
-            [`LockTimeoutError`]: if the lock could not be acquired after 20 retries.
+            [`NoWaitingJobError`]: if no waiting job is left for the same unicity_id (another worker started it).
 
         Returns:
             `JobDocument`: the started job
         """
-        # could be a method of Job
-        RETRIES = 20
-        # uuid is used to differentiate between workers
-        # otherwise another worker might acquire the lock
-        lock_owner = str(uuid4())
-        try:
-            # retry for 2 seconds
-            with (
-                StepProfiler("queue.start_job", "start_newest_job"),
-                lock(
-                    key=job.unicity_id,
-                    owner=lock_owner,
-                    sleeps=[0.1] * RETRIES,
-                    ttl=lock.TTL.LOCK_TTL_SECONDS_TO_START_JOB,
-                    # starting a job takes milliseconds: a worker killed while starting it leaves the lock behind, and every
-                    # worker of the same size would wait for the TTL, because they all pick the same next job
-                    take_over_after_seconds=LOCK_TAKE_OVER_SECONDS_TO_START_JOB,
-                ),
-            ):
-                # get all the pending jobs for the same unicity_id
+        with StepProfiler("queue.start_job", "start_newest_job"):
+            # the mongo-types stubs miss the WriteConcern arguments and type ReturnDocument.AFTER as a bool
+            collection = JobDocument._get_collection().with_options(
+                write_concern=WriteConcern(w="majority", fsync=True)  # type: ignore[call-arg]
+            )
+            try:
                 # most recently queued first: created_at can be inherited (PREVIEW_PATH)
-                waiting_jobs = JobDocument.objects(unicity_id=job.unicity_id).order_by("-id")
-                datetime = get_datetime()
-                # raise if any job has already been started for unicity_id
-                num_started_jobs = waiting_jobs(status=Status.STARTED).count()
-                if num_started_jobs > 0:
-                    if num_started_jobs > 1:
-                        logging.critical(f"job {job.unicity_id} has been started {num_started_jobs} times. Max is 1.")
-                    raise AlreadyStartedJobError(f"job {job.unicity_id} has been started by another worker")
-                # get the most recent one
-                first_job = waiting_jobs.first()
-                if not first_job:
-                    raise NoWaitingJobError(f"no waiting job could be found for {job.unicity_id}")
-                # start it
-                if not JobDocument.objects(pk=str(first_job.pk), status=Status.WAITING).update(
-                    started_at=datetime,
-                    status=Status.STARTED,
-                    write_concern={"w": "majority", "fsync": True},
-                    read_concern={"level": "majority"},
-                ):
-                    raise AlreadyStartedJobError(f"job {job.unicity_id} has been started by another worker")
-                update_metrics_for_type(
-                    dataset=first_job.dataset,
-                    job_type=first_job.type,
-                    previous_status=Status.WAITING,
-                    new_status=Status.STARTED,
-                    difficulty=first_job.difficulty,
+                started_job_son = collection.find_one_and_update(
+                    {"unicity_id": job.unicity_id, "status": Status.WAITING.value},
+                    {"$set": {"status": Status.STARTED.value, "started_at": get_datetime()}},
+                    sort=[("_id", DESCENDING)],
+                    return_document=ReturnDocument.AFTER,  # type: ignore[arg-type]
                 )
-                # and delete the other waiting jobs, if any
-                self.delete_waiting_jobs_by_job_id(job_ids=[job.pk for job in waiting_jobs if job.pk != first_job.pk])
-                return first_job.reload()
-        except TimeoutError as err:
-            raise LockTimeoutError(
-                f"could not acquire the lock for job {job.unicity_id} after {RETRIES} retries."
-            ) from err
+            except DuplicateKeyError as err:
+                raise AlreadyStartedJobError(f"job {job.unicity_id} has been started by another worker") from err
+            if started_job_son is None:
+                raise NoWaitingJobError(f"no waiting job could be found for {job.unicity_id}")
+            started_job = JobDocument._from_son(started_job_son)
+            update_metrics_for_type(
+                dataset=started_job.dataset,
+                job_type=started_job.type,
+                previous_status=Status.WAITING,
+                new_status=Status.STARTED,
+                difficulty=started_job.difficulty,
+            )
+            # and delete the older waiting jobs, if any: a job queued after the start must run after this one
+            other_waiting_job_ids = [
+                other_job.pk
+                for other_job in JobDocument.objects(
+                    unicity_id=job.unicity_id, status=Status.WAITING, pk__lt=started_job.pk
+                ).only("id")
+            ]
+            if other_waiting_job_ids:
+                self.delete_waiting_jobs_by_job_id(job_ids=other_waiting_job_ids)
+            return started_job
 
     def start_job(
         self,
@@ -854,8 +839,7 @@ class Queue:
     ) -> JobInfo:
         """Start the next job in the queue.
 
-        The job is moved from the waiting state to the started state. A lock is used to ensure that only one worker
-        can start a job at a time.
+        The job is moved from the waiting state to the started state. Only one job per unicity_id can be started.
 
         Args:
             difficulty_min: if not None, only jobs with a difficulty greater or equal to this value are considered.
@@ -865,7 +849,7 @@ class Queue:
             [`EmptyQueueError`]: if there is no job in the queue, within the limit of the maximum number of started jobs
                 for a dataset
             [`AlreadyStartedJobError`]: if a started job already exist for the same unicity_id
-            [`LockTimeoutError`]: if the lock cannot be acquired
+            [`NoWaitingJobError`]: if the job has been started by another worker in the meantime
 
         Returns:
             `JobInfo`: the job id, the type, the input arguments: dataset, revision, config and split
@@ -950,7 +934,7 @@ class Queue:
     def finish_job(self, job_id: str) -> Optional[Priority]:
         """Finish a job in the queue.
 
-        The job is deleted. The existing locks are released. The duration is saved in pastJobs.
+        The job is deleted. The duration is saved in pastJobs.
 
         Args:
             job_id (`str`): id of the job
@@ -976,7 +960,6 @@ class Queue:
             )
         job_priority = job.priority
         job.delete()
-        release_lock(key=job.unicity_id)
         if was_blocked:
             # The dataset is now rate-limited. Its waiting jobs must leave the queue: the next-waiting-job
             # query excludes blocked datasets with a residual `$nin` filter, so every worker would skip
@@ -1023,7 +1006,6 @@ class Queue:
         existing_waiting_jobs = JobDocument.objects(dataset=dataset, status=Status.WAITING)
         for job in existing_waiting_jobs.no_cache():
             decrease_metric(job_type=job.type, status=job.status, difficulty=job.difficulty)
-            release_lock(key=job.unicity_id)
         num_deleted_jobs = existing_waiting_jobs.delete()
         return 0 if num_deleted_jobs is None else num_deleted_jobs
 

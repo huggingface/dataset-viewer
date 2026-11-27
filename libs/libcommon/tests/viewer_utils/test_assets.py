@@ -1,3 +1,4 @@
+import gc
 import os.path
 import threading
 from collections.abc import Mapping
@@ -15,6 +16,7 @@ from pdfplumber import open
 from PIL import Image as PILImage
 
 from libcommon.storage_client import StorageClient
+from libcommon.viewer_utils import asset as asset_module
 from libcommon.viewer_utils.asset import (
     DATASET_GIT_REVISION_PLACEHOLDER,
     MESH_THUMBNAIL_HEIGHT,
@@ -327,6 +329,39 @@ def test_create_mesh_thumbnail_scene(storage_client_with_url_preparator: Storage
     pixels = assert_thumbnail(value, storage_client_with_url_preparator, filename="mesh.glb")
     opaque_pixels = pixels[pixels[:, :, 3] > 0][:, :3]
     assert len(np.unique(opaque_pixels.reshape(-1, 3), axis=0)) > 1, "the geometries are lit and textured"
+
+
+def test_create_mesh_thumbnail_frees_the_render_memory(
+    storage_client_with_url_preparator: StorageClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The memory of a render goes back to the OS: else a /rows request of 100 meshes keeps 6.7 GiB in the worker."""
+    ensure_mesh_rendering()
+    mesh = trimesh.load(PATH_TO_MESH_GLB)
+    assert isinstance(mesh, trimesh.Scene)
+    calls: list[str] = []
+
+    def collect() -> int:
+        calls.append("gc.collect")
+        return 0
+
+    def malloc_trim(pad: int) -> int:
+        calls.append("malloc_trim")
+        return 1
+
+    monkeypatch.setattr(gc, "collect", collect)
+    monkeypatch.setattr(asset_module, "_MALLOC_TRIM", malloc_trim)
+    create_mesh_thumbnail(
+        dataset=MESH_DATASET,
+        revision=DEFAULT_REVISION,
+        config=MESH_CONFIG,
+        split=MESH_SPLIT,
+        row_idx=MESH_ROW_IDX,
+        column=DEFAULT_COLUMN_NAME,
+        filename="mesh.glb",
+        load_mesh=lambda: mesh,
+        storage_client=storage_client_with_url_preparator,
+    )
+    assert calls[-2:] == ["gc.collect", "malloc_trim"]
 
 
 def test_create_mesh_thumbnail_skips_unsupported_geometry(

@@ -325,7 +325,6 @@ def upsert_response(
         .first()
     )
     if previous is not None:
-        decrease_metric(kind=kind, http_status=previous.http_status, error_code=previous.error_code)
         if previous.dataset_git_revision == dataset_git_revision:
             # a recompute (eg. from parquet after streaming, or a retry) keeps the per-revision timings, and missing
             # ones stay unknown (entry computed before the fields existed, or moved by a smart update)
@@ -350,6 +349,8 @@ def upsert_response(
         # an explicit None would enter the partial index of min_difficulty
         **({} if min_difficulty is None else {"max__min_difficulty": min_difficulty}),
     )
+    if previous is not None:
+        decrease_metric(kind=kind, http_status=previous.http_status, error_code=previous.error_code)
     increase_metric(kind=kind, http_status=http_status, error_code=error_code)
     return first_job_created_at
 

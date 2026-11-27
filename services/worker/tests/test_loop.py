@@ -8,7 +8,7 @@ from typing import Optional
 import pytest
 from huggingface_hub import HfFileSystem
 from libcommon.dtos import JobInfo
-from libcommon.queue.jobs import AlreadyStartedJobError, EmptyQueueError, LockTimeoutError, NoWaitingJobError
+from libcommon.queue.jobs import AlreadyStartedJobError, EmptyQueueError, NoWaitingJobError
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import get_response
 from pytest import LogCaptureFixture, MonkeyPatch
@@ -67,7 +67,7 @@ def test_process_next_job(
     assert not loop.queue.is_job_in_process(job_type=JOB_TYPE, dataset=dataset, revision=revision)
 
 
-@pytest.mark.parametrize("error", [NoWaitingJobError, AlreadyStartedJobError, LockTimeoutError])
+@pytest.mark.parametrize("error", [NoWaitingJobError, AlreadyStartedJobError])
 def test_process_next_job_retries_without_sleep_a_few_times_after_a_collision(
     app_config: AppConfig,
     queue_mongo_resource: QueueMongoResource,

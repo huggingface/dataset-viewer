@@ -1,6 +1,9 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+import ctypes
+import ctypes.util
+import gc
 import logging
 import os
 import threading
@@ -38,6 +41,8 @@ DATASET_GIT_REVISION_PLACEHOLDER = "{dataset_git_revision}"
 # A 3D file of a few tens of MB takes more than 1GB to load and render, and a page of rows renders its cells in
 # parallel: one render at a time per process keeps a page of large meshes within the memory of the pod.
 MESH_RENDER_LOCK = threading.Lock()
+# glibc keeps freed memory in its arenas until asked to return it to the OS; malloc_trim is glibc-only.
+_MALLOC_TRIM = getattr(ctypes.CDLL(ctypes.util.find_library("c")), "malloc_trim", None)
 # the size of the rendered 3D thumbnails, in pixels
 MESH_THUMBNAIL_WIDTH = 800
 MESH_THUMBNAIL_HEIGHT = 600
@@ -1020,9 +1025,18 @@ def create_mesh_thumbnail(
     if storage_client.overwrite or not storage_client.exists(thumbnail_storage_path):
         thumbnail_buffer = BytesIO()
         with MESH_RENDER_LOCK:
-            _render_trimesh_scene_to_png(
-                load_mesh(), thumbnail_buffer, width=MESH_THUMBNAIL_WIDTH, height=MESH_THUMBNAIL_HEIGHT
-            )
+            try:
+                _render_trimesh_scene_to_png(
+                    load_mesh(), thumbnail_buffer, width=MESH_THUMBNAIL_WIDTH, height=MESH_THUMBNAIL_HEIGHT
+                )
+            finally:
+                # The meshes of a render stay in reference cycles (PyOpenGL keeps the traceback of the EGL library
+                # it fails to load, with the render frame), and the garbage collector seldom runs during renders.
+                # Freed, their memory stays in glibc's arenas: about 600 MiB per mesh, 6.7 GiB after a /rows
+                # request of 100 meshes, until the worker is killed for memory.
+                gc.collect()
+                if _MALLOC_TRIM is not None:
+                    _MALLOC_TRIM(0)
         with storage_client._fs.open(storage_client.get_full_path(thumbnail_storage_path), "wb") as thumbnail_file:
             thumbnail_file.write(thumbnail_buffer.getvalue())
 
