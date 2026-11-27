@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
 from typing import Optional
 from unittest.mock import patch
@@ -8,10 +9,17 @@ from unittest.mock import patch
 import pytest
 import pytz
 
-from libcommon.constants import QUEUE_TTL_SECONDS
+from libcommon.constants import QUEUE_STARTED_JOB_UNICITY_INDEX_NAME, QUEUE_TTL_SECONDS
 from libcommon.dtos import JobInfo, Priority, Status, WorkerSize
 from libcommon.queue.dataset_blockages import DATASET_STATUS_NORMAL, block_dataset
-from libcommon.queue.jobs import EmptyQueueError, JobDocument, JobDoesNotExistError, Queue
+from libcommon.queue.jobs import (
+    AlreadyStartedJobError,
+    EmptyQueueError,
+    JobDocument,
+    JobDoesNotExistError,
+    NoWaitingJobError,
+    Queue,
+)
 from libcommon.queue.lock import Lock
 from libcommon.queue.metrics import JobTotalMetricDocument, WorkerSizeJobsCountDocument
 from libcommon.queue.past_jobs import JOB_DURATION_MIN_SECONDS, PastJobDocument
@@ -979,11 +987,109 @@ def test_rate_limited_dataset(
             queue.start_job()
 
 
-def test_start_job_takes_over_the_lock_of_a_dead_worker() -> None:
+def test_start_job_ignores_a_lock_left_by_a_dead_worker() -> None:
     queue = Queue()
     queue.add_job(job_type="test_type", dataset="dataset", revision="revision", difficulty=50)
     job = JobDocument.objects(dataset="dataset").get()
-    # a worker killed while it started this job
-    Lock(key=job.unicity_id, owner="dead-worker", updated_at=get_datetime() - timedelta(minutes=1)).save()
+    # a worker of the previous version killed while it started this job
+    Lock(key=job.unicity_id, owner="dead-worker", updated_at=get_datetime()).save()
 
     assert queue.start_job()["params"]["dataset"] == "dataset"
+
+
+def test_start_job_twice_starts_it_once() -> None:
+    queue = Queue()
+    queue.add_job(job_type="test_type", dataset="dataset", revision="revision", difficulty=50)
+    # two workers selected the same job
+    selected_job = queue.get_next_waiting_job()
+
+    started_job = queue._start_newest_job_and_delete_others(job=selected_job)
+    assert started_job.status == Status.STARTED
+    assert started_job.started_at is not None
+    with pytest.raises(NoWaitingJobError):
+        queue._start_newest_job_and_delete_others(job=selected_job)
+
+    assert JobDocument.objects(status=Status.STARTED).count() == 1
+    assert_metric_jobs_per_type(job_type="test_type", status=Status.WAITING, total=0)
+    assert_metric_jobs_per_type(job_type="test_type", status=Status.STARTED, total=1)
+
+
+def test_start_job_concurrently_starts_one_job_per_unicity_id() -> None:
+    queue = Queue()
+    for _ in range(3):
+        queue.add_job(job_type="test_type", dataset="dataset", revision="revision", difficulty=50)
+    selected_job = queue.get_next_waiting_job()
+
+    def start() -> str:
+        try:
+            return str(queue._start_newest_job_and_delete_others(job=selected_job).pk)
+        except (AlreadyStartedJobError, NoWaitingJobError) as err:
+            return type(err).__name__
+
+    with ThreadPoolExecutor(max_workers=10) as executor:
+        results = list(executor.map(lambda _: start(), range(10)))
+
+    started_job_ids = [result for result in results if result not in {"AlreadyStartedJobError", "NoWaitingJobError"}]
+    assert len(started_job_ids) == 1
+    assert [str(job.pk) for job in JobDocument.objects(status=Status.STARTED)] == started_job_ids
+    assert_metric_jobs_per_type(job_type="test_type", status=Status.STARTED, total=1)
+
+
+def test_start_job_starts_the_newest_job_and_deletes_the_older_ones() -> None:
+    queue = Queue()
+    older_job = queue.add_job(job_type="test_type", dataset="dataset", revision="revision", difficulty=50)
+    newest_job = queue.add_job(job_type="test_type", dataset="dataset", revision="revision", difficulty=50)
+    # the older job is the one selected: created_at can be inherited
+    older_job.update(created_at=get_datetime() - timedelta(days=1))
+
+    job_info = queue.start_job()
+
+    assert job_info["job_id"] == str(newest_job.pk)
+    assert JobDocument.objects(pk=older_job.pk).count() == 0
+    assert_metric_jobs_per_type(job_type="test_type", status=Status.WAITING, total=0)
+    assert_metric_jobs_per_type(job_type="test_type", status=Status.STARTED, total=1)
+    assert_metric_jobs_per_worker(worker_size=WorkerSize.medium, jobs_count=0)
+
+
+def test_start_job_keeps_a_job_queued_while_it_starts() -> None:
+    queue = Queue()
+    queue.add_job(job_type="test_type", dataset="dataset", revision="revision", difficulty=50)
+    selected_job = queue.get_next_waiting_job()
+    jobs_queued_while_starting: list[JobDocument] = []
+
+    def queue_another_job(**kwargs: object) -> None:
+        jobs_queued_while_starting.append(
+            queue.add_job(job_type="test_type", dataset="dataset", revision="revision", difficulty=50)
+        )
+
+    with patch("libcommon.queue.jobs.update_metrics_for_type", side_effect=queue_another_job):
+        queue._start_newest_job_and_delete_others(job=selected_job)
+
+    assert jobs_queued_while_starting[0].reload().status == Status.WAITING
+
+
+def test_start_job_with_a_started_job_of_the_same_unicity_id() -> None:
+    queue = Queue()
+    queue.add_job(job_type="test_type", dataset="dataset", revision="revision", difficulty=50)
+    queue.start_job()
+    waiting_job = queue.add_job(job_type="test_type", dataset="dataset", revision="revision", difficulty=50)
+
+    with pytest.raises(AlreadyStartedJobError):
+        queue._start_newest_job_and_delete_others(job=waiting_job)
+
+    assert waiting_job.reload().status == Status.WAITING
+    assert_metric_jobs_per_type(job_type="test_type", status=Status.WAITING, total=1)
+    assert_metric_jobs_per_type(job_type="test_type", status=Status.STARTED, total=1)
+
+
+def test_start_job_without_the_started_job_unicity_index() -> None:
+    queue = Queue()
+    queue.add_job(job_type="test_type", dataset="dataset", revision="revision", difficulty=50)
+    JobDocument._get_collection().drop_index(QUEUE_STARTED_JOB_UNICITY_INDEX_NAME)
+    selected_job = queue.get_next_waiting_job()
+
+    queue._start_newest_job_and_delete_others(job=selected_job)
+    # the update on the waiting status still starts a job only once
+    with pytest.raises(NoWaitingJobError):
+        queue._start_newest_job_and_delete_others(job=selected_job)
+    assert JobDocument.objects(status=Status.STARTED).count() == 1

@@ -809,7 +809,7 @@ def test_delete_jobs(
     processing_graph = PROCESSING_GRAPH_ONE_STEP
 
     queue = Queue()
-    for job_spec in existing_jobs:
+    for index, job_spec in enumerate(existing_jobs):
         (priority, status, created_at) = job_spec
         job = queue.add_job(
             job_type=STEP_DA, dataset="dataset", revision="revision", priority=priority, difficulty=DIFFICULTY
@@ -820,6 +820,8 @@ def test_delete_jobs(
         if status is Status.STARTED:
             job.status = Status.STARTED
             job.started_at = datetime.now()
+            # only one job per unicity_id can be started (unique index)
+            job.unicity_id = f"{job.unicity_id},{index}"
             job.save()
 
     dataset_backfill_plan = get_dataset_backfill_plan(processing_graph=processing_graph)
