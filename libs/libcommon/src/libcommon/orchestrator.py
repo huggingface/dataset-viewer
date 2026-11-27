@@ -1392,18 +1392,14 @@ def finish_job(
     """
     # check if the job is still in started status
     with StepProfiler("orchestrator.finish_job", "is_job_started"):
-        is_job_started = Queue().is_job_started(job_id=job_info["job_id"])
-    if not is_job_started:
+        job_priority = Queue().get_started_job_priority(job_id=job_info["job_id"])
+    if job_priority is None:
         logging.debug("the job was deleted, don't update the cache")
         return TasksStatistics()
-    # finish the job
-    with StepProfiler("orchestrator.finish_job", "finish_job"):
-        job_priority = Queue().finish_job(job_id=job_info["job_id"])
-    if job_priority:
-        job_info["priority"] = job_priority
-        # ^ change the priority of children jobs if the priority was updated during the job
-    logging.debug("the job has been finished.")
-    # trigger the next steps
+    job_info["priority"] = job_priority
+    # ^ change the priority of children jobs if the priority was updated during the job
+    # trigger the next steps before removing the job from the queue: in between, the API would find the cache entry
+    # of the job and no pending job for the next steps, and answer that their responses don't exist
     plan = AfterJobPlan(
         job_info=job_info,
         shortcut_jobs_by_key=shortcut_jobs_by_key.copy(),
@@ -1411,7 +1407,10 @@ def finish_job(
     )
     with StepProfiler("orchestrator.finish_job", "after_job_plan_run"):
         statistics = plan.run()
-    logging.debug("jobs have been created for the next steps.")
+    # finish the job
+    with StepProfiler("orchestrator.finish_job", "finish_job"):
+        Queue().finish_job(job_id=job_info["job_id"])
+    logging.debug("jobs have been created for the next steps, and the job has been finished.")
     return statistics
 
 
