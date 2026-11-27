@@ -331,7 +331,10 @@ def upsert_response(
             first_job_created_at = previous.first_job_created_at
             if previous.first_success_at is not None or previous.http_status == HTTPStatus.OK:
                 first_success_at = previous.first_success_at
-    CachedResponseDocument.objects(kind=kind, dataset=dataset, config=config, split=split).upsert_one(
+    # not upsert_one: it reads the document again after the write, and raises if a deletion of the dataset's cache
+    # removed it in between, which stopped the worker loop
+    CachedResponseDocument.objects(kind=kind, dataset=dataset, config=config, split=split).update_one(
+        upsert=True,
         content=content,
         http_status=http_status,
         error_code=error_code,
