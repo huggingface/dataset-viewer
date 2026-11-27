@@ -14,6 +14,7 @@ from typing import Any, Optional, Union
 
 import orjson
 from filelock import FileLock
+from libcommon.dtos import JobInfo, Priority
 from libcommon.queue.jobs import Queue
 from libcommon.utils import get_datetime, get_duration
 from mirakuru import OutputExecutor, ProcessExitedWithError, TCPExecutor
@@ -54,6 +55,30 @@ class BadWorkerState(RuntimeError):
     """Raised when the worker state from the worker read by the executor is not valid."""
 
     pass
+
+
+def _parse_datetime(value: Optional[str]) -> Optional[datetime]:
+    return None if value is None else datetime.fromisoformat(value)
+
+
+def _parse_job_info(job_info: Optional[dict[str, Any]]) -> Optional[JobInfo]:
+    """Give back the types of the job info that the loop wrote as JSON: the job manager computes durations from the
+    dates of the job, and the queue compares its priority."""
+    if job_info is None:
+        return None
+    parsed = JobInfo(
+        job_id=job_info["job_id"],
+        type=job_info["type"],
+        params=job_info["params"],
+        priority=Priority(job_info["priority"]),
+        difficulty=job_info["difficulty"],
+        started_at=_parse_datetime(job_info["started_at"]),
+    )
+    if "created_at" in job_info:
+        parsed["created_at"] = _parse_datetime(job_info["created_at"])
+    if "first_job_created_at" in job_info:
+        parsed["first_job_created_at"] = _parse_datetime(job_info["first_job_created_at"])
+    return parsed
 
 
 class WorkerExecutor:
@@ -179,7 +204,7 @@ class WorkerExecutor:
                 with open(worker_state_file_path, "rb") as worker_state_f:
                     worker_state = orjson.loads(worker_state_f.read())
                     return WorkerState(
-                        current_job_info=worker_state.get("current_job_info"),
+                        current_job_info=_parse_job_info(worker_state.get("current_job_info")),
                         last_updated=datetime.fromisoformat(worker_state["last_updated"]),
                     )
             except (orjson.JSONDecodeError, KeyError) as err:
