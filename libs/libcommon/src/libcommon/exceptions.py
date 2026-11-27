@@ -119,6 +119,7 @@ CacheableErrorCode = Literal[
     "PreviousStepStatusError",
     "PreviousStepStillProcessingError",
     "PolarsParquetReadError",
+    "ResponseNotStorableError",
     "RetryableConfigNamesError",
     "RowsPostProcessingError",
     "SplitsNamesError",
@@ -517,6 +518,19 @@ class TooBigContentError(CacheableError):
             message=message,
             status_code=HTTPStatus.NOT_IMPLEMENTED,
             code="TooBigContentError",
+            cause=cause,
+            disclose_cause=False,
+        )
+
+
+class ResponseNotStorableError(CacheableError):
+    """The response could not be stored in the cache database."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(
+            message=message,
+            status_code=HTTPStatus.NOT_IMPLEMENTED,
+            code="ResponseNotStorableError",
             cause=cause,
             disclose_cause=False,
         )
