@@ -2,19 +2,15 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
-from collections.abc import AsyncIterator
-from contextlib import asynccontextmanager
 from functools import lru_cache
 from http import HTTPStatus
 from typing import Optional
 
-import anyio
 from fsspec.implementations.http import HTTPFileSystem
 from libapi.authentication import auth_check, get_auth_kind
 from libapi.exceptions import (
     ApiError,
     ResponseNotFoundError,
-    ResponseNotReadyError,
     TooBigContentError,
     UnexpectedApiError,
 )
@@ -42,6 +38,7 @@ from libcommon.storage_client import StorageClient
 from starlette.requests import Request
 from starlette.responses import Response
 
+from rows.arrow_budget import ArrowBudget
 from rows.memory import record_arrow_bytes, track_request
 
 logger = logging.getLogger(__name__)
@@ -60,6 +57,7 @@ def create_rows_endpoint(
     parquet_metadata_directory: StrPath,
     max_arrow_data_in_memory: int,
     max_concurrent_queries: int,
+    max_arrow_data_per_worker: int,
     hf_endpoint: str,
     blocked_datasets: list[str],
     hf_token: Optional[str] = None,
@@ -75,23 +73,11 @@ def create_rows_endpoint(
     storage_clients: Optional[list[StorageClient]] = None,
 ) -> Endpoint:
     httpfs = HTTPFileSystem(headers={"authorization": f"Bearer {hf_token}"})
-    # Each query can hold up to max_arrow_data_in_memory bytes of parquet data until its response is built, and the
-    # event loop starts every request it receives: without a bound, hundreds of queries at once outgrow the pod memory.
-    query_slots = anyio.Semaphore(max_concurrent_queries)
-
-    @asynccontextmanager
-    async def query_slot() -> AsyncIterator[None]:
-        try:
-            with anyio.fail_after(QUERY_SLOT_WAIT_SECONDS):
-                await query_slots.acquire()
-        except TimeoutError:
-            raise ResponseNotReadyError(
-                "The server is busier than usual and the response is not ready yet. Please retry later."
-            ) from None
-        try:
-            yield
-        finally:
-            query_slots.release()
+    # Each query holds its Arrow table until its response is built, and the event loop starts every request it
+    # receives: without a bound, the queries at once outgrow the pod memory. A query slot is a share of the budget,
+    # so that a worker runs at most max_concurrent_queries queries at once, fewer when their tables are big.
+    arrow_budget = ArrowBudget(max_arrow_data_per_worker)
+    query_slot_bytes = max_arrow_data_per_worker // max_concurrent_queries
 
     @lru_cache(maxsize=1)
     def get_rows_index(dataset: str, config: str, split: str) -> RowsIndex:
@@ -156,7 +142,10 @@ def create_rows_endpoint(
                     with StepProfiler(method="rows_endpoint", step="get row groups index"):
                         rows_index = get_rows_index(dataset=dataset, config=config, split=split)
                         revision = rows_index.revision
-                    async with query_slot():
+                    with StepProfiler(method="rows_endpoint", step="get the size of the rows"):
+                        scan_size = await rows_index.scan_size(offset=offset, length=length)
+                    query_bytes = max(min(scan_size, max_arrow_data_in_memory), query_slot_bytes)
+                    async with arrow_budget.hold(query_bytes, wait_seconds=QUERY_SLOT_WAIT_SECONDS) as hold_at_least:
                         with track_request(f"{dataset=} {config=} {split=} {offset=} {length=}") as tracked:
                             with StepProfiler(method="rows_endpoint", step="query the rows"):
                                 try:
@@ -165,6 +154,7 @@ def create_rows_endpoint(
                                 except TooBigRows as err:
                                     raise TooBigContentError(str(err)) from None
                             record_arrow_bytes(tracked, pa_table.nbytes)
+                            hold_at_least(pa_table.nbytes)
                             with StepProfiler(method="rows_endpoint", step="transform to a list"):
                                 response = await create_response(
                                     dataset=dataset,

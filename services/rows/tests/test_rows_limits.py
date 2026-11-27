@@ -25,6 +25,9 @@ class FakeRowsIndex:
     running = 0
     max_running = 0
 
+    async def scan_size(self, offset: int, length: int) -> int:
+        return 1
+
     async def query(self, offset: int, length: int) -> tuple[pa.Table, list[str]]:
         FakeRowsIndex.running += 1
         FakeRowsIndex.max_running = max(FakeRowsIndex.max_running, FakeRowsIndex.running)
@@ -46,6 +49,7 @@ def endpoint(tmp_path: Any, max_concurrent_queries: int = 8) -> Any:
         parquet_metadata_directory=tmp_path,
         max_arrow_data_in_memory=10**9,
         max_concurrent_queries=max_concurrent_queries,
+        max_arrow_data_per_worker=10**9,
         hf_endpoint="http://localhost",
         blocked_datasets=[],
     )

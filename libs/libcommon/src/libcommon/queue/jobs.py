@@ -911,25 +911,23 @@ class Queue:
             raise StartedJobError(f"job {job.unicity_id} has an empty started_at field.")
         return job
 
-    def is_job_started(self, job_id: str) -> bool:
-        """Check if a job is started, with the correct values for started_at.
+    def get_started_job_priority(self, job_id: str) -> Optional[Priority]:
+        """Get the priority of a started job, which can change while the job runs.
 
         Args:
             job_id (`str`): id of the job
 
         Returns:
-            `bool`: whether the job exists, is started, and had the expected format (STARTED status, non-empty
-              started_at)
+            `Priority`, *optional*: the priority of the job, or None if the job does not exist, is not started, or had
+              not the expected format (STARTED status, non-empty started_at)
         """
         try:
-            self._get_started_job(job_id=job_id)
+            return self._get_started_job(job_id=job_id).priority
         except DoesNotExist:
             logging.error(f"job {job_id} does not exist.")
-            return False
         except StartedJobError as e:
             logging.debug(f"job {job_id} has not the expected format for a started job: {e}")
-            return False
-        return True
+        return None
 
     def finish_job(self, job_id: str) -> Optional[Priority]:
         """Finish a job in the queue.

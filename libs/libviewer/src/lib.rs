@@ -129,6 +129,19 @@ impl PyDataset {
         })
     }
 
+    #[pyo3(signature = (limit=None, offset=None))]
+    fn scan_size<'py>(
+        &self,
+        py: Python<'py>,
+        limit: Option<u64>,
+        offset: Option<u64>,
+    ) -> PyResult<Bound<'py, PyAny>> {
+        let this = self.clone();
+        pyo3_async_runtimes::tokio::future_into_py(py, async move {
+            Ok(this.dataset.scan_size(limit, offset).await?)
+        })
+    }
+
     #[pyo3(signature = (files=None, max_parallelism=16))]
     fn index<'py>(
         &self,

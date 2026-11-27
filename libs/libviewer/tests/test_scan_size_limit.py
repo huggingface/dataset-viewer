@@ -62,3 +62,18 @@ def test_the_limit_applies_to_all_the_files_of_a_scan(tmp_path: Path) -> None:
             limit=NUM_FILES * ROWS_PER_FILE,
             scan_size_limit=largest_file,
         )
+
+
+def test_the_scan_size_is_known_before_the_scan(tmp_path: Path) -> None:
+    dataset, largest_file = make_dataset(tmp_path)
+
+    async def scan_size(**kwargs) -> int:
+        return await dataset.scan_size(**kwargs)
+
+    one_file = asyncio.run(scan_size(offset=0, limit=ROWS_PER_FILE))
+    assert 0 < one_file <= largest_file
+    assert asyncio.run(scan_size(offset=0, limit=3 * ROWS_PER_FILE)) == 3 * one_file
+    with pytest.raises(lv.DatasetError, match="Scan size limit exceeded"):
+        scan(
+            dataset, offset=0, limit=3 * ROWS_PER_FILE, scan_size_limit=3 * one_file - 1
+        )

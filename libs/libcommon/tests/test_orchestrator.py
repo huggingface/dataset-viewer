@@ -5,6 +5,7 @@ from collections.abc import Mapping
 from datetime import datetime
 from http import HTTPStatus
 from typing import Any, Optional
+from unittest.mock import patch
 
 import pytest
 from bson import ObjectId
@@ -222,6 +223,35 @@ def test_finish_job(
     assert waiting_jobs.count() == len(artifacts_to_create)
     assert {job.type for job in waiting_jobs} == {Artifact.parse_id(artifact)[4] for artifact in artifacts_to_create}
     assert all(job.first_job_created_at == cached_response.first_job_created_at for job in waiting_jobs)
+
+
+def test_finish_job_plans_the_next_jobs_before_the_job_leaves_the_queue() -> None:
+    # the API answers that a response does not exist when it finds no pending job that could create it: the next jobs
+    # must be in the queue when the finished job leaves it
+    Queue().add_job(
+        dataset=DATASET_NAME,
+        revision=REVISION_NAME,
+        config=None,
+        split=None,
+        job_type=STEP_DA,
+        priority=Priority.NORMAL,
+        difficulty=DIFFICULTY,
+    )
+    job_info = Queue().start_job()
+    waiting_jobs_when_the_job_leaves: list[int] = []
+    finish_queue_job = Queue.finish_job
+
+    def count_the_waiting_jobs_then_finish(queue: Queue, job_id: str) -> Optional[Priority]:
+        waiting_jobs_when_the_job_leaves.append(
+            JobDocument.objects(dataset=DATASET_NAME, status=Status.WAITING).count()
+        )
+        return finish_queue_job(queue, job_id=job_id)
+
+    with patch.object(Queue, "finish_job", count_the_waiting_jobs_then_finish):
+        finish_job(job_info=job_info, shortcut_jobs_by_key={}, processing_graph=PROCESSING_GRAPH_GENEALOGY)
+
+    assert waiting_jobs_when_the_job_leaves == [1]
+    assert JobDocument.objects(dataset=DATASET_NAME, status=Status.STARTED).count() == 0
 
 
 def test_finish_job_of_a_retried_step_passes_on_the_original_start() -> None:

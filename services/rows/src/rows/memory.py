@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 The HuggingFace Authors.
 
+import gc
 import itertools
 import logging
 import os
@@ -12,6 +13,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
+import pyarrow as pa
 from prometheus_client import Histogram
 
 # the kernel kills the pod without any warning when its cgroup reaches memory.max: the watchdog logs what the workers
@@ -22,6 +24,8 @@ PROC_SELF_STATUS = Path("/proc/self/status")
 # glibc keeps the memory a request freed, so a worker can grow request after request: log the requests after which it
 # holds this much more anonymous memory. The other requests served at the same time by the worker count too.
 MEMORY_GROWTH_LOG_BYTES = 256 * 2**20
+# a release stops the worker for a full garbage collection: at most one in this interval
+RELEASE_INTERVAL_SECONDS = 30.0
 WATCHDOG_INTERVAL_SECONDS = 1.0
 WATCHDOG_THRESHOLD = 0.85
 # don't log the in-flight requests more than once in this interval, the memory can stay above the threshold
@@ -44,6 +48,9 @@ class InFlightRequest:
 _in_flight: dict[int, InFlightRequest] = {}
 _in_flight_lock = threading.Lock()
 _ids = itertools.count()
+# set after a request that grew the worker: the watchdog thread then gives the freed memory back to the OS, once the
+# request has returned and its tables and rows are no longer referenced
+_release_requested = threading.Event()
 
 
 def _read_anonymous_memory() -> Optional[int]:
@@ -80,6 +87,20 @@ def track_request(description: str) -> Iterator[InFlightRequest]:
                     f" {'unknown' if request.arrow_bytes is None else request.arrow_bytes} bytes,"
                     f" with {other_requests} other requests in flight"
                 )
+                _release_requested.set()
+
+
+def _release_freed_memory() -> None:
+    memory_before = _read_anonymous_memory()
+    gc.collect()
+    # with ARROW_DEFAULT_MEMORY_POOL=system, it also calls malloc_trim: glibc keeps freed memory until asked for it
+    pa.default_memory_pool().release_unused()
+    memory_after = _read_anonymous_memory()
+    if memory_before is not None and memory_after is not None:
+        logging.info(
+            f"rows worker {os.getpid()} gave {(memory_before - memory_after) // 2**20} MiB back to the OS, it holds"
+            f" {memory_after // 2**20} MiB of anonymous memory"
+        )
 
 
 def record_arrow_bytes(request: InFlightRequest, arrow_bytes: int) -> None:
@@ -113,9 +134,13 @@ def _log_in_flight(memory_current: int, memory_max: int) -> None:
 
 
 def _watch(threshold: float, interval_seconds: float) -> None:
-    last_log = float("-inf")
+    last_log = last_release = float("-inf")
     while True:
         time.sleep(interval_seconds)
+        if _release_requested.is_set() and time.monotonic() - last_release >= RELEASE_INTERVAL_SECONDS:
+            _release_requested.clear()
+            _release_freed_memory()
+            last_release = time.monotonic()
         memory_current = _read_int(CGROUP_MEMORY_CURRENT)
         memory_max = _read_int(CGROUP_MEMORY_MAX)
         if memory_current is None or memory_max is None:
@@ -129,7 +154,10 @@ def _watch(threshold: float, interval_seconds: float) -> None:
 def start_memory_watchdog(
     threshold: float = WATCHDOG_THRESHOLD, interval_seconds: float = WATCHDOG_INTERVAL_SECONDS
 ) -> None:
-    """Log the in-flight requests of this worker when the pod memory gets close to its limit."""
+    """Log the in-flight requests of this worker when the pod memory gets close to its limit.
+
+    It also gives the memory freed by a request that grew the worker back to the OS.
+    """
     if _read_int(CGROUP_MEMORY_MAX) is None:
         logging.info("no cgroup memory limit to watch, the rows memory watchdog is not started")
         return
