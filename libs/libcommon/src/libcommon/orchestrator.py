@@ -12,7 +12,7 @@ from typing import Optional, Union
 import pandas as pd
 from bson import ObjectId
 from huggingface_hub import DatasetCard, HfApi, HfFileSystem, get_session
-from huggingface_hub.errors import RepositoryNotFoundError, RevisionNotFoundError
+from huggingface_hub.errors import HfHubHTTPError, RepositoryNotFoundError, RevisionNotFoundError
 from huggingface_hub.utils._headers import build_hf_headers
 
 from libcommon.constants import (
@@ -278,6 +278,13 @@ class DeleteDatasetParquetRefBranchTask(Task):
                 )
             except (RevisionNotFoundError, RepositoryNotFoundError):
                 return TasksStatistics(num_deleted_ref_branches=0)
+            except HfHubHTTPError as err:
+                if err.response.status_code < HTTPStatus.INTERNAL_SERVER_ERROR:
+                    raise
+                # a leftover branch does not prevent the recomputation (the parquet conversion deletes the stale
+                # files), and the Hub returns 500s for about an hour after a concurrent deletion left a lock on the ref
+                logging.warning(f"Could not delete the refs/convert/parquet branch of {self.dataset}: {err}")
+                return TasksStatistics(num_deleted_ref_branches=0)
             return TasksStatistics(num_deleted_ref_branches=1)
 
 
@@ -309,6 +316,13 @@ class DeleteDatasetDuckdbRefBranchTask(Task):
                     repo_type="dataset",
                 )
             except (RevisionNotFoundError, RepositoryNotFoundError):
+                return TasksStatistics(num_deleted_ref_branches=0)
+            except HfHubHTTPError as err:
+                if err.response.status_code < HTTPStatus.INTERNAL_SERVER_ERROR:
+                    raise
+                # a leftover branch does not prevent the recomputation (the parquet conversion deletes the stale
+                # files), and the Hub returns 500s for about an hour after a concurrent deletion left a lock on the ref
+                logging.warning(f"Could not delete the refs/convert/duckdb branch of {self.dataset}: {err}")
                 return TasksStatistics(num_deleted_ref_branches=0)
             return TasksStatistics(num_deleted_ref_branches=1)
 

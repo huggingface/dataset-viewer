@@ -4,15 +4,18 @@
 from collections.abc import Mapping
 from datetime import datetime
 from http import HTTPStatus
-from typing import Any, Optional
-from unittest.mock import patch
+from typing import Any, Optional, Union
+from unittest.mock import MagicMock, patch
 
 import pytest
 from bson import ObjectId
+from huggingface_hub.errors import HfHubHTTPError
 
 from libcommon.dtos import JobInfo, JobOutput, JobResult, Priority, Status
 from libcommon.orchestrator import (
     AfterJobPlan,
+    DeleteDatasetDuckdbRefBranchTask,
+    DeleteDatasetParquetRefBranchTask,
     finish_job,
     get_failed_runs,
     has_pending_ancestor_jobs,
@@ -574,6 +577,23 @@ def test_remove_dataset() -> None:
     pending_jobs_df = Queue().get_pending_jobs_df(dataset=DATASET_NAME)
     assert len(pending_jobs_df) == 1
     assert has_some_cache(dataset=DATASET_NAME) is False
+
+
+@pytest.mark.parametrize("task_class", [DeleteDatasetParquetRefBranchTask, DeleteDatasetDuckdbRefBranchTask])
+@pytest.mark.parametrize("status_code,raises", [(500, False), (503, False), (403, True)])
+def test_delete_ref_branch_server_error(
+    task_class: type[Union[DeleteDatasetParquetRefBranchTask, DeleteDatasetDuckdbRefBranchTask]],
+    status_code: int,
+    raises: bool,
+) -> None:
+    error = HfHubHTTPError("error", response=MagicMock(status_code=status_code, headers={}))
+    task = task_class(dataset=DATASET_NAME, committer_hf_token="token")
+    with patch("libcommon.orchestrator.HfApi.delete_branch", side_effect=error):
+        if raises:
+            with pytest.raises(HfHubHTTPError):
+                task.run()
+        else:
+            assert task.run().num_deleted_ref_branches == 0
 
 
 def assert_failed_runs(failed_runs: int) -> None:
