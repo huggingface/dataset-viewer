@@ -79,13 +79,9 @@ class Supervisor:
         raise AssertionError(f"{text!r} not in the supervisor logs:\n{self.log.read_text()}")
 
 
-def is_running(pid: int) -> bool:
-    return Path(f"/proc/{pid}").exists()
-
-
 def wait_until_stopped(pid: int, timeout: float = 20) -> None:
     deadline = time.monotonic() + timeout
-    while is_running(pid):
+    while Path(f"/proc/{pid}").exists():
         assert time.monotonic() < deadline, f"process {pid} still runs"
         time.sleep(0.1)
 
@@ -101,7 +97,6 @@ def supervisor(tmp_path: Path) -> Iterator[Supervisor]:
         port = free.getsockname()[1]
     log = tmp_path / "supervisor.log"
     supervisor = Supervisor(cgroup=cgroup, log=log, port=port)
-    supervisor.set_pod_anonymous_memory(0)
     with log.open("w") as log_file:
         process = subprocess.Popen(
             [sys.executable, "-c", SUPERVISOR, str(cgroup), str(port)],

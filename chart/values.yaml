@@ -361,12 +361,13 @@ duckDBIndex:
 rowsIndex:
   # Maximum number of bytes to load in memory from parquet row groups to avoid OOM
   maxArrowDataInMemory: "300_000_000"
-  # Queries that each uvicorn worker of rows runs at once, the others wait. A pod can hold up to
-  # maxArrowDataInMemory x maxConcurrentQueries x rows.uvicornNumWorkers of parquet data: keep it under its memory.
-  maxConcurrentQueries: 8
   # Bytes of Arrow data that the queries of a uvicorn worker of rows hold at once, the others wait. A response takes 5
-  # to 7 times the size of its Arrow table while it is built.
+  # to 7 times the size of its Arrow table while it is built: keep maxArrowDataPerWorker x 7 x rows.uvicornNumWorkers
+  # under the pod memory.
   maxArrowDataPerWorker: "500_000_000"
+  # Queries that each uvicorn worker of rows runs at once, when their tables are small: each one holds at least
+  # maxArrowDataPerWorker / maxConcurrentQueries of the budget.
+  maxConcurrentQueries: 8
 
 descriptiveStatistics:
   # Directory used temporarily to download dataset locally in .parquet to compute statistics

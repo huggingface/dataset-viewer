@@ -1,16 +1,12 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 The HuggingFace Authors.
 
-from pathlib import Path
-from typing import Any
 
 import anyio
-import pyarrow as pa
-import pyarrow.parquet as pq
 import pytest
 from libapi.exceptions import ResponseNotReadyError
 
-from rows.arrow_budget import ArrowBudget, estimate_arrow_bytes
+from rows.arrow_budget import ArrowBudget
 
 
 @pytest.mark.anyio
@@ -57,17 +53,3 @@ async def test_the_budget_follows_the_real_size_of_the_table() -> None:
         hold_at_least(30)
         assert budget.held == 70
     assert budget.held == 0
-
-
-def test_the_size_of_the_rows_is_estimated_from_the_parquet_metadata(tmp_path: Path) -> None:
-    files: list[Any] = []
-    for name in ["0000.parquet", "0001.parquet"]:
-        pq.write_table(pa.table({"text": ["x" * 1000] * 100}), tmp_path / name, row_group_size=10)
-        files.append({"parquet_metadata_subpath": name})
-    one_row = pq.read_metadata(tmp_path / "0000.parquet").row_group(0).total_byte_size // 10
-
-    assert estimate_arrow_bytes(files, tmp_path, offset=0, length=1) == pytest.approx(one_row, abs=1)
-    # across the two files
-    assert estimate_arrow_bytes(files, tmp_path, offset=95, length=10) == pytest.approx(10 * one_row, abs=10)
-    assert estimate_arrow_bytes(files, tmp_path, offset=195, length=100) == pytest.approx(5 * one_row, abs=5)
-    assert estimate_arrow_bytes(files, tmp_path, offset=500, length=100) == 0

@@ -1,8 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 The HuggingFace Authors.
 
-import ctypes
-import ctypes.util
 import gc
 import itertools
 import logging
@@ -26,8 +24,8 @@ PROC_SELF_STATUS = Path("/proc/self/status")
 # glibc keeps the memory a request freed, so a worker can grow request after request: log the requests after which it
 # holds this much more anonymous memory. The other requests served at the same time by the worker count too.
 MEMORY_GROWTH_LOG_BYTES = 256 * 2**20
-# glibc keeps freed memory in its arenas until asked to return it to the OS; malloc_trim is glibc-only.
-_MALLOC_TRIM = getattr(ctypes.CDLL(ctypes.util.find_library("c")), "malloc_trim", None)
+# a release stops the worker for a full garbage collection: at most one in this interval
+RELEASE_INTERVAL_SECONDS = 30.0
 WATCHDOG_INTERVAL_SECONDS = 1.0
 WATCHDOG_THRESHOLD = 0.85
 # don't log the in-flight requests more than once in this interval, the memory can stay above the threshold
@@ -95,9 +93,8 @@ def track_request(description: str) -> Iterator[InFlightRequest]:
 def _release_freed_memory() -> None:
     memory_before = _read_anonymous_memory()
     gc.collect()
+    # with ARROW_DEFAULT_MEMORY_POOL=system, it also calls malloc_trim: glibc keeps freed memory until asked for it
     pa.default_memory_pool().release_unused()
-    if _MALLOC_TRIM is not None:
-        _MALLOC_TRIM(0)
     memory_after = _read_anonymous_memory()
     if memory_before is not None and memory_after is not None:
         logging.info(
@@ -137,12 +134,13 @@ def _log_in_flight(memory_current: int, memory_max: int) -> None:
 
 
 def _watch(threshold: float, interval_seconds: float) -> None:
-    last_log = float("-inf")
+    last_log = last_release = float("-inf")
     while True:
         time.sleep(interval_seconds)
-        if _release_requested.is_set():
+        if _release_requested.is_set() and time.monotonic() - last_release >= RELEASE_INTERVAL_SECONDS:
             _release_requested.clear()
             _release_freed_memory()
+            last_release = time.monotonic()
         memory_current = _read_int(CGROUP_MEMORY_CURRENT)
         memory_max = _read_int(CGROUP_MEMORY_MAX)
         if memory_current is None or memory_max is None:

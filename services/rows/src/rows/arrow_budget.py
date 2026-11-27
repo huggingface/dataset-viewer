@@ -4,13 +4,9 @@
 from collections import deque
 from collections.abc import AsyncIterator, Callable
 from contextlib import asynccontextmanager
-from functools import lru_cache
-from pathlib import Path
 
 import anyio
-import pyarrow.parquet as pq
 from libapi.exceptions import ResponseNotReadyError
-from libcommon.parquet_utils import ParquetFileMetadataItem
 
 
 class ArrowBudget:
@@ -45,13 +41,14 @@ class ArrowBudget:
         if not self._waiters and self._fits(num_bytes):
             self.held += num_bytes
         else:
-            waiter = (num_bytes, anyio.Event())
+            event = anyio.Event()
+            waiter = (num_bytes, event)
             self._waiters.append(waiter)
             try:
                 with anyio.fail_after(wait_seconds):
-                    await waiter[1].wait()
+                    await event.wait()
             except BaseException as err:
-                if waiter[1].is_set():
+                if event.is_set():
                     self.held -= num_bytes
                 else:
                     self._waiters.remove(waiter)
@@ -74,30 +71,3 @@ class ArrowBudget:
         finally:
             self.held -= held
             self._wake_up_waiters()
-
-
-@lru_cache(maxsize=16)
-def _row_groups(parquet_metadata_directory: Path, subpaths: tuple[str, ...]) -> tuple[tuple[int, int], ...]:
-    """The number of rows and the uncompressed size of each row group of the split, in order."""
-    row_groups = []
-    for subpath in subpaths:
-        metadata = pq.read_metadata(parquet_metadata_directory / subpath)
-        for index in range(metadata.num_row_groups):
-            row_group = metadata.row_group(index)
-            row_groups.append((row_group.num_rows, row_group.total_byte_size))
-    return tuple(row_groups)
-
-
-def estimate_arrow_bytes(
-    parquet_files: list[ParquetFileMetadataItem], parquet_metadata_directory: Path, offset: int, length: int
-) -> int:
-    """Estimate the size of the Arrow table of the rows [offset, offset + length) from the parquet metadata."""
-    row_groups = _row_groups(parquet_metadata_directory, tuple(f["parquet_metadata_subpath"] for f in parquet_files))
-    estimate = 0
-    start = 0
-    for num_rows, num_bytes in row_groups:
-        overlap = min(offset + length, start + num_rows) - max(offset, start)
-        if overlap > 0:
-            estimate += num_bytes * overlap // num_rows
-        start += num_rows
-    return estimate

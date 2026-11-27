@@ -155,7 +155,6 @@ class ParquetMetadataConfig:
 
 ROWS_INDEX_MAX_ARROW_DATA_IN_MEMORY = 300_000_000
 ROWS_INDEX_MAX_CONCURRENT_QUERIES = 8
-# a response takes 5 to 7 times the size of its Arrow table while it is built
 ROWS_INDEX_MAX_ARROW_DATA_PER_WORKER = 500_000_000
 
 

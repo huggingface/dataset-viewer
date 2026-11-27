@@ -19,12 +19,14 @@ from rows.routes.rows import create_rows_endpoint
 
 class FakeRowsIndex:
     revision = "revision"
-    parquet_files: list[Any] = []
     features = Features({"a": Value("int64")})
     partial = False
     num_rows_total = 1
     running = 0
     max_running = 0
+
+    async def scan_size(self, offset: int, length: int) -> int:
+        return 1
 
     async def query(self, offset: int, length: int) -> tuple[pa.Table, list[str]]:
         FakeRowsIndex.running += 1

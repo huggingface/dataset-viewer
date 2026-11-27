@@ -14,14 +14,12 @@ each worker, never through the environment or the disk.
 """
 
 import logging
-import os
-import signal
 import socket
 import threading
 import time
 from collections.abc import Callable, Mapping
 from pathlib import Path
-from typing import Any, Optional, cast
+from typing import Any, Optional
 
 import uvicorn
 from libcommon.secrets import get_secrets, inherit_secrets
@@ -90,6 +88,10 @@ def _read_worker_anonymous_memory(process: Process) -> int:
     return 0
 
 
+def _biggest_worker(processes: list[Process]) -> tuple[Process, int]:
+    return max(((process, _read_worker_anonymous_memory(process)) for process in processes), key=lambda item: item[1])
+
+
 class _MemorySupervisor(Multiprocess):
     """A uvicorn supervisor that replaces the workers that hold too much memory, before the pod reaches its limit.
 
@@ -134,11 +136,9 @@ class _MemorySupervisor(Multiprocess):
             if pod_memory is None or pod_memory < POD_MEMORY_KILL_RATIO * self.memory_limit:
                 continue
             draining = self.draining
-            workers = self.processes if draining is None else [*self.processes, draining]
-            memory = {process: _read_worker_anonymous_memory(process) for process in workers}
-            biggest = max(workers, key=memory.__getitem__)
+            biggest, memory = _biggest_worker(self.processes if draining is None else [*self.processes, draining])
             logger.warning(
-                f"Killing child process [{biggest.pid}], which holds {memory[biggest] // 2**20} MiB: the pod holds"
+                f"Killing child process [{biggest.pid}], which holds {memory // 2**20} MiB: the pod holds"
                 f" {pod_memory // 2**20} MiB of anonymous memory, for a limit of {self.memory_limit // 2**20} MiB"
             )
             biggest.kill()
@@ -150,31 +150,29 @@ class _MemorySupervisor(Multiprocess):
 
     def drain_fat_workers(self) -> None:
         if self.draining is not None:
-            if self.draining.process.exitcode is None and time.monotonic() >= self.drain_deadline:
+            if self.draining.process.exitcode is None:
+                if time.monotonic() < self.drain_deadline:
+                    return
                 logger.warning(
                     f"Child process [{self.draining.pid}] did not finish its requests in {DRAIN_TIMEOUT_SECONDS:.0f}s,"
                     " killing it"
                 )
                 self.draining.kill()
-                self.draining.join()
-            if self.draining.process.exitcode is not None:
-                self.draining.join()
-                self.draining = None
+            self.draining.join()
+            self.draining = None
 
-        if self.draining is None:
-            memory = {process: _read_worker_anonymous_memory(process) for process in self.processes}
-            biggest = max(self.processes, key=memory.__getitem__)
-            if memory[biggest] >= self.worker_memory_limit:
-                self.drain(biggest, memory[biggest])
+        biggest, memory = _biggest_worker(self.processes)
+        if memory >= self.worker_memory_limit:
+            self.drain(biggest, memory)
 
     def drain(self, process: Process, memory: int) -> None:
         logger.warning(
             f"Child process [{process.pid}] holds {memory // 2**20} MiB, more than"
             f" {self.worker_memory_limit // 2**20} MiB: it finishes its requests while a new process takes its place"
         )
-        # uvicorn's own terminate() also closes the pipe the worker answers the pings on, which crashes the thread
-        # that answers them in the worker
-        os.kill(cast(int, process.pid), signal.SIGTERM)
+        # not uvicorn's own terminate(): it also closes the pipe the worker answers the pings on, which crashes the
+        # thread that answers them in the worker
+        process.process.terminate()
         new_process = Process(self.config, self.target, self.sockets)
         new_process.start()
         self.processes[self.processes.index(process)] = new_process

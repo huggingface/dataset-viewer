@@ -48,6 +48,12 @@ pub enum DatasetError {
 
 type Result<T> = std::result::Result<T, DatasetError>;
 
+fn plan_size(plan: &[ParquetScan]) -> u64 {
+    plan.iter()
+        .map(|scan| scan_size(&scan.metadata, scan.offset, scan.limit))
+        .sum()
+}
+
 #[derive(Debug)]
 struct ParquetScan {
     file: IndexedFile,
@@ -259,6 +265,11 @@ impl Dataset {
         Ok(indexed_files)
     }
 
+    /// Returns the number of bytes a scan decodes, from the metadata only: see `scan_size`.
+    pub async fn scan_size(&self, limit: Option<u64>, offset: Option<u64>) -> Result<u64> {
+        Ok(plan_size(&self.plan(limit, offset).await?))
+    }
+
     pub async fn scan(
         &self,
         limit: Option<u64>,
@@ -273,10 +284,7 @@ impl Dataset {
         let plan = self.plan(limit, offset).await?;
         // each file is read in parallel with its own reader: the limit is checked on the whole scan
         // before reading anything, or many files just under the limit add up to many times the limit
-        let num_bytes: u64 = plan
-            .iter()
-            .map(|scan| scan_size(&scan.metadata, scan.offset, scan.limit))
-            .sum();
+        let num_bytes = plan_size(&plan);
         if num_bytes > scan_size_limit {
             return Err(scan_size_exceeded(num_bytes, scan_size_limit).into());
         }
