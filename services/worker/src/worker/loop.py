@@ -24,6 +24,7 @@ from huggingface_hub import HfFileSystem
 from libcommon.dtos import JobInfo, JobResult
 from libcommon.prometheus import START_JOB_NO_JOB_TOTAL, LongStepProfiler, StepProfiler
 from libcommon.queue.jobs import (
+    FAIRNESS_CACHE_TTL_SECONDS,
     AlreadyStartedJobError,
     EmptyQueueError,
     NoWaitingJobError,
@@ -54,6 +55,9 @@ JOB_MEMORY_CHECK_INTERVAL_SECONDS = 0.25
 # that's already 11% of the pod limit after a few jobs.
 JOB_CHILD_MAX_PRIVATE_MEMORY_PCT = 25
 JOB_CHILD_MAX_JOBS = 200
+# When another worker started the job first, the loop asks for another job without sleeping, up to this many times in a
+# row: a persistent error must not make every worker call start_job in a loop.
+MAX_START_JOB_RETRIES_WITHOUT_SLEEP = 3
 
 
 def free_memory() -> None:
@@ -136,7 +140,8 @@ class Loop:
     state_file_path: str
 
     def __post_init__(self) -> None:
-        self.queue = Queue()
+        self.queue = Queue(fairness_cache_ttl_seconds=FAIRNESS_CACHE_TTL_SECONDS)
+        self.start_job_retries_without_sleep = 0
         self.blocked_by_pod_memory_since: Optional[float] = None
         self.blocked_by_pod_memory_deadline = 0.0
         self.current_job_info: Optional[JobInfo] = None
@@ -362,6 +367,12 @@ class Loop:
         return ratio is not None and ratio >= pct / 100
 
     def process_next_job(self) -> bool:
+        """Start the next job of the queue and process it.
+
+        Returns:
+            `bool`: True if the loop should look for another job without sleeping: a job was processed, or another
+              worker started the selected job first.
+        """
         logging.debug("try to process a job")
 
         with StepProfiler("loop", "start_job"):
@@ -370,13 +381,21 @@ class Loop:
                     difficulty_min=self.app_config.worker.difficulty_min,
                     difficulty_max=self.app_config.worker.difficulty_max,
                 )
+                self.start_job_retries_without_sleep = 0
                 self.set_worker_state(current_job_info=job_info)
                 logging.debug(f"job assigned: {job_info}")
             except (EmptyQueueError, AlreadyStartedJobError, NoWaitingJobError) as e:
                 START_JOB_NO_JOB_TOTAL.labels(reason=type(e).__name__).inc()
                 self.set_worker_state(current_job_info=None)
                 logging.debug(e)
-                return False
+                retry_without_sleep = (
+                    not isinstance(e, EmptyQueueError)
+                    and self.start_job_retries_without_sleep < MAX_START_JOB_RETRIES_WITHOUT_SLEEP
+                )
+                self.start_job_retries_without_sleep = (
+                    self.start_job_retries_without_sleep + 1 if retry_without_sleep else 0
+                )
+                return retry_without_sleep
 
         with LongStepProfiler("loop", "run_job"):
             with StepProfiler("loop", "create_job_runner"):

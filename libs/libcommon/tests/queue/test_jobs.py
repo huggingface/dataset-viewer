@@ -8,11 +8,14 @@ from unittest.mock import patch
 
 import pytest
 import pytz
+from pymongo.collection import Collection
+from pymongo.database import Database
 
 from libcommon.constants import QUEUE_STARTED_JOB_UNICITY_INDEX_NAME, QUEUE_TTL_SECONDS
 from libcommon.dtos import JobInfo, Priority, Status, WorkerSize
 from libcommon.queue.dataset_blockages import DATASET_STATUS_NORMAL, block_dataset
 from libcommon.queue.jobs import (
+    FAIRNESS_CACHE_TTL_SECONDS,
     AlreadyStartedJobError,
     EmptyQueueError,
     JobDocument,
@@ -660,6 +663,65 @@ def test_next_waiting_job_skips_namespaces_with_started_jobs() -> None:
     # only the busy namespace is left: the fallback picks its oldest waiting job
     job_info = queue.start_job(**medium)
     assert job_info["params"]["dataset"] == "busy/dataset1"
+
+
+def pick_namespaces_in_order(monkeypatch: pytest.MonkeyPatch, reverse: bool) -> None:
+    monkeypatch.setattr(
+        "libcommon.queue.jobs.random.sample",
+        lambda population, k: sorted(population, reverse=reverse)[:k],
+    )
+
+
+def test_next_waiting_job_is_the_oldest_of_a_random_namespace(monkeypatch: pytest.MonkeyPatch) -> None:
+    # all the workers of a size must not pick the same job: the namespace is picked at random, not the oldest job
+    queue = Queue()
+    medium = {"difficulty_min": 40, "difficulty_max": 70}
+    for dataset in ["a/dataset", "b/dataset", "c/dataset0", "c/dataset1"]:
+        queue.add_job(job_type="test_type", dataset=dataset, revision="rev", difficulty=50)
+    pick_namespaces_in_order(monkeypatch, reverse=True)
+    assert queue.start_job(**medium)["params"]["dataset"] == "c/dataset0"
+    assert queue.start_job(**medium)["params"]["dataset"] == "b/dataset"
+    assert queue.start_job(**medium)["params"]["dataset"] == "a/dataset"
+    # only the namespace with a started job is left
+    assert queue.start_job(**medium)["params"]["dataset"] == "c/dataset1"
+
+
+def test_next_waiting_job_tries_another_namespace_when_the_picked_one_has_no_job_anymore(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    queue = Queue(fairness_cache_ttl_seconds=60)
+    medium = {"difficulty_min": 40, "difficulty_max": 70}
+    for dataset in ["a/dataset0", "a/dataset1", "b/dataset"]:
+        queue.add_job(job_type="test_type", dataset=dataset, revision="rev", difficulty=50)
+    pick_namespaces_in_order(monkeypatch, reverse=False)
+    assert queue.start_job(**medium)["params"]["dataset"] == "a/dataset0"
+    queue.delete_dataset_waiting_jobs("b/dataset")
+    pick_namespaces_in_order(monkeypatch, reverse=True)
+    # the cached namespaces are still a and b, and a has no started job in the cache: b is tried first, then a
+    assert queue.start_job(**medium)["params"]["dataset"] == "a/dataset1"
+
+
+def test_fairness_cache_avoids_the_database_until_it_expires() -> None:
+    queue = Queue(fairness_cache_ttl_seconds=FAIRNESS_CACHE_TTL_SECONDS)
+    medium = {"difficulty_min": 40, "difficulty_max": 70}
+    queue.add_job(job_type="test_type", dataset="dataset", revision="rev", difficulty=50)
+    with patch("libcommon.queue.jobs.time") as time_mock:
+        time_mock.monotonic.return_value = 1000.0
+        assert queue.start_job(**medium)["params"]["dataset"] == "dataset"
+        # ^ fills the cache for the three priorities: HIGH and NORMAL have no waiting job
+        with (
+            patch.object(Collection, "find", side_effect=AssertionError("query")),
+            patch.object(Collection, "distinct", side_effect=AssertionError("distinct")),
+            patch.object(Database, "command", side_effect=AssertionError("command")),
+        ):
+            for priority in [Priority.HIGH, Priority.NORMAL]:
+                with pytest.raises(EmptyQueueError):
+                    queue._get_next_waiting_job_for_priority(priority=priority, **medium)
+            time_mock.monotonic.return_value = 1000.0 + FAIRNESS_CACHE_TTL_SECONDS
+            with pytest.raises(AssertionError):
+                queue._get_next_waiting_job_for_priority(priority=Priority.HIGH, **medium)
+        queue.add_job(job_type="test_type", dataset="dataset2", revision="rev", difficulty=50, priority=Priority.HIGH)
+        assert queue.start_job(**medium)["params"]["dataset"] == "dataset2"
 
 
 def test_backfill_missing_worker_size() -> None:
