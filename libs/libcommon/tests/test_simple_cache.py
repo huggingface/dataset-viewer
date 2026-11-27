@@ -7,6 +7,7 @@ from decimal import Decimal
 from http import HTTPStatus
 from time import process_time
 from typing import Any, Optional, TypedDict
+from unittest.mock import patch
 
 import pytest
 from bson.errors import InvalidDocument
@@ -150,6 +151,36 @@ def test_upsert_response_not_storable_keeps_the_metrics() -> None:
             http_status=HTTPStatus.OK,
         )
     assert_metric_entries_per_kind(http_status=HTTPStatus.OK, error_code=None, kind=CACHE_KIND, total=1)
+
+
+def test_upsert_response_does_not_read_the_entry_back() -> None:
+    # the entry can be deleted right after the write, by a deletion of the dataset's cache: reading it back raised, and
+    # stopped the worker loop
+    upsert_response(
+        kind=CACHE_KIND,
+        dataset=DATASET_NAME,
+        dataset_git_revision=REVISION_NAME,
+        content={},
+        http_status=HTTPStatus.OK,
+    )
+    queryset_class: Any = type(CachedResponseDocument.objects())
+    get = queryset_class.get
+
+    def delete_the_dataset_then_get(queryset: Any, *args: Any, **kwargs: Any) -> Any:
+        if queryset._document is CachedResponseDocument:
+            CachedResponseDocument._get_collection().delete_many({"dataset": DATASET_NAME})
+        return get(queryset, *args, **kwargs)
+
+    with patch.object(queryset_class, "get", delete_the_dataset_then_get):
+        upsert_response(
+            kind=CACHE_KIND,
+            dataset=DATASET_NAME,
+            dataset_git_revision=REVISION_NAME,
+            content={"a": 1},
+            http_status=HTTPStatus.OK,
+        )
+
+    assert get_response(kind=CACHE_KIND, dataset=DATASET_NAME)["content"] == {"a": 1}
 
 
 @pytest.mark.parametrize(
