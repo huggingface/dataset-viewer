@@ -143,23 +143,3 @@ jobs:
           E2E_ADMIN_USER_TOKEN: ${{ secrets.E2E_ADMIN_USER_TOKEN }}
         run: |
           poetry run python -m pytest -vv -s tests
-      - name: Show the state of the queue and the cache, and the service logs
-        if: failure()
-        env:
-          MONGO_PORT: ${{ env.mongo-port }}
-          MONGO_REPLICASET: ${{ env.replicaset }}
-        run: |
-          docker compose exec -T mongodb mongosh --port "$MONGO_PORT" --quiet --eval '
-            const cache = db.getSiblingDB("dataset_viewer_cache").cachedResponsesBlue;
-            print("== cache entries");
-            cache.find({}, {_id: 0, kind: 1, dataset: 1, config: 1, split: 1, http_status: 1, error_code: 1, updated_at: 1})
-              .sort({dataset: 1, updated_at: 1})
-              .forEach((entry) => print(JSON.stringify(entry)));
-            const queue = db.getSiblingDB("dataset_viewer_queue");
-            queue.getCollectionNames().forEach((name) => print(`== ${name}: ${queue[name].countDocuments()} documents`));
-            print("== jobs left in the queue");
-            queue.jobsBlue.find({}, {_id: 0, type: 1, dataset: 1, config: 1, split: 1, status: 1, created_at: 1, started_at: 1})
-              .forEach((job) => print(JSON.stringify(job)));
-          '
-          echo "== worker and api logs about the test datasets"
-          docker compose logs --no-color --timestamps worker api | grep -E "tmp-dataset|ERROR|Traceback|Error:" | tail -n 5000
