@@ -3,7 +3,7 @@ import os
 import sys
 import time
 from collections.abc import Callable, Iterator
-from datetime import timedelta
+from datetime import datetime, timedelta
 from http import HTTPStatus
 from pathlib import Path
 from unittest.mock import patch
@@ -90,6 +90,8 @@ def start_worker_loop_with_long_job() -> None:
     with QueueMongoResource(database=app_config.queue.mongo_database, host=app_config.queue.mongo_url):
         current_job = JobDocument.objects(pk=current_job_info["job_id"]).get()
         assert current_job.started_at is not None
+        # as in the loop: the job info of a started job has its start date, written to the state file as a string
+        current_job_info["started_at"] = current_job.started_at
         worker_state = WorkerState(
             current_job_info=current_job_info, last_updated=pytz.UTC.localize(current_job.started_at)
         )
@@ -490,6 +492,24 @@ def test_executor_stops_on_long_job(
     assert response.split == long_job.split
     assert response.content == expected_error
     assert response.details == expected_error
+
+
+def test_get_state_gives_back_the_types_of_the_job_info(executor: WorkerExecutor, worker_state_file_path: str) -> None:
+    # the loop writes the state as JSON, where the dates of the job are strings: kill_long_job then failed to compute
+    # the duration of the job, and the job stayed started
+    started_at = get_datetime()
+    job_info = get_job_info()
+    job_info["started_at"] = started_at
+    job_info["created_at"] = started_at - timedelta(seconds=1)
+    job_info["first_job_created_at"] = None
+    write_worker_state(WorkerState(current_job_info=job_info, last_updated=get_datetime()), worker_state_file_path)
+
+    worker_state = executor.get_state()
+
+    assert worker_state is not None
+    assert worker_state["current_job_info"] == job_info
+    assert isinstance(worker_state["current_job_info"]["started_at"], datetime)
+    assert worker_state["current_job_info"]["priority"] is Priority.LOW
 
 
 def test_executor_web_app_answers_after_a_pipe_buffer_of_logs(
