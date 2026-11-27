@@ -1,11 +1,9 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 The HuggingFace Authors.
 
-import asyncio
 import io
 import os
 import signal
-import time
 from http import HTTPStatus
 from typing import Any, Optional
 from unittest.mock import patch
@@ -133,9 +131,8 @@ async def test_a_child_that_died_while_idle_is_replaced(app_config: AppConfig) -
         pid = child_pid(child)
         assert pid is not None
         os.kill(pid, signal.SIGKILL)
-        deadline = time.monotonic() + 10
-        while child._child is not None and child._child.process.is_alive() and time.monotonic() < deadline:
-            await asyncio.sleep(0.05)
+        if child._child is not None:
+            child._child.process.join(10)
         response = await build(child, png_bytes())
         assert child_pid(child) != pid
     finally:

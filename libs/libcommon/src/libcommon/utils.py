@@ -312,3 +312,18 @@ def thread_map(fn: Callable[..., T], *iterables: Iterable[Any], max_workers: Opt
     """Like `list(map(fn, *iterables))` in a thread pool, without the global lock of tqdm's `thread_map`."""
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         return list(executor.map(fn, *iterables))
+
+
+def get_private_memory_bytes(pid: int) -> Optional[int]:
+    """The memory a process holds that it doesn't share with other processes (Private_Dirty + Private_Clean).
+
+    For a forked child, the pages it still shares with its parent don't count. A spawned child holds its whole
+    interpreter as private memory.
+    """
+    try:
+        with open(f"/proc/{pid}/smaps_rollup", "r") as f:
+            return 1024 * sum(
+                int(line.split()[1]) for line in f if line.startswith(("Private_Dirty:", "Private_Clean:"))
+            )
+    except (OSError, ValueError):
+        return None

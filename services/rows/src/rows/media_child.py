@@ -1,7 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 The HuggingFace Authors.
 
-import glob
 import logging
 import multiprocessing
 import os
@@ -14,14 +13,15 @@ from typing import Any, Optional, cast
 
 import anyio
 import pyarrow as pa
-from datasets import Features
 from libapi.exceptions import ApiError, TooBigContentError, UnexpectedApiError
 from libapi.response import create_response
 from libcommon.cloudfront import get_cloudfront_signer
 from libcommon.dtos import PaginatedResponse
 from libcommon.log import init_logging
+from libcommon.prometheus import remove_process_metric_files
 from libcommon.storage_client import StorageClient
 from libcommon.url_preparator import URLPreparator
+from libcommon.utils import get_private_memory_bytes
 from prometheus_client import Counter
 
 from rows.config import AppConfig
@@ -63,24 +63,6 @@ def create_cached_assets_storage_client(app_config: AppConfig) -> StorageClient:
     )
 
 
-def _get_private_memory_bytes(pid: int) -> Optional[int]:
-    try:
-        with open(f"/proc/{pid}/smaps_rollup", "r") as f:
-            return 1024 * sum(
-                int(line.split()[1]) for line in f if line.startswith(("Private_Dirty:", "Private_Clean:"))
-            )
-    except (FileNotFoundError, ProcessLookupError, ValueError, PermissionError):
-        return None
-
-
-def _remove_prometheus_files(pid: int) -> None:
-    """Remove the metric files of a stopped child: else every new child adds files that each scrape reads."""
-    directory = os.environ.get("PROMETHEUS_MULTIPROC_DIR")
-    if directory:
-        for path in glob.glob(os.path.join(directory, f"*_{pid}.db")):
-            os.remove(path)
-
-
 def _serve(connection: Connection, app_config: AppConfig) -> None:
     """Build the responses that the worker sends, until it closes the connection."""
     # the child doesn't read the environment or the secrets files: the worker sent its config
@@ -110,13 +92,19 @@ def _serve(connection: Connection, app_config: AppConfig) -> None:
             result = UnexpectedApiError("Unexpected error.", err)
         del pa_table
         connection.send(result)
+        # the memory check after the response must not count it
+        del result
 
 
 @dataclass
 class _Child:
     process: SpawnProcess
-    pid: int
     connection: Connection
+
+    @property
+    def pid(self) -> int:
+        # set once the process is started, which _start does before it returns the child
+        return cast(int, self.process.pid)
 
 
 class MediaChildProcess:
@@ -126,7 +114,7 @@ class MediaChildProcess:
     gigabytes, and glibc keeps them after the response. In a child, the worker can kill the request that takes too much
     memory, and give the memory back to the OS by replacing the child, without killing the pod.
 
-    The caller holds `turn` while it uses the child.
+    It builds one response at a time: the caller must not call `create_response` again before it returns.
 
     Args:
         app_config (`AppConfig`): the config of the worker, sent to the child.
@@ -147,34 +135,10 @@ class MediaChildProcess:
             kill_memory_bytes = int(pod_limit * MEDIA_CHILD_KILL_MEMORY_SHARE) if pod_limit else None
         self.kill_memory_bytes = kill_memory_bytes
         self.max_idle_memory_bytes = max_idle_memory_bytes
-        self.turn = anyio.Semaphore(1)
         self._child: Optional[_Child] = None
 
-    async def create_response(
-        self,
-        description: str,
-        dataset: str,
-        revision: str,
-        config: str,
-        split: str,
-        pa_table: pa.Table,
-        offset: int,
-        features: Features,
-        num_rows_total: int,
-        partial: bool,
-        truncated_columns: Optional[list[str]] = None,
-    ) -> PaginatedResponse:
-        params = {
-            "dataset": dataset,
-            "revision": revision,
-            "config": config,
-            "split": split,
-            "offset": offset,
-            "features": features,
-            "num_rows_total": num_rows_total,
-            "partial": partial,
-            "truncated_columns": truncated_columns,
-        }
+    async def create_response(self, description: str, pa_table: pa.Table, **params: Any) -> PaginatedResponse:
+        """Build the response of `libapi.response.create_response` in the child, with the worker's storage client."""
         return await anyio.to_thread.run_sync(self._create_response, description, pa_table, params)
 
     def _create_response(self, description: str, pa_table: pa.Table, params: dict[str, Any]) -> PaginatedResponse:
@@ -198,7 +162,7 @@ class MediaChildProcess:
                 if child.connection.poll(MEDIA_CHILD_MEMORY_CHECK_INTERVAL_SECONDS):
                     result = child.connection.recv()
                     break
-                private_memory = _get_private_memory_bytes(child.pid)
+                private_memory = get_private_memory_bytes(child.pid)
                 if (
                     self.kill_memory_bytes is not None
                     and private_memory is not None
@@ -227,7 +191,7 @@ class MediaChildProcess:
                     "The media of the rows need more memory than the server allows. Please request fewer rows."
                 )
             raise UnexpectedApiError(f"The process that builds the media of the rows crashed (exit code {exit_code}).")
-        private_memory = _get_private_memory_bytes(child.pid)
+        private_memory = get_private_memory_bytes(child.pid)
         if private_memory is None or private_memory >= self.max_idle_memory_bytes:
             self._stop(child, reason="replaced")
             child = self._start()
@@ -244,15 +208,14 @@ class MediaChildProcess:
         )
         process.start()
         child_connection.close()
-        pid = cast(int, process.pid)
-        logging.info(f"rows worker {os.getpid()} started its media child process {pid}")
-        return _Child(process=process, pid=pid, connection=connection)
+        logging.info(f"rows worker {os.getpid()} started its media child process {process.pid}")
+        return _Child(process=process, connection=connection)
 
     def _stop(self, child: _Child, reason: str) -> Optional[int]:
         child.connection.close()
         child.process.kill()
         child.process.join()
-        _remove_prometheus_files(child.pid)
+        remove_process_metric_files(child.pid)
         ROWS_MEDIA_CHILD_STOPS_TOTAL.labels(reason=reason).inc()
         return child.process.exitcode
 

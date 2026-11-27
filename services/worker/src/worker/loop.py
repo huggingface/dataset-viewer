@@ -4,7 +4,6 @@
 import ctypes
 import ctypes.util
 import gc
-import glob
 import logging
 import os
 import random
@@ -22,7 +21,7 @@ import pyarrow as pa
 from filelock import FileLock
 from huggingface_hub import HfFileSystem
 from libcommon.dtos import JobInfo, JobResult
-from libcommon.prometheus import START_JOB_NO_JOB_TOTAL, LongStepProfiler, StepProfiler
+from libcommon.prometheus import START_JOB_NO_JOB_TOTAL, LongStepProfiler, StepProfiler, remove_process_metric_files
 from libcommon.queue.jobs import (
     AlreadyStartedJobError,
     EmptyQueueError,
@@ -31,7 +30,7 @@ from libcommon.queue.jobs import (
     Queue,
 )
 from libcommon.storage_client import StorageClient
-from libcommon.utils import get_datetime
+from libcommon.utils import get_datetime, get_private_memory_bytes
 from psutil import cpu_count, getloadavg, swap_memory, virtual_memory
 
 from worker.config import AppConfig
@@ -68,28 +67,6 @@ def free_memory() -> None:
     pa.default_memory_pool().release_unused()
     if _MALLOC_TRIM is not None:
         _MALLOC_TRIM(0)
-
-
-def _remove_prometheus_files(pid: int) -> None:
-    """Remove the metric files of a job's child process: else every job adds files that each scrape reads.
-
-    The job's own metrics are lost with them: the loop process keeps measuring the job steps.
-    """
-    directory = os.environ.get("PROMETHEUS_MULTIPROC_DIR")
-    if directory:
-        for path in glob.glob(os.path.join(directory, f"*_{pid}.db")):
-            os.remove(path)
-
-
-def _get_private_memory_bytes(pid: int) -> Optional[int]:
-    """The memory a process wrote to since it was forked: the pages it shares with its parent don't count."""
-    try:
-        with open(f"/proc/{pid}/smaps_rollup", "r") as f:
-            return 1024 * sum(
-                int(line.split()[1]) for line in f if line.startswith(("Private_Dirty:", "Private_Clean:"))
-            )
-    except (FileNotFoundError, ProcessLookupError, ValueError, PermissionError):
-        return None
 
 
 @dataclass
@@ -453,7 +430,7 @@ class Loop:
             pass
         child.connection.close()
         _, status = os.waitpid(child.pid, 0)
-        _remove_prometheus_files(child.pid)
+        remove_process_metric_files(child.pid)
         exit_code = os.waitstatus_to_exitcode(status)
         # the child didn't run the post_compute hook, which removes the cache directory of the job
         job_manager.job_runner.post_compute()
@@ -505,7 +482,7 @@ class Loop:
     def can_run_more_jobs(self, child: JobChild) -> bool:
         if child.jobs >= JOB_CHILD_MAX_JOBS:
             return False
-        private_memory = _get_private_memory_bytes(child.pid)
+        private_memory = get_private_memory_bytes(child.pid)
         pod_limit = self._get_pod_memory_limit_bytes()
         if private_memory is None or not pod_limit:
             return False
@@ -521,7 +498,7 @@ class Loop:
             exited_pid, _ = os.waitpid(pid, os.WNOHANG)
             if exited_pid:
                 self.exiting_job_children.discard(pid)
-                _remove_prometheus_files(pid)
+                remove_process_metric_files(pid)
 
     def stop_job_children(self) -> None:
         if self.job_child is not None:
@@ -529,7 +506,7 @@ class Loop:
             self.job_child = None
         for pid in self.exiting_job_children:
             os.waitpid(pid, 0)
-            _remove_prometheus_files(pid)
+            remove_process_metric_files(pid)
         self.exiting_job_children.clear()
 
     def set_worker_state(self, current_job_info: Optional[JobInfo]) -> None:

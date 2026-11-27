@@ -82,6 +82,8 @@ def create_rows_endpoint(
     # Each query can hold up to max_arrow_data_in_memory bytes of parquet data until its response is built, and the
     # event loop starts every request it receives: without a bound, hundreds of queries at once outgrow the pod memory.
     query_slots = anyio.Semaphore(max_concurrent_queries)
+    # the media child builds one response at a time
+    media_slot = anyio.Semaphore(1)
 
     @asynccontextmanager
     async def take_slot(slots: anyio.Semaphore) -> AsyncIterator[None]:
@@ -165,7 +167,7 @@ def create_rows_endpoint(
                     child = (
                         media_child if media_child is not None and require_storage_embed(rows_index.features) else None
                     )
-                    async with take_slot(child.turn) if child else nullcontext(), take_slot(query_slots):
+                    async with take_slot(media_slot) if child else nullcontext(), take_slot(query_slots):
                         with track_request(f"{dataset=} {config=} {split=} {offset=} {length=}") as tracked:
                             with StepProfiler(method="rows_endpoint", step="query the rows"):
                                 try:
@@ -175,35 +177,28 @@ def create_rows_endpoint(
                                     raise TooBigContentError(str(err)) from None
                             record_arrow_bytes(tracked, pa_table.nbytes)
                             with StepProfiler(method="rows_endpoint", step="transform to a list"):
+                                response_params = dict(
+                                    dataset=dataset,
+                                    revision=revision,
+                                    config=config,
+                                    split=split,
+                                    offset=offset,
+                                    features=rows_index.features,
+                                    partial=rows_index.partial,
+                                    num_rows_total=rows_index.num_rows_total,
+                                    truncated_columns=truncated_columns,
+                                )
                                 if child:
                                     response = await child.create_response(
-                                        description=tracked.description,
-                                        dataset=dataset,
-                                        revision=revision,
-                                        config=config,
-                                        split=split,
-                                        pa_table=pa_table,
-                                        offset=offset,
-                                        features=rows_index.features,
-                                        partial=rows_index.partial,
-                                        num_rows_total=rows_index.num_rows_total,
-                                        truncated_columns=truncated_columns,
+                                        description=tracked.description, pa_table=pa_table, **response_params
                                     )
                                 else:
                                     response = await create_response(
-                                        dataset=dataset,
-                                        revision=revision,
-                                        config=config,
-                                        split=split,
                                         storage_client=cached_assets_storage_client,
                                         hf_endpoint=hf_endpoint,
                                         hf_token=hf_token,
                                         pa_table=pa_table,
-                                        offset=offset,
-                                        features=rows_index.features,
-                                        partial=rows_index.partial,
-                                        num_rows_total=rows_index.num_rows_total,
-                                        truncated_columns=truncated_columns,
+                                        **response_params,
                                     )
                 except EmptyParquetMetadataError:
                     raise ResponseNotFoundError("Not found.") from None

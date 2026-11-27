@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+import glob
 import os
 import time
 from types import TracebackType
@@ -117,6 +118,15 @@ def update_parquet_metadata_disk_usage(directory: StrPath) -> None:
 
 
 T = TypeVar("T", bound="StepProfiler")
+
+
+def remove_process_metric_files(pid: int) -> None:
+    """Remove the multiprocess metric files of a stopped child process: else every new child adds files that each
+    scrape reads. The metrics of the child are lost with them."""
+    directory = os.environ.get("PROMETHEUS_MULTIPROC_DIR")
+    if directory:
+        for path in glob.glob(os.path.join(directory, f"*_{pid}.db")):
+            os.remove(path)
 
 
 class StepProfiler:

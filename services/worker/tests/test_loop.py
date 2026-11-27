@@ -253,7 +253,7 @@ def test_the_jobs_reuse_the_child_process(
         assert pids[0] == pids[1] != os.getpid()
 
         # a child that holds too much memory is replaced after its job
-        monkeypatch.setattr(loop_module, "_get_private_memory_bytes", lambda pid: 10 * 1024**3)
+        monkeypatch.setattr(loop_module, "get_private_memory_bytes", lambda pid: 10 * 1024**3)
         loop.queue.add_job(job_type=JOB_TYPE, dataset="dataset3", revision="revision", difficulty=60)
         assert loop.process_next_job()
         assert loop.job_child is None
