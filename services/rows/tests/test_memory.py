@@ -98,3 +98,30 @@ def test_a_request_that_grows_the_worker_memory_is_logged(caplog: pytest.LogCapt
     assert len(warnings) == 1
     assert "256 MiB more anonymous memory (356 MiB) after dataset='big'" in warnings[0]
     assert "arrow table of 1000 bytes, with 0 other requests in flight" in warnings[0]
+    assert memory._release_requested.is_set(), "the watchdog gives the freed memory back to the OS"
+    memory._release_requested.clear()
+
+
+def test_the_watchdog_gives_the_freed_memory_back_to_the_os(caplog: pytest.LogCaptureFixture) -> None:
+    calls = []
+    readings = iter([600 * 2**20, 200 * 2**20])
+
+    def malloc_trim(pad: int) -> int:
+        calls.append("malloc_trim")
+        return 1
+
+    with (
+        patch.object(memory, "_read_anonymous_memory", lambda: next(readings)),
+        patch.object(memory, "_MALLOC_TRIM", malloc_trim),
+        patch("rows.memory.gc.collect", lambda: calls.append("gc.collect")),
+        patch.object(memory, "_read_int", lambda path: None),
+        patch("rows.memory.time.sleep", side_effect=[None, StopIteration]),
+        caplog.at_level(logging.INFO),
+    ):
+        memory._release_requested.set()
+        with pytest.raises(StopIteration):
+            memory._watch(threshold=0.85, interval_seconds=1.0)
+
+    assert calls == ["gc.collect", "malloc_trim"]
+    assert not memory._release_requested.is_set()
+    assert "gave 400 MiB back to the OS, it holds 200 MiB of anonymous memory" in caplog.text
