@@ -19,6 +19,7 @@ from rows.routes.rows import create_rows_endpoint
 
 class FakeRowsIndex:
     revision = "revision"
+    parquet_files: list[Any] = []
     features = Features({"a": Value("int64")})
     partial = False
     num_rows_total = 1
@@ -46,6 +47,7 @@ def endpoint(tmp_path: Any, max_concurrent_queries: int = 8) -> Any:
         parquet_metadata_directory=tmp_path,
         max_arrow_data_in_memory=10**9,
         max_concurrent_queries=max_concurrent_queries,
+        max_arrow_data_per_worker=10**9,
         hf_endpoint="http://localhost",
         blocked_datasets=[],
     )

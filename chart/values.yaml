@@ -364,6 +364,9 @@ rowsIndex:
   # Queries that each uvicorn worker of rows runs at once, the others wait. A pod can hold up to
   # maxArrowDataInMemory x maxConcurrentQueries x rows.uvicornNumWorkers of parquet data: keep it under its memory.
   maxConcurrentQueries: 8
+  # Bytes of Arrow data that the queries of a uvicorn worker of rows hold at once, the others wait. A response takes 5
+  # to 7 times the size of its Arrow table while it is built.
+  maxArrowDataPerWorker: "500_000_000"
 
 descriptiveStatistics:
   # Directory used temporarily to download dataset locally in .parquet to compute statistics

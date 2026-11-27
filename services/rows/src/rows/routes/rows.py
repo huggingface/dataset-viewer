@@ -6,6 +6,7 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from functools import lru_cache
 from http import HTTPStatus
+from pathlib import Path
 from typing import Optional
 
 import anyio
@@ -42,6 +43,7 @@ from libcommon.storage_client import StorageClient
 from starlette.requests import Request
 from starlette.responses import Response
 
+from rows.arrow_budget import ArrowBudget, estimate_arrow_bytes
 from rows.memory import record_arrow_bytes, track_request
 
 logger = logging.getLogger(__name__)
@@ -53,6 +55,7 @@ MAX_USER_AGENT_LENGTH = 200
 PROBE_DATASETS = {"lhoestq/probe-rows-service"}
 # a request that waits longer for a query slot gives up before the load balancer does, and tells the client to retry
 QUERY_SLOT_WAIT_SECONDS = 20
+ARROW_BUDGET_WAIT_SECONDS = 20
 
 
 def create_rows_endpoint(
@@ -60,6 +63,7 @@ def create_rows_endpoint(
     parquet_metadata_directory: StrPath,
     max_arrow_data_in_memory: int,
     max_concurrent_queries: int,
+    max_arrow_data_per_worker: int,
     hf_endpoint: str,
     blocked_datasets: list[str],
     hf_token: Optional[str] = None,
@@ -78,6 +82,7 @@ def create_rows_endpoint(
     # Each query can hold up to max_arrow_data_in_memory bytes of parquet data until its response is built, and the
     # event loop starts every request it receives: without a bound, hundreds of queries at once outgrow the pod memory.
     query_slots = anyio.Semaphore(max_concurrent_queries)
+    arrow_budget = ArrowBudget(max_arrow_data_per_worker)
 
     @asynccontextmanager
     async def query_slot() -> AsyncIterator[None]:
@@ -156,7 +161,20 @@ def create_rows_endpoint(
                     with StepProfiler(method="rows_endpoint", step="get row groups index"):
                         rows_index = get_rows_index(dataset=dataset, config=config, split=split)
                         revision = rows_index.revision
-                    async with query_slot():
+                    with StepProfiler(method="rows_endpoint", step="estimate the size of the rows"):
+                        arrow_bytes = await anyio.to_thread.run_sync(
+                            estimate_arrow_bytes,
+                            rows_index.parquet_files,
+                            Path(parquet_metadata_directory),
+                            offset,
+                            length,
+                        )
+                    async with (
+                        arrow_budget.hold(
+                            min(arrow_bytes, max_arrow_data_in_memory), wait_seconds=ARROW_BUDGET_WAIT_SECONDS
+                        ) as hold_at_least,
+                        query_slot(),
+                    ):
                         with track_request(f"{dataset=} {config=} {split=} {offset=} {length=}") as tracked:
                             with StepProfiler(method="rows_endpoint", step="query the rows"):
                                 try:
@@ -165,6 +183,7 @@ def create_rows_endpoint(
                                 except TooBigRows as err:
                                     raise TooBigContentError(str(err)) from None
                             record_arrow_bytes(tracked, pa_table.nbytes)
+                            hold_at_least(pa_table.nbytes)
                             with StepProfiler(method="rows_endpoint", step="transform to a list"):
                                 response = await create_response(
                                     dataset=dataset,

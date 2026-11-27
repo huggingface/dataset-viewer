@@ -36,6 +36,7 @@ class BigRowsIndex:
     """A query that keeps a table of 8 MB alive while the watchdog looks at the in-flight requests."""
 
     revision = "revision"
+    parquet_files: list[Any] = []
     features = Features({"a": Value("int64")})
     partial = False
     num_rows_total = 1_000_000
