@@ -409,6 +409,9 @@
           },
           {
             "$ref": "#/components/schemas/PdfFeature"
+          },
+          {
+            "$ref": "#/components/schemas/MeshFeature"
           }
         ]
       },
@@ -633,6 +636,19 @@
           }
         }
       },
+      "MeshFeature": {
+        "type": "object",
+        "required": ["_type"],
+        "properties": {
+          "_type": {
+            "type": "string",
+            "enum": ["Mesh"]
+          },
+          "decode": {
+            "type": "boolean"
+          }
+        }
+      },
       "VideoFeature": {
         "type": "object",
         "required": ["_type"],
@@ -719,6 +735,9 @@
           },
           {
             "$ref": "#/components/schemas/PdfCell"
+          },
+          {
+            "$ref": "#/components/schemas/MeshCell"
           }
         ]
       },
@@ -887,6 +906,22 @@
             "format": "uri"
           },
           "thumbnail":{
+            "$ref": "#/components/schemas/ImageCell"
+          },
+          "size_bytes": {
+            "type": "integer"
+          }
+        },
+        "required": ["src", "thumbnail", "size_bytes"]
+      },
+      "MeshCell": {
+        "type": "object",
+        "properties": {
+          "src": {
+            "type": "string",
+            "format": "uri"
+          },
+          "thumbnail": {
             "$ref": "#/components/schemas/ImageCell"
           },
           "size_bytes": {
