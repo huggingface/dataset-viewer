@@ -21,7 +21,7 @@ import threading
 import time
 from collections.abc import Callable, Mapping
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Optional, cast
 
 import uvicorn
 from libcommon.secrets import get_secrets, inherit_secrets
@@ -174,8 +174,7 @@ class _MemorySupervisor(Multiprocess):
         )
         # uvicorn's own terminate() also closes the pipe the worker answers the pings on, which crashes the thread
         # that answers them in the worker
-        assert process.pid is not None
-        os.kill(process.pid, signal.SIGTERM)
+        os.kill(cast(int, process.pid), signal.SIGTERM)
         new_process = Process(self.config, self.target, self.sockets)
         new_process.start()
         self.processes[self.processes.index(process)] = new_process
