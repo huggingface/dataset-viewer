@@ -40,6 +40,9 @@ class BigRowsIndex:
     partial = False
     num_rows_total = 1_000_000
 
+    async def scan_size(self, offset: int, length: int) -> int:
+        return 8_000_000
+
     async def query(self, offset: int, length: int) -> tuple[pa.Table, list[str]]:
         return pa.table({"a": list(range(1_000_000))}), []
 
@@ -78,9 +81,10 @@ async def test_the_watchdog_logs_the_in_flight_requests_close_to_the_limit(
 
 def test_the_watchdog_does_not_start_without_a_memory_limit(cgroup: Path) -> None:
     write_cgroup(cgroup, current=10, limit="max")
+    # patching threading.Thread patches it for the whole process: only count the watchdog threads
     with patch("rows.memory.threading.Thread") as thread:
         memory.start_memory_watchdog()
-    thread.assert_not_called()
+    assert all(call.kwargs.get("target") is not memory._watch for call in thread.call_args_list)
 
 
 def test_a_request_that_grows_the_worker_memory_is_logged(caplog: pytest.LogCaptureFixture) -> None:
@@ -98,3 +102,25 @@ def test_a_request_that_grows_the_worker_memory_is_logged(caplog: pytest.LogCapt
     assert len(warnings) == 1
     assert "256 MiB more anonymous memory (356 MiB) after dataset='big'" in warnings[0]
     assert "arrow table of 1000 bytes, with 0 other requests in flight" in warnings[0]
+    assert memory._release_requested.is_set(), "the watchdog gives the freed memory back to the OS"
+    memory._release_requested.clear()
+
+
+def test_the_watchdog_gives_the_freed_memory_back_to_the_os(caplog: pytest.LogCaptureFixture) -> None:
+    readings = iter([600 * 2**20, 200 * 2**20])
+    with (
+        patch.object(memory, "_read_anonymous_memory", lambda: next(readings)),
+        patch("rows.memory.gc.collect") as collect,
+        patch("rows.memory.pa.default_memory_pool") as memory_pool,
+        patch.object(memory, "_read_int", lambda _: None),
+        patch("rows.memory.time.sleep", side_effect=[None, StopIteration]),
+        caplog.at_level(logging.INFO),
+    ):
+        memory._release_requested.set()
+        with pytest.raises(StopIteration):
+            memory._watch(threshold=0.85, interval_seconds=1.0)
+
+    collect.assert_called_once()
+    memory_pool.return_value.release_unused.assert_called_once()
+    assert not memory._release_requested.is_set()
+    assert "gave 400 MiB back to the OS, it holds 200 MiB of anonymous memory" in caplog.text

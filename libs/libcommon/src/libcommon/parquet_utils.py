@@ -248,6 +248,11 @@ class RowsIndex:
             metadata_store=f"file://{self.parquet_metadata_directory}",
         )
 
+    async def scan_size(self, offset: int, length: int) -> int:
+        """The number of bytes that query() decodes for these rows, from the parquet metadata, before reading them."""
+        size: int = await self.viewer_index.scan_size(offset=offset, limit=length)
+        return size
+
     # note that this cache size is global for the class, not per instance
     @alru_cache(maxsize=1)
     async def query(self, offset: int, length: int) -> tuple[pa.Table, list[str]]:
