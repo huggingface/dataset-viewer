@@ -7,7 +7,7 @@ from unittest.mock import patch
 
 import pytest
 
-from webhook.routes.webhook import MoonWebhookV2Payload, parse_payload, process_payload
+from webhook.routes.webhook import MoonWebhookV2Payload, UpdatedRefDict, parse_payload, process_payload
 
 
 @pytest.mark.parametrize(
@@ -198,3 +198,46 @@ def test_process_payload(
             process_payload(payload, blocked_datasets=[], hf_endpoint="https://huggingface.co")
             assert mock_delete_dataset.call_count == int(does_update)
             assert mock_update_dataset.call_count == int(does_update)
+
+
+def _update_payload(updated_refs: list[UpdatedRefDict]) -> MoonWebhookV2Payload:
+    return {
+        "event": "update",
+        "movedTo": None,
+        "scope": "repo.content",
+        "repo": {"type": "dataset", "name": "org/dataset", "private": False, "headSha": "new-head"},
+        "updatedRefs": updated_refs,
+        "updatedConfig": None,
+    }
+
+
+@pytest.mark.parametrize(
+    "updated_refs,does_update",
+    [
+        ([{"ref": "refs/convert/parquet", "oldSha": "a", "newSha": "b"}], False),
+        (
+            [
+                {"ref": "refs/convert/parquet", "oldSha": "a", "newSha": "b"},
+                {"ref": "refs/convert/duckdb", "oldSha": "c", "newSha": "d"},
+            ],
+            False,
+        ),
+        (
+            [
+                {"ref": "refs/convert/parquet", "oldSha": "a", "newSha": "b"},
+                {"ref": "refs/heads/dev", "oldSha": "c", "newSha": "d"},
+            ],
+            True,
+        ),
+        ([{"ref": "refs/heads/dev", "oldSha": "c", "newSha": "d"}], True),
+    ],
+)
+def test_process_payload_convert_refs(updated_refs: list[UpdatedRefDict], does_update: bool) -> None:
+    with (
+        patch("webhook.routes.webhook.get_current_revision", return_value="old-head"),
+        patch("webhook.routes.webhook.delete_dataset") as mock_delete_dataset,
+        patch("webhook.routes.webhook.update_dataset") as mock_update_dataset,
+    ):
+        process_payload(_update_payload(updated_refs), blocked_datasets=[], hf_endpoint="https://huggingface.co")
+        assert mock_delete_dataset.call_count == int(does_update)
+        assert mock_update_dataset.call_count == int(does_update)
