@@ -1,14 +1,14 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2023 The HuggingFace Authors.
 
-from collections.abc import Iterator
+from collections.abc import Iterable, Iterator
 from contextlib import contextmanager
 from datetime import datetime
 from functools import partial
 from http import HTTPStatus
 from pathlib import Path
 from tempfile import NamedTemporaryFile
-from typing import Any, Optional
+from typing import Any, Optional, Union
 from unittest.mock import patch
 
 from datasets import Dataset
@@ -381,18 +381,25 @@ def put_cache(
 
 @contextmanager
 def put_diff(
-    diff: str,
+    diff: Union[str, Iterable[bytes]],
     dataset: str = DATASET_NAME,
     revision: str = REVISION_NAME,
 ) -> Iterator[None]:
-    original_get_diff = SmartDatasetUpdatePlan.get_diff
+    """Mock the diff of the commit, as a string (served in small chunks) or as chunks of bytes."""
+    original_get_diff_chunks = SmartDatasetUpdatePlan.get_diff_chunks
 
-    def mock_get_diff(self: SmartDatasetUpdatePlan) -> str:
+    def mock_get_diff_chunks(self: SmartDatasetUpdatePlan) -> Iterator[bytes]:
         if self.dataset == dataset and self.revision == revision:
-            return diff
-        return original_get_diff(self)
+            if isinstance(diff, str):
+                encoded_diff = diff.encode("utf-8")
+                for i in range(0, len(encoded_diff), 7):
+                    yield encoded_diff[i : i + 7]
+            else:
+                yield from diff
+        else:
+            yield from original_get_diff_chunks(self)
 
-    with patch.object(SmartDatasetUpdatePlan, "get_diff", mock_get_diff):
+    with patch.object(SmartDatasetUpdatePlan, "get_diff_chunks", mock_get_diff_chunks):
         yield
 
 

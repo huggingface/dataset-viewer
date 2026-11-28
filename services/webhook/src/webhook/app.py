@@ -114,4 +114,5 @@ def start() -> None:
         host=uvicorn_config.hostname,
         port=uvicorn_config.port,
         workers=uvicorn_config.num_workers,
+        replace_fat_workers=True,
     )

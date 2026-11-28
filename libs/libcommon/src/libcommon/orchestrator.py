@@ -4,6 +4,8 @@
 import logging
 import time
 from abc import ABC, abstractmethod
+from collections.abc import Generator, Iterable
+from contextlib import closing
 from dataclasses import dataclass, field
 from functools import lru_cache
 from http import HTTPStatus
@@ -983,6 +985,64 @@ class SmartUpdateImpossibleBecauseCacheHasMultipleRevisions(Exception):
     pass
 
 
+class SmartUpdateImpossibleBecauseDiffIsTooBig(Exception):
+    pass
+
+
+SMART_UPDATE_FILES = {"README.md", ".gitattributes", ".gitignore"}  # TODO: maybe support .huggingface.yaml later
+# Commits that change big text files stored in git have diffs of several GBs. The diff lines that matter are short,
+# so reading more than this means the commit changes big files.
+MAX_DIFF_BYTES = 10 * 1024 * 1024
+
+
+def _get_impacted_file(line: bytes) -> Optional[str]:
+    if line.startswith(b"--- a/") or line.startswith(b"+++ b/"):
+        return line.decode("utf-8").split("/", 1)[1]
+    if line.startswith(b"rename from ") or line.startswith(b"rename to "):
+        return line.decode("utf-8").split(" ", 2)[2]
+    return None
+
+
+def get_impacted_files_from_diff(diff_chunks: Iterable[bytes], max_diff_bytes: int = MAX_DIFF_BYTES) -> set[str]:
+    """
+    Get the files impacted by a commit, reading its diff chunk by chunk.
+
+    It stops reading at the first file that is not in SMART_UPDATE_FILES, since the smart update is impossible anyway.
+
+    Args:
+        diff_chunks (`Iterable[bytes]`): the chunks of the diff of the commit
+        max_diff_bytes (`int`): the maximum number of bytes to read
+
+    Raises:
+        [~`libcommon.orchestrator.SmartUpdateImpossibleBecauseDiffIsTooBig`]:
+          if the diff is bigger than max_diff_bytes and only changes files of SMART_UPDATE_FILES before that
+
+    Returns:
+        `set[str]`: the impacted files
+    """
+    impacted_files: set[str] = set()
+    num_bytes = 0
+    pending = bytearray()
+    for chunk in diff_chunks:
+        num_bytes += len(chunk)
+        if num_bytes > max_diff_bytes:
+            raise SmartUpdateImpossibleBecauseDiffIsTooBig(f"The diff is bigger than {max_diff_bytes} bytes")
+        *lines, last = chunk.split(b"\n")
+        if not lines:
+            pending += last
+            continue
+        lines[0] = bytes(pending + lines[0])
+        pending = bytearray(last)
+        for line in lines:
+            if (impacted_file := _get_impacted_file(line)) is not None:
+                impacted_files.add(impacted_file)
+                if impacted_file not in SMART_UPDATE_FILES:
+                    return impacted_files
+    if (impacted_file := _get_impacted_file(bytes(pending))) is not None:
+        impacted_files.add(impacted_file)
+    return impacted_files
+
+
 @dataclass
 class SmartDatasetUpdatePlan(Plan):
     dataset: str
@@ -994,7 +1054,6 @@ class SmartDatasetUpdatePlan(Plan):
     hf_token: Optional[str] = None
 
     cached_revision: str = field(init=False)
-    diff: str = field(init=False)
     files_impacted_by_commit: set[str] = field(init=False)
     updated_yaml_fields_in_dataset_card: list[str] = field(init=False)
 
@@ -1034,13 +1093,8 @@ class SmartDatasetUpdatePlan(Plan):
             raise SmartUpdateImpossibleBecauseCachedRevisionIsNotParentOfNewRevision(
                 f"Failed to smart update {self.dataset} to {self.revision[:7]} because the cached revision {self.cached_revision[:7]} is not its parent"
             )
-        self.diff = self.get_diff()
         self.files_impacted_by_commit = self.get_impacted_files()
-        if self.files_impacted_by_commit - {
-            "README.md",
-            ".gitattributes",
-            ".gitignore",
-        }:  # TODO: maybe support .huggingface.yaml later
+        if self.files_impacted_by_commit - SMART_UPDATE_FILES:
             raise SmartUpdateImpossibleBecauseOfUpdatedFiles(", ".join(self.files_impacted_by_commit)[:1000])
         self.updated_yaml_fields_in_dataset_card = self.get_updated_yaml_fields_in_dataset_card()
 
@@ -1069,29 +1123,27 @@ class SmartDatasetUpdatePlan(Plan):
                     )
                 )
 
-    def get_diff(self) -> str:
+    def get_diff_chunks(self) -> Generator[bytes, None, None]:
         headers = build_hf_headers(token=self.hf_token, library_name="dataset-viewer")
-        resp = get_session().get(
+        with get_session().stream(
+            "GET",
             self.hf_endpoint + f"/api/datasets/{self.dataset}/compare/{self.revision}^..{self.revision}",
             timeout=10,
             headers=headers,
-        )
-        resp.raise_for_status()
-        if not isinstance(resp.content, bytes):  # for mypy
-            raise RuntimeError(
-                f"failed reading /api/datasets/{self.dataset}/compare/{self.revision}^..{self.revision}"
-            )
-        return resp.content.decode("utf-8")
+        ) as resp:
+            resp.raise_for_status()
+            yield from resp.iter_bytes()
 
     def get_impacted_files(self) -> set[str]:
-        return set(
-            line.split(" ", 2)[2] if line.startswith("rename ") else line.split("/", 1)[1]
-            for line in self.diff.split("\n")
-            if line.startswith("--- a/")
-            or line.startswith("+++ b/")
-            or line.startswith("rename from ")
-            or line.startswith("rename to ")
-        )
+        with closing(self.get_diff_chunks()) as diff_chunks:
+            try:
+                return get_impacted_files_from_diff(diff_chunks)
+            except SmartUpdateImpossibleBecauseDiffIsTooBig:
+                logging.warning(
+                    f"The diff of {self.dataset} at {self.revision[:7]} is bigger than {MAX_DIFF_BYTES} bytes:"
+                    " the smart update is not possible"
+                )
+                raise
 
     def get_updated_yaml_fields_in_dataset_card(self) -> list[str]:
         if "README.md" not in self.files_impacted_by_commit:
