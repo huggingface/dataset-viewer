@@ -33,3 +33,12 @@ def test_init_logging_overrides_a_preexisting_root_handler(preserve_root_logging
 
     assert root.getEffectiveLevel() == logging.INFO
     assert root.isEnabledFor(logging.INFO)
+
+
+@pytest.mark.parametrize("logger_name", ["botocore", "botocore.endpoint", "botocore.auth", "aiobotocore", "s3fs"])
+def test_init_logging_keeps_aws_clients_quiet_at_debug_level(preserve_root_logging: None, logger_name: str) -> None:
+    init_logging(level=logging.DEBUG)
+
+    assert logging.getLogger().isEnabledFor(logging.DEBUG)
+    assert not logging.getLogger(logger_name).isEnabledFor(logging.INFO)
+    assert logging.getLogger(logger_name).isEnabledFor(logging.WARNING)

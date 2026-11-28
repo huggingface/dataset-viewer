@@ -184,7 +184,7 @@ mongodbMigration:
 backfill:
   enabled: true
   log:
-    level: "debug"
+    level: "info"
   action: "backfill"
   schedule: "05 12 * * *"
   # every day
@@ -205,7 +205,7 @@ backfill:
 backfillRetryableErrors:
   enabled: true
   log:
-    level: "debug"
+    level: "info"
   action: "backfill-retryable-errors"
   schedule: "0 */2 * * *"
   # every 30 minutes
