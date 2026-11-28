@@ -103,6 +103,13 @@ class WorkerSizeJobsCountDocument(Document):
         return WorkerSize.heavy
 
     @staticmethod
+    def get_worker_size_max_difficulty(difficulty: int) -> int:
+        """The highest difficulty of the worker size of this difficulty."""
+        return {WorkerSize.light: 40, WorkerSize.medium: 70}.get(
+            WorkerSizeJobsCountDocument.get_worker_size(difficulty), DEFAULT_DIFFICULTY_MAX
+        )
+
+    @staticmethod
     def get_next_worker_size_difficulty(difficulty: int) -> int:
         """The lowest difficulty of the next bigger worker size, or the max difficulty for the biggest one."""
         return {WorkerSize.light: 41, WorkerSize.medium: 71}.get(

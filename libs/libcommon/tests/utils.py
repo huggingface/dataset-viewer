@@ -341,6 +341,7 @@ def put_cache(
     use_old_job_runner_version: Optional[bool] = False,
     updated_at: Optional[datetime] = None,
     failed_runs: int = 0,
+    min_difficulty: Optional[int] = None,
 ) -> None:
     if not config:
         if not step.startswith("dataset-"):
@@ -376,6 +377,7 @@ def put_cache(
         error_code=error_code,
         updated_at=updated_at,
         failed_runs=failed_runs,
+        min_difficulty=min_difficulty,
     )
 
 
