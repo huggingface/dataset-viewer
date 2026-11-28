@@ -249,6 +249,22 @@ class DeleteDatasetCacheEntriesTask(Task):
             return TasksStatistics(num_deleted_cache_entries=delete_dataset_responses(dataset=self.dataset))
 
 
+def _delete_ref_branch(dataset: str, branch: str, committer_hf_token: str) -> TasksStatistics:
+    try:
+        HfApi(token=committer_hf_token).delete_branch(repo_id=dataset, branch=branch, repo_type="dataset")
+    except (RevisionNotFoundError, RepositoryNotFoundError):
+        return TasksStatistics(num_deleted_ref_branches=0)
+    except HfHubHTTPError as err:
+        if err.response.status_code < HTTPStatus.INTERNAL_SERVER_ERROR:
+            raise
+        # a leftover branch does not prevent the recomputation (the parquet conversion deletes the stale files, and
+        # nothing writes to refs/convert/duckdb anymore), and the Hub returns 500s for about an hour after a
+        # concurrent deletion left a lock on the ref
+        logging.warning(f"Could not delete the {branch} branch of {dataset}: {err}")
+        return TasksStatistics(num_deleted_ref_branches=0)
+    return TasksStatistics(num_deleted_ref_branches=1)
+
+
 @dataclass
 class DeleteDatasetParquetRefBranchTask(Task):
     dataset: str
@@ -270,22 +286,9 @@ class DeleteDatasetParquetRefBranchTask(Task):
             method="DeleteDatasetParquetRefBranchTask.run",
             step="all",
         ):
-            try:
-                HfApi(token=self.committer_hf_token).delete_branch(
-                    repo_id=self.dataset,
-                    branch="refs/convert/parquet",
-                    repo_type="dataset",
-                )
-            except (RevisionNotFoundError, RepositoryNotFoundError):
-                return TasksStatistics(num_deleted_ref_branches=0)
-            except HfHubHTTPError as err:
-                if err.response.status_code < HTTPStatus.INTERNAL_SERVER_ERROR:
-                    raise
-                # a leftover branch does not prevent the recomputation (the parquet conversion deletes the stale
-                # files), and the Hub returns 500s for about an hour after a concurrent deletion left a lock on the ref
-                logging.warning(f"Could not delete the refs/convert/parquet branch of {self.dataset}: {err}")
-                return TasksStatistics(num_deleted_ref_branches=0)
-            return TasksStatistics(num_deleted_ref_branches=1)
+            return _delete_ref_branch(
+                dataset=self.dataset, branch="refs/convert/parquet", committer_hf_token=self.committer_hf_token
+            )
 
 
 @dataclass
@@ -309,22 +312,9 @@ class DeleteDatasetDuckdbRefBranchTask(Task):
             method="DeleteDatasetDuckdbRefBranchTask.run",
             step="all",
         ):
-            try:
-                HfApi(token=self.committer_hf_token).delete_branch(
-                    repo_id=self.dataset,
-                    branch="refs/convert/duckdb",
-                    repo_type="dataset",
-                )
-            except (RevisionNotFoundError, RepositoryNotFoundError):
-                return TasksStatistics(num_deleted_ref_branches=0)
-            except HfHubHTTPError as err:
-                if err.response.status_code < HTTPStatus.INTERNAL_SERVER_ERROR:
-                    raise
-                # a leftover branch does not prevent the recomputation (the parquet conversion deletes the stale
-                # files), and the Hub returns 500s for about an hour after a concurrent deletion left a lock on the ref
-                logging.warning(f"Could not delete the refs/convert/duckdb branch of {self.dataset}: {err}")
-                return TasksStatistics(num_deleted_ref_branches=0)
-            return TasksStatistics(num_deleted_ref_branches=1)
+            return _delete_ref_branch(
+                dataset=self.dataset, branch="refs/convert/duckdb", committer_hf_token=self.committer_hf_token
+            )
 
 
 @dataclass
