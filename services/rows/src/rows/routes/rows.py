@@ -199,7 +199,9 @@ def create_rows_endpoint(
                 )
             except Exception as e:
                 error = e if isinstance(e, ApiError) else UnexpectedApiError("Unexpected error.", e)
+                # the scan size only depends on the parquet files, so a retry gets the same error
+                max_age = max_age_long if isinstance(error, TooBigContentError) else max_age_short
                 with StepProfiler(method="rows_endpoint", step="generate API error response"):
-                    return get_json_api_error_response(error=error, max_age=max_age_short, revision=revision)
+                    return get_json_api_error_response(error=error, max_age=max_age, revision=revision)
 
     return rows_endpoint
