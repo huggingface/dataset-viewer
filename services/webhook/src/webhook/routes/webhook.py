@@ -91,6 +91,16 @@ def process_payload(
     if event == "remove":
         delete_dataset(dataset=dataset, storage_clients=storage_clients)
     elif event in ["add", "update", "move"]:
+        updated_refs = payload.get("updatedRefs") or []
+        if (
+            event == "update"
+            and updated_refs
+            and all(updated_ref.get("ref", "").startswith("refs/convert/") for updated_ref in updated_refs)
+        ):
+            # the workers write the refs/convert/* branches: deleting and recomputing the dataset on these webhooks
+            # deletes the branch while a worker commits to it, and concurrent deletions fail on the Hub
+            logging.info(f"Webhook for {dataset} only updates refs/convert/* branches - skipping update.")
+            return None
         revision = payload["repo"].get("headSha")
         if (
             event == "update"
@@ -104,7 +114,7 @@ def process_payload(
             )
             return None
         old_revision: Optional[str] = None
-        for updated_ref in payload.get("updatedRefs") or []:
+        for updated_ref in updated_refs:
             ref = updated_ref.get("ref")
             ref_new_sha = updated_ref.get("newSha")
             ref_old_sha = updated_ref.get("oldSha")
