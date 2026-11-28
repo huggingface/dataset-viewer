@@ -4,7 +4,7 @@
 import logging
 import time
 from abc import ABC, abstractmethod
-from collections.abc import Generator, Iterable
+from collections.abc import Generator, Iterable, Iterator
 from contextlib import closing
 from dataclasses import dataclass, field
 from functools import lru_cache
@@ -1003,7 +1003,23 @@ def _get_impacted_file(line: bytes) -> Optional[str]:
     return None
 
 
-def get_impacted_files_from_diff(diff_chunks: Iterable[bytes], max_diff_bytes: int = MAX_DIFF_BYTES) -> set[str]:
+def _iter_diff_lines(diff_chunks: Iterable[bytes]) -> Iterator[bytes]:
+    num_bytes = 0
+    pending = bytearray()
+    for chunk in diff_chunks:
+        num_bytes += len(chunk)
+        if num_bytes > MAX_DIFF_BYTES:
+            raise SmartUpdateImpossibleBecauseDiffIsTooBig(f"The diff is bigger than {MAX_DIFF_BYTES} bytes")
+        *lines, last = chunk.split(b"\n")
+        if lines:
+            lines[0] = bytes(pending + lines[0])
+            pending.clear()
+            yield from lines
+        pending += last
+    yield bytes(pending)
+
+
+def get_impacted_files_from_diff(diff_chunks: Iterable[bytes]) -> set[str]:
     """
     Get the files impacted by a commit, reading its diff chunk by chunk.
 
@@ -1011,35 +1027,20 @@ def get_impacted_files_from_diff(diff_chunks: Iterable[bytes], max_diff_bytes: i
 
     Args:
         diff_chunks (`Iterable[bytes]`): the chunks of the diff of the commit
-        max_diff_bytes (`int`): the maximum number of bytes to read
 
     Raises:
         [~`libcommon.orchestrator.SmartUpdateImpossibleBecauseDiffIsTooBig`]:
-          if the diff is bigger than max_diff_bytes and only changes files of SMART_UPDATE_FILES before that
+          if the diff is bigger than MAX_DIFF_BYTES and only changes files of SMART_UPDATE_FILES before that
 
     Returns:
         `set[str]`: the impacted files
     """
     impacted_files: set[str] = set()
-    num_bytes = 0
-    pending = bytearray()
-    for chunk in diff_chunks:
-        num_bytes += len(chunk)
-        if num_bytes > max_diff_bytes:
-            raise SmartUpdateImpossibleBecauseDiffIsTooBig(f"The diff is bigger than {max_diff_bytes} bytes")
-        *lines, last = chunk.split(b"\n")
-        if not lines:
-            pending += last
-            continue
-        lines[0] = bytes(pending + lines[0])
-        pending = bytearray(last)
-        for line in lines:
-            if (impacted_file := _get_impacted_file(line)) is not None:
-                impacted_files.add(impacted_file)
-                if impacted_file not in SMART_UPDATE_FILES:
-                    return impacted_files
-    if (impacted_file := _get_impacted_file(bytes(pending))) is not None:
-        impacted_files.add(impacted_file)
+    for line in _iter_diff_lines(diff_chunks):
+        if (impacted_file := _get_impacted_file(line)) is not None:
+            impacted_files.add(impacted_file)
+            if impacted_file not in SMART_UPDATE_FILES:
+                break
     return impacted_files
 
 

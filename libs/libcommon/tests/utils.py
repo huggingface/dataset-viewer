@@ -385,17 +385,13 @@ def put_diff(
     dataset: str = DATASET_NAME,
     revision: str = REVISION_NAME,
 ) -> Iterator[None]:
-    """Mock the diff of the commit, as a string (served in small chunks) or as chunks of bytes."""
+    """Mock the diff of the commit, as a string or as chunks of bytes."""
     original_get_diff_chunks = SmartDatasetUpdatePlan.get_diff_chunks
+    diff_chunks = [diff.encode("utf-8")] if isinstance(diff, str) else diff
 
     def mock_get_diff_chunks(self: SmartDatasetUpdatePlan) -> Iterator[bytes]:
         if self.dataset == dataset and self.revision == revision:
-            if isinstance(diff, str):
-                encoded_diff = diff.encode("utf-8")
-                for i in range(0, len(encoded_diff), 7):
-                    yield encoded_diff[i : i + 7]
-            else:
-                yield from diff
+            yield from diff_chunks
         else:
             yield from original_get_diff_chunks(self)
 
