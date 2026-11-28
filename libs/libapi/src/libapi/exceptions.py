@@ -152,7 +152,7 @@ class TooBigContentError(ApiError):
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(
-            message, HTTPStatus.INTERNAL_SERVER_ERROR, "TooBigContentError", cause=cause, disclose_cause=True
+            message, HTTPStatus.UNPROCESSABLE_ENTITY, "TooBigContentError", cause=cause, disclose_cause=True
         )
 
 

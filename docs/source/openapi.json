@@ -87,6 +87,20 @@
         },
         "required": true
       },
+      "X-Error-Code-422-rows": {
+        "description": "A string that identifies the underlying error for 422 on /rows.",
+        "schema": {
+          "oneOf": [
+            {
+              "$ref": "#/components/schemas/X-Error-Code-MissingRequiredParameter"
+            },
+            {
+              "$ref": "#/components/schemas/X-Error-Code-TooBigContentError"
+            }
+          ]
+        },
+        "required": true
+      },
       "X-Error-Code-500": {
         "description": "A string that identifies the underlying error for 500. It's marked as required: false because the header can be missing on text-plain response.",
         "schema": {
@@ -1511,6 +1525,11 @@
         "type": "string",
         "const": "MissingRequiredParameter",
         "description": "A required parameter is missing."
+      },
+      "X-Error-Code-TooBigContentError": {
+        "type": "string",
+        "const": "TooBigContentError",
+        "description": "The requested rows need to scan more data than the limit. Request fewer rows, or rewrite the parquet files with a page index or smaller row groups."
       },
       "X-Error-Code-ResponseNotReadyError": {
         "type": "string",
@@ -3028,7 +3047,7 @@
             }
           },
           "422": {
-            "description": "Some of the 'dataset', 'config', 'split', 'offset' or 'length' parameters have not been provided or are invalid.",
+            "description": "Some of the 'dataset', 'config', 'split', 'offset' or 'length' parameters have not been provided or are invalid, or the requested rows need to scan more data than the limit (TooBigContentError).",
             "headers": {
               "Cache-Control": {
                 "$ref": "#/components/headers/Cache-Control"
@@ -3037,7 +3056,7 @@
                 "$ref": "#/components/headers/Access-Control-Allow-Origin"
               },
               "X-Error-Code": {
-                "$ref": "#/components/headers/X-Error-Code-422"
+                "$ref": "#/components/headers/X-Error-Code-422-rows"
               }
             },
             "content": {
@@ -3110,6 +3129,12 @@
                     "summary": "The length must not be too large.",
                     "value": {
                       "error": "Parameter 'length' must not be greater than 100"
+                    }
+                  },
+                  "too-big-content": {
+                    "summary": "The requested rows need to scan more data than the limit.",
+                    "value": {
+                      "error": "Parquet error: Scan size limit exceeded: attempted to read 410817512 bytes, limit is 300000000 bytes"
                     }
                   }
                 }
