@@ -670,13 +670,13 @@ def get_previous_step_or_raise(
     return response
 
 
-def _get_datasets(queryset: QuerySet[CachedResponseDocument], group_stages: list[dict[str, Any]]) -> set[str]:
+def _get_datasets(queryset: QuerySet[CachedResponseDocument], pipeline: list[dict[str, Any]]) -> set[str]:
     # distinct returns all the names in one document, capped at 16MB: an aggregation cursor streams them in batches.
     # Only used to build the backfill candidate list, which is re-checked per dataset against the primary.
     return {
         entry["_id"]
         for entry in queryset.read_preference(ReadPreference.SECONDARY_PREFERRED).aggregate(
-            group_stages, allowDiskUse=True
+            pipeline, allowDiskUse=True
         )
     }
 
