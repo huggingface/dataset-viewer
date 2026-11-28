@@ -10,7 +10,7 @@ import pytest
 from libcommon.constants import ERROR_CODES_TO_RETRY
 from libcommon.dtos import Priority, Status
 from libcommon.processing_graph import ProcessingGraph
-from libcommon.queue.jobs import Queue
+from libcommon.queue.jobs import JobDocument, Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.state import UnexceptedConfigNamesError
 
@@ -385,6 +385,40 @@ def test_plan_retry_error_max_failed_runs(failed_runs: int, max_failed_runs: int
             queue_status={"in_process": []},
             tasks=[f"CreateJobs,{1 + len(cache_is_error_to_retry)}"],
         )
+
+
+@pytest.mark.parametrize(
+    "difficulty,failed_runs,min_difficulty,expected_difficulty",
+    [
+        (20, 0, None, 20),
+        (20, 1, None, 40),
+        (20, 2, None, 40),
+        (40, 2, None, 40),
+        (50, 1, None, 70),
+        (50, 2, None, 70),
+        (70, 2, None, 70),
+        (80, 1, None, 100),
+        (20, 2, 41, 41),
+        (50, 2, 71, 71),
+    ],
+)
+def test_plan_retry_error_keeps_the_worker_size(
+    difficulty: int, failed_runs: int, min_difficulty: Optional[int], expected_difficulty: int
+) -> None:
+    error_code = "SomeErrorCode"
+    with patch("libcommon.state.MAX_FAILED_RUNS_PER_ERROR_CODE", {error_code: 10}):
+        processing_graph = ProcessingGraph({STEP_DA: {"input_type": "dataset", "difficulty": difficulty}})
+        put_cache(
+            step=STEP_DA,
+            dataset=DATASET_NAME,
+            revision=REVISION_NAME,
+            error_code=error_code,
+            failed_runs=failed_runs,
+            min_difficulty=min_difficulty,
+        )
+        get_dataset_backfill_plan(processing_graph=processing_graph).run()
+
+    assert JobDocument.objects(dataset=DATASET_NAME, type=STEP_DA).get().difficulty == expected_difficulty
 
 
 @pytest.mark.parametrize(

@@ -928,9 +928,10 @@ class DatasetBackfillPlan(Plan):
                     failed_runs = artifact_state.cache_state.cache_entry_metadata["failed_runs"]
                 else:
                     failed_runs = 0
-                # increase difficulty according to number of failed runs
+                # increase difficulty according to number of failed runs, without leaving the worker size: a job
+                # killed for memory goes to the next worker size with the min_difficulty below
                 difficulty = min(
-                    DEFAULT_DIFFICULTY_MAX,
+                    WorkerSizeJobsCountDocument.get_worker_size_max_difficulty(difficulty),
                     difficulty + failed_runs * DIFFICULTY_BONUS_BY_FAILED_RUNS,
                 )
                 if artifact_state.cache_state.cache_entry_metadata is not None:
