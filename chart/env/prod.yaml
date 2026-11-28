@@ -549,15 +549,18 @@ workers:
     autoscaling:
       enabled: true
       minReplicas: 10
-      maxReplicas: 80
+      maxReplicas: 130
       targets:
         - targetQueueName: "worker_size_jobs_count"
           targetQueueLength: 150
           targetWorkerSize: "medium"
+    # The medium jobs wait on I/O: a pod uses ~0.5 CPU and ~3Gi on average (6Gi before the jobs ran in a child
+    # process). The requests follow that usage, so 130 pods request less than 80 pods did with 1200m/10Gi. Keep the
+    # limits: the memory guards (maxMemoryPct, killJobMemoryPct, the job child size) are shares of the limit.
     resources:
       requests:
-        cpu: "1200m"
-        memory: "10Gi"
+        cpu: "600m"
+        memory: "6Gi"
       limits:
         cpu: 2
         memory: "14Gi"
