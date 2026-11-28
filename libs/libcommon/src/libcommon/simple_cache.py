@@ -670,19 +670,27 @@ def get_previous_step_or_raise(
     return response
 
 
+def _get_datasets(queryset: QuerySet[CachedResponseDocument], group_stages: list[dict[str, Any]]) -> set[str]:
+    # distinct returns all the names in one document, capped at 16MB: an aggregation cursor streams them in batches.
+    # Only used to build the backfill candidate list, which is re-checked per dataset against the primary.
+    return {
+        entry["_id"]
+        for entry in queryset.read_preference(ReadPreference.SECONDARY_PREFERRED).aggregate(
+            group_stages, allowDiskUse=True
+        )
+    }
+
+
 def get_all_datasets() -> set[str]:
-    # only used to build the backfill candidate list, which is re-checked per dataset against the primary
-    return set(
-        CachedResponseDocument.objects().read_preference(ReadPreference.SECONDARY_PREFERRED).distinct("dataset")
+    # the $sort lets mongo run a DISTINCT_SCAN on the index that starts with "dataset", without reading the documents
+    return _get_datasets(
+        CachedResponseDocument.objects(), [{"$sort": {"dataset": 1}}, {"$group": {"_id": "$dataset"}}]
     )
 
 
 def get_datasets_with_retryable_errors() -> set[str]:
-    # only used to build the backfill candidate list, which is re-checked per dataset against the primary
-    return set(
-        CachedResponseDocument.objects(error_code__in=ERROR_CODES_TO_RETRY)
-        .read_preference(ReadPreference.SECONDARY_PREFERRED)
-        .distinct("dataset")
+    return _get_datasets(
+        CachedResponseDocument.objects(error_code__in=ERROR_CODES_TO_RETRY), [{"$group": {"_id": "$dataset"}}]
     )
 
 
