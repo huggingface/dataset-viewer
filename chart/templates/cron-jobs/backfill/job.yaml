@@ -10,6 +10,8 @@ metadata:
   namespace: {{ .Release.Namespace }}
 spec:
   schedule: {{ .Values.backfill.schedule | quote }}
+  # a run analyzes all the datasets and lasts several days: overlapping runs analyze the same datasets and load the database
+  concurrencyPolicy: Forbid
   jobTemplate:
     spec:
       ttlSecondsAfterFinished: 3600

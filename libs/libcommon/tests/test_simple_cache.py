@@ -26,10 +26,12 @@ from libcommon.simple_cache import (
     delete_dataset_responses,
     delete_response,
     fetch_names,
+    get_all_datasets,
     get_cache_reports,
     get_cache_reports_with_content,
     get_dataset_responses_without_content_for_kind,
     get_datasets_with_last_updated_kind,
+    get_datasets_with_retryable_errors,
     get_outdated_split_full_names_for_step,
     get_previous_step_or_raise,
     get_response,
@@ -777,6 +779,47 @@ def test_stress_get_cache_reports(num_entries: int) -> None:
         response = get_cache_reports(kind=kind, cursor=next_cursor, limit=100)
         next_cursor = response["next_cursor"]
         assert process_time() - start < MAX_SECONDS
+
+
+def test_get_all_datasets_and_datasets_with_retryable_errors() -> None:
+    for dataset, kind, error_code in [
+        (DATASET_NAME_A, "kind_1", None),
+        (DATASET_NAME_A, "kind_2", "ConnectionError"),
+        (DATASET_NAME_B, "kind_1", "UnexpectedError"),
+        (DATASET_NAME_C, "kind_1", "ConnectionError"),
+        (DATASET_NAME_C, "kind_2", "ExternalServerError"),
+    ]:
+        upsert_response(
+            kind=kind,
+            dataset=dataset,
+            dataset_git_revision=REVISION_NAME,
+            content={},
+            http_status=HTTPStatus.OK if error_code is None else HTTPStatus.INTERNAL_SERVER_ERROR,
+            error_code=error_code,
+        )
+
+    assert get_all_datasets() == {DATASET_NAME_A, DATASET_NAME_B, DATASET_NAME_C}
+    assert get_datasets_with_retryable_errors() == {DATASET_NAME_A, DATASET_NAME_C}
+
+
+def test_get_all_datasets_beyond_the_16mb_distinct_cap() -> None:
+    num_datasets = 17_000
+    name_suffix = "x" * 1_000
+    coll = CachedResponseDocument._get_collection()
+    coll.insert_many(
+        {
+            "kind": CACHE_KIND,
+            "dataset": f"{i}/{name_suffix}",
+            "dataset_git_revision": REVISION_NAME,
+            "content": {},
+            "http_status": HTTPStatus.INTERNAL_SERVER_ERROR,
+            "error_code": "ConnectionError",
+        }
+        for i in range(num_datasets)
+    )
+
+    assert len(get_all_datasets()) == num_datasets
+    assert len(get_datasets_with_retryable_errors()) == num_datasets
 
 
 def test_get_outdated_split_full_names_for_step() -> None:
