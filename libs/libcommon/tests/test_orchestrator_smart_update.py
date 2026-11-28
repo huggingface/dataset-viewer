@@ -1,16 +1,21 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2024 The HuggingFace Authors.
 import time
+from collections.abc import Iterator
+from unittest.mock import patch
 
 import httpx2 as httpx
 import pytest
 
 from libcommon.orchestrator import (
+    MAX_DIFF_BYTES,
     SmartUpdateImpossibleBecauseCachedRevisionIsNotParentOfNewRevision,
     SmartUpdateImpossibleBecauseCacheIsEmpty,
+    SmartUpdateImpossibleBecauseDiffIsTooBig,
     SmartUpdateImpossibleBecauseOfUpdatedFiles,
     SmartUpdateImpossibleBecauseOfUpdatedYAMLField,
     TasksStatistics,
+    get_impacted_files_from_diff,
 )
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import get_cache_entries_df
@@ -115,6 +120,31 @@ rename from train.csv
 rename to test.csv
 """
 
+RENAME_README_DIFF = """
+diff --git a/README.md b/README_old.md
+similarity index 100%
+rename from README.md
+rename to README_old.md
+"""
+
+NO_TRAILING_NEWLINE_DIFF = "--- a/README.md\n+++ b/.gitattributes"
+
+
+def endless_diff(header: bytes, line: bytes = b"+" + b"x" * 1022 + b"\n") -> Iterator[bytes]:
+    # a diff of a commit that changes a big text file stored in git: it never ends
+    yield header
+    while True:
+        yield line
+
+
+def endless_data_diff() -> Iterator[bytes]:
+    return endless_diff(b"diff --git a/data.txt b/data.txt\n--- a/data.txt\n+++ b/data.txt\n@@ -1 +1 @@\n")
+
+
+def endless_readme_diff() -> Iterator[bytes]:
+    return endless_diff(b"diff --git a/README.md b/README.md\n--- a/README.md\n+++ b/README.md\n@@ -1 +1 @@\n")
+
+
 INITIAL_README = f"# Dataset Card for {DATASET_NAME}"
 ONE_CONFIG_README = (
     f"---\nconfigs:\n- config_name: foo\n  data_files: foo.csv\n---\n\n# Dataset Card for {DATASET_NAME}"
@@ -131,6 +161,45 @@ def queue_mongo_resource_autouse(queue_mongo_resource: QueueMongoResource) -> Qu
 @pytest.fixture(autouse=True)
 def cache_mongo_resource_autouse(cache_mongo_resource: CacheMongoResource) -> CacheMongoResource:
     return cache_mongo_resource
+
+
+@pytest.mark.parametrize("chunk_size", [1, 7, 1024])
+@pytest.mark.parametrize(
+    "diff,expected",
+    [
+        (EMPTY_DIFF, set()),
+        (ADD_INITIAL_README_DIFF, {"README.md"}),
+        (ADD_CONFIG_DIFF, {"README.md"}),
+        (ADD_DATA_DIFF, {"README.md", "data.csv"}),
+        (RENAME_FILE_DIFF, {"train.csv"}),
+        (RENAME_README_DIFF, {"README.md", "README_old.md"}),
+        (NO_TRAILING_NEWLINE_DIFF, {"README.md", ".gitattributes"}),
+    ],
+)
+def test_get_impacted_files_from_diff(diff: str, expected: set[str], chunk_size: int) -> None:
+    encoded_diff = diff.encode("utf-8")
+    chunks = (encoded_diff[i : i + chunk_size] for i in range(0, len(encoded_diff), chunk_size))
+    assert get_impacted_files_from_diff(chunks) == expected
+
+
+def test_get_impacted_files_from_diff_stops_at_the_first_other_file() -> None:
+    assert get_impacted_files_from_diff(endless_data_diff()) == {"data.txt"}
+
+
+@pytest.mark.parametrize("line", [b"+" + b"x" * 1022 + b"\n", b"x" * 1024])
+def test_get_impacted_files_from_diff_too_big(line: bytes) -> None:
+    num_bytes = 0
+
+    def counted(chunks: Iterator[bytes]) -> Iterator[bytes]:
+        nonlocal num_bytes
+        for chunk in chunks:
+            num_bytes += len(chunk)
+            yield chunk
+
+    header = b"--- a/README.md\n+++ b/README.md\n"
+    with pytest.raises(SmartUpdateImpossibleBecauseDiffIsTooBig):
+        get_impacted_files_from_diff(counted(endless_diff(header, line)))
+    assert num_bytes <= MAX_DIFF_BYTES + len(line)
 
 
 def test_empty_cache() -> None:
@@ -204,6 +273,43 @@ def test_rename_file() -> None:
     with put_diff(RENAME_FILE_DIFF), put_readme(None):
         with pytest.raises(SmartUpdateImpossibleBecauseOfUpdatedFiles):
             get_smart_dataset_update_plan(processing_graph=PROCESSING_GRAPH_TWO_STEPS)
+
+
+def test_huge_data_diff() -> None:
+    # Commit that changes a big text file stored in git: raise without reading the whole diff
+    put_cache(step=STEP_DA, dataset=DATASET_NAME, revision=OTHER_REVISION_NAME)
+    with put_diff(endless_data_diff()), put_readme(None):
+        with pytest.raises(SmartUpdateImpossibleBecauseOfUpdatedFiles):
+            get_smart_dataset_update_plan(processing_graph=PROCESSING_GRAPH_TWO_STEPS)
+
+
+def test_huge_readme_diff() -> None:
+    # Commit that only changes the README.md, but with a huge diff: raise, the dataset is updated normally
+    put_cache(step=STEP_DA, dataset=DATASET_NAME, revision=OTHER_REVISION_NAME)
+    with put_diff(endless_readme_diff()), put_readme(None):
+        with pytest.raises(SmartUpdateImpossibleBecauseDiffIsTooBig):
+            get_smart_dataset_update_plan(processing_graph=PROCESSING_GRAPH_TWO_STEPS)
+
+
+def test_huge_diff_from_the_hub_is_streamed() -> None:
+    put_cache(step=STEP_DA, dataset=DATASET_NAME, revision=OTHER_REVISION_NAME)
+    sent_bytes = 0
+
+    def stream() -> Iterator[bytes]:
+        nonlocal sent_bytes
+        for chunk in endless_data_diff():
+            sent_bytes += len(chunk)
+            yield chunk
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url.path == f"/api/datasets/{DATASET_NAME}/compare/{REVISION_NAME}^..{REVISION_NAME}"
+        return httpx.Response(200, content=stream())
+
+    with httpx.Client(transport=httpx.MockTransport(handler)) as client:
+        with patch("libcommon.orchestrator.get_session", return_value=client), put_readme(None):
+            with pytest.raises(SmartUpdateImpossibleBecauseOfUpdatedFiles):
+                get_smart_dataset_update_plan(processing_graph=PROCESSING_GRAPH_TWO_STEPS)
+    assert sent_bytes < 1024 * 1024
 
 
 def test_add_config_commit() -> None:
